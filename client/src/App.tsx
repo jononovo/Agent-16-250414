@@ -7,7 +7,6 @@ import Builder from "@/pages/builder";
 import WorkflowEditor from "@/pages/workflow-editor";
 import WorkflowTest from "@/pages/workflow-test";
 import AgentPage from "@/pages/agent-page";
-import AgentChainPage from "@/pages/agent-chain";
 import NotFound from "@/pages/not-found";
 
 function Router() {
@@ -18,7 +17,6 @@ function Router() {
       <Route path="/workflow-editor/:id" component={WorkflowEditor} />
       <Route path="/workflow-test/:id" component={WorkflowTest} />
       <Route path="/agent/:id" component={AgentPage} />
-      <Route path="/agent-chain" component={AgentChainPage} />
       <Route component={NotFound} />
     </Switch>
   );

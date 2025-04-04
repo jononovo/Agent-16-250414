@@ -21,9 +21,7 @@ const Sidebar = ({ collapsed = false }: SidebarProps) => {
     { path: "/nodes", icon: <Puzzle className="h-4 w-4" />, label: "Nodes" }
   ];
   
-  const advancedItems = [
-    { path: "/agent-chain", icon: <Link2 className="h-4 w-4" />, label: "Agent Chain" }
-  ];
+  const advancedItems = [];
 
   // Helper function to render navigation items
   const renderNavItems = (items: Array<{ path: string; icon: JSX.Element; label: string }>) => {
