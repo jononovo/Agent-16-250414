@@ -148,6 +148,72 @@ export class MemStorage implements IStorage {
       flowData: {}
     });
     
+    // Add Test Workflow with Perplexity API
+    const testWorkflowNodes = [
+      {
+        id: 'text_input-1',
+        type: 'text_input',
+        position: { x: 100, y: 200 },
+        data: {
+          label: 'Text Input',
+          description: 'Enter your query here',
+          icon: 'type',
+          inputText: 'What is the current status of artificial general intelligence?'
+        }
+      },
+      {
+        id: 'perplexity-1',
+        type: 'perplexity',
+        position: { x: 400, y: 200 },
+        data: {
+          label: 'Perplexity Search',
+          description: 'Search web content with Perplexity API',
+          icon: 'search'
+        }
+      },
+      {
+        id: 'visualize_text-1',
+        type: 'visualize_text',
+        position: { x: 700, y: 200 },
+        data: {
+          label: 'Visualize Text',
+          description: 'Display search results',
+          icon: 'eye'
+        }
+      }
+    ];
+    
+    const testWorkflowEdges = [
+      {
+        id: 'e1-2',
+        source: 'text_input-1',
+        target: 'perplexity-1',
+        style: { strokeWidth: 2 },
+        markerEnd: { type: 'arrowclosed' }
+      },
+      {
+        id: 'e2-3',
+        source: 'perplexity-1',
+        target: 'visualize_text-1',
+        style: { strokeWidth: 2 },
+        markerEnd: { type: 'arrowclosed' }
+      }
+    ];
+    
+    this.createWorkflow({
+      name: "Test Workflow",
+      description: "Test workflow with Text Input, Perplexity API, and Visualize Text nodes",
+      type: "test",
+      icon: "flask",
+      status: "active",
+      userId: 0,
+      agentId: 0,
+      flowData: JSON.stringify({
+        nodes: testWorkflowNodes,
+        edges: testWorkflowEdges
+      })
+    });
+    
     // Add AI Content Routing workflow modeled after the example
     const routingWorkflowNodes = [
       {
@@ -569,6 +635,20 @@ export class MemStorage implements IStorage {
         nodes: ["textInput-1", "database-query-1"],
         error: "Database connection failed", 
         completed: false 
+      }
+    });
+    
+    // Create log entries for Test Workflow
+    this.createLog({
+      agentId: 1, // Using Coordinator Agent for test
+      workflowId: 3, // Test Workflow
+      status: "success",
+      input: { query: "What is the current status of artificial general intelligence?" },
+      output: { response: "According to recent research, artificial general intelligence (AGI) remains a theoretical goal. While significant progress has been made in narrow AI systems specialized for specific tasks, true AGI with human-like general intelligence across domains is still considered years or decades away. Current research focuses on developing more flexible and adaptable AI systems, improving reasoning capabilities, and addressing limitations in transfer learning." },
+      completedAt: new Date(Date.now() - 1000 * 60 * 5), // 5 minutes ago
+      executionPath: { 
+        nodes: ["text_input-1", "perplexity-1", "visualize_text-1"],
+        completed: true 
       }
     });
     

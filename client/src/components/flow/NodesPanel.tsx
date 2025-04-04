@@ -21,7 +21,8 @@ import {
   FileJson,
   CheckCheck,
   Filter,
-  Repeat
+  Repeat,
+  Search as SearchIcon
 } from 'lucide-react';
 import NodeItem from './NodeItem';
 
@@ -56,6 +57,13 @@ const NODE_TYPES = [
     description: 'Design templated prompts for AI',
     category: 'ai',
     icon: MessageSquare
+  },
+  { 
+    id: 'perplexity', 
+    name: 'Perplexity Search', 
+    description: 'Search web content with Perplexity API',
+    category: 'ai',
+    icon: SearchIcon
   },
   { 
     id: 'ai_processing', 

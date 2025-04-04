@@ -38,6 +38,7 @@ import VisualizeTextNode from '../flow/nodes/VisualizeTextNode';
 import RoutingNode from '../flow/nodes/RoutingNode';
 import PromptCrafterNode from '../flow/nodes/PromptCrafterNode';
 import ValidResponseNode from '../flow/nodes/ValidResponseNode';
+import PerplexityNode from '../flow/nodes/PerplexityNode';
 
 // Register node types according to the documentation
 const nodeTypes: NodeTypes = {
@@ -47,6 +48,7 @@ const nodeTypes: NodeTypes = {
   visualize_text: VisualizeTextNode,
   prompt_crafter: PromptCrafterNode,
   valid_response: ValidResponseNode,
+  perplexity: PerplexityNode,
   
   // Legacy/basic node types (with mapping to specialized versions)
   custom: CustomNode,
