@@ -135,28 +135,57 @@ const PromptInput = () => {
                 )}
               </Button>
             </div>
-            <div className="flex flex-wrap gap-2 mt-3">
-              <button 
-                className={`px-3 py-1.5 text-xs bg-slate-100 text-slate-700 rounded-full ${isLoading ? 'opacity-50 cursor-not-allowed' : 'hover:bg-slate-200'}`}
-                onClick={() => !isLoading && handleSuggestionClick("Build a customer support agent for my e-commerce store that can handle order tracking and returns")}
-                disabled={isLoading}
-              >
-                Build a customer support agent
-              </button>
-              <button 
-                className={`px-3 py-1.5 text-xs bg-slate-100 text-slate-700 rounded-full ${isLoading ? 'opacity-50 cursor-not-allowed' : 'hover:bg-slate-200'}`}
-                onClick={() => !isLoading && handleSuggestionClick("Create a data analysis workflow that can process CSV files and generate insights")}
-                disabled={isLoading}
-              >
-                Create a data analysis workflow
-              </button>
-              <button 
-                className={`px-3 py-1.5 text-xs bg-slate-100 text-slate-700 rounded-full ${isLoading ? 'opacity-50 cursor-not-allowed' : 'hover:bg-slate-200'}`}
-                onClick={() => !isLoading && handleSuggestionClick("Design a social media scheduler that can post content across multiple platforms")}
-                disabled={isLoading}
-              >
-                Design a social media scheduler
-              </button>
+            
+            {/* Build button and suggestions */}
+            <div className="mt-4">
+              <div className="flex justify-end mb-4">
+                <Button 
+                  className="px-8 py-2 bg-primary text-white rounded-md font-medium"
+                  variant="default"
+                  size="default"
+                  onClick={handleSubmit}
+                  disabled={isLoading || prompt.trim() === ''}
+                >
+                  {isLoading ? (
+                    <span className="flex items-center">
+                      <span className="animate-spin h-4 w-4 mr-2 border-2 border-t-transparent border-white rounded-full"></span>
+                      Building...
+                    </span>
+                  ) : (
+                    <span className="flex items-center">
+                      <i className="fas fa-tools mr-2"></i>
+                      Build
+                    </span>
+                  )}
+                </Button>
+              </div>
+              
+              <div className="mt-4">
+                <p className="text-sm text-slate-500 mb-2">Try one of these examples:</p>
+                <div className="flex flex-wrap gap-2">
+                  <button 
+                    className={`px-3 py-1.5 text-xs bg-slate-100 text-slate-700 rounded-full ${isLoading ? 'opacity-50 cursor-not-allowed' : 'hover:bg-slate-200'}`}
+                    onClick={() => !isLoading && handleSuggestionClick("Build a customer support agent for my e-commerce store that can handle order tracking and returns")}
+                    disabled={isLoading}
+                  >
+                    Build a customer support agent
+                  </button>
+                  <button 
+                    className={`px-3 py-1.5 text-xs bg-slate-100 text-slate-700 rounded-full ${isLoading ? 'opacity-50 cursor-not-allowed' : 'hover:bg-slate-200'}`}
+                    onClick={() => !isLoading && handleSuggestionClick("Create a data analysis workflow that can process CSV files and generate insights")}
+                    disabled={isLoading}
+                  >
+                    Create a data analysis workflow
+                  </button>
+                  <button 
+                    className={`px-3 py-1.5 text-xs bg-slate-100 text-slate-700 rounded-full ${isLoading ? 'opacity-50 cursor-not-allowed' : 'hover:bg-slate-200'}`}
+                    onClick={() => !isLoading && handleSuggestionClick("Design a social media scheduler that can post content across multiple platforms")}
+                    disabled={isLoading}
+                  >
+                    Design a social media scheduler
+                  </button>
+                </div>
+              </div>
             </div>
           </div>
         </div>
