@@ -86,14 +86,14 @@ export const generateTextExecutor: NodeExecutor = {
       // Return simulated result if no API key is available
       console.log('No API key available, using simulation');
       return simulateTextGeneration(
-        nodeData.settings?.model || nodeData.model || "claude-3.5-sonnet", 
+        nodeData.settings?.model || nodeData.model || "claude-3-7-sonnet-20250219", 
         systemPrompt, 
         userPrompt
       );
     }
     
     // Get model from settings or fallback to default
-    const model = nodeData.settings?.model || nodeData.model || "claude-3.5-sonnet";
+    const model = nodeData.settings?.model || nodeData.model || "claude-3-7-sonnet-20250219";
     console.log(`Making Claude API request with model: ${model}`);
     
     try {
@@ -124,19 +124,12 @@ export const generateTextExecutor: NodeExecutor = {
       
       console.log('Sending request to Claude API with body:', JSON.stringify(requestBody).substring(0, 200) + '...');
       
-      // Set up headers
+      // Set up headers - Use newer Anthropic API version for Claude 3.7
       let headers: HeadersInit = {
         'Content-Type': 'application/json',
-        'anthropic-version': '2023-06-01'
+        'anthropic-version': '2023-06-01', // This is the API version Anthropic recommends
+        'x-api-key': apiKey // Always use x-api-key for Claude API keys
       };
-      
-      // Handle Claude API key format correctly
-      // Claude API keys can start with either 'sk-' or 'sk-ant-'
-      if (apiKey.startsWith('sk-ant-')) {
-        headers['x-api-key'] = apiKey;
-      } else {
-        headers['Authorization'] = `Bearer ${apiKey}`;
-      }
       
       // Make request to Claude API
       const response = await fetch('https://api.anthropic.com/v1/messages', {
@@ -159,10 +152,12 @@ export const generateTextExecutor: NodeExecutor = {
           errorExplanation = `Authentication error (401): The Claude API key appears to be invalid or expired. 
 Please check that the CLAUDE_API_KEY environment variable contains a valid API key.
 
+This workflow is configured to use model: "${model}" which requires a valid Claude API key.
 If you just added the key, you may need to restart the server for it to take effect.`;
         } else if (response.status === 400) {
           errorExplanation = `Bad request error (400): The request to Claude API was malformed. 
-This could be due to an invalid model name, incompatible parameters, or exceeded context length.`;
+This could be due to an invalid model name (currently using "${model}"), incompatible parameters, or exceeded context length. 
+Claude 3.7 models should use names like "claude-3-7-sonnet-20250219".`;
         } else if (response.status === 429) {
           errorExplanation = `Rate limit exceeded (429): You've hit the Claude API rate limit. 
 Please wait a moment before trying again.`;
