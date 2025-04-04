@@ -1,4 +1,10 @@
-import { Workflow } from '@shared/schema';
+import { useState, useEffect } from 'react';
+import { Agent, Workflow } from '@shared/schema';
+import { 
+  Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogTrigger
+} from '@/components/ui/dialog';
+import { Button } from '@/components/ui/button';
+import { cn } from '@/lib/utils';
 
 interface WorkflowCardProps {
   workflow: Workflow;
@@ -7,6 +13,72 @@ interface WorkflowCardProps {
 }
 
 const WorkflowCard = ({ workflow, isPlaceholder = false, onClick }: WorkflowCardProps) => {
+  const [agents, setAgents] = useState<Agent[]>([]);
+  const [selectedAgentId, setSelectedAgentId] = useState<number | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
+  const [dialogOpen, setDialogOpen] = useState(false);
+
+  // Fetch agents when the dialog is opened
+  useEffect(() => {
+    if (dialogOpen) {
+      fetchAgents();
+    }
+  }, [dialogOpen]);
+
+  // Function to fetch available agents
+  const fetchAgents = async () => {
+    try {
+      setIsLoading(true);
+      const response = await fetch('/api/agents');
+      if (!response.ok) {
+        throw new Error('Failed to fetch agents');
+      }
+      const agentData = await response.json();
+      setAgents(agentData);
+    } catch (error) {
+      console.error('Error fetching agents:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // Function to assign a workflow to the selected agent
+  const assignWorkflow = async () => {
+    if (!selectedAgentId) return;
+    
+    try {
+      setIsLoading(true);
+      // Update the workflow with the new agentId
+      const response = await fetch(`/api/workflows/${workflow.id}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          agentId: selectedAgentId
+        }),
+      });
+      
+      if (!response.ok) {
+        throw new Error('Failed to assign workflow');
+      }
+      
+      // Close the dialog after successful assignment
+      setDialogOpen(false);
+      setSelectedAgentId(null);
+      
+      // Find the agent name for better feedback
+      const selectedAgent = agents.find(agent => agent.id === selectedAgentId);
+      const agentName = selectedAgent ? selectedAgent.name : 'selected agent';
+      
+      // Provide feedback to the user
+      alert(`Workflow "${workflow.name}" successfully assigned to ${agentName}`);
+    } catch (error) {
+      console.error('Error assigning workflow:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
   if (isPlaceholder) {
     return (
       <div 
@@ -95,11 +167,103 @@ const WorkflowCard = ({ workflow, isPlaceholder = false, onClick }: WorkflowCard
       </div>
       <div className="bg-slate-50 px-4 py-3 flex justify-between border-t border-slate-200">
         <button className="text-xs text-slate-600 hover:text-primary">View Details</button>
-        {workflow.type === 'template' ? (
-          <button className="text-xs text-primary hover:text-indigo-700">Use Template</button>
-        ) : (
-          <a href={`/workflow-editor/${workflow.id}`} className="text-xs text-primary hover:text-indigo-700">Edit</a>
-        )}
+        <div className="flex space-x-3">
+          {workflow.type === 'template' ? (
+            <button className="text-xs text-primary hover:text-indigo-700">Use Template</button>
+          ) : (
+            <>
+              <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+                <DialogTrigger asChild>
+                  <button 
+                    onClick={() => setDialogOpen(true)}
+                    className="text-xs text-primary hover:text-indigo-700"
+                  >
+                    Assign
+                  </button>
+                </DialogTrigger>
+                <DialogContent className="sm:max-w-md">
+                  <DialogHeader>
+                    <DialogTitle>Assign Workflow to Agent</DialogTitle>
+                    <p className="text-sm text-muted-foreground mt-1">
+                      Select an agent to assign this workflow
+                    </p>
+                  </DialogHeader>
+                  <div className="py-4">
+                    <p className="text-sm mb-4">
+                      Select an agent to assign the "{workflow.name}" workflow to:
+                    </p>
+                    {isLoading ? (
+                      <div className="flex justify-center py-4">
+                        <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary"></div>
+                      </div>
+                    ) : (
+                      <div className="max-h-60 overflow-auto space-y-2">
+                        {agents.map((agent) => (
+                          <div
+                            key={agent.id}
+                            className={cn(
+                              "p-3 rounded-md cursor-pointer flex items-center border",
+                              selectedAgentId === agent.id 
+                                ? "bg-primary/10 border-primary/30" 
+                                : "hover:bg-gray-50"
+                            )}
+                            onClick={() => setSelectedAgentId(agent.id)}
+                          >
+                            <div className={cn(
+                              "w-8 h-8 rounded-full flex items-center justify-center mr-3",
+                              agent.type === 'internal' ? "bg-indigo-100" : "bg-blue-100"
+                            )}>
+                              <i className={cn(
+                                "fas",
+                                `fa-${agent.icon || 'robot'}`,
+                                agent.type === 'internal' ? "text-indigo-600" : "text-blue-600"
+                              )}></i>
+                            </div>
+                            <div>
+                              <p className="font-medium text-sm">{agent.name}</p>
+                              <p className="text-xs text-gray-500">{agent.type}</p>
+                            </div>
+                            {selectedAgentId === agent.id && (
+                              <div className="ml-auto text-primary">
+                                <i className="fas fa-check-circle"></i>
+                              </div>
+                            )}
+                          </div>
+                        ))}
+                        {agents.length === 0 && (
+                          <p className="text-center text-sm text-gray-500 py-4">
+                            No agents available
+                          </p>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                  <DialogFooter className="sm:justify-end">
+                    <Button
+                      type="button"
+                      variant="secondary"
+                      onClick={() => {
+                        setDialogOpen(false);
+                        setSelectedAgentId(null);
+                      }}
+                    >
+                      Cancel
+                    </Button>
+                    <Button
+                      type="button"
+                      onClick={assignWorkflow}
+                      disabled={!selectedAgentId || isLoading}
+                      className="ml-2"
+                    >
+                      {isLoading ? 'Assigning...' : 'Assign Workflow'}
+                    </Button>
+                  </DialogFooter>
+                </DialogContent>
+              </Dialog>
+              <a href={`/workflow-editor/${workflow.id}`} className="text-xs text-primary hover:text-indigo-700">Edit</a>
+            </>
+          )}
+        </div>
       </div>
     </div>
   );
