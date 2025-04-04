@@ -1,5 +1,4 @@
 import { Link, useLocation } from "wouter";
-import { ModeToggle } from "../ui/mode-toggle";
 import { User, Settings, HelpCircle, Bot, Home, GitBranch, Puzzle } from "lucide-react";
 
 export interface SidebarProps {
@@ -35,7 +34,7 @@ const Sidebar = ({ collapsed = false }: SidebarProps) => {
   };
 
   return (
-    <div className={`${collapsed ? 'w-16' : 'w-64'} flex-shrink-0 bg-slate-900 text-white transition-all duration-300 dark:bg-slate-950`}>
+    <div className={`${collapsed ? 'w-16' : 'w-64'} flex-shrink-0 bg-slate-900 text-white transition-all duration-300`}>
       <div className="p-4 flex flex-col h-full">
         <div className="flex items-center justify-between mb-8">
           <div className="flex items-center space-x-3">
@@ -44,7 +43,6 @@ const Sidebar = ({ collapsed = false }: SidebarProps) => {
             </div>
             {!collapsed && <h1 className="font-bold text-xl">Agent Builder</h1>}
           </div>
-          {!collapsed && <ModeToggle />}
         </div>
         
         <nav className="space-y-6 flex-grow">
@@ -85,11 +83,7 @@ const Sidebar = ({ collapsed = false }: SidebarProps) => {
               </div>
             )}
           </div>
-          {collapsed && (
-            <div className="mt-3 flex justify-center">
-              <ModeToggle />
-            </div>
-          )}
+          {/* User profile section */}
         </div>
       </div>
     </div>
