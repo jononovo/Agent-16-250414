@@ -590,6 +590,255 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Execute Coordinator Agent and then Generator Agent chain
+  app.post("/api/execute-agent-chain", async (req, res) => {
+    try {
+      const { prompt } = req.body;
+      if (!prompt) {
+        return res.status(400).json({ message: "Prompt is required" });
+      }
+      
+      console.log(`Executing Coordinator-Generator Agent chain with prompt: ${prompt}`);
+      
+      // 1. Get the Coordinator Agent workflow (ID 9)
+      const coordinatorWorkflow = await storage.getWorkflow(9);
+      
+      if (!coordinatorWorkflow) {
+        return res.status(404).json({ message: "Coordinator workflow not found" });
+      }
+      
+      console.log('Executing Coordinator workflow...');
+      
+      // Create a log entry for the coordinator execution
+      const coordinatorLog = await storage.createLog({
+        agentId: coordinatorWorkflow.agentId || 0,
+        workflowId: 9,
+        status: "running",
+        input: { prompt },
+      });
+      
+      try {
+        // Import required modules
+        const { executeWorkflow } = await import('../client/src/lib/workflowEngine');
+        const { registerAllNodeExecutors } = await import('../client/src/lib/nodeExecutors');
+        
+        // Register all node executors
+        registerAllNodeExecutors();
+        
+        // Execute the Coordinator workflow
+        if (!coordinatorWorkflow.flowData) {
+          throw new Error("Coordinator workflow has no flow data");
+        }
+        
+        // Ensure flowData is correctly typed
+        const flowData = coordinatorWorkflow.flowData as { 
+          nodes: any[];
+          edges: any[];
+        };
+        
+        // Inject the prompt into the first text_prompt node
+        const startNode = flowData.nodes.find((node: { type: string }) => node.type === 'text_prompt' || node.type === 'prompt');
+        if (startNode) {
+          if (!startNode.data) startNode.data = {};
+          startNode.data.prompt = prompt;
+        } else {
+          // If no start node found, just add the prompt as input to the first node
+          if (flowData.nodes.length > 0) {
+            if (!flowData.nodes[0].data) flowData.nodes[0].data = {};
+            flowData.nodes[0].data.input = prompt;
+          }
+        }
+        
+        // Initialize node states storage
+        const nodeStates: Record<string, any> = {};
+        
+        const coordinatorResult = await executeWorkflow(
+          flowData.nodes, 
+          flowData.edges, 
+          (nodeId, state) => {
+            // Store node states as they change
+            nodeStates[nodeId] = state;
+            console.log(`Coordinator node ${nodeId} state: ${state.state}`);
+          },
+          (finalState) => {
+            console.log(`Coordinator workflow execution completed with status: ${finalState.status}`);
+          }
+        );
+        
+        // Find the output nodes in the coordinator workflow
+        const coordinatorOutputNodes = flowData.nodes.filter((node: { id: string }) => {
+          // Nodes with no outgoing edges are considered output nodes
+          return !flowData.edges.some((edge: { source: string }) => edge.source === node.id);
+        });
+        
+        // Collect output from the final nodes
+        const coordinatorOutputs: Record<string, any> = {};
+        coordinatorOutputNodes.forEach((node: { id: string }) => {
+          if (coordinatorResult.nodeStates[node.id]) {
+            coordinatorOutputs[node.id] = coordinatorResult.nodeStates[node.id].data;
+          }
+        });
+        
+        // Update the log with the result
+        await storage.updateLog(coordinatorLog.id, {
+          status: coordinatorResult.status === 'error' ? 'error' : 'success',
+          output: coordinatorOutputs,
+          error: coordinatorResult.error,
+          executionPath: { 
+            nodes: Object.keys(coordinatorResult.nodeStates),
+            completed: coordinatorResult.status === 'complete',
+            error: coordinatorResult.error
+          },
+          completedAt: new Date()
+        });
+        
+        // Convert nodeStates to result format for compatibility
+        if (coordinatorResult.status !== 'complete') {
+          return res.status(500).json({ 
+            message: "Coordinator workflow execution failed",
+            status: coordinatorResult.status,
+            outputs: coordinatorOutputs,
+            error: coordinatorResult.error,
+            logId: coordinatorLog.id
+          });
+        }
+        
+        // Get the output from the output node (assuming there's only one output node with ID 'output')
+        let coordinatorOutput = '';
+        const outputNodeId = coordinatorOutputNodes[0]?.id || 'output';
+        if (coordinatorResult.nodeStates[outputNodeId] && coordinatorResult.nodeStates[outputNodeId].data) {
+          coordinatorOutput = coordinatorResult.nodeStates[outputNodeId].data;
+        }
+        console.log('Coordinator output received, passing to Generator...');
+        
+        // 2. Get the Generator Agent workflow (ID 10)
+        const generatorWorkflow = await storage.getWorkflow(10);
+        
+        if (!generatorWorkflow) {
+          return res.status(404).json({ message: "Generator workflow not found" });
+        }
+        
+        // Create a log entry for the generator execution
+        const generatorLog = await storage.createLog({
+          agentId: generatorWorkflow.agentId || 0,
+          workflowId: 10,
+          status: "running",
+          input: { prompt: coordinatorOutput },
+        });
+        
+        // Execute the Generator workflow with the Coordinator's output
+        if (!generatorWorkflow.flowData) {
+          throw new Error("Generator workflow has no flow data");
+        }
+        
+        // Ensure generatorFlowData is correctly typed
+        const generatorFlowData = generatorWorkflow.flowData as { 
+          nodes: any[];
+          edges: any[];
+        };
+        
+        // Inject the coordinator output into the first text_prompt node of the generator
+        const generatorStartNode = generatorFlowData.nodes.find((node: { type: string }) => 
+          node.type === 'text_prompt' || node.type === 'prompt');
+        if (generatorStartNode) {
+          if (!generatorStartNode.data) generatorStartNode.data = {};
+          generatorStartNode.data.prompt = coordinatorOutput;
+        } else {
+          // If no start node found, add the prompt as input to the first node
+          if (generatorFlowData.nodes.length > 0) {
+            if (!generatorFlowData.nodes[0].data) generatorFlowData.nodes[0].data = {};
+            generatorFlowData.nodes[0].data.input = coordinatorOutput;
+          }
+        }
+        
+        // Initialize node states storage for generator
+        const generatorNodeStates: Record<string, any> = {};
+        
+        const generatorResult = await executeWorkflow(
+          generatorFlowData.nodes, 
+          generatorFlowData.edges, 
+          (nodeId, state) => {
+            // Store node states as they change
+            generatorNodeStates[nodeId] = state;
+            console.log(`Generator node ${nodeId} state: ${state.state}`);
+          },
+          (finalState) => {
+            console.log(`Generator workflow execution completed with status: ${finalState.status}`);
+          }
+        );
+        
+        // Find the output nodes in the generator workflow
+        const generatorOutputNodes = generatorFlowData.nodes.filter((node: { id: string }) => {
+          // Nodes with no outgoing edges are considered output nodes
+          return !generatorFlowData.edges.some((edge: { source: string }) => edge.source === node.id);
+        });
+        
+        // Collect output from the final nodes
+        const generatorOutputs: Record<string, any> = {};
+        generatorOutputNodes.forEach((node: { id: string }) => {
+          if (generatorResult.nodeStates[node.id]) {
+            generatorOutputs[node.id] = generatorResult.nodeStates[node.id].data;
+          }
+        });
+        
+        // Get the output from the output node (assuming there's only one output node with ID 'output')
+        let generatorOutput = '';
+        const genOutputNodeId = generatorOutputNodes[0]?.id || 'output';
+        if (generatorResult.nodeStates[genOutputNodeId] && generatorResult.nodeStates[genOutputNodeId].data) {
+          generatorOutput = generatorResult.nodeStates[genOutputNodeId].data;
+        }
+        
+        // Update the log with the result
+        await storage.updateLog(generatorLog.id, {
+          status: generatorResult.status === 'error' ? 'error' : 'success',
+          output: generatorOutputs,
+          error: generatorResult.error,
+          executionPath: { 
+            nodes: Object.keys(generatorResult.nodeStates),
+            completed: generatorResult.status === 'complete',
+            error: generatorResult.error
+          },
+          completedAt: new Date()
+        });
+        
+        // Return both results
+        return res.json({
+          success: true,
+          coordinatorResult: {
+            status: coordinatorResult.status,
+            output: coordinatorOutput,
+            logId: coordinatorLog.id
+          },
+          generatorResult: {
+            status: generatorResult.status,
+            output: generatorOutput,
+            logId: generatorLog.id
+          }
+        });
+        
+      } catch (executionError) {
+        console.error('Error executing agent chain:', executionError);
+        // Update log with error
+        await storage.updateLog(coordinatorLog.id, {
+          status: 'error',
+          error: executionError instanceof Error ? executionError.message : String(executionError),
+          completedAt: new Date()
+        });
+        
+        return res.status(500).json({ 
+          message: "Failed to execute agent chain",
+          error: executionError instanceof Error ? executionError.message : String(executionError)
+        });
+      }
+    } catch (error) {
+      console.error('Error in agent chain execution:', error);
+      res.status(500).json({ 
+        message: "Failed to execute agent chain",
+        error: error instanceof Error ? error.message : String(error)
+      });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }

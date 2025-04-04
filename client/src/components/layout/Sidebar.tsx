@@ -1,5 +1,5 @@
 import { Link, useLocation } from "wouter";
-import { User, Settings, HelpCircle, Bot, Home, GitBranch, Puzzle } from "lucide-react";
+import { User, Settings, HelpCircle, Bot, Home, GitBranch, Puzzle, Link2, Braces } from "lucide-react";
 
 export interface SidebarProps {
   collapsed?: boolean;
@@ -19,6 +19,10 @@ const Sidebar = ({ collapsed = false }: SidebarProps) => {
     { path: "/agents", icon: <Bot className="h-4 w-4" />, label: "Agents" },
     { path: "/workflows", icon: <GitBranch className="h-4 w-4" />, label: "Workflows" },
     { path: "/nodes", icon: <Puzzle className="h-4 w-4" />, label: "Nodes" }
+  ];
+  
+  const advancedItems = [
+    { path: "/agent-chain", icon: <Link2 className="h-4 w-4" />, label: "Agent Chain" }
   ];
 
   // Helper function to render navigation items
@@ -61,6 +65,15 @@ const Sidebar = ({ collapsed = false }: SidebarProps) => {
             </div>
             <div className="space-y-1">
               {renderNavItems(libraryItems)}
+            </div>
+          </div>
+          
+          <div>
+            <div className={`flex items-center text-sm text-slate-400 font-medium mb-2 px-3 ${collapsed ? 'hidden' : 'flex'}`}>
+              <span>ADVANCED</span>
+            </div>
+            <div className="space-y-1">
+              {renderNavItems(advancedItems)}
             </div>
           </div>
         </nav>
