@@ -211,104 +211,92 @@ const FlowEditor = ({ workflow, isNew = false }: FlowEditorProps) => {
     });
   };
   
-  const handleRunWorkflow = () => {
+  const handleRunWorkflow = async () => {
     setIsRunning(true);
     
-    // Find text input nodes to get initial inputs
-    const textInputNodes = nodes.filter(node => 
-      node.type === 'text_input' || 
-      node.type === 'textInput'
-    );
-    
-    // Get input text from input nodes
-    let inputText = "No input provided";
-    if (textInputNodes.length > 0 && textInputNodes[0].data && textInputNodes[0].data.inputText) {
-      inputText = textInputNodes[0].data.inputText;
-    }
-    
-    // Show loading state in Perplexity node
-    setNodes(nds => 
-      nds.map(node => {
-        if (node.type === 'perplexity') {
-          return {
-            ...node,
-            data: {
-              ...node.data,
-              _isProcessing: true,
-              inputText // Pass input text to Perplexity node
-            }
-          };
+    try {
+      // Import the workflow engine and node executors
+      const { executeWorkflow } = await import('@/lib/workflowEngine');
+      const { registerAllNodeExecutors } = await import('@/lib/nodeExecutors');
+      
+      // Register all node executors
+      registerAllNodeExecutors();
+      
+      // Show all nodes as processing
+      setNodes(nds => 
+        nds.map(node => ({
+          ...node,
+          data: {
+            ...node.data,
+            _isProcessing: true
+          }
+        }))
+      );
+      
+      // Execute the workflow
+      await executeWorkflow(
+        nodes,
+        edges,
+        // Node state change handler
+        (nodeId, nodeState) => {
+          setNodes(nds => 
+            nds.map(node => {
+              if (node.id === nodeId) {
+                return {
+                  ...node,
+                  data: {
+                    ...node.data,
+                    _isProcessing: nodeState.state === 'running',
+                    _isComplete: nodeState.state === 'complete',
+                    _hasError: nodeState.state === 'error',
+                    _errorMessage: nodeState.error,
+                    _searchResult: nodeState.data, // Store result in node data
+                    textContent: nodeState.data,   // Update text content for visualization nodes
+                  }
+                };
+              }
+              return node;
+            })
+          );
+        },
+        // Workflow completion handler
+        (finalState) => {
+          // Check if there were any errors
+          const hasErrors = Object.values(finalState.nodeStates).some(
+            state => state.state === 'error'
+          );
+          
+          if (hasErrors || finalState.status === 'error') {
+            toast({
+              title: "Workflow Execution",
+              description: finalState.error || "Workflow completed with errors. Check node states for details.",
+              variant: "destructive"
+            });
+          } else {
+            toast({
+              title: "Workflow Execution",
+              description: "Workflow ran successfully!",
+            });
+          }
+          
+          // Measure execution time
+          const duration = finalState.endTime && finalState.startTime
+            ? (finalState.endTime.getTime() - finalState.startTime.getTime()) / 1000
+            : null;
+            
+          console.log(`Workflow execution completed in ${duration}s with status: ${finalState.status}`);
         }
-        return node;
-      })
-    );
-    
-    // Simulate workflow execution
-    setTimeout(() => {
-      // Find Perplexity nodes
-      const perplexityNodes = nodes.filter(node => 
-        node.type === 'perplexity'
       );
-      
-      // Simulate Perplexity search result based on input
-      let searchResult = "";
-      if (inputText.toLowerCase().includes("capital") && inputText.toLowerCase().includes("azerbaijan")) {
-        searchResult = "The capital of Azerbaijan is Baku. It is the largest city in Azerbaijan and the Caucasus region.";
-      } else if (inputText.toLowerCase().includes("capital")) {
-        searchResult = "Based on your query about a capital, I would need more specific information about which country or region you're asking about.";
-      } else {
-        searchResult = "Results for: " + inputText + "\n\nTo get actual results from Perplexity, please use the 'Search with Perplexity' button in the Perplexity node and add your API key.";
-      }
-      
-      // Update Perplexity nodes with the result and remove loading state
-      if (perplexityNodes.length > 0) {
-        setNodes(nds => 
-          nds.map(node => {
-            if (node.type === 'perplexity') {
-              return {
-                ...node,
-                data: {
-                  ...node.data,
-                  _searchResult: searchResult,
-                  _isProcessing: false
-                }
-              };
-            }
-            return node;
-          })
-        );
-      }
-      
-      // Find visualize text nodes to update with results
-      const visualizeNodes = nodes.filter(node => 
-        node.type === 'visualize_text' || 
-        node.type === 'visualizeText'
-      );
-      
-      // Update visualization nodes with the search result
-      if (visualizeNodes.length > 0) {
-        setNodes(nds => 
-          nds.map(node => {
-            if (node.type === 'visualize_text' || node.type === 'visualizeText') {
-              return {
-                ...node,
-                data: {
-                  ...node.data,
-                  textContent: searchResult
-                }
-              };
-            }
-            return node;
-          })
-        );
-      }
-      
-      setIsRunning(false);
+    } catch (error) {
+      console.error('Error executing workflow:', error);
       toast({
-        title: "Workflow Execution",
-        description: "Workflow ran successfully!",
+        title: "Workflow Execution Error",
+        description: error instanceof Error ? error.message : "An unexpected error occurred",
+        variant: "destructive"
       });
-    }, 1500);
+    } finally {
+      setIsRunning(false);
+    }
   };
 
   return (
