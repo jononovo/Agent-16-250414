@@ -85,6 +85,38 @@ const NodeSettingsDrawer: React.FC<NodeSettingsDrawerProps> = ({
             description: 'The Perplexity model to use for search queries.'
           },
         ];
+      case 'generate_text':
+      case 'generateText':
+        return [
+          {
+            id: 'apiKey',
+            label: 'API Key',
+            type: 'password',
+            placeholder: 'Enter your Claude API key',
+            description: 'Your Claude API key is securely stored and used only for this node.'
+          },
+          {
+            id: 'model',
+            label: 'Model',
+            type: 'text',
+            placeholder: 'e.g., claude-3.5-sonnet',
+            description: 'The model to use for text generation.'
+          },
+          {
+            id: 'temperature',
+            label: 'Temperature',
+            type: 'text',
+            placeholder: '0.7',
+            description: 'Controls randomness. Lower values are more deterministic, higher values more creative.'
+          },
+          {
+            id: 'maxTokens',
+            label: 'Max Tokens',
+            type: 'text',
+            placeholder: '1024',
+            description: 'Maximum number of tokens to generate.'
+          },
+        ];
       default:
         return [];
     }
@@ -223,6 +255,21 @@ const NodeSettingsDrawer: React.FC<NodeSettingsDrawerProps> = ({
                 </div>
               )}
               
+              {(node.type === 'generate_text' || node.type === 'generateText') && (
+                <div className="mb-4">
+                  <p className="text-sm text-muted-foreground">
+                    Configure settings for the Claude AI text generation.
+                  </p>
+                  
+                  <Alert className="mt-2">
+                    <AlertDescription>
+                      Configure your Claude API settings below. An API key is required for actual AI text generation.
+                      Without an API key, the node will use simulated responses for testing purposes.
+                    </AlertDescription>
+                  </Alert>
+                </div>
+              )}
+              
               {fields.length > 0 ? (
                 <div className="space-y-4 pb-6">
                   {fields.map((field) => (
@@ -270,9 +317,14 @@ const NodeSettingsDrawer: React.FC<NodeSettingsDrawerProps> = ({
                             value={settings[field.id] || ''}
                             onChange={(e) => handleSettingChange(field.id, e.target.value)}
                           />
-                          {field.id === 'model' && (
+                          {field.id === 'model' && node.type === 'perplexity' && (
                             <p className="text-xs text-muted-foreground mt-1">
                               Common models: sonar, sonar-small-online, sonar-medium-online, mistral-7b-instruct
+                            </p>
+                          )}
+                          {field.id === 'model' && (node.type === 'generate_text' || node.type === 'generateText') && (
+                            <p className="text-xs text-muted-foreground mt-1">
+                              Claude models: claude-3.5-sonnet, claude-3-opus, claude-3-sonnet, claude-3-haiku
                             </p>
                           )}
                         </div>

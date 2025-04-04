@@ -428,6 +428,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Only expose specific environment variables that are needed by the frontend
       const config = {
         perplexityApiKey: process.env.PERPLEXITY_API_KEY || '',
+        claudeApiKey: process.env.CLAUDE_API_KEY || process.env.ANTHROPIC_API_KEY || '',
       };
       
       res.json(config);

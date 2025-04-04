@@ -26,7 +26,7 @@ const GenerateTextNode = ({ data, selected }: NodeProps<NodeData>) => {
       <CardContent className="p-3 pt-0 text-xs text-zinc-400">
         <div className="mb-2">
           <Select 
-            defaultValue={data.model || 'llama-3.3-70b-versatile'} 
+            defaultValue={data.model || 'claude-3.5-sonnet'} 
             onValueChange={(value) => {
               if (data.onChange) {
                 data.onChange({ ...data, model: value });
@@ -37,9 +37,12 @@ const GenerateTextNode = ({ data, selected }: NodeProps<NodeData>) => {
               <SelectValue placeholder="Select model" />
             </SelectTrigger>
             <SelectContent className="bg-zinc-800 text-zinc-300 border-zinc-700">
+              <SelectItem value="claude-3.5-sonnet">claude-3.5-sonnet</SelectItem>
+              <SelectItem value="claude-3-opus">claude-3-opus</SelectItem>
+              <SelectItem value="claude-3-sonnet">claude-3-sonnet</SelectItem>
+              <SelectItem value="claude-3-haiku">claude-3-haiku</SelectItem>
               <SelectItem value="llama-3.3-70b-versatile">llama-3.3-70b-versatile</SelectItem>
               <SelectItem value="llama-3.1-8b">llama-3.1-8b</SelectItem>
-              <SelectItem value="claude-3.5-sonnet">claude-3.5-sonnet</SelectItem>
             </SelectContent>
           </Select>
         </div>
