@@ -72,7 +72,7 @@ export const perplexityExecutor: NodeExecutor = {
           'Authorization': `Bearer ${apiKey}`
         },
         body: JSON.stringify({
-          model: "sonar-small-online",  // Updated to a valid model
+          model: "sonar",  // Updated to a valid model
           messages: [{ role: "user", content: query }]
         })
       });
