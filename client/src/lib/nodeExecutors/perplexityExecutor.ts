@@ -29,17 +29,42 @@ export const perplexityExecutor: NodeExecutor = {
       throw new Error('No input text provided for Perplexity search');
     }
     
-    // Get API key from environment or node data
-    const envApiKey = import.meta.env.PERPLEXITY_API_KEY;
-    const apiKey = envApiKey || nodeData.apiKey;
+    // Try to get API key from multiple sources
+    // 1. First check if it was passed directly to the node
+    let apiKey = nodeData.apiKey;
+    
+    // 2. If not available in node data, try to fetch from our server config endpoint
+    if (!apiKey) {
+      try {
+        console.log('Fetching API key from server config...');
+        const configResponse = await fetch('/api/config');
+        
+        if (configResponse.ok) {
+          const config = await configResponse.json();
+          apiKey = config.perplexityApiKey;
+          console.log('Retrieved config from server:', apiKey ? 'API key found' : 'No API key in config');
+        } else {
+          console.error('Failed to fetch config from server:', configResponse.status);
+        }
+      } catch (error) {
+        console.error('Error fetching config from server:', error);
+      }
+    }
+    
+    console.log('Using Perplexity API:', apiKey ? 'API Key available' : 'No API Key');
     
     if (!apiKey) {
       // Return simulated result if no API key is available
+      console.log('No API key available, using simulation');
       return simulatePerplexityResponse(query);
     }
     
+    // Log that we're making a real API call
+    console.log('Making Perplexity API request with query:', query);
+    
     try {
       // Make real API call to Perplexity
+      console.log('Sending request to Perplexity API...');
       const response = await fetch('https://api.perplexity.ai/chat/completions', {
         method: 'POST',
         headers: {
@@ -52,23 +77,35 @@ export const perplexityExecutor: NodeExecutor = {
         })
       });
       
+      console.log('Perplexity API response status:', response.status);
+      
       if (!response.ok) {
         const errorText = await response.text();
         console.error('API error status:', response.status);
         console.error('API error text:', errorText);
-        throw new Error(`API responded with status: ${response.status}`);
+        
+        // Fall back to simulation on error, but include error details
+        const errorMessage = `Error from Perplexity API (${response.status}): ${errorText}\n\nFalling back to simulated response:\n\n`;
+        return errorMessage + simulatePerplexityResponse(query);
       }
       
       const result = await response.json();
+      console.log('Perplexity API response received:', result);
       
       if (result.choices && result.choices[0] && result.choices[0].message) {
-        return result.choices[0].message.content;
+        const content = result.choices[0].message.content;
+        console.log('Perplexity API content:', content.substring(0, 100) + '...');
+        return content;
       } else {
-        throw new Error('Unexpected API response format');
+        console.error('Unexpected API response format:', result);
+        throw new Error('Unexpected API response format from Perplexity API');
       }
     } catch (error) {
       console.error('Error searching with Perplexity API:', error);
-      throw error;
+      
+      // Fall back to simulation on error
+      const errorMessage = `Error calling Perplexity API: ${error instanceof Error ? error.message : String(error)}\n\nFalling back to simulated response:\n\n`;
+      return errorMessage + simulatePerplexityResponse(query);
     }
   }
 };

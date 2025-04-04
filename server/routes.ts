@@ -391,6 +391,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ message: "Failed to fetch logs for agent" });
     }
   });
+  
+  // API Config endpoint - exposes configuration values safely to the frontend
+  app.get("/api/config", async (req, res) => {
+    try {
+      // Only expose specific environment variables that are needed by the frontend
+      const config = {
+        perplexityApiKey: process.env.PERPLEXITY_API_KEY || '',
+      };
+      
+      res.json(config);
+    } catch (error) {
+      console.error('Error fetching config:', error);
+      res.status(500).json({ message: "Failed to fetch API configuration" });
+    }
+  });
 
   const httpServer = createServer(app);
   return httpServer;
