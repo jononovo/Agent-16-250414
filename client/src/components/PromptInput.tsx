@@ -1,13 +1,16 @@
 import { useState } from 'react';
 import { useChat } from '@/components/chat';
 import { Button } from '@/components/ui/button';
+import { useToast } from '@/hooks/use-toast';
 
 const PromptInput = () => {
   const [prompt, setPrompt] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
   const { addMessage, toggleChat } = useChat();
+  const { toast } = useToast();
 
-  const handleSubmit = () => {
-    if (prompt.trim() === '') return;
+  const handleSubmit = async () => {
+    if (prompt.trim() === '' || isLoading) return;
     
     // Store prompt before clearing
     const userText = prompt;
@@ -21,14 +24,66 @@ const PromptInput = () => {
     // Add user message to chat
     addMessage(userText, 'user');
     
-    // For demonstration, simulate an agent response
-    setTimeout(() => {
-      // Sample agent response - would be replaced with actual API call in production
-      addMessage("I'll help you build this workflow. Let me gather some details...", 'agent');
+    // Open chat sidebar
+    toggleChat();
+    
+    // Set loading state
+    setIsLoading(true);
+    
+    try {
+      // Send request to agent chain API
+      const response = await fetch('/api/execute-agent-chain', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ prompt: userText }),
+      });
       
-      // Open chat sidebar
-      toggleChat();
-    }, 1000);
+      if (!response.ok) {
+        throw new Error(`API error ${response.status}: ${response.statusText}`);
+      }
+      
+      const data = await response.json();
+      
+      // Add the agent's response to the chat
+      if (data.success) {
+        // Add coordinator output
+        if (data.coordinatorResult && data.coordinatorResult.output) {
+          addMessage(data.coordinatorResult.output, 'agent');
+        }
+        
+        // If there's generator output, add it too after a short delay
+        if (data.generatorResult && data.generatorResult.output) {
+          setTimeout(() => {
+            addMessage(data.generatorResult.output, 'agent');
+          }, 1000);
+        }
+      } else {
+        // Handle error response
+        const errorMessage = data.message || 'Unknown error occurred';
+        addMessage(`Sorry, I encountered an error: ${errorMessage}`, 'system');
+        
+        toast({
+          title: "Error",
+          description: errorMessage,
+          variant: "destructive",
+        });
+      }
+    } catch (error) {
+      console.error('Error sending prompt to agent chain:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
+      
+      addMessage(`Sorry, I encountered an error while processing your request. Please try again.`, 'system');
+      
+      toast({
+        title: "Error",
+        description: "Failed to connect to the agent service. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
@@ -58,36 +113,47 @@ const PromptInput = () => {
               <textarea 
                 className="w-full border border-slate-300 rounded-lg p-3 pr-12 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent resize-none" 
                 rows={3} 
-                placeholder="Describe what you want to build or ask for help..."
+                placeholder={isLoading ? "Processing your request..." : "Describe what you want to build or ask for help..."}
                 value={prompt}
                 onChange={(e) => setPrompt(e.target.value)}
                 onKeyDown={handleKeyDown}
+                disabled={isLoading}
               ></textarea>
               <Button 
                 className="absolute right-3 bottom-3"
                 onClick={handleSubmit}
                 size="sm"
                 variant="ghost"
+                disabled={isLoading || prompt.trim() === ''}
               >
-                <i className="fas fa-paper-plane"></i>
+                {isLoading ? (
+                  <span className="flex items-center">
+                    <span className="animate-spin h-4 w-4 mr-1 border-2 border-t-transparent border-primary rounded-full"></span>
+                  </span>
+                ) : (
+                  <i className="fas fa-paper-plane"></i>
+                )}
               </Button>
             </div>
             <div className="flex flex-wrap gap-2 mt-3">
               <button 
-                className="px-3 py-1.5 text-xs bg-slate-100 text-slate-700 rounded-full hover:bg-slate-200"
-                onClick={() => handleSuggestionClick("Build a customer support agent for my e-commerce store that can handle order tracking and returns")}
+                className={`px-3 py-1.5 text-xs bg-slate-100 text-slate-700 rounded-full ${isLoading ? 'opacity-50 cursor-not-allowed' : 'hover:bg-slate-200'}`}
+                onClick={() => !isLoading && handleSuggestionClick("Build a customer support agent for my e-commerce store that can handle order tracking and returns")}
+                disabled={isLoading}
               >
                 Build a customer support agent
               </button>
               <button 
-                className="px-3 py-1.5 text-xs bg-slate-100 text-slate-700 rounded-full hover:bg-slate-200"
-                onClick={() => handleSuggestionClick("Create a data analysis workflow that can process CSV files and generate insights")}
+                className={`px-3 py-1.5 text-xs bg-slate-100 text-slate-700 rounded-full ${isLoading ? 'opacity-50 cursor-not-allowed' : 'hover:bg-slate-200'}`}
+                onClick={() => !isLoading && handleSuggestionClick("Create a data analysis workflow that can process CSV files and generate insights")}
+                disabled={isLoading}
               >
                 Create a data analysis workflow
               </button>
               <button 
-                className="px-3 py-1.5 text-xs bg-slate-100 text-slate-700 rounded-full hover:bg-slate-200"
-                onClick={() => handleSuggestionClick("Design a social media scheduler that can post content across multiple platforms")}
+                className={`px-3 py-1.5 text-xs bg-slate-100 text-slate-700 rounded-full ${isLoading ? 'opacity-50 cursor-not-allowed' : 'hover:bg-slate-200'}`}
+                onClick={() => !isLoading && handleSuggestionClick("Design a social media scheduler that can post content across multiple platforms")}
+                disabled={isLoading}
               >
                 Design a social media scheduler
               </button>

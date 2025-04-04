@@ -171,6 +171,7 @@ export interface ChatContainerProps {
   isMinimized?: boolean;
   onToggleMinimize?: () => void;
   className?: string;
+  isLoading?: boolean;
 }
 
 export function ChatContainer({
@@ -181,6 +182,7 @@ export function ChatContainer({
   isMinimized = false,
   onToggleMinimize,
   className = '',
+  isLoading = false,
 }: ChatContainerProps) {
   const [inputValue, setInputValue] = useState('');
   const scrollAreaRef = useRef<HTMLDivElement>(null);
@@ -197,7 +199,7 @@ export function ChatContainer({
 
   // Handle sending a message
   const handleSendMessage = () => {
-    if (inputValue.trim() === '') return;
+    if (inputValue.trim() === '' || isLoading) return;
     
     onSendMessage(inputValue);
     setInputValue('');
@@ -237,6 +239,20 @@ export function ChatContainer({
               {messages.map((message) => (
                 <ChatMessage key={message.id} message={message} />
               ))}
+              
+              {/* Loading indicator */}
+              {isLoading && (
+                <div className="flex justify-start mb-4">
+                  <div className="flex items-center space-x-2 bg-muted text-muted-foreground px-4 py-2 rounded-lg">
+                    <div className="flex space-x-1">
+                      <span className="animate-bounce h-2 w-2 bg-current rounded-full" style={{ animationDelay: '0ms' }}></span>
+                      <span className="animate-bounce h-2 w-2 bg-current rounded-full" style={{ animationDelay: '100ms' }}></span>
+                      <span className="animate-bounce h-2 w-2 bg-current rounded-full" style={{ animationDelay: '200ms' }}></span>
+                    </div>
+                    <span className="text-sm">Agent is thinking...</span>
+                  </div>
+                </div>
+              )}
             </div>
           </ScrollArea>
           
@@ -247,11 +263,16 @@ export function ChatContainer({
                 value={inputValue}
                 onChange={(e) => setInputValue(e.target.value)}
                 onKeyDown={handleKeyDown}
-                placeholder={placeholder}
+                placeholder={isLoading ? "Waiting for response..." : placeholder}
                 className="min-h-[40px] max-h-[120px]"
                 rows={1}
+                disabled={isLoading}
               />
-              <Button onClick={handleSendMessage} size="icon">
+              <Button 
+                onClick={handleSendMessage} 
+                size="icon" 
+                disabled={isLoading || inputValue.trim() === ''}
+              >
                 <Send className="h-4 w-4" />
               </Button>
             </div>
@@ -273,18 +294,55 @@ interface ChatSidebarProps {
 export function ChatSidebar({ className = '' }: ChatSidebarProps) {
   const { messages, addMessage, isChatOpen, toggleChat } = useChat();
   const isMobile = useIsMobile();
+  const [isLoading, setIsLoading] = useState(false);
   
   // Handle sending a message
-  const handleSendMessage = (content: string) => {
+  const handleSendMessage = async (content: string) => {
     // Add user message
     addMessage(content, 'user');
     
-    // Simulate an agent response after a short delay
-    setTimeout(() => {
-      // This is where you would integrate with your backend
-      // For now, we'll just send a simple response
-      addMessage("I'm working on your request. Let me help you build that workflow.", 'agent');
-    }, 1000);
+    // Set loading state
+    setIsLoading(true);
+    
+    try {
+      // Send the message to the agent chain API
+      const response = await fetch('/api/execute-agent-chain', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ prompt: content }),
+      });
+      
+      if (!response.ok) {
+        throw new Error(`API error ${response.status}: ${response.statusText}`);
+      }
+      
+      const data = await response.json();
+      
+      // Add the agent's response to the chat
+      if (data.success) {
+        // Get the coordinator output
+        if (data.coordinatorResult && data.coordinatorResult.output) {
+          addMessage(data.coordinatorResult.output, 'agent');
+        }
+        
+        // If there's generator output, add it too
+        if (data.generatorResult && data.generatorResult.output) {
+          setTimeout(() => {
+            addMessage(data.generatorResult.output, 'agent');
+          }, 1000);
+        }
+      } else {
+        // If there's an error, add it to the chat
+        addMessage(`Sorry, I encountered an error: ${data.message || 'Unknown error'}`, 'system');
+      }
+    } catch (error) {
+      console.error('Error sending message to agent chain:', error);
+      addMessage(`Sorry, I encountered an error while processing your request. Please try again.`, 'system');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   if (!isChatOpen) return null;
@@ -300,6 +358,7 @@ export function ChatSidebar({ className = '' }: ChatSidebarProps) {
         onSendMessage={handleSendMessage}
         className={`${isMobile ? 'h-[60vh]' : 'w-[400px] h-[600px]'}`}
         onToggleMinimize={toggleChat}
+        isLoading={isLoading}
       />
     </div>
   );
