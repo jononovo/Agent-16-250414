@@ -59,13 +59,8 @@ const NodeSettingsDrawer: React.FC<NodeSettingsDrawerProps> = ({
           {
             id: 'model',
             label: 'Model',
-            type: 'select',
-            options: [
-              { value: 'sonar', label: 'Sonar' },
-              { value: 'sonar-small-online', label: 'Sonar Small Online' },
-              { value: 'sonar-medium-online', label: 'Sonar Medium Online' },
-              { value: 'mistral-7b-instruct', label: 'Mistral 7B Instruct' },
-            ],
+            type: 'text',
+            placeholder: 'e.g., sonar-small-online',
           },
         ];
       default:
@@ -89,8 +84,13 @@ const NodeSettingsDrawer: React.FC<NodeSettingsDrawerProps> = ({
     }
   };
 
+  // When Drawer close button is clicked, call onClose
+  const handleOpenChange = (open: boolean) => {
+    if (!open) onClose();
+  };
+
   return (
-    <Drawer open={isOpen} onOpenChange={(open) => !open && onClose()}>
+    <Drawer open={isOpen} onOpenChange={handleOpenChange}>
       <div className="mx-auto w-full max-w-sm">
         <div className="p-4 pb-0">
           <div className="flex items-center justify-between">
@@ -149,13 +149,20 @@ const NodeSettingsDrawer: React.FC<NodeSettingsDrawerProps> = ({
                       className="min-h-[100px]"
                     />
                   ) : (
-                    <Input
-                      id={field.id}
-                      type="text"
-                      placeholder={field.placeholder}
-                      value={settings[field.id] || ''}
-                      onChange={(e) => handleSettingChange(field.id, e.target.value)}
-                    />
+                    <div>
+                      <Input
+                        id={field.id}
+                        type="text"
+                        placeholder={field.placeholder}
+                        value={settings[field.id] || ''}
+                        onChange={(e) => handleSettingChange(field.id, e.target.value)}
+                      />
+                      {field.id === 'model' && (
+                        <p className="text-xs text-muted-foreground mt-1">
+                          Common models: sonar, sonar-small-online, sonar-medium-online, mistral-7b-instruct
+                        </p>
+                      )}
+                    </div>
                   )}
                 </div>
               ))}
