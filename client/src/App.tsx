@@ -4,12 +4,15 @@ import { QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
 import { BuilderProvider } from "./contexts/BuilderContext";
 import Builder from "@/pages/builder";
+import WorkflowEditor from "@/pages/workflow-editor";
 import NotFound from "@/pages/not-found";
 
 function Router() {
   return (
     <Switch>
       <Route path="/" component={Builder} />
+      <Route path="/workflow-editor/new" component={WorkflowEditor} />
+      <Route path="/workflow-editor/:id" component={WorkflowEditor} />
       <Route component={NotFound} />
     </Switch>
   );

@@ -266,10 +266,10 @@ const TabContent = () => {
         <div className="mb-8">
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-lg font-medium text-slate-900">My Custom Workflows</h2>
-            <button className="text-sm px-3 py-1.5 bg-primary text-white rounded-md hover:bg-indigo-700 flex items-center space-x-1">
+            <a href="/workflow-editor/new" className="text-sm px-3 py-1.5 bg-primary text-white rounded-md hover:bg-indigo-700 flex items-center space-x-1">
               <i className="fas fa-plus text-xs"></i>
               <span>New Workflow</span>
-            </button>
+            </a>
           </div>
           
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -297,7 +297,7 @@ const TabContent = () => {
                 <WorkflowCard 
                   workflow={{} as Workflow} 
                   isPlaceholder={true} 
-                  onClick={() => console.log('Create new workflow')}
+                  onClick={() => window.location.href = '/workflow-editor/new'}
                 />
               </>
             )}

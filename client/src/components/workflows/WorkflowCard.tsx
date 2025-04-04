@@ -98,7 +98,7 @@ const WorkflowCard = ({ workflow, isPlaceholder = false, onClick }: WorkflowCard
         {workflow.type === 'template' ? (
           <button className="text-xs text-primary hover:text-indigo-700">Use Template</button>
         ) : (
-          <button className="text-xs text-primary hover:text-indigo-700">Edit</button>
+          <a href={`/workflow-editor/${workflow.id}`} className="text-xs text-primary hover:text-indigo-700">Edit</a>
         )}
       </div>
     </div>

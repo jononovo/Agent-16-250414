@@ -1,7 +1,8 @@
 import { Node } from '@shared/schema';
+import { NodeCategory } from '@/lib/types';
 
 interface NodeCardProps {
-  node: Node;
+  node: Node | NodeCategory;
   isCategory?: boolean;
 }
 
@@ -20,6 +21,7 @@ const NodeCard = ({ node, isCategory = false }: NodeCardProps) => {
 
   if (isCategory) {
     // This represents a node category like Interface Nodes, Workflow Nodes, etc.
+    const category = node as NodeCategory;
     return (
       <div className="bg-white rounded-lg border border-slate-200 shadow-sm hover:shadow-md transition-all overflow-hidden">
         <div className="p-4">
@@ -60,7 +62,7 @@ const NodeCard = ({ node, isCategory = false }: NodeCardProps) => {
           </div>
         </div>
         <div className="bg-slate-50 px-4 py-3 flex justify-between border-t border-slate-200">
-          <span className="text-xs text-slate-500">{node.name.includes('Interface') ? '12' : node.name.includes('Workflow') ? '15' : '28'} nodes</span>
+          <span className="text-xs text-slate-500">{category.nodeCount} nodes</span>
           <button className="text-xs text-primary hover:text-indigo-700">Browse All</button>
         </div>
       </div>
