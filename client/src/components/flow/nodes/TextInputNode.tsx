@@ -5,16 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { NodeData } from '../NodeItem';
 import { Badge } from '@/components/ui/badge';
-
-const DynamicIcon = ({ name }: { name: string }) => {
-  const IconComponent = (Lucide as any)[name.charAt(0).toUpperCase() + name.slice(1)];
-  
-  if (!IconComponent) {
-    return <Lucide.Circle className="h-4 w-4" />;
-  }
-  
-  return <IconComponent className="h-4 w-4" />;
-};
+import DynamicIcon from '../DynamicIcon';
 
 const TextInputNode = ({ data, selected }: NodeProps<NodeData>) => {
   return (
@@ -23,7 +14,7 @@ const TextInputNode = ({ data, selected }: NodeProps<NodeData>) => {
       <CardHeader className="flex flex-row items-center justify-between p-3 pb-2">
         <div className="flex items-center gap-2">
           <div className="w-6 h-6 rounded-md bg-zinc-800 flex items-center justify-center text-zinc-300">
-            <DynamicIcon name={data.icon || 'type'} />
+            <DynamicIcon icon={data.icon || 'type'} />
           </div>
           <span className="font-medium text-sm truncate">{data.label || 'Text Input'}</span>
         </div>
