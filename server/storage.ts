@@ -203,7 +203,7 @@ export class MemStorage implements IStorage {
     this.createWorkflow({
       name: "Test Workflow",
       description: "Test workflow with Text Input, Perplexity API, and Visualize Text nodes",
-      type: "test",
+      type: "custom",
       icon: "flask",
       status: "active",
       userId: 0,
