@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useParams, useLocation } from 'wouter';
 import { useQuery } from '@tanstack/react-query';
 import { format } from 'date-fns';
@@ -42,6 +42,16 @@ const AgentPage = () => {
   const [activeTab, setActiveTab] = useState('workflows');
   const [selectedLog, setSelectedLog] = useState<Log | null>(null);
   const [isLogDetailsOpen, setIsLogDetailsOpen] = useState(false);
+  
+  // Debug logs
+  useEffect(() => {
+    console.log('Agent page params:', params);
+    console.log('Agent ID:', agentId);
+    
+    if (isNaN(agentId)) {
+      console.error('Invalid agent ID');
+    }
+  }, [params, agentId]);
 
   // Fetch agent details
   const { data: agent, isLoading: isLoadingAgent, error: agentError } = useQuery({

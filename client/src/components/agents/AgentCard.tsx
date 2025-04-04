@@ -1,4 +1,5 @@
 import { Agent } from '@shared/schema';
+import { Link, useLocation } from 'wouter';
 
 interface AgentCardProps {
   agent: Agent;
@@ -7,6 +8,7 @@ interface AgentCardProps {
 }
 
 const AgentCard = ({ agent, isPlaceholder = false, onClick }: AgentCardProps) => {
+  const [_, setLocation] = useLocation();
   if (isPlaceholder) {
     return (
       <div 
@@ -65,8 +67,19 @@ const AgentCard = ({ agent, isPlaceholder = false, onClick }: AgentCardProps) =>
     }
   };
 
+  const handleCardClick = () => {
+    if (agent.id && agent.id > 0) {
+      console.log('Navigating to agent page:', agent.id);
+      // Use the setLocation from wouter
+      setLocation(`/agent/${agent.id}`);
+    }
+  };
+
   return (
-    <div className="bg-white rounded-lg border border-slate-200 shadow-sm hover:shadow-md transition-all overflow-hidden">
+    <div 
+      className="bg-white rounded-lg border border-slate-200 shadow-sm hover:shadow-md transition-all overflow-hidden cursor-pointer"
+      onClick={onClick || handleCardClick}
+    >
       <div className="p-4">
         <div className="flex items-center mb-3">
           <div className={`w-8 h-8 rounded-full ${getBgColor()} flex items-center justify-center`}>
@@ -112,11 +125,38 @@ const AgentCard = ({ agent, isPlaceholder = false, onClick }: AgentCardProps) =>
         </div>
       </div>
       <div className="bg-slate-50 px-4 py-3 flex justify-between border-t border-slate-200">
-        <button className="text-xs text-slate-600 hover:text-primary">View Details</button>
+        <Link 
+          href={agent.id && agent.id > 0 ? `/agent/${agent.id}` : '#'}
+          className="text-xs text-slate-600 hover:text-primary cursor-pointer"
+          onClick={(e) => {
+            e.stopPropagation();
+            console.log('View Details clicked, navigating to agent page:', agent.id);
+          }}
+        >
+          View Details
+        </Link>
         {agent.type === 'template' ? (
-          <button className="text-xs text-primary hover:text-indigo-700">Use Template</button>
+          <button 
+            className="text-xs text-primary hover:text-indigo-700"
+            onClick={(e) => {
+              e.stopPropagation();
+              // Handle template usage
+            }}
+          >
+            Use Template
+          </button>
         ) : (
-          <button className="text-xs text-primary hover:text-indigo-700">{agent.type === 'internal' ? 'Configure' : 'Edit'}</button>
+          <button 
+            className="text-xs text-primary hover:text-indigo-700"
+            onClick={(e) => {
+              e.stopPropagation();
+              if (agent.id && agent.id > 0) {
+                setLocation(`/builder?edit=${agent.id}`);
+              }
+            }}
+          >
+            {agent.type === 'internal' ? 'Configure' : 'Edit'}
+          </button>
         )}
       </div>
     </div>
