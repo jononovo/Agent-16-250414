@@ -14,6 +14,12 @@ const PerplexityNode = ({ data, selected }: NodeProps<NodeData>) => {
   const [apiKey, setApiKey] = useState('');
   const [searchResult, setSearchResult] = useState('');
   
+  // Check if workflow run is processing this node
+  const isProcessing = data._isProcessing || false;
+  
+  // Use search result from workflow run if available
+  const displayResult = data._searchResult || searchResult;
+  
   const handleSearch = async () => {
     if (!data.inputText) {
       setSearchResult('No input provided');
@@ -100,12 +106,12 @@ const PerplexityNode = ({ data, selected }: NodeProps<NodeData>) => {
           size="sm" 
           className="w-full mb-2 bg-blue-600 hover:bg-blue-700 text-white"
           onClick={handleSearch}
-          disabled={isLoading}
+          disabled={isLoading || isProcessing}
         >
-          {isLoading ? (
+          {isLoading || isProcessing ? (
             <>
               <Lucide.Loader2 className="h-3 w-3 mr-1 animate-spin" />
-              Searching...
+              {isProcessing ? "Processing..." : "Searching..."}
             </>
           ) : (
             <>
@@ -115,9 +121,9 @@ const PerplexityNode = ({ data, selected }: NodeProps<NodeData>) => {
           )}
         </Button>
         
-        {searchResult && (
+        {(displayResult || searchResult) && (
           <div className="bg-zinc-900 border border-zinc-700 rounded-md p-2 min-h-[80px] text-xs">
-            <p className="text-zinc-300 whitespace-pre-line">{searchResult}</p>
+            <p className="text-zinc-300 whitespace-pre-line">{displayResult || searchResult}</p>
           </div>
         )}
       </CardContent>

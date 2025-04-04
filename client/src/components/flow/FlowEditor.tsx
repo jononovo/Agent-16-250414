@@ -220,15 +220,71 @@ const FlowEditor = ({ workflow, isNew = false }: FlowEditorProps) => {
       node.type === 'textInput'
     );
     
+    // Get input text from input nodes
+    let inputText = "No input provided";
+    if (textInputNodes.length > 0 && textInputNodes[0].data && textInputNodes[0].data.inputText) {
+      inputText = textInputNodes[0].data.inputText;
+    }
+    
+    // Show loading state in Perplexity node
+    setNodes(nds => 
+      nds.map(node => {
+        if (node.type === 'perplexity') {
+          return {
+            ...node,
+            data: {
+              ...node.data,
+              _isProcessing: true
+            }
+          };
+        }
+        return node;
+      })
+    );
+    
     // Simulate workflow execution
     setTimeout(() => {
+      // Find Perplexity nodes to simulate search
+      const perplexityNodes = nodes.filter(node => 
+        node.type === 'perplexity'
+      );
+      
+      // Simulate Perplexity search result based on input
+      let searchResult = "";
+      if (inputText.toLowerCase().includes("capital") && inputText.toLowerCase().includes("azerbaijan")) {
+        searchResult = "The capital of Azerbaijan is Baku. It is the largest city in Azerbaijan and the Caucasus region.";
+      } else if (inputText.toLowerCase().includes("capital")) {
+        searchResult = "Based on your query about a capital, I would need more specific information about which country or region you're asking about.";
+      } else {
+        searchResult = "Results for: " + inputText + "\n\nHere would be real search results from the Perplexity API. To get actual results, you would need to integrate with the Perplexity API using your API key.";
+      }
+      
+      // Update Perplexity nodes with the result and remove loading state
+      if (perplexityNodes.length > 0) {
+        setNodes(nds => 
+          nds.map(node => {
+            if (node.type === 'perplexity') {
+              return {
+                ...node,
+                data: {
+                  ...node.data,
+                  _searchResult: searchResult,
+                  _isProcessing: false
+                }
+              };
+            }
+            return node;
+          })
+        );
+      }
+      
       // Find visualize text nodes to update with results
       const visualizeNodes = nodes.filter(node => 
         node.type === 'visualize_text' || 
         node.type === 'visualizeText'
       );
       
-      // Update visualization nodes with sample output
+      // Update visualization nodes with the search result
       if (visualizeNodes.length > 0) {
         setNodes(nds => 
           nds.map(node => {
@@ -237,7 +293,7 @@ const FlowEditor = ({ workflow, isNew = false }: FlowEditorProps) => {
                 ...node,
                 data: {
                   ...node.data,
-                  textContent: "Workflow executed successfully! Results will appear here in a real execution."
+                  textContent: searchResult
                 }
               };
             }

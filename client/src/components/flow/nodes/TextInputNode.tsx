@@ -1,4 +1,4 @@
-import { Handle, Position, NodeProps } from 'reactflow';
+import { Handle, Position, NodeProps, useReactFlow } from 'reactflow';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import * as Lucide from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -6,8 +6,32 @@ import { Textarea } from '@/components/ui/textarea';
 import { NodeData } from '../NodeItem';
 import { Badge } from '@/components/ui/badge';
 import DynamicIcon from '../DynamicIcon';
+import { useState } from 'react';
 
-const TextInputNode = ({ data, selected }: NodeProps<NodeData>) => {
+const TextInputNode = ({ data, selected, id }: NodeProps<NodeData>) => {
+  const [inputText, setInputText] = useState(data.inputText || '');
+  const { setNodes } = useReactFlow();
+  
+  const handleInputChange = (value: string) => {
+    setInputText(value);
+    
+    // Update node data with new input text
+    setNodes(nodes => 
+      nodes.map(node => {
+        if (node.id === id) {
+          return {
+            ...node,
+            data: {
+              ...node.data,
+              inputText: value
+            }
+          };
+        }
+        return node;
+      })
+    );
+  };
+  
   return (
     <Card className={`w-64 transition-all duration-200 ${selected ? 'ring-2 ring-primary' : ''}`}
         style={{ background: '#111', color: '#fff', borderColor: '#333' }}>
@@ -25,17 +49,17 @@ const TextInputNode = ({ data, selected }: NodeProps<NodeData>) => {
         <Textarea 
           placeholder="Enter your text here..."
           className="bg-zinc-900 border-zinc-700 text-zinc-300 min-h-[80px] text-xs"
-          defaultValue={data.inputText || ''}
-          onChange={(e) => {
-            if (data.onInputChange) {
-              data.onInputChange(e.target.value);
-            }
-          }}
+          value={inputText}
+          onChange={(e) => handleInputChange(e.target.value)}
         />
         
         <div className="mt-2 flex justify-between items-center">
           <Badge className="bg-blue-900 text-blue-300 text-[10px] border-none">Result</Badge>
-          <Button variant="outline" size="sm" className="h-7 text-xs bg-zinc-800 text-zinc-300 border-zinc-700">
+          <Button 
+            variant="outline" 
+            size="sm" 
+            className="h-7 text-xs bg-zinc-800 text-zinc-300 border-zinc-700 hover:bg-zinc-700"
+          >
             <Lucide.SendHorizontal className="h-3 w-3 mr-1" />
             Submit
           </Button>
