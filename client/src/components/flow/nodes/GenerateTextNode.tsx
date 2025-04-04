@@ -25,11 +25,40 @@ const GenerateTextNode = ({ data, selected }: NodeProps<NodeData>) => {
       
       <CardContent className="p-3 pt-0 text-xs text-zinc-400">
         <div className="mb-2">
+          <div className="flex gap-1 mb-1">
+            {data.settings?.apiKey ? (
+              <div className="text-[10px] flex items-center gap-1 text-green-500">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-3 h-3">
+                  <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+                  <polyline points="22 4 12 14.01 9 11.01"></polyline>
+                </svg>
+                <span>API key set</span>
+              </div>
+            ) : (
+              <div className="text-[10px] flex items-center gap-1 text-yellow-500">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-3 h-3">
+                  <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path>
+                  <line x1="12" y1="9" x2="12" y2="13"></line>
+                  <line x1="12" y1="17" x2="12.01" y2="17"></line>
+                </svg>
+                <span>Set API key in settings</span>
+              </div>
+            )}
+          </div>
           <Select 
-            defaultValue={data.model || 'claude-3.5-sonnet'} 
+            defaultValue={data.model || data.settings?.model || 'claude-3.5-sonnet'} 
             onValueChange={(value) => {
               if (data.onChange) {
-                data.onChange({ ...data, model: value });
+                // Store model in both data.model for backward compatibility and data.settings.model
+                const settings = data.settings || {};
+                data.onChange({ 
+                  ...data, 
+                  model: value, 
+                  settings: {
+                    ...settings,
+                    model: value
+                  }
+                });
               }
             }}
           >
@@ -57,7 +86,15 @@ const GenerateTextNode = ({ data, selected }: NodeProps<NodeData>) => {
                 value={data.systemPrompt || 'You are a helpful AI assistant.'}
                 onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => {
                   if (data.onChange) {
-                    data.onChange({ ...data, systemPrompt: e.target.value });
+                    const settings = data.settings || {};
+                    data.onChange({ 
+                      ...data, 
+                      systemPrompt: e.target.value,
+                      settings: {
+                        ...settings,
+                        systemPrompt: e.target.value
+                      }
+                    });
                   }
                 }}
               />
@@ -72,7 +109,15 @@ const GenerateTextNode = ({ data, selected }: NodeProps<NodeData>) => {
                 value={data.userPrompt || 'Route the input here if the request is about...'}
                 onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => {
                   if (data.onChange) {
-                    data.onChange({ ...data, userPrompt: e.target.value });
+                    const settings = data.settings || {};
+                    data.onChange({ 
+                      ...data, 
+                      userPrompt: e.target.value,
+                      settings: {
+                        ...settings,
+                        userPrompt: e.target.value
+                      }
+                    });
                   }
                 }}
               />
@@ -114,7 +159,18 @@ const GenerateTextNode = ({ data, selected }: NodeProps<NodeData>) => {
             <Badge className="bg-blue-900 text-blue-300 text-[10px] border-none">Input</Badge>
             <Badge className="bg-blue-900 text-blue-300 text-[10px] border-none">Result</Badge>
           </div>
-          <Button variant="outline" size="sm" className="h-6 text-xs bg-zinc-800 text-zinc-300 border-zinc-700">
+          <Button 
+            variant="outline" 
+            size="sm" 
+            className="h-6 text-xs bg-zinc-800 text-zinc-300 border-zinc-700"
+            onClick={(e) => {
+              // Call parent node's onClick handler to open settings drawer
+              if (data.onSettingsClick) {
+                e.stopPropagation();
+                data.onSettingsClick();
+              }
+            }}
+          >
             <Lucide.Settings className="h-3 w-3 mr-1" />
             Configure
           </Button>

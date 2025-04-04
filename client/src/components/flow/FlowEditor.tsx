@@ -236,6 +236,25 @@ const FlowEditor = ({ workflow, isNew = false }: FlowEditorProps) => {
     [setNodes]
   );
   
+  // Add onSettingsClick to node data for generate_text nodes
+  useEffect(() => {
+    setNodes(nodes => nodes.map(node => {
+      if (node.type === 'generate_text') {
+        return {
+          ...node,
+          data: {
+            ...node.data,
+            onSettingsClick: () => {
+              setSelectedNode(node);
+              setSettingsDrawerOpen(true);
+            }
+          }
+        };
+      }
+      return node;
+    }));
+  }, []);
+  
   const onEdgesChange = useCallback(
     (changes: EdgeChange[]) => setEdges((eds) => applyEdgeChanges(changes, eds)),
     [setEdges]
@@ -276,11 +295,27 @@ const FlowEditor = ({ workflow, isNew = false }: FlowEditorProps) => {
         y: event.clientY - reactFlowBounds.top,
       });
 
+      // Add onSettingsClick to GenerateText node data
+      const nodeDataWithHandlers = {
+        ...nodeData,
+        // Add settings click handler for generate_text nodes
+        ...(type === 'generate_text' ? {
+          onSettingsClick: () => {
+            // We need to find the node by ID later because this is a closure
+            const node = reactFlowInstance.getNode(`${type}-${Date.now()}`);
+            if (node) {
+              setSelectedNode(node);
+              setSettingsDrawerOpen(true);
+            }
+          }
+        } : {})
+      };
+
       const newNode = {
         id: `${type}-${Date.now()}`,
         type,
         position,
-        data: nodeData,
+        data: nodeDataWithHandlers,
       };
 
       setNodes((nds) => nds.concat(newNode));

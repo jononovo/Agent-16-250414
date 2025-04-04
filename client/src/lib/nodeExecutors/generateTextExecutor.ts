@@ -52,6 +52,14 @@ export const generateTextExecutor: NodeExecutor = {
     // Get API key from node settings, node data, or server config
     let apiKey = nodeData.settings?.apiKey || nodeData.apiKey;
     
+    // Debug log for node data
+    console.log('Node data:', {
+      hasSettings: !!nodeData.settings,
+      apiKeyInSettings: !!nodeData.settings?.apiKey,
+      directApiKey: !!nodeData.apiKey,
+      model: nodeData.model || nodeData.settings?.model
+    });
+    
     // If no API key in node settings, try to fetch from server config
     if (!apiKey) {
       try {
