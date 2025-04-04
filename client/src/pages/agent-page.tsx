@@ -88,6 +88,39 @@ const AgentPage = () => {
   const openWorkflowEditor = (workflowId: number) => {
     setLocation(`/workflow-editor/${workflowId}`);
   };
+  
+  // Function to unlink a workflow from the agent
+  const unlinkWorkflow = async (workflowId: number) => {
+    if (!confirm("Are you sure you want to unlink this workflow from the agent?")) {
+      return;
+    }
+    
+    try {
+      // Update the workflow to set agentId to null
+      const response = await fetch(`/api/workflows/${workflowId}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          agentId: null
+        }),
+      });
+      
+      if (!response.ok) {
+        throw new Error('Failed to unlink workflow');
+      }
+      
+      // Invalidate the workflows query to refresh the list
+      queryClient.invalidateQueries({ queryKey: ['/api/agents', agentId, 'workflows'] });
+      
+      // Show success message
+      alert('Workflow has been unlinked from this agent');
+    } catch (error) {
+      console.error('Error unlinking workflow:', error);
+      alert('Failed to unlink workflow. Please try again.');
+    }
+  };
 
   const getStatusIcon = (status: string) => {
     switch (status) {
@@ -175,14 +208,7 @@ const AgentPage = () => {
             </div>
           </CardHeader>
           <CardContent>
-            <div className="flex gap-4">
-              <Button variant="outline" onClick={() => setLocation(`/builder?edit=${agent.id}`)}>
-                Edit Agent
-              </Button>
-              <Button variant="outline" onClick={() => setLocation(`/builder?create-workflow=${agent.id}`)}>
-                Create Workflow
-              </Button>
-            </div>
+            {/* Buttons removed as requested */}
           </CardContent>
         </Card>
         
@@ -211,9 +237,8 @@ const AgentPage = () => {
                 ) : workflows && workflows.length > 0 ? (
                   <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
                     {workflows.map((workflow) => (
-                      <Card key={workflow.id} className="cursor-pointer hover:bg-accent/50 transition-colors"
-                        onClick={() => openWorkflowEditor(workflow.id)}>
-                        <CardHeader className="pb-2">
+                      <Card key={workflow.id}>
+                        <CardHeader className="pb-2 cursor-pointer" onClick={() => openWorkflowEditor(workflow.id)}>
                           <div className="flex justify-between items-start">
                             <CardTitle>{workflow.name}</CardTitle>
                             <Badge variant={workflow.status === 'active' ? 'default' : 'outline'}>
@@ -223,8 +248,21 @@ const AgentPage = () => {
                           <CardDescription>{workflow.description}</CardDescription>
                         </CardHeader>
                         <CardContent className="pt-2">
-                          <div className="text-sm text-muted-foreground">
-                            Updated {formatDate(workflow.updatedAt)}
+                          <div className="flex justify-between items-center">
+                            <div className="text-sm text-muted-foreground">
+                              Updated {formatDate(workflow.updatedAt)}
+                            </div>
+                            <Button 
+                              variant="ghost" 
+                              size="sm"
+                              className="text-xs text-red-500 hover:text-red-700 hover:bg-red-50"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                unlinkWorkflow(workflow.id);
+                              }}
+                            >
+                              Unlink
+                            </Button>
                           </div>
                         </CardContent>
                       </Card>
