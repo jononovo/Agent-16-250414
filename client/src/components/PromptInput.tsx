@@ -1,13 +1,34 @@
 import { useState } from 'react';
+import { useChat } from '@/components/chat';
+import { Button } from '@/components/ui/button';
 
 const PromptInput = () => {
   const [prompt, setPrompt] = useState('');
+  const { addMessage, toggleChat } = useChat();
 
   const handleSubmit = () => {
     if (prompt.trim() === '') return;
-    // Process the prompt here
-    console.log('Submitting prompt:', prompt);
+    
+    // Store prompt before clearing
+    const userText = prompt;
+    
+    // Log the prompt (can be removed in production)
+    console.log('Submitting prompt:', userText);
+    
+    // Clear the prompt
     setPrompt('');
+    
+    // Add user message to chat
+    addMessage(userText, 'user');
+    
+    // For demonstration, simulate an agent response
+    setTimeout(() => {
+      // Sample agent response - would be replaced with actual API call in production
+      addMessage("I'll help you build this workflow. Let me gather some details...", 'agent');
+      
+      // Open chat sidebar
+      toggleChat();
+    }, 1000);
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
@@ -15,6 +36,10 @@ const PromptInput = () => {
       e.preventDefault();
       handleSubmit();
     }
+  };
+
+  const handleSuggestionClick = (suggestion: string) => {
+    setPrompt(suggestion);
   };
 
   return (
@@ -38,21 +63,32 @@ const PromptInput = () => {
                 onChange={(e) => setPrompt(e.target.value)}
                 onKeyDown={handleKeyDown}
               ></textarea>
-              <button 
-                className="absolute right-3 bottom-3 text-primary hover:text-indigo-700"
+              <Button 
+                className="absolute right-3 bottom-3"
                 onClick={handleSubmit}
+                size="sm"
+                variant="ghost"
               >
                 <i className="fas fa-paper-plane"></i>
-              </button>
+              </Button>
             </div>
             <div className="flex flex-wrap gap-2 mt-3">
-              <button className="px-3 py-1.5 text-xs bg-slate-100 text-slate-700 rounded-full hover:bg-slate-200">
+              <button 
+                className="px-3 py-1.5 text-xs bg-slate-100 text-slate-700 rounded-full hover:bg-slate-200"
+                onClick={() => handleSuggestionClick("Build a customer support agent for my e-commerce store that can handle order tracking and returns")}
+              >
                 Build a customer support agent
               </button>
-              <button className="px-3 py-1.5 text-xs bg-slate-100 text-slate-700 rounded-full hover:bg-slate-200">
+              <button 
+                className="px-3 py-1.5 text-xs bg-slate-100 text-slate-700 rounded-full hover:bg-slate-200"
+                onClick={() => handleSuggestionClick("Create a data analysis workflow that can process CSV files and generate insights")}
+              >
                 Create a data analysis workflow
               </button>
-              <button className="px-3 py-1.5 text-xs bg-slate-100 text-slate-700 rounded-full hover:bg-slate-200">
+              <button 
+                className="px-3 py-1.5 text-xs bg-slate-100 text-slate-700 rounded-full hover:bg-slate-200"
+                onClick={() => handleSuggestionClick("Design a social media scheduler that can post content across multiple platforms")}
+              >
                 Design a social media scheduler
               </button>
             </div>

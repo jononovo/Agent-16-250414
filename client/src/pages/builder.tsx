@@ -4,6 +4,7 @@ import PromptInput from '@/components/PromptInput';
 import BuildingBlocksTabs from '@/components/BuildingBlocksTabs';
 import TabContent from '@/components/TabContent';
 import { useIsMobile } from '@/hooks/use-mobile';
+import { ChatSidebar, ChatToggle } from '@/components/chat';
 
 const Builder = () => {
   const isMobile = useIsMobile();
@@ -16,6 +17,10 @@ const Builder = () => {
         <BuildingBlocksTabs />
         <TabContent />
       </MainContent>
+      
+      {/* Chat components */}
+      <ChatSidebar />
+      <ChatToggle />
     </div>
   );
 };

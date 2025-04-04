@@ -3,6 +3,7 @@ import { queryClient } from "./lib/queryClient";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
 import { BuilderProvider } from "./contexts/BuilderContext";
+import { ChatProvider } from "@/components/chat";
 import Builder from "@/pages/builder";
 import WorkflowEditor from "@/pages/workflow-editor";
 import WorkflowTest from "@/pages/workflow-test";
@@ -26,8 +27,10 @@ function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <BuilderProvider>
-        <Router />
-        <Toaster />
+        <ChatProvider>
+          <Router />
+          <Toaster />
+        </ChatProvider>
       </BuilderProvider>
     </QueryClientProvider>
   );
