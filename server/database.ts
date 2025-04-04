@@ -10,15 +10,33 @@ import {
 import { eq, and, desc } from 'drizzle-orm';
 import { IStorage } from './storage';
 
-// Create a Postgres client using postgres.js with connection retries
+// Create a Postgres client with improved connection handling
 const connectionOptions = {
-  max: 10, // Maximum number of connections
-  idle_timeout: 20, // Connection timeout in seconds
-  connect_timeout: 10, // Connect timeout in seconds
-  max_lifetime: 60 * 30 // Max connection lifetime in seconds
+  max: 5, // Reduce max connections for faster startup
+  idle_timeout: 10, // Shorter timeout in seconds (was 20)
+  connect_timeout: 5, // Shorter connect timeout in seconds (was 10)
+  max_lifetime: 60 * 15, // Shorter connection lifetime in seconds (was 30 mins)
+  connection: {
+    application_name: 'workflow-builder', // Identify the application in PostgreSQL logs
+    keepalive: true, // Use TCP keepalive
+    statement_timeout: 10000, // 10 second query timeout
+  },
+  debug: false, // Disable debug for performance
+  fetch_types: false, // We know our types already
+  prepare: false, // Skip prepare for startup speed
+  types: {} // Empty types object to avoid type fetching
 };
 
-const client = postgres(process.env.DATABASE_URL!, connectionOptions);
+// Create the client with error handling
+console.log('Initializing PostgreSQL storage...');
+let client;
+try {
+  client = postgres(process.env.DATABASE_URL!, connectionOptions);
+} catch (e) {
+  console.error('Error creating database client:', e);
+  // Create a minimal client that won't crash the application
+  client = postgres({} as any, {} as any);
+}
 
 // Create a drizzle client with postgres.js
 export const db = drizzle(client);

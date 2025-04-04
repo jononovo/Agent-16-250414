@@ -23,6 +23,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 
 import type { Agent, Log as BaseLog, Workflow } from '@shared/schema';
 import { queryClient, apiRequest } from '@/lib/queryClient';
+import { useToast } from '@/hooks/use-toast';
 
 // Extended Log type with proper typing for executionPath
 interface ExecutionPath {
@@ -42,6 +43,7 @@ const AgentPage = () => {
   const [activeTab, setActiveTab] = useState('workflows');
   const [selectedLog, setSelectedLog] = useState<Log | null>(null);
   const [isLogDetailsOpen, setIsLogDetailsOpen] = useState(false);
+  const { toast } = useToast();
   
   // Debug logs
   useEffect(() => {
@@ -57,7 +59,7 @@ const AgentPage = () => {
   const { data: agent, isLoading: isLoadingAgent, error: agentError } = useQuery({
     queryKey: ['/api/agents', agentId],
     queryFn: async () => {
-      return apiRequest<Agent>(`/api/agents/${agentId}`);
+      return apiRequest<Agent>('GET', `/api/agents/${agentId}`);
     },
     enabled: !isNaN(agentId)
   });
@@ -66,7 +68,7 @@ const AgentPage = () => {
   const { data: workflows, isLoading: isLoadingWorkflows } = useQuery({
     queryKey: ['/api/agents', agentId, 'workflows'],
     queryFn: async () => {
-      return apiRequest<Workflow[]>(`/api/agents/${agentId}/workflows`);
+      return apiRequest<Workflow[]>('GET', `/api/agents/${agentId}/workflows`);
     },
     enabled: !isNaN(agentId) && activeTab === 'workflows'
   });
@@ -75,7 +77,7 @@ const AgentPage = () => {
   const { data: logs, isLoading: isLoadingLogs } = useQuery({
     queryKey: ['/api/agents', agentId, 'logs'],
     queryFn: async () => {
-      return apiRequest<Log[]>(`/api/agents/${agentId}/logs`);
+      return apiRequest<Log[]>('GET', `/api/agents/${agentId}/logs`);
     },
     enabled: !isNaN(agentId) && activeTab === 'logs'
   });
@@ -97,28 +99,26 @@ const AgentPage = () => {
     
     try {
       // Update the workflow to set agentId to null
-      const response = await fetch(`/api/workflows/${workflowId}`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          agentId: null
-        }),
+      await apiRequest('PUT', `/api/workflows/${workflowId}`, {
+        agentId: null
       });
-      
-      if (!response.ok) {
-        throw new Error('Failed to unlink workflow');
-      }
       
       // Invalidate the workflows query to refresh the list
       queryClient.invalidateQueries({ queryKey: ['/api/agents', agentId, 'workflows'] });
       
       // Show success message
-      alert('Workflow has been unlinked from this agent');
+      toast({
+        title: "Workflow unlinked",
+        description: "The workflow has been unlinked from this agent",
+        variant: "default",
+      });
     } catch (error) {
       console.error('Error unlinking workflow:', error);
-      alert('Failed to unlink workflow. Please try again.');
+      toast({
+        title: "Error",
+        description: "Failed to unlink workflow. Please try again.",
+        variant: "destructive",
+      });
     }
   };
 

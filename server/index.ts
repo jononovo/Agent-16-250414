@@ -47,89 +47,98 @@ app.use((req, res, next) => {
   let server;
   
   try {
-    // Create database schema if needed
+    // Create database schema background flag
+    let dbInitialized = false;
+
+    // Start creating database schema in the background
     if (process.env.DATABASE_URL) {
-      log('Creating database schema if needed...');
+      log('Initializing database schema in background...');
       
-      try {
-        // Create tables based on the schema
-        const result = await db.execute(/* sql */`
-          CREATE TABLE IF NOT EXISTS users (
-            id SERIAL PRIMARY KEY,
-            username TEXT NOT NULL UNIQUE,
-            password TEXT NOT NULL
-          );
+      // Background task to set up the database
+      (async () => {
+        try {
+          // Create tables based on the schema
+          await db.execute(/* sql */`
+            CREATE TABLE IF NOT EXISTS users (
+              id SERIAL PRIMARY KEY,
+              username TEXT NOT NULL UNIQUE,
+              password TEXT NOT NULL
+            );
+            
+            CREATE TABLE IF NOT EXISTS agents (
+              id SERIAL PRIMARY KEY,
+              name TEXT NOT NULL,
+              description TEXT,
+              type TEXT NOT NULL,
+              icon TEXT,
+              status TEXT DEFAULT 'active',
+              created_at TIMESTAMP DEFAULT NOW(),
+              updated_at TIMESTAMP DEFAULT NOW(),
+              user_id INTEGER,
+              configuration JSONB DEFAULT '{}'::jsonb
+            );
+            
+            CREATE TABLE IF NOT EXISTS workflows (
+              id SERIAL PRIMARY KEY,
+              name TEXT NOT NULL,
+              description TEXT,
+              type TEXT NOT NULL,
+              icon TEXT,
+              status TEXT DEFAULT 'draft',
+              created_at TIMESTAMP DEFAULT NOW(),
+              updated_at TIMESTAMP DEFAULT NOW(),
+              user_id INTEGER,
+              agent_id INTEGER,
+              flow_data JSONB DEFAULT '{}'::jsonb
+            );
+            
+            CREATE TABLE IF NOT EXISTS nodes (
+              id SERIAL PRIMARY KEY,
+              name TEXT NOT NULL,
+              description TEXT,
+              type TEXT NOT NULL,
+              icon TEXT,
+              category TEXT DEFAULT '',
+              created_at TIMESTAMP DEFAULT NOW(),
+              updated_at TIMESTAMP DEFAULT NOW(),
+              user_id INTEGER,
+              configuration JSONB DEFAULT '{}'::jsonb
+            );
+            
+            CREATE TABLE IF NOT EXISTS logs (
+              id SERIAL PRIMARY KEY,
+              agent_id INTEGER NOT NULL,
+              workflow_id INTEGER NOT NULL,
+              status TEXT NOT NULL,
+              input JSONB DEFAULT '{}'::jsonb,
+              output JSONB DEFAULT '{}'::jsonb,
+              error TEXT,
+              started_at TIMESTAMP DEFAULT NOW(),
+              completed_at TIMESTAMP,
+              execution_path JSONB DEFAULT '{}'::jsonb
+            );
+            
+            CREATE TABLE IF NOT EXISTS session (
+              sid VARCHAR NOT NULL,
+              sess JSON NOT NULL,
+              expire TIMESTAMP(6) NOT NULL,
+              CONSTRAINT session_pkey PRIMARY KEY (sid)
+            )
+          `);
           
-          CREATE TABLE IF NOT EXISTS agents (
-            id SERIAL PRIMARY KEY,
-            name TEXT NOT NULL,
-            description TEXT,
-            type TEXT NOT NULL,
-            icon TEXT,
-            status TEXT DEFAULT 'active',
-            created_at TIMESTAMP DEFAULT NOW(),
-            updated_at TIMESTAMP DEFAULT NOW(),
-            user_id INTEGER,
-            configuration JSONB DEFAULT '{}'::jsonb
-          );
-          
-          CREATE TABLE IF NOT EXISTS workflows (
-            id SERIAL PRIMARY KEY,
-            name TEXT NOT NULL,
-            description TEXT,
-            type TEXT NOT NULL,
-            icon TEXT,
-            status TEXT DEFAULT 'draft',
-            created_at TIMESTAMP DEFAULT NOW(),
-            updated_at TIMESTAMP DEFAULT NOW(),
-            user_id INTEGER,
-            agent_id INTEGER,
-            flow_data JSONB DEFAULT '{}'::jsonb
-          );
-          
-          CREATE TABLE IF NOT EXISTS nodes (
-            id SERIAL PRIMARY KEY,
-            name TEXT NOT NULL,
-            description TEXT,
-            type TEXT NOT NULL,
-            icon TEXT,
-            category TEXT DEFAULT '',
-            created_at TIMESTAMP DEFAULT NOW(),
-            updated_at TIMESTAMP DEFAULT NOW(),
-            user_id INTEGER,
-            configuration JSONB DEFAULT '{}'::jsonb
-          );
-          
-          CREATE TABLE IF NOT EXISTS logs (
-            id SERIAL PRIMARY KEY,
-            agent_id INTEGER NOT NULL,
-            workflow_id INTEGER NOT NULL,
-            status TEXT NOT NULL,
-            input JSONB DEFAULT '{}'::jsonb,
-            output JSONB DEFAULT '{}'::jsonb,
-            error TEXT,
-            started_at TIMESTAMP DEFAULT NOW(),
-            completed_at TIMESTAMP,
-            execution_path JSONB DEFAULT '{}'::jsonb
-          );
-          
-          CREATE TABLE IF NOT EXISTS session (
-            sid VARCHAR NOT NULL,
-            sess JSON NOT NULL,
-            expire TIMESTAMP(6) NOT NULL,
-            CONSTRAINT session_pkey PRIMARY KEY (sid)
-          )
-        `);
-        
-        log('Database schema created successfully');
-      } catch (dbError) {
-        log(`Warning: Database schema creation error: ${dbError}`);
-        log('Continuing with application startup despite database error');
-      }
+          dbInitialized = true;
+          log('Database schema created successfully');
+        } catch (dbError) {
+          log(`Warning: Database schema creation error: ${dbError}`);
+          log('Continuing with application running despite database error');
+        }
+      })();
     }
     
+    // Set up routes
     server = await registerRoutes(app);
     
+    // Setup error handler
     app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
       const status = err.status || err.statusCode || 500;
       const message = err.message || "Internal Server Error";
@@ -150,13 +159,12 @@ app.use((req, res, next) => {
     // ALWAYS serve the app on port 5000
     // this serves both the API and the client.
     // It is the only port that is not firewalled.
-    const port = 5000;
     server.listen({
-      port,
+      port: 5000,
       host: "0.0.0.0",
       reusePort: true,
     }, () => {
-      log(`serving on port ${port}`);
+      log(`serving on port 5000`);
     });
   } catch (error) {
     log(`Error initializing application: ${error}`);
