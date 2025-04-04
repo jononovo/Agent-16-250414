@@ -11,7 +11,7 @@ import { Input } from '@/components/ui/input';
 
 const PerplexityNode = ({ data, selected }: NodeProps<NodeData>) => {
   const [isLoading, setIsLoading] = useState(false);
-  const [apiKey, setApiKey] = useState('');
+  const [apiKey, setApiKey] = useState(data.apiKey || '');
   const [searchResult, setSearchResult] = useState('');
   
   // Check if workflow run is processing this node
@@ -34,34 +34,44 @@ const PerplexityNode = ({ data, selected }: NodeProps<NodeData>) => {
     setIsLoading(true);
     
     try {
-      // Mock the search process - in a real implementation, this would call Perplexity API
-      // The actual implementation would use fetch/axios to call the Perplexity API
-      
-      // This is a placeholder for demo purposes
-      setSearchResult(`Search results for: ${data.inputText}\n\nIn a real implementation, this would return results from the Perplexity API.`);
-      
-      // When connecting to real API, here's how the code might look
-      /*
-      const response = await fetch('https://api.perplexity.ai/search', {
+      // Real Perplexity API call
+      const response = await fetch('https://api.perplexity.ai/chat/completions', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${apiKey}`
         },
-        body: JSON.stringify({ query: data.inputText })
+        body: JSON.stringify({
+          model: "pplx-7b-online",
+          messages: [
+            {
+              role: "user",
+              content: data.inputText
+            }
+          ]
+        })
       });
       
+      if (!response.ok) {
+        throw new Error(`API responded with status: ${response.status}`);
+      }
+      
       const result = await response.json();
-      setSearchResult(result.answer || 'No results found');
-      */
+      console.log("Perplexity API response:", result);
+      
+      if (result.choices && result.choices[0] && result.choices[0].message) {
+        setSearchResult(result.choices[0].message.content);
+      } else {
+        setSearchResult('Unexpected API response format');
+      }
       
       // Send result to next node if available
       if (data.onOutputChange) {
         data.onOutputChange(searchResult);
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error searching with Perplexity API:', error);
-      setSearchResult('Error connecting to Perplexity API');
+      setSearchResult(`Error connecting to Perplexity API: ${error.message || 'Unknown error'}`);
     } finally {
       setIsLoading(false);
     }
@@ -87,7 +97,13 @@ const PerplexityNode = ({ data, selected }: NodeProps<NodeData>) => {
             className="bg-zinc-900 border-zinc-700 text-zinc-300 text-xs mb-2"
             type="password"
             value={apiKey}
-            onChange={(e) => setApiKey(e.target.value)}
+            onChange={(e) => {
+              setApiKey(e.target.value);
+              // Also save to node data so it can be accessed by workflow execution
+              if (data.apiKey !== e.target.value) {
+                data.apiKey = e.target.value;
+              }
+            }}
           />
         </div>
         
