@@ -3,16 +3,7 @@ import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import * as Lucide from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { NodeData } from '../NodeItem';
-
-const DynamicIcon = ({ name }: { name: string }) => {
-  const IconComponent = (Lucide as any)[name.charAt(0).toUpperCase() + name.slice(1)];
-  
-  if (!IconComponent) {
-    return <Lucide.Circle className="h-4 w-4" />;
-  }
-  
-  return <IconComponent className="h-4 w-4" />;
-};
+import DynamicIcon from '../DynamicIcon';
 
 const CustomNode = ({ data, selected }: NodeProps<NodeData>) => {
   return (
@@ -20,7 +11,7 @@ const CustomNode = ({ data, selected }: NodeProps<NodeData>) => {
       <CardHeader className="flex flex-row items-center justify-between p-3 pb-2">
         <div className="flex items-center gap-2">
           <div className="w-6 h-6 rounded-md bg-primary/10 flex items-center justify-center text-primary">
-            <DynamicIcon name={data.icon || 'code'} />
+            <DynamicIcon icon={data.icon || 'code'} />
           </div>
           <span className="font-medium text-sm truncate">{data.label || 'Custom Node'}</span>
         </div>

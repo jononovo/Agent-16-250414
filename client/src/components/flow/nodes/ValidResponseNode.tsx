@@ -7,16 +7,7 @@ import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { NodeData } from '../NodeItem';
-
-const DynamicIcon = ({ name }: { name: string }) => {
-  const IconComponent = (Lucide as any)[name.charAt(0).toUpperCase() + name.slice(1)];
-  
-  if (!IconComponent) {
-    return <Lucide.Circle className="h-4 w-4" />;
-  }
-  
-  return <IconComponent className="h-4 w-4" />;
-};
+import DynamicIcon from '../DynamicIcon';
 
 const ValidResponseNode = ({ data, selected }: NodeProps<NodeData>) => {
   return (
@@ -25,7 +16,7 @@ const ValidResponseNode = ({ data, selected }: NodeProps<NodeData>) => {
       <CardHeader className="flex flex-row items-center justify-between p-3 pb-2">
         <div className="flex items-center gap-2">
           <div className="w-6 h-6 rounded-md bg-zinc-800 flex items-center justify-center text-zinc-300">
-            <DynamicIcon name={data.icon || 'checkCheck'} />
+            <DynamicIcon icon={data.icon || 'checkCheck'} />
           </div>
           <span className="font-medium text-sm truncate">{data.label || 'Valid Response'}</span>
         </div>
@@ -36,7 +27,15 @@ const ValidResponseNode = ({ data, selected }: NodeProps<NodeData>) => {
         <div className="space-y-3">
           <div className="flex items-center justify-between">
             <Label htmlFor="validation-toggle" className="cursor-pointer">Enable validation</Label>
-            <Switch id="validation-toggle" defaultChecked={data.validationEnabled !== false} />
+            <Switch 
+              id="validation-toggle" 
+              defaultChecked={data.validationEnabled !== false} 
+              onCheckedChange={(checked) => {
+                if (data.onChange) {
+                  data.onChange({ ...data, validationEnabled: checked });
+                }
+              }}
+            />
           </div>
           
           <div>
@@ -45,6 +44,11 @@ const ValidResponseNode = ({ data, selected }: NodeProps<NodeData>) => {
               className="bg-zinc-900 border-zinc-700 text-zinc-300 min-h-[80px] text-xs font-mono"
               placeholder="Enter validation rules..."
               value={data.validationRules || "// If the content is not valid, you should return\n// false to trigger the invalid node branch\nreturn contentLength < 500;"}
+              onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => {
+                if (data.onChange) {
+                  data.onChange({ ...data, validationRules: e.target.value });
+                }
+              }}
             />
           </div>
           

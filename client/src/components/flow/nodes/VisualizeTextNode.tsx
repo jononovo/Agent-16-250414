@@ -3,16 +3,7 @@ import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import * as Lucide from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { NodeData } from '../NodeItem';
-
-const DynamicIcon = ({ name }: { name: string }) => {
-  const IconComponent = (Lucide as any)[name.charAt(0).toUpperCase() + name.slice(1)];
-  
-  if (!IconComponent) {
-    return <Lucide.Circle className="h-4 w-4" />;
-  }
-  
-  return <IconComponent className="h-4 w-4" />;
-};
+import DynamicIcon from '../DynamicIcon';
 
 const VisualizeTextNode = ({ data, selected }: NodeProps<NodeData>) => {
   return (
@@ -21,7 +12,7 @@ const VisualizeTextNode = ({ data, selected }: NodeProps<NodeData>) => {
       <CardHeader className="flex flex-row items-center justify-between p-3 pb-2">
         <div className="flex items-center gap-2">
           <div className="w-6 h-6 rounded-md bg-zinc-800 flex items-center justify-center text-zinc-300">
-            <DynamicIcon name={data.icon || 'eye'} />
+            <DynamicIcon icon={data.icon || 'eye'} />
           </div>
           <span className="font-medium text-sm truncate">{data.label || 'Visualize Text'}</span>
         </div>

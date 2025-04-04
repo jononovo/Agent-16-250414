@@ -4,16 +4,7 @@ import * as Lucide from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { NodeData } from '../NodeItem';
 import { Badge } from '@/components/ui/badge';
-
-const DynamicIcon = ({ name }: { name: string }) => {
-  const IconComponent = (Lucide as any)[name.charAt(0).toUpperCase() + name.slice(1)];
-  
-  if (!IconComponent) {
-    return <Lucide.Circle className="h-4 w-4" />;
-  }
-  
-  return <IconComponent className="h-4 w-4" />;
-};
+import DynamicIcon from '../DynamicIcon';
 
 const OutputNode = ({ data, selected }: NodeProps<NodeData>) => {
   return (
@@ -21,7 +12,7 @@ const OutputNode = ({ data, selected }: NodeProps<NodeData>) => {
       <CardHeader className="flex flex-row items-center justify-between p-3 pb-2">
         <div className="flex items-center gap-2">
           <div className="w-6 h-6 rounded-md bg-amber-100 flex items-center justify-center text-amber-600">
-            <DynamicIcon name={data.icon || 'arrowLeft'} />
+            <DynamicIcon icon={data.icon || 'arrowLeft'} />
           </div>
           <span className="font-medium text-sm truncate">{data.label || 'Output'}</span>
         </div>

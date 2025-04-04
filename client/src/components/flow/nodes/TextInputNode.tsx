@@ -25,7 +25,12 @@ const TextInputNode = ({ data, selected }: NodeProps<NodeData>) => {
         <Textarea 
           placeholder="Enter your text here..."
           className="bg-zinc-900 border-zinc-700 text-zinc-300 min-h-[80px] text-xs"
-          value={data.inputText || ''}
+          defaultValue={data.inputText || ''}
+          onChange={(e) => {
+            if (data.onInputChange) {
+              data.onInputChange(e.target.value);
+            }
+          }}
         />
         
         <div className="mt-2 flex justify-between items-center">

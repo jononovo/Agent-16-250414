@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Textarea } from '@/components/ui/textarea';
 import { NodeData } from '../NodeItem';
 import DynamicIcon from '../DynamicIcon';
 
@@ -24,7 +25,14 @@ const GenerateTextNode = ({ data, selected }: NodeProps<NodeData>) => {
       
       <CardContent className="p-3 pt-0 text-xs text-zinc-400">
         <div className="mb-2">
-          <Select defaultValue={data.model || 'llama-3.3-70b-versatile'}>
+          <Select 
+            defaultValue={data.model || 'llama-3.3-70b-versatile'} 
+            onValueChange={(value) => {
+              if (data.onChange) {
+                data.onChange({ ...data, model: value });
+              }
+            }}
+          >
             <SelectTrigger className="h-7 text-xs bg-zinc-800 text-zinc-300 border-zinc-700">
               <SelectValue placeholder="Select model" />
             </SelectTrigger>
@@ -40,17 +48,31 @@ const GenerateTextNode = ({ data, selected }: NodeProps<NodeData>) => {
           <AccordionItem value="system" className="border-zinc-800">
             <AccordionTrigger className="py-1 text-xs text-zinc-400 hover:text-zinc-200 hover:no-underline">System</AccordionTrigger>
             <AccordionContent>
-              <div className="bg-zinc-900 p-2 rounded text-xs font-mono text-zinc-300">
-                {data.systemPrompt || 'Tool outputs'}
-              </div>
+              <Textarea 
+                className="bg-zinc-900 border-zinc-700 text-zinc-300 min-h-[60px] text-xs font-mono"
+                placeholder="Enter system prompt..."
+                value={data.systemPrompt || 'You are a helpful AI assistant.'}
+                onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => {
+                  if (data.onChange) {
+                    data.onChange({ ...data, systemPrompt: e.target.value });
+                  }
+                }}
+              />
             </AccordionContent>
           </AccordionItem>
           <AccordionItem value="prompt" className="border-zinc-800">
             <AccordionTrigger className="py-1 text-xs text-zinc-400 hover:text-zinc-200 hover:no-underline">Prompt</AccordionTrigger>
             <AccordionContent>
-              <div className="bg-zinc-900 p-2 rounded text-xs font-mono text-zinc-300">
-                {data.userPrompt || 'Route the input here if the request is about...'}
-              </div>
+              <Textarea 
+                className="bg-zinc-900 border-zinc-700 text-zinc-300 min-h-[60px] text-xs font-mono"
+                placeholder="Enter user prompt..."
+                value={data.userPrompt || 'Route the input here if the request is about...'}
+                onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => {
+                  if (data.onChange) {
+                    data.onChange({ ...data, userPrompt: e.target.value });
+                  }
+                }}
+              />
             </AccordionContent>
           </AccordionItem>
           <AccordionItem value="outputs" className="border-zinc-800">
