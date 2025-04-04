@@ -32,12 +32,20 @@ import CustomNode from '../flow/nodes/CustomNode';
 import TriggerNode from '../flow/nodes/TriggerNode';
 import ProcessorNode from '../flow/nodes/ProcessorNode';
 import OutputNode from '../flow/nodes/OutputNode';
+import TextInputNode from '../flow/nodes/TextInputNode';
+import GenerateTextNode from '../flow/nodes/GenerateTextNode';
+import VisualizeTextNode from '../flow/nodes/VisualizeTextNode';
+import RoutingNode from '../flow/nodes/RoutingNode';
 
 const nodeTypes: NodeTypes = {
   custom: CustomNode,
   trigger: TriggerNode,
   processor: ProcessorNode,
-  output: OutputNode
+  output: OutputNode,
+  textInput: TextInputNode,
+  generateText: GenerateTextNode,
+  visualizeText: VisualizeTextNode,
+  routing: RoutingNode
 };
 
 interface FlowEditorProps {

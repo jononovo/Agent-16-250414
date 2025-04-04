@@ -13,6 +13,10 @@ const NODE_TYPES = [
   { id: 'processor', name: 'Processors', description: 'Process data' },
   { id: 'output', name: 'Outputs', description: 'Send results' },
   { id: 'custom', name: 'Custom', description: 'Your custom nodes' },
+  { id: 'input', name: 'Input', description: 'Collect user input' },
+  { id: 'ai', name: 'AI Models', description: 'Generate content with AI' },
+  { id: 'visualization', name: 'Visualization', description: 'Display results visually' },
+  { id: 'routing', name: 'Routing', description: 'Control the flow logic' },
 ];
 
 const NodesPanel = () => {
