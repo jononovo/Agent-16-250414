@@ -60,7 +60,7 @@ const NODE_TYPES = [
   },
   { 
     id: 'perplexity', 
-    name: 'Perplexity Search', 
+    name: 'In-house Perplexity API', 
     description: 'Search web content with Perplexity API',
     category: 'ai',
     icon: SearchIcon

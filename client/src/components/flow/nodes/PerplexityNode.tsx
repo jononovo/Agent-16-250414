@@ -101,7 +101,7 @@ const PerplexityNode = ({ data, selected }: NodeProps<NodeData>) => {
           <div className="w-6 h-6 rounded-md bg-zinc-800 flex items-center justify-center text-zinc-300">
             <DynamicIcon icon={data.icon || 'search'} />
           </div>
-          <span className="font-medium text-sm truncate">{data.label || 'Perplexity Search'}</span>
+          <span className="font-medium text-sm truncate">{data.label || 'In-house Perplexity API'}</span>
         </div>
         <Badge variant="outline" className="bg-zinc-800 text-zinc-300 text-[10px] font-normal border-zinc-700">AI Search</Badge>
       </CardHeader>
