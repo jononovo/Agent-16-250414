@@ -222,25 +222,41 @@ const FlowEditor = ({ workflow, isNew = false }: FlowEditorProps) => {
     }
   };
   
-  const handleSettingsChange = (nodeId: string, settings: Record<string, any>) => {
+  const handleSettingsChange = (nodeId: string, settingsData: Record<string, any>) => {
     setNodes((nds) =>
       nds.map((node) => {
         if (node.id === nodeId) {
-          return {
+          // Extract nodeProperties if they exist
+          const { nodeProperties, ...otherSettings } = settingsData;
+          
+          // Create updated node with new settings and properties
+          const updatedNode = {
             ...node,
             data: {
               ...node.data,
-              settings: settings,
+              settings: otherSettings,
             },
           };
+          
+          // If nodeProperties exist, update the label and description
+          if (nodeProperties) {
+            if (nodeProperties.label) {
+              updatedNode.data.label = nodeProperties.label;
+            }
+            if (nodeProperties.description) {
+              updatedNode.data.description = nodeProperties.description;
+            }
+          }
+          
+          return updatedNode;
         }
         return node;
       })
     );
     
     toast({
-      title: "Settings Updated",
-      description: "Node settings have been updated successfully.",
+      title: "Node Updated",
+      description: "Node configuration has been updated successfully.",
     });
   };
   

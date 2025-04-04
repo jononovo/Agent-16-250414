@@ -9,6 +9,8 @@ import { NodeData } from './NodeItem';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { cn } from '@/lib/utils';
+import { Save, X } from 'lucide-react';
 
 interface NodeSettingsDrawerProps {
   isOpen: boolean;
@@ -16,6 +18,8 @@ interface NodeSettingsDrawerProps {
   node: Node<NodeData> | null;
   onSettingsChange: (nodeId: string, settings: Record<string, any>) => void;
 }
+
+type TabType = 'properties' | 'variables' | 'settings';
 
 interface SettingsField {
   id: string;
@@ -31,15 +35,22 @@ const NodeSettingsDrawer: React.FC<NodeSettingsDrawerProps> = ({
   node,
   onSettingsChange,
 }) => {
+  const [activeTab, setActiveTab] = React.useState<TabType>('properties');
   const [settings, setSettings] = React.useState<Record<string, any>>({});
+  const [nodeName, setNodeName] = React.useState('');
+  const [nodeDescription, setNodeDescription] = React.useState('');
 
   // Reset settings when node changes
   React.useEffect(() => {
     if (node && node.data) {
       // Initialize with current settings or defaults
       setSettings(node.data.settings || {});
+      setNodeName(node.data.label || '');
+      setNodeDescription(node.data.description || '');
     } else {
       setSettings({});
+      setNodeName('');
+      setNodeDescription('');
     }
   }, [node]);
 
@@ -79,7 +90,17 @@ const NodeSettingsDrawer: React.FC<NodeSettingsDrawerProps> = ({
 
   const handleSave = () => {
     if (node) {
-      onSettingsChange(node.id, settings);
+      // Create a copy of the current settings
+      const updatedSettings = { ...settings };
+      
+      // Update the node with all changes (properties and settings)
+      onSettingsChange(node.id, {
+        ...updatedSettings,
+        nodeProperties: {
+          label: nodeName,
+          description: nodeDescription
+        }
+      });
       onClose();
     }
   };
@@ -91,93 +112,186 @@ const NodeSettingsDrawer: React.FC<NodeSettingsDrawerProps> = ({
 
   return (
     <Drawer open={isOpen} onOpenChange={handleOpenChange}>
-      <div className="mx-auto w-full max-w-sm">
-        <div className="p-4 pb-0">
+      <div className="mx-auto w-full max-w-md">
+        <div className="p-4 pb-2">
           <div className="flex items-center justify-between">
-            <h3 className="text-lg font-medium">{node?.data?.label || 'Node'} Settings</h3>
-            <Button variant="outline" size="sm" onClick={onClose}>
-              Close
+            <div>
+              <h3 className="text-xl font-medium">Node Configuration <span className="text-sm text-muted-foreground">({node.type})</span></h3>
+              <p className="text-sm text-muted-foreground mt-1">
+                Configure the properties and variables for this node.
+              </p>
+            </div>
+            <Button variant="ghost" size="icon" onClick={onClose}>
+              <X className="h-5 w-5" />
             </Button>
           </div>
         </div>
-        <ScrollArea className="h-[400px] p-4">
-          {node.type === 'perplexity' && (
-            <Alert className="mb-4">
-              <AlertDescription>
-                Configure your Perplexity API settings below. An API key is required for actual API requests. 
-                Without an API key, the node will use simulated responses for testing.
-              </AlertDescription>
-            </Alert>
+        
+        {/* Tabs */}
+        <div className="bg-muted/50 p-1 mx-4 rounded-lg mb-4 flex">
+          <button
+            className={cn(
+              "flex-1 px-3 py-2 text-sm font-medium rounded-md",
+              activeTab === 'properties' ? "bg-background border border-border shadow-sm" : "hover:bg-background/50"
+            )}
+            onClick={() => setActiveTab('properties')}
+          >
+            Properties
+          </button>
+          <button
+            className={cn(
+              "flex-1 px-3 py-2 text-sm font-medium rounded-md",
+              activeTab === 'variables' ? "bg-background border border-border shadow-sm" : "hover:bg-background/50"
+            )}
+            onClick={() => setActiveTab('variables')}
+          >
+            Variables
+          </button>
+          <button
+            className={cn(
+              "flex-1 px-3 py-2 text-sm font-medium rounded-md",
+              activeTab === 'settings' ? "bg-background border border-border shadow-sm" : "hover:bg-background/50"
+            )}
+            onClick={() => setActiveTab('settings')}
+          >
+            Settings
+          </button>
+        </div>
+        
+        <ScrollArea className="px-4 h-[400px]">
+          {/* Properties Tab */}
+          {activeTab === 'properties' && (
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="nodeName">Node Name</Label>
+                <Input
+                  id="nodeName"
+                  value={nodeName}
+                  onChange={(e) => setNodeName(e.target.value)}
+                  placeholder="Enter node name"
+                />
+              </div>
+              
+              <div className="space-y-2">
+                <Label htmlFor="nodeDescription">Description</Label>
+                <Textarea
+                  id="nodeDescription"
+                  value={nodeDescription}
+                  onChange={(e) => setNodeDescription(e.target.value)}
+                  placeholder="Add description to your workflow"
+                  className="min-h-[100px]"
+                />
+              </div>
+            </div>
           )}
           
-          {fields.length > 0 ? (
+          {/* Variables Tab */}
+          {activeTab === 'variables' && (
             <div className="space-y-4">
-              {fields.map((field) => (
-                <div key={field.id} className="space-y-2">
-                  <Label htmlFor={field.id}>{field.label}</Label>
+              <Button className="w-full" variant="outline">
+                Add Variable
+              </Button>
+              
+              {/* We'll implement variable handling in the future */}
+              {!settings.variables || settings.variables?.length === 0 ? (
+                <div className="text-center py-8 text-muted-foreground">
+                  No variables defined for this node.
+                </div>
+              ) : null}
+            </div>
+          )}
+          
+          {/* Settings Tab */}
+          {activeTab === 'settings' && (
+            <div className="space-y-4">
+              {node.type === 'perplexity' && (
+                <div className="mb-4">
+                  <p className="text-sm text-muted-foreground">
+                    Additional settings specific to this node type.
+                  </p>
                   
-                  {field.type === 'password' ? (
-                    <Input
-                      id={field.id}
-                      type="password"
-                      placeholder={field.placeholder}
-                      value={settings[field.id] || ''}
-                      onChange={(e) => handleSettingChange(field.id, e.target.value)}
-                    />
-                  ) : field.type === 'select' && field.options ? (
-                    <Select 
-                      value={settings[field.id] || ''} 
-                      onValueChange={(value) => handleSettingChange(field.id, value)}
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select an option" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {field.options.map((option) => (
-                          <SelectItem key={option.value} value={option.value}>
-                            {option.label}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  ) : field.type === 'textarea' ? (
-                    <Textarea
-                      id={field.id}
-                      placeholder={field.placeholder}
-                      value={settings[field.id] || ''}
-                      onChange={(e) => handleSettingChange(field.id, e.target.value)}
-                      className="min-h-[100px]"
-                    />
-                  ) : (
-                    <div>
-                      <Input
-                        id={field.id}
-                        type="text"
-                        placeholder={field.placeholder}
-                        value={settings[field.id] || ''}
-                        onChange={(e) => handleSettingChange(field.id, e.target.value)}
-                      />
-                      {field.id === 'model' && (
-                        <p className="text-xs text-muted-foreground mt-1">
-                          Common models: sonar, sonar-small-online, sonar-medium-online, mistral-7b-instruct
-                        </p>
+                  <Alert className="mt-2">
+                    <AlertDescription>
+                      Configure your Perplexity API settings below. An API key is required for actual API requests. 
+                      Without an API key, the node will use simulated responses for testing.
+                    </AlertDescription>
+                  </Alert>
+                </div>
+              )}
+              
+              {fields.length > 0 ? (
+                <div className="space-y-4">
+                  {fields.map((field) => (
+                    <div key={field.id} className="space-y-2">
+                      <Label htmlFor={field.id}>{field.label}</Label>
+                      
+                      {field.type === 'password' ? (
+                        <Input
+                          id={field.id}
+                          type="password"
+                          placeholder={field.placeholder}
+                          value={settings[field.id] || ''}
+                          onChange={(e) => handleSettingChange(field.id, e.target.value)}
+                        />
+                      ) : field.type === 'select' && field.options ? (
+                        <Select 
+                          value={settings[field.id] || ''} 
+                          onValueChange={(value) => handleSettingChange(field.id, value)}
+                        >
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select an option" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {field.options.map((option) => (
+                              <SelectItem key={option.value} value={option.value}>
+                                {option.label}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      ) : field.type === 'textarea' ? (
+                        <Textarea
+                          id={field.id}
+                          placeholder={field.placeholder}
+                          value={settings[field.id] || ''}
+                          onChange={(e) => handleSettingChange(field.id, e.target.value)}
+                          className="min-h-[100px]"
+                        />
+                      ) : (
+                        <div>
+                          <Input
+                            id={field.id}
+                            type="text"
+                            placeholder={field.placeholder}
+                            value={settings[field.id] || ''}
+                            onChange={(e) => handleSettingChange(field.id, e.target.value)}
+                          />
+                          {field.id === 'model' && (
+                            <p className="text-xs text-muted-foreground mt-1">
+                              Common models: sonar, sonar-small-online, sonar-medium-online, mistral-7b-instruct
+                            </p>
+                          )}
+                        </div>
                       )}
                     </div>
-                  )}
+                  ))}
                 </div>
-              ))}
-            </div>
-          ) : (
-            <div className="text-center py-8 text-muted-foreground">
-              No settings available for this node type.
+              ) : (
+                <div className="text-center py-8 text-muted-foreground">
+                  No settings available for this node type.
+                </div>
+              )}
             </div>
           )}
         </ScrollArea>
-        <div className="p-4 flex justify-end space-x-2">
+        
+        <div className="p-4 flex justify-end space-x-2 border-t">
           <Button variant="outline" onClick={onClose}>
-            Cancel
+            <X className="h-4 w-4 mr-2" /> Cancel
           </Button>
-          <Button onClick={handleSave}>Save Settings</Button>
+          <Button onClick={handleSave} className="bg-primary text-primary-foreground">
+            <Save className="h-4 w-4 mr-2" /> Save Changes
+          </Button>
         </div>
       </div>
     </Drawer>
