@@ -1,5 +1,4 @@
 import React from 'react';
-import { Drawer } from '@/components/ui/drawer';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
@@ -26,6 +25,7 @@ interface SettingsField {
   label: string;
   type: 'text' | 'password' | 'select' | 'textarea';
   placeholder?: string;
+  description?: string;
   options?: { value: string; label: string }[];
 }
 
@@ -112,9 +112,11 @@ const NodeSettingsDrawer: React.FC<NodeSettingsDrawerProps> = ({
     if (!open) onClose();
   };
 
+  if (!isOpen) return null;
+  
   return (
-    <Drawer open={isOpen} onOpenChange={handleOpenChange}>
-      <div className="mx-auto w-full max-w-md">
+    <div className="fixed inset-0 z-50 bg-black/80 flex items-center justify-center">
+      <div className="bg-background rounded-lg shadow-lg w-full max-w-2xl max-h-[90vh] flex flex-col">
         <div className="p-4 pb-2">
           <div className="flex items-center justify-between">
             <div>
@@ -160,7 +162,7 @@ const NodeSettingsDrawer: React.FC<NodeSettingsDrawerProps> = ({
           </button>
         </div>
         
-        <ScrollArea className="px-4 h-[400px]">
+        <ScrollArea className="px-4 flex-1">
           {/* Properties Tab */}
           {activeTab === 'properties' && (
             <div className="space-y-4">
@@ -275,6 +277,13 @@ const NodeSettingsDrawer: React.FC<NodeSettingsDrawerProps> = ({
                           )}
                         </div>
                       )}
+                      
+                      {/* Show description if available */}
+                      {field.description && (
+                        <p className="text-xs text-muted-foreground">
+                          {field.description}
+                        </p>
+                      )}
                     </div>
                   ))}
                 </div>
@@ -287,7 +296,7 @@ const NodeSettingsDrawer: React.FC<NodeSettingsDrawerProps> = ({
           )}
         </ScrollArea>
         
-        <div className="p-4 flex justify-end space-x-2 border-t">
+        <div className="p-4 flex justify-end space-x-2 border-t mt-4">
           <Button variant="outline" onClick={onClose}>
             <X className="h-4 w-4 mr-2" /> Cancel
           </Button>
@@ -296,7 +305,7 @@ const NodeSettingsDrawer: React.FC<NodeSettingsDrawerProps> = ({
           </Button>
         </div>
       </div>
-    </Drawer>
+    </div>
   );
 };
 
