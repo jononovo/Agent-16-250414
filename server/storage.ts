@@ -1084,4 +1084,46 @@ export class MemStorage implements IStorage {
   }
 }
 
-export const storage = new MemStorage();
+// Import PostgresStorage
+import { PostgresStorage } from './database';
+
+// Import the seedInitialData function directly if we need it
+import { seedInitialData } from './database';
+
+// Create the appropriate storage implementation based on environment
+const isProduction = process.env.NODE_ENV === 'production';
+const hasDbUrl = !!process.env.DATABASE_URL;
+const usePostgres = hasDbUrl || isProduction;
+
+// Create storage instance with fallback to memory storage in case of database errors
+let storageInstance: IStorage;
+
+try {
+  // Try to use PostgreSQL if URL is available
+  if (usePostgres) {
+    console.log('Initializing PostgreSQL storage...');
+    storageInstance = new PostgresStorage();
+    
+    // Try initial database connection (ping) to confirm it works
+    (async () => {
+      try {
+        // If using PostgreSQL, seed initial data
+        await seedInitialData();
+        console.log('Database seeding completed or not needed');
+      } catch (seedError) {
+        console.error('Error seeding database:', seedError);
+        console.warn('Database seeding failed, but will continue with application');
+      }
+    })();
+  } else {
+    console.log('Using memory storage (no DATABASE_URL found)');
+    storageInstance = new MemStorage();
+  }
+} catch (error) {
+  console.error('Error initializing PostgreSQL storage:', error);
+  console.warn('Falling back to in-memory storage due to database error');
+  storageInstance = new MemStorage();
+}
+
+// Export the storage instance
+export const storage = storageInstance;

@@ -25,10 +25,10 @@ const Sidebar = ({ collapsed = false }: SidebarProps) => {
   const renderNavItems = (items: Array<{ path: string; icon: JSX.Element; label: string }>) => {
     return items.map((item, index) => (
       <Link key={index} href={item.path}>
-        <a className={`flex items-center space-x-3 px-3 py-2 rounded-md cursor-pointer ${location === item.path ? 'bg-slate-800 text-white' : 'text-slate-300 hover:bg-slate-800 hover:text-white'}`}>
+        <div className={`flex items-center space-x-3 px-3 py-2 rounded-md cursor-pointer ${location === item.path ? 'bg-slate-800 text-white' : 'text-slate-300 hover:bg-slate-800 hover:text-white'}`}>
           {item.icon}
           {!collapsed && <span>{item.label}</span>}
-        </a>
+        </div>
       </Link>
     ));
   };
@@ -67,10 +67,10 @@ const Sidebar = ({ collapsed = false }: SidebarProps) => {
         
         <div className="mt-auto">
           <Link href="/help">
-            <a className={`flex items-center space-x-3 px-3 py-2 rounded-md cursor-pointer ${location === '/help' ? 'bg-slate-800 text-white' : 'text-slate-300 hover:bg-slate-800 hover:text-white'}`}>
+            <div className={`flex items-center space-x-3 px-3 py-2 rounded-md cursor-pointer ${location === '/help' ? 'bg-slate-800 text-white' : 'text-slate-300 hover:bg-slate-800 hover:text-white'}`}>
               <HelpCircle className="h-4 w-4" />
               {!collapsed && <span>Help & Resources</span>}
-            </a>
+            </div>
           </Link>
           <div className="flex items-center space-x-3 px-3 py-2 mt-2">
             <div className="w-8 h-8 rounded-full bg-slate-700 flex items-center justify-center text-white">
