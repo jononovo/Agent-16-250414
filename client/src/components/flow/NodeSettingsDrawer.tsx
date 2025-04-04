@@ -1,4 +1,13 @@
 import React from 'react';
+import {
+  Sheet,
+  SheetContent,
+  SheetClose,
+  SheetHeader,
+  SheetTitle,
+  SheetDescription,
+  SheetFooter
+} from '@/components/ui/sheet';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
@@ -107,32 +116,23 @@ const NodeSettingsDrawer: React.FC<NodeSettingsDrawerProps> = ({
     }
   };
 
-  // When Drawer close button is clicked, call onClose
+  // When Sheet close button is clicked, call onClose
   const handleOpenChange = (open: boolean) => {
     if (!open) onClose();
   };
 
-  if (!isOpen) return null;
-  
   return (
-    <div className="fixed inset-0 z-50 bg-black/80 flex items-center justify-center">
-      <div className="bg-background rounded-lg shadow-lg w-full max-w-2xl max-h-[90vh] flex flex-col">
-        <div className="p-4 pb-2">
-          <div className="flex items-center justify-between">
-            <div>
-              <h3 className="text-xl font-medium">Node Configuration <span className="text-sm text-muted-foreground">({node.type})</span></h3>
-              <p className="text-sm text-muted-foreground mt-1">
-                Configure the properties and variables for this node.
-              </p>
-            </div>
-            <Button variant="ghost" size="icon" onClick={onClose}>
-              <X className="h-5 w-5" />
-            </Button>
-          </div>
-        </div>
+    <Sheet open={isOpen} onOpenChange={handleOpenChange}>
+      <SheetContent side="right" className="w-[400px] sm:w-[540px] p-0">
+        <SheetHeader className="p-6 pb-2">
+          <SheetTitle>Node Configuration <span className="text-sm text-muted-foreground">({node.type})</span></SheetTitle>
+          <SheetDescription>
+            Configure the properties and variables for this node.
+          </SheetDescription>
+        </SheetHeader>
         
         {/* Tabs */}
-        <div className="bg-muted/50 p-1 mx-4 rounded-lg mb-4 flex">
+        <div className="bg-muted/50 p-1 mx-6 rounded-lg mb-4 flex">
           <button
             className={cn(
               "flex-1 px-3 py-2 text-sm font-medium rounded-md",
@@ -162,7 +162,7 @@ const NodeSettingsDrawer: React.FC<NodeSettingsDrawerProps> = ({
           </button>
         </div>
         
-        <ScrollArea className="px-4 flex-1">
+        <ScrollArea className="px-6 h-[calc(100vh-220px)]">
           {/* Properties Tab */}
           {activeTab === 'properties' && (
             <div className="space-y-4">
@@ -224,7 +224,7 @@ const NodeSettingsDrawer: React.FC<NodeSettingsDrawerProps> = ({
               )}
               
               {fields.length > 0 ? (
-                <div className="space-y-4">
+                <div className="space-y-4 pb-6">
                   {fields.map((field) => (
                     <div key={field.id} className="space-y-2">
                       <Label htmlFor={field.id}>{field.label}</Label>
@@ -296,16 +296,16 @@ const NodeSettingsDrawer: React.FC<NodeSettingsDrawerProps> = ({
           )}
         </ScrollArea>
         
-        <div className="p-4 flex justify-end space-x-2 border-t mt-4">
+        <SheetFooter className="px-6 py-4 border-t">
           <Button variant="outline" onClick={onClose}>
             <X className="h-4 w-4 mr-2" /> Cancel
           </Button>
           <Button onClick={handleSave} className="bg-primary text-primary-foreground">
             <Save className="h-4 w-4 mr-2" /> Save Changes
           </Button>
-        </div>
-      </div>
-    </div>
+        </SheetFooter>
+      </SheetContent>
+    </Sheet>
   );
 };
 
