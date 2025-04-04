@@ -25,7 +25,8 @@ import NodesPanel from './NodesPanel';
 import { useMutation } from '@tanstack/react-query';
 import { queryClient } from '@/lib/queryClient';
 import { apiRequest } from '@/lib/queryClient';
-import { ArrowLeft, Save } from 'lucide-react';
+import { ArrowLeft, Save, Play } from 'lucide-react';
+import { useToast } from '@/hooks/use-toast';
 
 // Import node components
 import CustomNode from '../flow/nodes/CustomNode';
@@ -197,6 +198,9 @@ const FlowEditor = ({ workflow, isNew = false }: FlowEditorProps) => {
     [reactFlowInstance, setNodes]
   );
 
+  const { toast } = useToast();
+  const [isRunning, setIsRunning] = useState(false);
+
   const handleSave = () => {
     saveMutation.mutate({
       name,
@@ -205,6 +209,49 @@ const FlowEditor = ({ workflow, isNew = false }: FlowEditorProps) => {
         edges
       }
     });
+  };
+  
+  const handleRunWorkflow = () => {
+    setIsRunning(true);
+    
+    // Find text input nodes to get initial inputs
+    const textInputNodes = nodes.filter(node => 
+      node.type === 'text_input' || 
+      node.type === 'textInput'
+    );
+    
+    // Simulate workflow execution
+    setTimeout(() => {
+      // Find visualize text nodes to update with results
+      const visualizeNodes = nodes.filter(node => 
+        node.type === 'visualize_text' || 
+        node.type === 'visualizeText'
+      );
+      
+      // Update visualization nodes with sample output
+      if (visualizeNodes.length > 0) {
+        setNodes(nds => 
+          nds.map(node => {
+            if (node.type === 'visualize_text' || node.type === 'visualizeText') {
+              return {
+                ...node,
+                data: {
+                  ...node.data,
+                  textContent: "Workflow executed successfully! Results will appear here in a real execution."
+                }
+              };
+            }
+            return node;
+          })
+        );
+      }
+      
+      setIsRunning(false);
+      toast({
+        title: "Workflow Execution",
+        description: "Workflow ran successfully!",
+      });
+    }, 1500);
   };
 
   return (
@@ -256,13 +303,23 @@ const FlowEditor = ({ workflow, isNew = false }: FlowEditorProps) => {
             </div>
           )}
 
-          <Button 
-            onClick={handleSave}
-            disabled={saveMutation.isPending}
-          >
-            <Save className="h-4 w-4 mr-2" />
-            Save Workflow
-          </Button>
+          <div className="flex space-x-2">
+            <Button 
+              onClick={handleRunWorkflow}
+              disabled={isRunning}
+              variant="outline"
+            >
+              <Play className="h-4 w-4 mr-2" />
+              Run Workflow
+            </Button>
+            <Button 
+              onClick={handleSave}
+              disabled={saveMutation.isPending}
+            >
+              <Save className="h-4 w-4 mr-2" />
+              Save Workflow
+            </Button>
+          </div>
         </div>
 
         <div className="flex-1" ref={reactFlowWrapper}>
