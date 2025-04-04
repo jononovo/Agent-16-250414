@@ -164,6 +164,36 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ message: "Failed to update workflow" });
     }
   });
+  
+  // Add PATCH endpoint for workflows to match client-side code
+  app.patch("/api/workflows/:id", async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      if (isNaN(id)) {
+        return res.status(400).json({ message: "Invalid workflow ID" });
+      }
+      
+      const workflow = await storage.getWorkflow(id);
+      if (!workflow) {
+        return res.status(404).json({ message: "Workflow not found" });
+      }
+      
+      const updateSchema = insertWorkflowSchema.partial();
+      const result = updateSchema.safeParse(req.body);
+      if (!result.success) {
+        const validationError = fromZodError(result.error);
+        return res.status(400).json({ message: validationError.message });
+      }
+      
+      console.log(`Updating workflow ${id} with data:`, JSON.stringify(req.body));
+      const updatedWorkflow = await storage.updateWorkflow(id, result.data);
+      console.log(`Workflow updated successfully:`, JSON.stringify(updatedWorkflow));
+      res.json(updatedWorkflow);
+    } catch (error) {
+      console.error(`Error updating workflow:`, error);
+      res.status(500).json({ message: "Failed to update workflow" });
+    }
+  });
 
   app.delete("/api/workflows/:id", async (req, res) => {
     try {

@@ -128,11 +128,25 @@ export class PostgresStorage implements IStorage {
   
   async updateWorkflow(id: number, workflowUpdate: Partial<Workflow>): Promise<Workflow | undefined> {
     const now = new Date();
+    
+    // Handle flowData properly - ensure it's saved as JSON if it's a string
+    const updateData: Partial<Workflow> = { ...workflowUpdate, updatedAt: now };
+    
+    // If flowData is provided as a string, make sure it's parsed as JSON
+    if (typeof updateData.flowData === 'string') {
+      try {
+        // Parse the string to make sure it's valid JSON
+        const parsedData = JSON.parse(updateData.flowData);
+        // Store it back as a JSON object
+        updateData.flowData = parsedData;
+      } catch (error) {
+        console.error("Error parsing flowData:", error);
+        // If parsing fails, still try to save as-is
+      }
+    }
+    
     const result = await db.update(workflows)
-      .set({
-        ...workflowUpdate,
-        updatedAt: now
-      })
+      .set(updateData)
       .where(eq(workflows.id, id))
       .returning();
     return result[0];

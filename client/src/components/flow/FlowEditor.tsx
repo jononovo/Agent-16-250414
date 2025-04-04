@@ -86,11 +86,48 @@ const FlowEditor = ({ workflow, isNew = false }: FlowEditorProps) => {
   const [, navigate] = useLocation();
   const [editingName, setEditingName] = useState(isNew);
   const [name, setName] = useState(workflow?.name || 'New Workflow');
-  const flowData = workflow?.flowData ? 
-    (typeof workflow.flowData === 'string' ? JSON.parse(workflow.flowData) : workflow.flowData) 
-    : { nodes: [], edges: [] };
-  const initialNodes = flowData.nodes || [];
-  const initialEdges = flowData.edges || [];
+  
+  // Parse and handle the flow data properly
+  // Define a type for the parsed flow data to ensure it has the correct shape
+  interface ParsedFlowData {
+    nodes: any[];
+    edges: any[];
+  }
+  
+  // Initialize with empty arrays
+  let parsedFlowData: ParsedFlowData = { nodes: [], edges: [] };
+  
+  try {
+    if (workflow?.flowData) {
+      // Handle different data types correctly
+      if (typeof workflow.flowData === 'string') {
+        const parsed = JSON.parse(workflow.flowData) as any;
+        // Ensure the parsed data has the correct shape
+        parsedFlowData = {
+          nodes: Array.isArray(parsed.nodes) ? parsed.nodes : [],
+          edges: Array.isArray(parsed.edges) ? parsed.edges : []
+        };
+      } else if (typeof workflow.flowData === 'object' && workflow.flowData !== null) {
+        // Ensure the object has the correct shape
+        const flowObj = workflow.flowData as any;
+        parsedFlowData = {
+          nodes: Array.isArray(flowObj.nodes) ? flowObj.nodes : [],
+          edges: Array.isArray(flowObj.edges) ? flowObj.edges : []
+        };
+      }
+      
+      console.log("Loaded workflow data:", 
+        `Nodes: ${parsedFlowData.nodes.length}, ` +
+        `Edges: ${parsedFlowData.edges.length}`
+      );
+    }
+  } catch (error) {
+    console.error("Error parsing workflow data:", error);
+    // Continue with empty nodes/edges
+  }
+  
+  const initialNodes = parsedFlowData.nodes || [];
+  const initialEdges = parsedFlowData.edges || [];
   
   const [nodes, setNodes] = useNodesState(initialNodes);
   const [edges, setEdges] = useEdgesState(initialEdges);
@@ -99,10 +136,53 @@ const FlowEditor = ({ workflow, isNew = false }: FlowEditorProps) => {
 
   const saveMutation = useMutation({
     mutationFn: async (data: { name: string, data: { nodes: Node[], edges: Edge[] } }) => {
-      const flowDataJson = JSON.stringify({
-        nodes: data.data.nodes,
-        edges: data.data.edges
+      // Create a clean version of nodes without circular references
+      const cleanNodes = data.data.nodes.map(node => {
+        if (!node || typeof node !== 'object') {
+          return node; // Return as is if not an object
+        }
+        return {
+          ...(node as object),
+          // Don't include any functions or circular references
+          data: node.data ? {
+            ...(node.data as object),
+            // Remove any potentially circular references or functions
+            _reactFlow_edge: undefined,
+            _reactFlow_node: undefined
+          } : {}
+        };
       });
+      
+      // Create a clean version of edges
+      const cleanEdges = data.data.edges.map(edge => {
+        if (!edge || typeof edge !== 'object') {
+          return edge; // Return as is if not an object
+        }
+        
+        // Create a simpler edge object with only the essential properties
+        return {
+          id: edge.id,
+          source: edge.source,
+          target: edge.target,
+          sourceHandle: edge.sourceHandle,
+          targetHandle: edge.targetHandle,
+          // Create a new style object if it exists
+          style: edge.style ? { 
+            strokeWidth: edge.style.strokeWidth,
+            stroke: edge.style.stroke
+          } : undefined,
+          // Create a simple markerEnd reference if it exists
+          markerEnd: edge.markerEnd ? edge.markerEnd.toString() : undefined
+        };
+      });
+      
+      // Create the JSON string with clean data
+      const flowDataJson = JSON.stringify({
+        nodes: cleanNodes,
+        edges: cleanEdges
+      });
+      
+      console.log("Saving workflow with flowData:", flowDataJson.slice(0, 100) + "...");
       
       if (isNew) {
         const postData = {
@@ -131,11 +211,23 @@ const FlowEditor = ({ workflow, isNew = false }: FlowEditorProps) => {
         );
       }
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
+      toast({
+        title: "Workflow Saved",
+        description: "Your workflow has been saved successfully."
+      });
       queryClient.invalidateQueries({ queryKey: ['/api/workflows'] });
       if (isNew) {
         navigate('/');
       }
+    },
+    onError: (error) => {
+      console.error("Error saving workflow:", error);
+      toast({
+        title: "Error Saving Workflow",
+        description: "There was a problem saving your workflow. Please try again.",
+        variant: "destructive"
+      });
     }
   });
 
@@ -152,11 +244,8 @@ const FlowEditor = ({ workflow, isNew = false }: FlowEditorProps) => {
   const onConnect = useCallback(
     (connection: Connection) => setEdges((eds) => addEdge({
       ...connection,
-      markerEnd: {
-        type: MarkerType.ArrowClosed,
-        width: 20,
-        height: 20
-      },
+      // Use the MarkerType enum directly which is allowed
+      markerEnd: MarkerType.ArrowClosed,
       style: {
         strokeWidth: 2
       }
@@ -271,16 +360,16 @@ const FlowEditor = ({ workflow, isNew = false }: FlowEditorProps) => {
       // Register all node executors
       registerAllNodeExecutors();
       
-      // Show all nodes as processing
-      setNodes(nds => 
-        nds.map(node => ({
+      // Show all nodes as processing - using type assertion to satisfy TypeScript
+      setNodes(nodes.map(node => {
+        return {
           ...node,
           data: {
             ...node.data,
             _isProcessing: true
           }
-        }))
-      );
+        };
+      }) as Node[]);
       
       // Execute the workflow
       await executeWorkflow(
@@ -288,25 +377,24 @@ const FlowEditor = ({ workflow, isNew = false }: FlowEditorProps) => {
         edges,
         // Node state change handler
         (nodeId, nodeState) => {
-          setNodes(nds => 
-            nds.map(node => {
-              if (node.id === nodeId) {
-                return {
-                  ...node,
-                  data: {
-                    ...node.data,
-                    _isProcessing: nodeState.state === 'running',
-                    _isComplete: nodeState.state === 'complete',
-                    _hasError: nodeState.state === 'error',
-                    _errorMessage: nodeState.error,
-                    _searchResult: nodeState.data, // Store result in node data
-                    textContent: nodeState.data,   // Update text content for visualization nodes
-                  }
-                };
-              }
-              return node;
-            })
-          );
+          const updatedNodes = nodes.map(node => {
+            if (node.id === nodeId) {
+              return {
+                ...node,
+                data: {
+                  ...node.data,
+                  _isProcessing: nodeState.state === 'running',
+                  _isComplete: nodeState.state === 'complete',
+                  _hasError: nodeState.state === 'error',
+                  _errorMessage: nodeState.error,
+                  _searchResult: nodeState.data, // Store result in node data
+                  textContent: nodeState.data,   // Update text content for visualization nodes
+                }
+              };
+            }
+            return node;
+          });
+          setNodes(updatedNodes as Node[]);
         },
         // Workflow completion handler
         (finalState) => {
