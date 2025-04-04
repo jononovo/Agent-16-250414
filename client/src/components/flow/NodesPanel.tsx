@@ -108,13 +108,15 @@ const NodesPanel = () => {
       </div>
       
       <Tabs defaultValue="ai" className="mb-4" onValueChange={setActiveTab}>
-        <TabsList className="w-full">
-          <TabsTrigger value="all" className="flex-1">All</TabsTrigger>
-          <TabsTrigger value="ai" className="flex-1">AI</TabsTrigger>
-          <TabsTrigger value="data" className="flex-1">Data</TabsTrigger>
-          <TabsTrigger value="triggers" className="flex-1">Triggers</TabsTrigger>
-          <TabsTrigger value="actions" className="flex-1">Actions</TabsTrigger>
-        </TabsList>
+        <div className="overflow-auto scrollbar-none">
+          <TabsList className="w-auto inline-flex">
+            <TabsTrigger value="all" className="px-4">All</TabsTrigger>
+            <TabsTrigger value="ai" className="px-4">AI</TabsTrigger>
+            <TabsTrigger value="data" className="px-4">Data</TabsTrigger>
+            <TabsTrigger value="triggers" className="px-4">Triggers</TabsTrigger>
+            <TabsTrigger value="actions" className="px-4">Actions</TabsTrigger>
+          </TabsList>
+        </div>
       </Tabs>
 
       <ScrollArea className="flex-1">
