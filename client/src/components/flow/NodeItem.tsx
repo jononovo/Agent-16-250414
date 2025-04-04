@@ -2,11 +2,12 @@ import { memo } from 'react';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import * as Lucide from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
+import { Circle } from 'lucide-react';
 
 export interface NodeData {
   label: string;
   description?: string;
-  icon?: string;
+  icon?: string | React.ComponentType<any>;
   [key: string]: any;
 }
 
@@ -15,87 +16,92 @@ export interface NodeItemProps {
     type: string;
     name: string;
     description: string | null;
-    icon: string | null;
+    icon?: string | null | React.ComponentType<any>;
     data: NodeData;
     [key: string]: any;
   };
   expanded?: boolean;
 }
 
-const DynamicIcon = ({ name }: { name: string | null }) => {
-  const iconName = name || 'circle';
-  const IconComponent = (Lucide as any)[iconName.charAt(0).toUpperCase() + iconName.slice(1)];
-  
-  if (!IconComponent) {
-    return <Lucide.Circle className="h-4 w-4" />;
+// Helper type for icon components
+type IconComponent = React.ComponentType<{ className?: string }>;
+
+const DynamicIcon = ({ icon }: { icon?: string | IconComponent | null }) => {
+  // If icon is a React component
+  if (typeof icon === 'function') {
+    const IconComponent = icon as IconComponent;
+    return <IconComponent className="h-5 w-5" />;
   }
   
-  return <IconComponent className="h-4 w-4" />;
+  // If icon is a string
+  if (typeof icon === 'string') {
+    const iconName = icon || 'circle';
+    const IconComponent = (Lucide as any)[iconName.charAt(0).toUpperCase() + iconName.slice(1)];
+    
+    if (!IconComponent) {
+      return <Circle className="h-5 w-5" />;
+    }
+    
+    return <IconComponent className="h-5 w-5" />;
+  }
+  
+  // Default
+  return <Circle className="h-5 w-5" />;
 };
 
 const NodeItem = ({ node, expanded = false }: NodeItemProps) => {
   const onDragStart = (event: React.DragEvent, nodeType: string, data: NodeData) => {
     event.dataTransfer.setData('application/reactflow/type', nodeType);
-    event.dataTransfer.setData('application/reactflow/data', JSON.stringify(data));
+    event.dataTransfer.setData('application/reactflow/data', JSON.stringify({
+      ...data,
+      // Convert the icon component to a string for JSON serialization if needed
+      icon: typeof data.icon === 'function' ? data.icon.name : data.icon,
+    }));
     event.dataTransfer.effectAllowed = 'move';
   };
 
-  const getNodeColorClass = () => {
-    switch (node.type) {
-      case 'trigger':
-        return 'bg-blue-50 border-blue-200 text-blue-600';
-      case 'processor':
-        return 'bg-green-50 border-green-200 text-green-600';
-      case 'output':
-        return 'bg-amber-50 border-amber-200 text-amber-600';
-      default:
-        return 'bg-slate-50 border-slate-200 text-slate-600';
-    }
-  };
+  // Get icon from the node data or node itself
+  const nodeIcon = node.data?.icon || node.icon;
 
-  const getIconColorClass = () => {
-    switch (node.type) {
-      case 'trigger':
-        return 'bg-blue-100 text-blue-600';
-      case 'processor':
-        return 'bg-green-100 text-green-600';
-      case 'output':
-        return 'bg-amber-100 text-amber-600';
+  // Apply dark mode styling for nodes in screenshot
+  const getCategoryColor = () => {
+    const category = node.category || '';
+    
+    switch (category) {
+      case 'ai':
+        return 'border-purple-500/20 bg-purple-500/5 text-purple-500';
+      case 'data':
+        return 'border-blue-500/20 bg-blue-500/5 text-blue-500';
+      case 'triggers':
+        return 'border-amber-500/20 bg-amber-500/5 text-amber-500';
+      case 'actions':
+        return 'border-green-500/20 bg-green-500/5 text-green-500';
       default:
-        return 'bg-primary/10 text-primary';
+        return 'border-gray-500/20 bg-gray-500/5 text-gray-500';
     }
   };
 
   return (
-    <Card 
-      className={`mb-2 cursor-grab border ${getNodeColorClass()} shadow-sm transition-all duration-200 hover:shadow-md active:cursor-grabbing`}
+    <div 
+      className="mb-3 cursor-grab transition-all duration-200 active:cursor-grabbing"
       draggable
       onDragStart={(event) => onDragStart(event, node.type, {
         label: node.name,
         description: node.description || '',
-        icon: node.icon || 'circle',
+        icon: nodeIcon || undefined,
+        category: node.category
       })}
     >
-      <CardHeader className="flex flex-row items-center p-3 pb-2">
-        <div className="flex items-center gap-2">
-          <div className={`w-6 h-6 rounded-md ${getIconColorClass()} flex items-center justify-center`}>
-            <DynamicIcon name={node.icon} />
-          </div>
-          <span className="font-medium text-sm">{node.name}</span>
+      <div className="flex items-start gap-3">
+        <div className={`mt-1 w-6 h-6 rounded-md flex items-center justify-center ${getCategoryColor()}`}>
+          <DynamicIcon icon={nodeIcon} />
         </div>
-        {!expanded && (
-          <Badge variant="outline" className={`ml-auto text-[10px] font-normal ${getNodeColorClass()}`}>
-            {node.type.charAt(0).toUpperCase() + node.type.slice(1)}
-          </Badge>
-        )}
-      </CardHeader>
-      
-      {(expanded || (node.description && node.description.length < 60)) && (
-        <CardContent className="p-3 pt-0 text-xs text-slate-500">
-          {node.description || 'No description provided'}
-        </CardContent>
-      )}
-    </Card>
+        <div className="flex-1">
+          <h4 className="font-medium text-sm text-foreground">{node.name}</h4>
+          <p className="text-xs text-muted-foreground">{node.description || 'No description provided'}</p>
+        </div>
+      </div>
+    </div>
   );
 };
 

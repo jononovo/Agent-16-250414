@@ -5,7 +5,24 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Input } from '@/components/ui/input';
-import { Search } from 'lucide-react';
+import { 
+  Search, 
+  Type, 
+  Sparkles, 
+  Cpu, 
+  MessageSquare, 
+  Database, 
+  BarChart,
+  Webhook,
+  Clock,
+  Mail,
+  Globe,
+  Send,
+  FileJson,
+  CheckCheck,
+  Filter,
+  Repeat
+} from 'lucide-react';
 import NodeItem from './NodeItem';
 
 // Node categories based on the documentation
@@ -16,27 +33,120 @@ const NODE_CATEGORIES = [
   { id: 'actions', name: 'Actions', description: 'Nodes that perform operations such as API requests or database queries' }
 ];
 
-// Specialized AI node types based on the documentation
+// Specialized AI node types based on the documentation and screenshot
 const NODE_TYPES = [
   // AI Nodes
-  { id: 'text_input', name: 'Text Input', description: 'Provides static text input to the workflow', category: 'ai' },
-  { id: 'generate_text', name: 'Generate Text', description: 'Creates AI-generated text using various models', category: 'ai' },
-  { id: 'prompt_crafter', name: 'Prompt Crafter', description: 'Designs templated prompts with variables', category: 'ai' },
-  { id: 'visualize_text', name: 'Visualize Text', description: 'Displays text output in the workflow', category: 'data' },
+  { 
+    id: 'text_input', 
+    name: 'Text Input', 
+    description: 'Add text input to your workflow',
+    category: 'ai',
+    icon: Type
+  },
+  { 
+    id: 'generate_text', 
+    name: 'Generate Text', 
+    description: 'Create AI-generated text with model',
+    category: 'ai',
+    icon: Sparkles
+  },
+  { 
+    id: 'prompt_crafter', 
+    name: 'Prompt Crafter', 
+    description: 'Design templated prompts for AI',
+    category: 'ai',
+    icon: MessageSquare
+  },
+  { 
+    id: 'ai_processing', 
+    name: 'AI Processing', 
+    description: 'AI-powered data processing',
+    category: 'ai',
+    icon: Cpu
+  },
+  { 
+    id: 'ai_chat', 
+    name: 'AI Chat', 
+    description: 'Generate text with AI chat',
+    category: 'ai',
+    icon: MessageSquare
+  },
+  { 
+    id: 'valid_response', 
+    name: 'Response Validator', 
+    description: 'Verify content meets requirements',
+    category: 'ai',
+    icon: CheckCheck
+  },
+  { 
+    id: 'visualize_text', 
+    name: 'Visualize Text', 
+    description: 'Display text output in the workflow',
+    category: 'data',
+    icon: BarChart
+  },
   
   // Trigger Nodes
-  { id: 'webhook', name: 'Webhook Trigger', description: 'Triggers a workflow from an HTTP request', category: 'triggers' },
-  { id: 'scheduler', name: 'Scheduler', description: 'Runs a workflow on a schedule', category: 'triggers' },
-  { id: 'email_trigger', name: 'Email Trigger', description: 'Triggers from email events', category: 'triggers' },
+  { 
+    id: 'webhook', 
+    name: 'Webhook Trigger', 
+    description: 'Triggers a workflow from an HTTP request',
+    category: 'triggers',
+    icon: Webhook
+  },
+  { 
+    id: 'scheduler', 
+    name: 'Scheduler', 
+    description: 'Runs a workflow on a schedule',
+    category: 'triggers',
+    icon: Clock
+  },
+  { 
+    id: 'email_trigger', 
+    name: 'Email Trigger', 
+    description: 'Triggers from email events',
+    category: 'triggers',
+    icon: Mail
+  },
   
   // Action Nodes
-  { id: 'http_request', name: 'HTTP Request', description: 'Makes API requests to external services', category: 'actions' },
-  { id: 'email_send', name: 'Email Send', description: 'Sends email messages', category: 'actions' },
-  { id: 'database_query', name: 'Database Query', description: 'Performs database operations', category: 'actions' },
+  { 
+    id: 'http_request', 
+    name: 'HTTP Request', 
+    description: 'Makes API requests to external services',
+    category: 'actions',
+    icon: Globe
+  },
+  { 
+    id: 'email_send', 
+    name: 'Email Send', 
+    description: 'Sends email messages',
+    category: 'actions',
+    icon: Send
+  },
+  { 
+    id: 'database_query', 
+    name: 'Database Query', 
+    description: 'Performs database operations',
+    category: 'actions',
+    icon: Database
+  },
   
   // Data Nodes
-  { id: 'data_transform', name: 'Data Transform', description: 'Transforms data structure', category: 'data' },
-  { id: 'filter', name: 'Filter', description: 'Filters data based on conditions', category: 'data' }
+  { 
+    id: 'data_transform', 
+    name: 'Data Transform', 
+    description: 'Transforms data structure',
+    category: 'data',
+    icon: Repeat
+  },
+  { 
+    id: 'filter', 
+    name: 'Filter', 
+    description: 'Filters data based on conditions',
+    category: 'data',
+    icon: Filter
+  }
 ];
 
 const NodesPanel = () => {
@@ -58,7 +168,7 @@ const NodesPanel = () => {
     name: type.name,
     type: type.id,
     description: type.description,
-    icon: null,
+    icon: type.icon, // Use the icon component directly
     createdAt: new Date(),
     updatedAt: new Date(),
     userId: null,

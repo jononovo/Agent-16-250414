@@ -85,4 +85,8 @@ export const insertNodeSchema = createInsertSchema(nodes).omit({
 });
 
 export type InsertNode = z.infer<typeof insertNodeSchema>;
-export type Node = typeof nodes.$inferSelect;
+export type Node = typeof nodes.$inferSelect & {
+  // Additional fields used by the frontend
+  icon?: any;
+  category?: string;
+};
