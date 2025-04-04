@@ -2,7 +2,8 @@ import {
   users, type User, type InsertUser,
   agents, type Agent, type InsertAgent,
   workflows, type Workflow, type InsertWorkflow,
-  nodes, type Node, type InsertNode
+  nodes, type Node, type InsertNode,
+  logs, type Log, type InsertLog
 } from "@shared/schema";
 
 // Storage interface
@@ -21,6 +22,7 @@ export interface IStorage {
   
   // Workflow methods
   getWorkflows(type?: string): Promise<Workflow[]>;
+  getWorkflowsByAgentId(agentId: number): Promise<Workflow[]>;
   getWorkflow(id: number): Promise<Workflow | undefined>;
   createWorkflow(workflow: InsertWorkflow): Promise<Workflow>;
   updateWorkflow(id: number, workflow: Partial<Workflow>): Promise<Workflow | undefined>;
@@ -32,6 +34,12 @@ export interface IStorage {
   createNode(node: InsertNode): Promise<Node>;
   updateNode(id: number, node: Partial<Node>): Promise<Node | undefined>;
   deleteNode(id: number): Promise<boolean>;
+  
+  // Log methods
+  getLogs(agentId?: number, limit?: number): Promise<Log[]>;
+  getLog(id: number): Promise<Log | undefined>;
+  createLog(log: InsertLog): Promise<Log>;
+  updateLog(id: number, log: Partial<Log>): Promise<Log | undefined>;
 }
 
 export class MemStorage implements IStorage {
@@ -39,22 +47,26 @@ export class MemStorage implements IStorage {
   private agents: Map<number, Agent>;
   private workflows: Map<number, Workflow>;
   private nodes: Map<number, Node>;
+  private logs: Map<number, Log>;
   
   private userId: number;
   private agentId: number;
   private workflowId: number;
   private nodeId: number;
+  private logId: number;
 
   constructor() {
     this.users = new Map();
     this.agents = new Map();
     this.workflows = new Map();
     this.nodes = new Map();
+    this.logs = new Map();
     
     this.userId = 1;
     this.agentId = 1;
     this.workflowId = 1;
     this.nodeId = 1;
+    this.logId = 1;
     
     // Initialize with some default data
     this.initializeDefaultData();
@@ -530,6 +542,62 @@ export class MemStorage implements IStorage {
       })
     });
     
+    // Create sample logs for Customer Support Agent
+    // Sample successful log
+    this.createLog({
+      agentId: 4, // Customer Support Agent
+      workflowId: 1,
+      status: "success",
+      input: { query: "How do I reset my password?" },
+      output: { response: "You can reset your password by clicking on the 'Forgot Password' link on the login page and following the instructions sent to your email." },
+      completedAt: new Date(Date.now() - 1000 * 60 * 30), // 30 minutes ago
+      executionPath: { 
+        nodes: ["textInput-1", "routing-1", "generateText-1", "visualizeText-1"],
+        completed: true 
+      }
+    });
+    
+    // Sample error log
+    this.createLog({
+      agentId: 4, // Customer Support Agent
+      workflowId: 2,
+      status: "error",
+      input: { query: "I want to cancel my subscription" },
+      error: "Unable to access customer database",
+      completedAt: new Date(Date.now() - 1000 * 60 * 60), // 1 hour ago
+      executionPath: { 
+        nodes: ["textInput-1", "database-query-1"],
+        error: "Database connection failed", 
+        completed: false 
+      }
+    });
+    
+    // Sample logs for Market Analysis Agent
+    for (let i = 0; i < 20; i++) {
+      const isSuccess = Math.random() > 0.2; // 80% success rate
+      const minutesAgo = 10 + (i * 30); // Spread out over time
+      
+      this.createLog({
+        agentId: 5, // Market Analysis Agent
+        workflowId: i % 2 === 0 ? 3 : 4,
+        status: isSuccess ? "success" : "error",
+        input: { 
+          query: `Analyze market trends for Product ${i + 1}`,
+          parameters: { timeframe: "last 30 days", region: "North America" }
+        },
+        output: isSuccess ? { 
+          summary: `Analysis for Product ${i + 1} completed successfully.`,
+          data: { sentiment: Math.random() > 0.5 ? "positive" : "negative", score: Math.floor(Math.random() * 100) } 
+        } : {},
+        error: isSuccess ? null : "Insufficient market data available",
+        completedAt: new Date(Date.now() - 1000 * 60 * minutesAgo),
+        executionPath: { 
+          nodes: ["textInput-1", "data-fetch-1", isSuccess ? "analysis-1" : null, isSuccess ? "visualizeText-1" : null].filter(Boolean),
+          completed: isSuccess
+        }
+      });
+    }
+    
     // Create sample nodes
     this.createNode({
       name: "Data Filter",
@@ -800,7 +868,7 @@ export class MemStorage implements IStorage {
       updatedAt: now,
       icon: insertWorkflow.icon || null,
       description: insertWorkflow.description || null,
-      status: insertWorkflow.status || null,
+      status: insertWorkflow.status || "draft",
       userId: insertWorkflow.userId || null,
       agentId: insertWorkflow.agentId || null,
       flowData: insertWorkflow.flowData || {}
@@ -851,7 +919,7 @@ export class MemStorage implements IStorage {
       icon: insertNode.icon || null,
       description: insertNode.description || null,
       userId: insertNode.userId || null,
-      category: insertNode.category || null,
+      category: insertNode.category || "",
       configuration: insertNode.configuration || {}
     };
     this.nodes.set(id, node);
@@ -873,6 +941,66 @@ export class MemStorage implements IStorage {
   
   async deleteNode(id: number): Promise<boolean> {
     return this.nodes.delete(id);
+  }
+  
+  // Workflow by agent methods
+  async getWorkflowsByAgentId(agentId: number): Promise<Workflow[]> {
+    const allWorkflows = Array.from(this.workflows.values());
+    return allWorkflows.filter(workflow => workflow.agentId === agentId);
+  }
+  
+  // Log methods
+  async getLogs(agentId?: number, limit: number = 20): Promise<Log[]> {
+    let logs = Array.from(this.logs.values());
+    
+    if (agentId) {
+      logs = logs.filter(log => log.agentId === agentId);
+    }
+    
+    // Sort by startedAt descending (latest first)
+    logs.sort((a, b) => {
+      const timeA = a.startedAt ? a.startedAt.getTime() : 0;
+      const timeB = b.startedAt ? b.startedAt.getTime() : 0;
+      return timeB - timeA;
+    });
+    
+    // Apply limit
+    return logs.slice(0, limit);
+  }
+  
+  async getLog(id: number): Promise<Log | undefined> {
+    return this.logs.get(id);
+  }
+  
+  async createLog(insertLog: InsertLog): Promise<Log> {
+    const id = this.logId++;
+    const now = new Date();
+    const log: Log = { 
+      id,
+      agentId: insertLog.agentId,
+      workflowId: insertLog.workflowId,
+      status: insertLog.status,
+      input: insertLog.input || {},
+      output: insertLog.output || {},
+      error: insertLog.error || null,
+      startedAt: now,
+      completedAt: insertLog.completedAt || null,
+      executionPath: insertLog.executionPath || {}
+    };
+    this.logs.set(id, log);
+    return log;
+  }
+  
+  async updateLog(id: number, logUpdate: Partial<Log>): Promise<Log | undefined> {
+    const log = this.logs.get(id);
+    if (!log) return undefined;
+    
+    const updatedLog: Log = { 
+      ...log, 
+      ...logUpdate 
+    };
+    this.logs.set(id, updatedLog);
+    return updatedLog;
   }
 }
 

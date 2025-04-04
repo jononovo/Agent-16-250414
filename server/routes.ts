@@ -1,7 +1,7 @@
-import type { Express } from "express";
+import type { Express, Request, Response, NextFunction } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import { insertAgentSchema, insertWorkflowSchema, insertNodeSchema } from "@shared/schema";
+import { insertAgentSchema, insertWorkflowSchema, insertNodeSchema, insertLogSchema } from "@shared/schema";
 import { z } from "zod";
 import { fromZodError } from "zod-validation-error";
 
@@ -247,7 +247,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: validationError.message });
       }
       
-      const updatedNode = await storage.updateNode(id, result.data);
+      // Ensure category is never null
+      const data = { ...result.data };
+      if (data.category === null) {
+        data.category = "";
+      }
+      
+      const updatedNode = await storage.updateNode(id, data);
       res.json(updatedNode);
     } catch (error) {
       res.status(500).json({ message: "Failed to update node" });
@@ -270,6 +276,119 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(204).send();
     } catch (error) {
       res.status(500).json({ message: "Failed to delete node" });
+    }
+  });
+
+  // Agent Workflows API - Get workflows associated with an agent
+  app.get("/api/agents/:id/workflows", async (req, res) => {
+    try {
+      const agentId = parseInt(req.params.id);
+      if (isNaN(agentId)) {
+        return res.status(400).json({ message: "Invalid agent ID" });
+      }
+      
+      const agent = await storage.getAgent(agentId);
+      if (!agent) {
+        return res.status(404).json({ message: "Agent not found" });
+      }
+      
+      const workflows = await storage.getWorkflowsByAgentId(agentId);
+      res.json(workflows);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to fetch workflows for agent" });
+    }
+  });
+
+  // Logs API
+  app.get("/api/logs", async (req, res) => {
+    try {
+      const agentId = req.query.agentId ? parseInt(req.query.agentId as string) : undefined;
+      const limit = req.query.limit ? parseInt(req.query.limit as string) : 20;
+      
+      const logs = await storage.getLogs(agentId, limit);
+      res.json(logs);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to fetch logs" });
+    }
+  });
+
+  app.get("/api/logs/:id", async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      if (isNaN(id)) {
+        return res.status(400).json({ message: "Invalid log ID" });
+      }
+      
+      const log = await storage.getLog(id);
+      if (!log) {
+        return res.status(404).json({ message: "Log not found" });
+      }
+      
+      res.json(log);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to fetch log" });
+    }
+  });
+
+  app.post("/api/logs", async (req, res) => {
+    try {
+      const result = insertLogSchema.safeParse(req.body);
+      if (!result.success) {
+        const validationError = fromZodError(result.error);
+        return res.status(400).json({ message: validationError.message });
+      }
+      
+      const log = await storage.createLog(result.data);
+      res.status(201).json(log);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to create log" });
+    }
+  });
+
+  app.put("/api/logs/:id", async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      if (isNaN(id)) {
+        return res.status(400).json({ message: "Invalid log ID" });
+      }
+      
+      const log = await storage.getLog(id);
+      if (!log) {
+        return res.status(404).json({ message: "Log not found" });
+      }
+      
+      const updateSchema = insertLogSchema.partial();
+      const result = updateSchema.safeParse(req.body);
+      if (!result.success) {
+        const validationError = fromZodError(result.error);
+        return res.status(400).json({ message: validationError.message });
+      }
+      
+      const updatedLog = await storage.updateLog(id, result.data);
+      res.json(updatedLog);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to update log" });
+    }
+  });
+
+  // Agent Logs API - Get logs associated with an agent
+  app.get("/api/agents/:id/logs", async (req, res) => {
+    try {
+      const agentId = parseInt(req.params.id);
+      if (isNaN(agentId)) {
+        return res.status(400).json({ message: "Invalid agent ID" });
+      }
+      
+      const agent = await storage.getAgent(agentId);
+      if (!agent) {
+        return res.status(404).json({ message: "Agent not found" });
+      }
+      
+      const limit = req.query.limit ? parseInt(req.query.limit as string) : 20;
+      const logs = await storage.getLogs(agentId, limit);
+      res.json(logs);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to fetch logs for agent" });
     }
   });
 

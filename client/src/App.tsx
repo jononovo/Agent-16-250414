@@ -5,6 +5,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { BuilderProvider } from "./contexts/BuilderContext";
 import Builder from "@/pages/builder";
 import WorkflowEditor from "@/pages/workflow-editor";
+import AgentPage from "@/pages/agent-page";
 import NotFound from "@/pages/not-found";
 
 function Router() {
@@ -13,6 +14,7 @@ function Router() {
       <Route path="/" component={Builder} />
       <Route path="/workflow-editor/new" component={WorkflowEditor} />
       <Route path="/workflow-editor/:id" component={WorkflowEditor} />
+      <Route path="/agent/:id" component={AgentPage} />
       <Route component={NotFound} />
     </Switch>
   );

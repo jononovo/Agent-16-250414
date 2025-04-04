@@ -40,6 +40,28 @@ export const insertAgentSchema = createInsertSchema(agents).omit({
 export type InsertAgent = z.infer<typeof insertAgentSchema>;
 export type Agent = typeof agents.$inferSelect;
 
+// Log schema
+export const logs = pgTable("logs", {
+  id: serial("id").primaryKey(),
+  agentId: integer("agent_id").notNull(),
+  workflowId: integer("workflow_id").notNull(),
+  status: text("status").notNull(), // "success", "error", "running"
+  input: jsonb("input").default({}),
+  output: jsonb("output").default({}),
+  error: text("error"),
+  startedAt: timestamp("started_at").defaultNow(),
+  completedAt: timestamp("completed_at"),
+  executionPath: jsonb("execution_path").default({}), // Store the flow path of execution
+});
+
+export const insertLogSchema = createInsertSchema(logs).omit({
+  id: true,
+  startedAt: true,
+});
+
+export type InsertLog = z.infer<typeof insertLogSchema>;
+export type Log = typeof logs.$inferSelect;
+
 // Workflow schema
 export const workflows = pgTable("workflows", {
   id: serial("id").primaryKey(),
@@ -71,7 +93,7 @@ export const nodes = pgTable("nodes", {
   description: text("description"),
   type: text("type").notNull(), // "custom", "interface", "workflow", "integration"
   icon: text("icon"),
-  category: text("category"),
+  category: text("category").notNull().default(""),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
   userId: integer("user_id"),
@@ -82,11 +104,13 @@ export const insertNodeSchema = createInsertSchema(nodes).omit({
   id: true,
   createdAt: true,
   updatedAt: true,
+}).extend({
+  category: z.string().default("")
 });
 
 export type InsertNode = z.infer<typeof insertNodeSchema>;
 export type Node = typeof nodes.$inferSelect & {
   // Additional fields used by the frontend
   icon?: any;
-  category?: string;
+  category: string;
 };
