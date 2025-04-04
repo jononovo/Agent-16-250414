@@ -71,6 +71,7 @@ const PerplexityNode = ({ data, selected }: NodeProps<NodeData>) => {
       }
     } catch (error: any) {
       console.error('Error searching with Perplexity API:', error);
+      console.error('Error details:', JSON.stringify(error, null, 2));
       setSearchResult(`Error connecting to Perplexity API: ${error.message || 'Unknown error'}`);
     } finally {
       setIsLoading(false);
