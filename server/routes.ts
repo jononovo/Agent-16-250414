@@ -483,7 +483,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const { executeWorkflow } = await import('../client/src/lib/workflowEngine');
         
         // Import node executors to ensure they're registered
-        await import('../client/src/lib/nodeExecutors');
+        const { registerAllNodeExecutors } = await import('../client/src/lib/nodeExecutors');
+        
+        // Explicitly register all node executors
+        registerAllNodeExecutors();
         
         // Parse the flow data
         const flowData = typeof workflow.flowData === 'string' 

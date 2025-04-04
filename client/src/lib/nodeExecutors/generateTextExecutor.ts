@@ -64,7 +64,9 @@ export const generateTextExecutor: NodeExecutor = {
     if (!apiKey) {
       try {
         console.log('Fetching API key from server config...');
-        const configResponse = await fetch('/api/config');
+        // Use absolute URL for server-side execution
+        const baseUrl = typeof window !== 'undefined' ? window.location.origin : 'http://localhost:5000';
+        const configResponse = await fetch(`${baseUrl}/api/config`);
         
         if (configResponse.ok) {
           const config = await configResponse.json();
@@ -125,17 +127,15 @@ export const generateTextExecutor: NodeExecutor = {
       // Set up headers
       let headers: HeadersInit = {
         'Content-Type': 'application/json',
-        'anthropic-version': '2023-06-01',
-        'x-api-key': apiKey
+        'anthropic-version': '2023-06-01'
       };
       
-      // Add Bearer token format if needed (handles both authentication formats)
-      if (!headers['x-api-key'].startsWith('sk-')) {
-        headers = {
-          'Content-Type': 'application/json',
-          'anthropic-version': '2023-06-01',
-          'Authorization': `Bearer ${apiKey}`
-        };
+      // Handle Claude API key format correctly
+      // Claude API keys can start with either 'sk-' or 'sk-ant-'
+      if (apiKey.startsWith('sk-ant-')) {
+        headers['x-api-key'] = apiKey;
+      } else {
+        headers['Authorization'] = `Bearer ${apiKey}`;
       }
       
       // Make request to Claude API
@@ -152,8 +152,29 @@ export const generateTextExecutor: NodeExecutor = {
         console.error('API error status:', response.status);
         console.error('API error text:', errorText);
         
+        // Format a user-friendly error message
+        let errorExplanation = "";
+        
+        if (response.status === 401) {
+          errorExplanation = `Authentication error (401): The Claude API key appears to be invalid or expired. 
+Please check that the CLAUDE_API_KEY environment variable contains a valid API key.
+
+If you just added the key, you may need to restart the server for it to take effect.`;
+        } else if (response.status === 400) {
+          errorExplanation = `Bad request error (400): The request to Claude API was malformed. 
+This could be due to an invalid model name, incompatible parameters, or exceeded context length.`;
+        } else if (response.status === 429) {
+          errorExplanation = `Rate limit exceeded (429): You've hit the Claude API rate limit. 
+Please wait a moment before trying again.`;
+        } else if (response.status >= 500) {
+          errorExplanation = `Claude API server error (${response.status}): There's an issue with the Claude API service. 
+This is not a problem with your implementation but with the API provider.`;
+        } else {
+          errorExplanation = `Error from Claude API (${response.status}): ${errorText}`;
+        }
+        
         // Fall back to simulation on error, but include error details
-        const errorMessage = `Error from Claude API (${response.status}): ${errorText}\n\nFalling back to simulated response:\n\n`;
+        const errorMessage = `${errorExplanation}\n\nFalling back to simulated response:\n\n`;
         return errorMessage + simulateTextGeneration(model, systemPrompt, userPrompt);
       }
       
@@ -192,25 +213,43 @@ function simulateTextGeneration(model: string, systemPrompt: string, userPrompt:
   
   // Add system context if available
   if (systemPrompt) {
-    response.push(`System context: "${systemPrompt.substring(0, 30)}${systemPrompt.length > 30 ? '...' : ''}"`);
+    response.push(`System role: "${systemPrompt.substring(0, 100)}${systemPrompt.length > 100 ? '...' : ''}"`);
     response.push('');
   }
   
-  // Add simulated response content based on the type of prompt
-  const lowerPrompt = userPrompt.toLowerCase();
+  // Determine if it's a coordinator or generator agent based on the system prompt
+  const isCoordinator = systemPrompt.toLowerCase().includes('coordinator agent');
+  const isGenerator = systemPrompt.toLowerCase().includes('generator agent');
   
-  if (lowerPrompt.includes('describe') || lowerPrompt.includes('explain')) {
-    response.push('This is a simulated explanation response. To get actual AI-generated text, please provide a Claude API key in the node settings.');
-  } else if (lowerPrompt.includes('list') || lowerPrompt.includes('steps')) {
-    response.push('1. This is a simulated list response');
-    response.push('2. To get actual AI-generated text, add your Claude API key');
-    response.push('3. The simulation provides basic responses for demonstration purposes');
-  } else if (lowerPrompt.includes('analyze') || lowerPrompt.includes('evaluate')) {
-    response.push('This is a simulated analysis response. Add your Claude API key to get actual AI analysis and evaluations.');
+  if (isCoordinator) {
+    response.push("Hello! I'm the Coordinator Agent. I'm here to help gather your requirements and determine how I can assist you. Could you please tell me more about what you're looking to accomplish? Some helpful details would include:");
+    response.push("");
+    response.push("1. What task or problem are you trying to solve?");
+    response.push("2. Are there any specific tools or APIs you'd like to integrate?");
+    response.push("3. What format would you like the output in?");
+    response.push("");
+    response.push("(Note: This is a simulated response. For actual Claude-powered responses, the system needs to be configured with a valid Claude API key.)");
+  } else if (isGenerator) {
+    response.push("Based on the specifications provided, I'll create an agent to address your needs. Here's what I'm thinking:");
+    response.push("");
+    response.push("**Agent Name:** Task-Specific Assistant");
+    response.push("**Description:** An agent designed to help with your specific task requirements");
+    response.push("**Recommended Workflow:**");
+    response.push("1. Input processing node to handle user queries");
+    response.push("2. Analysis node to determine intent and requirements");
+    response.push("3. Action node to perform the requested operation");
+    response.push("4. Response formatting node to deliver results in the preferred format");
+    response.push("");
+    response.push("(Note: This is a simulated response. For actual Claude-powered agent generation, the system needs to be configured with a valid Claude API key.)");
   } else {
-    response.push('This is a simulated text generation response. To get actual AI-generated text, please provide a Claude API key in the node settings drawer. Click on the generate_text node to open the settings and add your API key.');
-    response.push('');
-    response.push('The simulation provides limited responses for demonstration purposes only.');
+    // Generic simulation response for other types of agents
+    response.push("This is a simulated AI response. To get actual AI-generated text, please ensure:");
+    response.push("");
+    response.push("1. A valid Claude API key is provided in the environment");
+    response.push("2. The generateText node is properly configured with the correct model");
+    response.push("3. The system has proper network access to reach the Claude API");
+    response.push("");
+    response.push("The simulation is providing this placeholder response for testing and development purposes only.");
   }
   
   return response.join('\n');
