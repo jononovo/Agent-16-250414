@@ -17,6 +17,8 @@ const NODE_TYPES = [
   { id: 'ai', name: 'AI Models', description: 'Generate content with AI' },
   { id: 'visualization', name: 'Visualization', description: 'Display results visually' },
   { id: 'routing', name: 'Routing', description: 'Control the flow logic' },
+  { id: 'promptCrafter', name: 'Prompt Crafters', description: 'Create AI prompt templates' },
+  { id: 'validResponse', name: 'Validators', description: 'Validate and verify responses' },
 ];
 
 const NodesPanel = () => {

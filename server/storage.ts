@@ -248,6 +248,137 @@ export class MemStorage implements IStorage {
         edges: routingWorkflowEdges
       })
     });
+
+    // Add Flow-Chain workflow with Prompt Crafter and ValidResponse
+    const flowChainNodes = [
+      {
+        id: 'textInput-1',
+        type: 'textInput',
+        position: { x: 100, y: 200 },
+        data: {
+          label: 'Text Input',
+          description: 'Enter your content requirements',
+          icon: 'type',
+          inputText: 'Create a product description for our new ultra-light hiking backpack'
+        }
+      },
+      {
+        id: 'promptCrafter-1',
+        type: 'promptCrafter',
+        position: { x: 400, y: 200 },
+        data: {
+          label: 'Prompt Crafter',
+          description: 'Build prompt template with variables',
+          icon: 'sparkles',
+          promptTemplate: 'You are a helpful assistant.\n{{system_message}}\nUser: {{input}}\nAssistant:',
+          variables: [
+            { id: 'system_message', value: 'You are a marketing expert specialized in creating compelling product descriptions.' },
+            { id: 'input', value: '' }
+          ]
+        }
+      },
+      {
+        id: 'generateText-1',
+        type: 'generateText',
+        position: { x: 700, y: 200 },
+        data: {
+          label: 'Generate Text',
+          description: 'AI Content Generator',
+          icon: 'cpu',
+          model: 'llama-3.3-70b-versatile',
+          systemPrompt: 'You are a marketing expert specialized in creating compelling product descriptions.',
+          userPrompt: 'Create a product description for our new ultra-light hiking backpack',
+        }
+      },
+      {
+        id: 'validResponse-1',
+        type: 'validResponse',
+        position: { x: 1000, y: 200 },
+        data: {
+          label: 'Response Validator',
+          description: 'Verify content meets requirements',
+          icon: 'checkCheck',
+          validationEnabled: true,
+          validationRules: "// Check if content is at least 100 characters\nreturn content.length >= 100;"
+        }
+      },
+      {
+        id: 'visualizeText-1',
+        type: 'visualizeText',
+        position: { x: 1300, y: 100 },
+        data: {
+          label: 'Valid Result',
+          description: 'Display valid content',
+          icon: 'eye',
+          textContent: 'Valid content will appear here'
+        }
+      },
+      {
+        id: 'visualizeText-2',
+        type: 'visualizeText',
+        position: { x: 1300, y: 300 },
+        data: {
+          label: 'Invalid Result',
+          description: 'Display invalid content',
+          icon: 'alertTriangle',
+          textContent: 'Invalid content will appear here'
+        }
+      }
+    ];
+
+    const flowChainEdges = [
+      {
+        id: 'edge-1',
+        source: 'textInput-1',
+        target: 'promptCrafter-1',
+        animated: true,
+        style: { stroke: '#8884d8', strokeWidth: 2 }
+      },
+      {
+        id: 'edge-2',
+        source: 'promptCrafter-1',
+        target: 'generateText-1',
+        animated: true,
+        style: { stroke: '#8884d8', strokeWidth: 2 }
+      },
+      {
+        id: 'edge-3',
+        source: 'generateText-1',
+        target: 'validResponse-1',
+        animated: true,
+        style: { stroke: '#8884d8', strokeWidth: 2 }
+      },
+      {
+        id: 'edge-4',
+        source: 'validResponse-1',
+        target: 'visualizeText-1',
+        sourceHandle: 'valid',
+        animated: true,
+        style: { stroke: '#4ade80', strokeWidth: 2 }
+      },
+      {
+        id: 'edge-5',
+        source: 'validResponse-1',
+        target: 'visualizeText-2',
+        sourceHandle: 'invalid',
+        animated: true,
+        style: { stroke: '#ef4444', strokeWidth: 2 }
+      }
+    ];
+
+    this.createWorkflow({
+      name: "AI Content Chain",
+      description: "Creates and validates AI-generated content with flexible prompt templating",
+      type: "custom",
+      icon: "link",
+      status: "active",
+      userId: 0,
+      agentId: 0,
+      flowData: JSON.stringify({
+        nodes: flowChainNodes,
+        edges: flowChainEdges
+      })
+    });
     
     // Create sample nodes
     this.createNode({
@@ -330,6 +461,27 @@ export class MemStorage implements IStorage {
       userId: 0,
       configuration: {}
     });
+    
+    // Add new node types for flow-chain
+    this.createNode({
+      name: "Prompt Crafter",
+      description: "Create and manage AI prompt templates with variable substitution",
+      type: "promptCrafter",
+      icon: "sparkles",
+      category: "promptCrafter",
+      userId: 0,
+      configuration: {}
+    });
+    
+    this.createNode({
+      name: "Valid Response",
+      description: "Validates AI responses against rules and directs flow accordingly",
+      type: "validResponse",
+      icon: "check-check",
+      category: "validResponse",
+      userId: 0,
+      configuration: {}
+    });
   }
 
   // User methods
@@ -367,10 +519,16 @@ export class MemStorage implements IStorage {
     const id = this.agentId++;
     const now = new Date();
     const agent: Agent = { 
-      ...insertAgent, 
-      id, 
+      id,
+      name: insertAgent.name,
+      type: insertAgent.type,
       createdAt: now, 
-      updatedAt: now
+      updatedAt: now,
+      icon: insertAgent.icon || null,
+      description: insertAgent.description || null,
+      status: insertAgent.status || null,
+      userId: insertAgent.userId || null,
+      configuration: insertAgent.configuration || {}
     };
     this.agents.set(id, agent);
     return agent;
@@ -410,10 +568,17 @@ export class MemStorage implements IStorage {
     const id = this.workflowId++;
     const now = new Date();
     const workflow: Workflow = { 
-      ...insertWorkflow, 
-      id, 
+      id,
+      name: insertWorkflow.name,
+      type: insertWorkflow.type,
       createdAt: now, 
-      updatedAt: now
+      updatedAt: now,
+      icon: insertWorkflow.icon || null,
+      description: insertWorkflow.description || null,
+      status: insertWorkflow.status || null,
+      userId: insertWorkflow.userId || null,
+      agentId: insertWorkflow.agentId || null,
+      flowData: insertWorkflow.flowData || {}
     };
     this.workflows.set(id, workflow);
     return workflow;
@@ -453,10 +618,16 @@ export class MemStorage implements IStorage {
     const id = this.nodeId++;
     const now = new Date();
     const node: Node = { 
-      ...insertNode, 
-      id, 
+      id,
+      name: insertNode.name,
+      type: insertNode.type, 
       createdAt: now, 
-      updatedAt: now
+      updatedAt: now,
+      icon: insertNode.icon || null,
+      description: insertNode.description || null,
+      userId: insertNode.userId || null,
+      category: insertNode.category || null,
+      configuration: insertNode.configuration || {}
     };
     this.nodes.set(id, node);
     return node;

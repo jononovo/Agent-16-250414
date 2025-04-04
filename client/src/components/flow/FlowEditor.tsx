@@ -36,6 +36,8 @@ import TextInputNode from '../flow/nodes/TextInputNode';
 import GenerateTextNode from '../flow/nodes/GenerateTextNode';
 import VisualizeTextNode from '../flow/nodes/VisualizeTextNode';
 import RoutingNode from '../flow/nodes/RoutingNode';
+import PromptCrafterNode from '../flow/nodes/PromptCrafterNode';
+import ValidResponseNode from '../flow/nodes/ValidResponseNode';
 
 const nodeTypes: NodeTypes = {
   custom: CustomNode,
@@ -45,7 +47,9 @@ const nodeTypes: NodeTypes = {
   textInput: TextInputNode,
   generateText: GenerateTextNode,
   visualizeText: VisualizeTextNode,
-  routing: RoutingNode
+  routing: RoutingNode,
+  promptCrafter: PromptCrafterNode,
+  validResponse: ValidResponseNode
 };
 
 interface FlowEditorProps {
