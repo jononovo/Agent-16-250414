@@ -66,12 +66,14 @@ const NodeSettingsDrawer: React.FC<NodeSettingsDrawerProps> = ({
             label: 'API Key',
             type: 'password',
             placeholder: 'Enter your Perplexity API key',
+            description: 'Your Perplexity API key is securely stored and used only for this node.'
           },
           {
             id: 'model',
             label: 'Model',
             type: 'text',
-            placeholder: 'e.g., sonar-small-online',
+            placeholder: 'e.g., sonar',
+            description: 'The Perplexity model to use for search queries.'
           },
         ];
       default:

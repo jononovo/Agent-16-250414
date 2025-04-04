@@ -108,7 +108,7 @@ const PerplexityNode = ({ data, selected, id }: NodeProps<NodeData>) => {
           <div className="w-6 h-6 rounded-md bg-zinc-800 flex items-center justify-center text-zinc-300">
             <DynamicIcon icon={data.icon || 'search'} />
           </div>
-          <span className="font-medium text-sm truncate">{data.label || 'In-house Perplexity API'}</span>
+          <span className="font-medium text-sm truncate">{data.label || 'Perplexity API'}</span>
         </div>
         <div className="flex items-center gap-1">
           <button
@@ -139,33 +139,17 @@ const PerplexityNode = ({ data, selected, id }: NodeProps<NodeData>) => {
       
       <CardContent className="p-3 pt-0">
         <div className="mb-2">
-          {/* API Key UI */}
-          {envApiKey ? (
+          {/* API Key Indicator */}
+          {apiKey ? (
             <div className="bg-zinc-900 border border-zinc-700 rounded-md p-2 text-xs mb-2 text-zinc-400 flex items-center">
               <Lucide.Key className="h-3 w-3 mr-1 text-green-500" />
-              Using API key from environment
+              API key configured
             </div>
           ) : (
-            <Input 
-              placeholder="Enter Perplexity API key" 
-              className="bg-zinc-900 border-zinc-700 text-zinc-300 text-xs mb-2"
-              type="password"
-              value={apiKey}
-              onChange={(e) => {
-                // Update the API key directly in node data
-                const newApiKey = e.target.value;
-                if (data.apiKey !== newApiKey) {
-                  data.apiKey = newApiKey;
-                }
-                
-                // Also update in settings if available
-                if (data.settings) {
-                  data.settings.apiKey = newApiKey;
-                } else {
-                  data.settings = { apiKey: newApiKey };
-                }
-              }}
-            />
+            <div className="bg-zinc-900 border border-zinc-700 rounded-md p-2 text-xs mb-2 text-zinc-400 flex items-center">
+              <Lucide.Key className="h-3 w-3 mr-1 text-red-500" />
+              No API key configured
+            </div>
           )}
           
           {/* Model Indicator */}
