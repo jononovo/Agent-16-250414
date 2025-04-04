@@ -25,7 +25,7 @@ import NodesPanel from './NodesPanel';
 import { useMutation } from '@tanstack/react-query';
 import { queryClient } from '@/lib/queryClient';
 import { apiRequest } from '@/lib/queryClient';
-import { ArrowLeft, Save, Play, Settings } from 'lucide-react';
+import { ArrowLeft, Save, Play, Settings, TestTube } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import NodeSettingsDrawer from './NodeSettingsDrawer';
 
@@ -494,6 +494,15 @@ const FlowEditor = ({ workflow, isNew = false }: FlowEditorProps) => {
               <Play className="h-4 w-4 mr-2" />
               Run Workflow
             </Button>
+            {workflow?.id && (
+              <Button
+                onClick={() => navigate(`/workflow-test/${workflow.id}`)}
+                variant="outline"
+              >
+                <TestTube className="h-4 w-4 mr-2" />
+                Test Workflow
+              </Button>
+            )}
             <Button 
               onClick={handleSave}
               disabled={saveMutation.isPending}

@@ -467,45 +467,123 @@ export async function registerRoutes(app: Express): Promise<Server> {
         input: { prompt },
       });
       
-      // Execute the workflow (mock implementation - in a real app this would connect to the workflow engine)
-      // For now, we'll just simulate execution and return a response
+      // Check if workflow has flowData
+      if (!workflow.flowData) {
+        await storage.updateLog(log.id, {
+          status: "error",
+          error: "Workflow has no flow data",
+          completedAt: new Date()
+        });
+        return res.status(400).json({ message: "Workflow has no flow data" });
+      }
       
-      // For simplicity, we'll check if this is the Coordinator Workflow and simulate its execution
-      if (workflow.name === "Coordinator Workflow") {
-        // Update log with success status
-        const updatedLog = await storage.updateLog(log.id, {
-          status: "success",
-          output: { 
-            response: `This is a test response from the Coordinator Workflow for prompt: "${prompt}". In a full implementation, this would execute the actual workflow nodes with Claude.` 
+      try {
+        // Import the workflow engine - we have to use dynamic imports as the workflow engine is in the client code
+        // In a real-world scenario, you would move the workflow engine to a shared location
+        const { executeWorkflow } = await import('../client/src/lib/workflowEngine');
+        
+        // Import node executors to ensure they're registered
+        await import('../client/src/lib/nodeExecutors');
+        
+        // Parse the flow data
+        const flowData = typeof workflow.flowData === 'string' 
+          ? JSON.parse(workflow.flowData) 
+          : workflow.flowData;
+        
+        const nodes = flowData.nodes || [];
+        const edges = flowData.edges || [];
+        
+        console.log(`Executing workflow with ${nodes.length} nodes and ${edges.length} edges`);
+        
+        // Inject the prompt into the first node that accepts text input
+        // This is a simplified approach - in a real app, you'd have a more structured way to inject inputs
+        const startNode = nodes.find((node: { type: string }) => node.type === 'text_prompt' || node.type === 'prompt');
+        if (startNode) {
+          if (!startNode.data) startNode.data = {};
+          startNode.data.prompt = prompt;
+        } else {
+          // If no start node found, just add the prompt as input to the first node
+          if (nodes.length > 0) {
+            if (!nodes[0].data) nodes[0].data = {};
+            nodes[0].data.input = prompt;
+          }
+        }
+        
+        // Track node state changes for logging
+        const nodeStates: Record<string, any> = {};
+        
+        // Execute the workflow
+        const result = await executeWorkflow(
+          nodes,
+          edges,
+          (nodeId, state) => {
+            // Store node states as they change
+            nodeStates[nodeId] = state;
+            console.log(`Node ${nodeId} state: ${state.state}`);
+          },
+          (finalState) => {
+            console.log(`Workflow execution completed with status: ${finalState.status}`);
+          }
+        );
+        
+        // Find the final output node(s)
+        const outputNodes = nodes.filter((node: { id: string }) => {
+          // Nodes with no outgoing edges are considered output nodes
+          return !edges.some((edge: { source: string }) => edge.source === node.id);
+        });
+        
+        // Collect output from the final nodes
+        const outputs: Record<string, any> = {};
+        outputNodes.forEach((node: { id: string }) => {
+          if (result.nodeStates[node.id]) {
+            outputs[node.id] = result.nodeStates[node.id].data;
+          }
+        });
+        
+        // Update log with execution results
+        await storage.updateLog(log.id, {
+          status: result.status === 'error' ? 'error' : 'success',
+          output: outputs,
+          error: result.error,
+          executionPath: { 
+            nodes: Object.keys(result.nodeStates),
+            completed: result.status === 'complete',
+            error: result.error
           },
           completedAt: new Date()
         });
         
-        // Return the response
+        // Return the execution results
         return res.json({
-          status: "success",
-          result: updatedLog.output,
+          status: result.status,
+          result: outputs,
+          nodeStates: result.nodeStates,
+          executionTime: result.endTime 
+            ? (new Date(result.endTime).getTime() - new Date(result.startTime || 0).getTime()) / 1000 
+            : 0,
+          error: result.error,
           logId: log.id
         });
-      } else {
-        // Handle other workflows or return a general response
-        const updatedLog = await storage.updateLog(log.id, {
-          status: "success",
-          output: { 
-            response: `Test execution of workflow "${workflow.name}" completed with prompt: "${prompt}". This is a simulated response.` 
-          },
+      } catch (executionError) {
+        console.error('Error executing workflow:', executionError);
+        // Update log with error
+        await storage.updateLog(log.id, {
+          status: 'error',
+          error: executionError instanceof Error ? executionError.message : String(executionError),
           completedAt: new Date()
         });
         
-        return res.json({
-          status: "success",
-          result: updatedLog.output,
-          logId: log.id
+        return res.status(500).json({ 
+          message: "Failed to execute workflow",
+          error: executionError instanceof Error ? executionError.message : String(executionError)
         });
       }
     } catch (error) {
       console.error('Error testing workflow:', error);
-      res.status(500).json({ message: "Failed to test workflow execution" });
+      res.status(500).json({ 
+        message: "Failed to test workflow execution",
+        error: error instanceof Error ? error.message : String(error)
+      });
     }
   });
 
