@@ -39,17 +39,38 @@ import RoutingNode from '../flow/nodes/RoutingNode';
 import PromptCrafterNode from '../flow/nodes/PromptCrafterNode';
 import ValidResponseNode from '../flow/nodes/ValidResponseNode';
 
+// Register node types according to the documentation
 const nodeTypes: NodeTypes = {
+  // Specialized AI nodes
+  text_input: TextInputNode,
+  generate_text: GenerateTextNode,
+  visualize_text: VisualizeTextNode,
+  prompt_crafter: PromptCrafterNode,
+  valid_response: ValidResponseNode,
+  
+  // Legacy/basic node types (with mapping to specialized versions)
   custom: CustomNode,
   trigger: TriggerNode,
   processor: ProcessorNode,
   output: OutputNode,
+  
+  // Maintain backward compatibility
   textInput: TextInputNode,
   generateText: GenerateTextNode,
   visualizeText: VisualizeTextNode,
   routing: RoutingNode,
   promptCrafter: PromptCrafterNode,
-  validResponse: ValidResponseNode
+  validResponse: ValidResponseNode,
+  
+  // Generic node types from documentation
+  webhook: TriggerNode,
+  scheduler: TriggerNode,
+  email_trigger: TriggerNode,
+  http_request: ProcessorNode,
+  email_send: OutputNode,
+  database_query: ProcessorNode,
+  data_transform: ProcessorNode,
+  filter: ProcessorNode
 };
 
 interface FlowEditorProps {

@@ -252,8 +252,8 @@ export class MemStorage implements IStorage {
     // Add Flow-Chain workflow with Prompt Crafter and ValidResponse
     const flowChainNodes = [
       {
-        id: 'textInput-1',
-        type: 'textInput',
+        id: 'text_input-1',
+        type: 'text_input',
         position: { x: 100, y: 200 },
         data: {
           label: 'Text Input',
@@ -263,8 +263,8 @@ export class MemStorage implements IStorage {
         }
       },
       {
-        id: 'promptCrafter-1',
-        type: 'promptCrafter',
+        id: 'prompt_crafter-1',
+        type: 'prompt_crafter',
         position: { x: 400, y: 200 },
         data: {
           label: 'Prompt Crafter',
@@ -278,8 +278,8 @@ export class MemStorage implements IStorage {
         }
       },
       {
-        id: 'generateText-1',
-        type: 'generateText',
+        id: 'generate_text-1',
+        type: 'generate_text',
         position: { x: 700, y: 200 },
         data: {
           label: 'Generate Text',
@@ -291,8 +291,8 @@ export class MemStorage implements IStorage {
         }
       },
       {
-        id: 'validResponse-1',
-        type: 'validResponse',
+        id: 'valid_response-1',
+        type: 'valid_response',
         position: { x: 1000, y: 200 },
         data: {
           label: 'Response Validator',
@@ -303,8 +303,8 @@ export class MemStorage implements IStorage {
         }
       },
       {
-        id: 'visualizeText-1',
-        type: 'visualizeText',
+        id: 'visualize_text-1',
+        type: 'visualize_text',
         position: { x: 1300, y: 100 },
         data: {
           label: 'Valid Result',
@@ -314,8 +314,8 @@ export class MemStorage implements IStorage {
         }
       },
       {
-        id: 'visualizeText-2',
-        type: 'visualizeText',
+        id: 'visualize_text-2',
+        type: 'visualize_text',
         position: { x: 1300, y: 300 },
         data: {
           label: 'Invalid Result',
@@ -329,37 +329,37 @@ export class MemStorage implements IStorage {
     const flowChainEdges = [
       {
         id: 'edge-1',
-        source: 'textInput-1',
-        target: 'promptCrafter-1',
+        source: 'text_input-1',
+        target: 'prompt_crafter-1',
         animated: true,
         style: { stroke: '#8884d8', strokeWidth: 2 }
       },
       {
         id: 'edge-2',
-        source: 'promptCrafter-1',
-        target: 'generateText-1',
+        source: 'prompt_crafter-1',
+        target: 'generate_text-1',
         animated: true,
         style: { stroke: '#8884d8', strokeWidth: 2 }
       },
       {
         id: 'edge-3',
-        source: 'generateText-1',
-        target: 'validResponse-1',
+        source: 'generate_text-1',
+        target: 'valid_response-1',
         animated: true,
         style: { stroke: '#8884d8', strokeWidth: 2 }
       },
       {
         id: 'edge-4',
-        source: 'validResponse-1',
-        target: 'visualizeText-1',
+        source: 'valid_response-1',
+        target: 'visualize_text-1',
         sourceHandle: 'valid',
         animated: true,
         style: { stroke: '#4ade80', strokeWidth: 2 }
       },
       {
         id: 'edge-5',
-        source: 'validResponse-1',
-        target: 'visualizeText-2',
+        source: 'valid_response-1',
+        target: 'visualize_text-2',
         sourceHandle: 'invalid',
         animated: true,
         style: { stroke: '#ef4444', strokeWidth: 2 }
@@ -377,6 +377,156 @@ export class MemStorage implements IStorage {
       flowData: JSON.stringify({
         nodes: flowChainNodes,
         edges: flowChainEdges
+      })
+    });
+    
+    // Add Agentic Orchestration workflow based on screenshot
+    const agenticOrchestratorNodes = [
+      {
+        id: 'text_input-1',
+        type: 'text_input',
+        position: { x: 100, y: 150 },
+        data: {
+          label: 'Text Input',
+          description: 'Enter your request here',
+          icon: 'type',
+          inputText: '<Assistant_Info>\nYou are a Project Manager and Developer. You excel at breaking down complex projects and efficiently organizing your team.\n\nYou have access to tools that help you plan and monitor development. Your team requires detailed instructions, so provide clear user stories.</Assistant_Info>'
+        }
+      },
+      {
+        id: 'generate_text-1',
+        type: 'generate_text',
+        position: { x: 400, y: 150 },
+        data: {
+          label: 'Generate Text',
+          description: 'AI Content Generator',
+          icon: 'cpu',
+          model: 'llama-3.3-70b-versatile',
+          systemPrompt: 'You are an AI assistant specialized in project management and development planning.',
+          userPrompt: 'Parse the assistant info and create a system message for a project manager AI',
+        }
+      },
+      {
+        id: 'visualize_text-1',
+        type: 'visualize_text',
+        position: { x: 700, y: 150 },
+        data: {
+          label: 'Visualize Text',
+          description: 'Display generated content',
+          icon: 'eye',
+          textContent: 'No text to display'
+        }
+      },
+      {
+        id: 'text_input-2',
+        type: 'text_input',
+        position: { x: 100, y: 350 },
+        data: {
+          label: 'Text Input',
+          description: 'Enter your request here',
+          icon: 'type',
+          inputText: 'Please create a project plan for developing a new e-commerce website with user authentication, product catalog, shopping cart, and payment processing.'
+        }
+      },
+      {
+        id: 'generate_text-2',
+        type: 'generate_text',
+        position: { x: 400, y: 350 },
+        data: {
+          label: 'Generate Text',
+          description: 'System',
+          icon: 'cpu',
+          model: 'llama-3.3-70b-versatile',
+          systemPrompt: 'You are a Project Manager and Developer. You excel at breaking down complex projects and efficiently organizing your team.',
+          outputs: [
+            {
+              id: 'project',
+              label: 'Project Plan',
+              content: 'Output appears here'
+            },
+            {
+              id: 'tasks',
+              label: 'Task List',
+              content: 'Output appears here'
+            }
+          ]
+        }
+      },
+      {
+        id: 'text_input-3',
+        type: 'text_input',
+        position: { x: 700, y: 250 },
+        data: {
+          label: 'Text Input',
+          description: 'User input for new task',
+          icon: 'plus',
+          inputText: 'Add "implement social sharing" task'
+        }
+      },
+      {
+        id: 'visualize_text-2',
+        type: 'visualize_text',
+        position: { x: 1000, y: 350 },
+        data: {
+          label: 'Visualize Text',
+          description: 'Display generated content',
+          icon: 'eye',
+          textContent: 'No text to display'
+        }
+      }
+    ];
+
+    const agenticOrchestratorEdges = [
+      {
+        id: 'edge-1',
+        source: 'text_input-1',
+        target: 'generate_text-1',
+        animated: true,
+        style: { stroke: '#8884d8', strokeWidth: 2 }
+      },
+      {
+        id: 'edge-2',
+        source: 'generate_text-1',
+        target: 'visualize_text-1',
+        animated: true,
+        style: { stroke: '#8884d8', strokeWidth: 2 }
+      },
+      {
+        id: 'edge-3',
+        source: 'text_input-2',
+        target: 'generate_text-2',
+        animated: true,
+        style: { stroke: '#8884d8', strokeWidth: 2 }
+      },
+      {
+        id: 'edge-4',
+        source: 'text_input-3',
+        target: 'generate_text-2',
+        targetHandle: 'input',
+        animated: true,
+        style: { stroke: '#8884d8', strokeWidth: 2 }
+      },
+      {
+        id: 'edge-5',
+        source: 'generate_text-2',
+        sourceHandle: 'result',
+        target: 'visualize_text-2',
+        animated: true,
+        style: { stroke: '#8884d8', strokeWidth: 2 }
+      }
+    ];
+
+    this.createWorkflow({
+      name: "Agentic Orchestration",
+      description: "Coordinates multiple AI agents to work together on complex tasks with specialized roles",
+      type: "custom",
+      icon: "users",
+      status: "active",
+      userId: 0,
+      agentId: 0,
+      flowData: JSON.stringify({
+        nodes: agenticOrchestratorNodes,
+        edges: agenticOrchestratorEdges
       })
     });
     
@@ -421,21 +571,23 @@ export class MemStorage implements IStorage {
       configuration: {}
     });
     
-    // Create new node types for AI content routing
+    // Create nodes from the technical documentation
+    
+    // AI Nodes
     this.createNode({
       name: "Text Input",
-      description: "Collects text input from users",
-      type: "textInput",
+      description: "Provides static text input to the workflow",
+      type: "text_input",
       icon: "type",
-      category: "input",
+      category: "ai",
       userId: 0,
       configuration: {}
     });
     
     this.createNode({
       name: "Generate Text",
-      description: "Generates text content using AI models",
-      type: "generateText",
+      description: "Creates AI-generated text using various models",
+      type: "generate_text",
       icon: "cpu",
       category: "ai",
       userId: 0,
@@ -443,42 +595,115 @@ export class MemStorage implements IStorage {
     });
     
     this.createNode({
-      name: "Visualize Text",
-      description: "Displays text content to users",
-      type: "visualizeText",
-      icon: "eye",
-      category: "visualization",
-      userId: 0,
-      configuration: {}
-    });
-    
-    this.createNode({
-      name: "Content Router",
-      description: "Routes content to the appropriate specialist based on content type",
-      type: "routing",
-      icon: "git-branch",
-      category: "routing",
-      userId: 0,
-      configuration: {}
-    });
-    
-    // Add new node types for flow-chain
-    this.createNode({
       name: "Prompt Crafter",
-      description: "Create and manage AI prompt templates with variable substitution",
-      type: "promptCrafter",
+      description: "Designs templated prompts with variables",
+      type: "prompt_crafter",
       icon: "sparkles",
-      category: "promptCrafter",
+      category: "ai",
+      userId: 0,
+      configuration: {}
+    });
+    
+    // Data Nodes
+    this.createNode({
+      name: "Visualize Text",
+      description: "Displays text output in the workflow",
+      type: "visualize_text",
+      icon: "eye",
+      category: "data",
       userId: 0,
       configuration: {}
     });
     
     this.createNode({
-      name: "Valid Response",
+      name: "Data Transform",
+      description: "Transforms data structure",
+      type: "data_transform",
+      icon: "repeat",
+      category: "data",
+      userId: 0,
+      configuration: {}
+    });
+    
+    this.createNode({
+      name: "Filter",
+      description: "Filters data based on conditions",
+      type: "filter",
+      icon: "filter",
+      category: "data",
+      userId: 0,
+      configuration: {}
+    });
+    
+    // Trigger Nodes
+    this.createNode({
+      name: "Webhook Trigger",
+      description: "Triggers a workflow from an HTTP request",
+      type: "webhook",
+      icon: "webhook",
+      category: "triggers",
+      userId: 0,
+      configuration: {}
+    });
+    
+    this.createNode({
+      name: "Scheduler",
+      description: "Runs a workflow on a schedule",
+      type: "scheduler",
+      icon: "clock",
+      category: "triggers",
+      userId: 0,
+      configuration: {}
+    });
+    
+    this.createNode({
+      name: "Email Trigger",
+      description: "Triggers from email events",
+      type: "email_trigger",
+      icon: "mail",
+      category: "triggers",
+      userId: 0,
+      configuration: {}
+    });
+    
+    // Action Nodes
+    this.createNode({
+      name: "HTTP Request",
+      description: "Makes API requests to external services",
+      type: "http_request",
+      icon: "globe",
+      category: "actions",
+      userId: 0,
+      configuration: {}
+    });
+    
+    this.createNode({
+      name: "Email Send",
+      description: "Sends email messages",
+      type: "email_send",
+      icon: "send",
+      category: "actions",
+      userId: 0,
+      configuration: {}
+    });
+    
+    this.createNode({
+      name: "Database Query",
+      description: "Performs database operations",
+      type: "database_query",
+      icon: "database",
+      category: "actions",
+      userId: 0,
+      configuration: {}
+    });
+    
+    // Additional specialized nodes
+    this.createNode({
+      name: "Response Validator",
       description: "Validates AI responses against rules and directs flow accordingly",
-      type: "validResponse",
+      type: "valid_response",
       icon: "check-check",
-      category: "validResponse",
+      category: "ai",
       userId: 0,
       configuration: {}
     });

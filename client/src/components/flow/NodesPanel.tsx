@@ -8,17 +8,35 @@ import { Input } from '@/components/ui/input';
 import { Search } from 'lucide-react';
 import NodeItem from './NodeItem';
 
+// Node categories based on the documentation
+const NODE_CATEGORIES = [
+  { id: 'ai', name: 'AI', description: 'AI model interactions, prompt engineering, and text generation' },
+  { id: 'data', name: 'Data', description: 'Data visualization, transformation, and filtering' },
+  { id: 'triggers', name: 'Triggers', description: 'Nodes that initiate workflows based on events or schedules' },
+  { id: 'actions', name: 'Actions', description: 'Nodes that perform operations such as API requests or database queries' }
+];
+
+// Specialized AI node types based on the documentation
 const NODE_TYPES = [
-  { id: 'trigger', name: 'Triggers', description: 'Start a workflow' },
-  { id: 'processor', name: 'Processors', description: 'Process data' },
-  { id: 'output', name: 'Outputs', description: 'Send results' },
-  { id: 'custom', name: 'Custom', description: 'Your custom nodes' },
-  { id: 'input', name: 'Input', description: 'Collect user input' },
-  { id: 'ai', name: 'AI Models', description: 'Generate content with AI' },
-  { id: 'visualization', name: 'Visualization', description: 'Display results visually' },
-  { id: 'routing', name: 'Routing', description: 'Control the flow logic' },
-  { id: 'promptCrafter', name: 'Prompt Crafters', description: 'Create AI prompt templates' },
-  { id: 'validResponse', name: 'Validators', description: 'Validate and verify responses' },
+  // AI Nodes
+  { id: 'text_input', name: 'Text Input', description: 'Provides static text input to the workflow', category: 'ai' },
+  { id: 'generate_text', name: 'Generate Text', description: 'Creates AI-generated text using various models', category: 'ai' },
+  { id: 'prompt_crafter', name: 'Prompt Crafter', description: 'Designs templated prompts with variables', category: 'ai' },
+  { id: 'visualize_text', name: 'Visualize Text', description: 'Displays text output in the workflow', category: 'data' },
+  
+  // Trigger Nodes
+  { id: 'webhook', name: 'Webhook Trigger', description: 'Triggers a workflow from an HTTP request', category: 'triggers' },
+  { id: 'scheduler', name: 'Scheduler', description: 'Runs a workflow on a schedule', category: 'triggers' },
+  { id: 'email_trigger', name: 'Email Trigger', description: 'Triggers from email events', category: 'triggers' },
+  
+  // Action Nodes
+  { id: 'http_request', name: 'HTTP Request', description: 'Makes API requests to external services', category: 'actions' },
+  { id: 'email_send', name: 'Email Send', description: 'Sends email messages', category: 'actions' },
+  { id: 'database_query', name: 'Database Query', description: 'Performs database operations', category: 'actions' },
+  
+  // Data Nodes
+  { id: 'data_transform', name: 'Data Transform', description: 'Transforms data structure', category: 'data' },
+  { id: 'filter', name: 'Filter', description: 'Filters data based on conditions', category: 'data' }
 ];
 
 const NodesPanel = () => {
@@ -34,9 +52,23 @@ const NodesPanel = () => {
     }
   });
   
-  const filteredNodes = nodes?.filter(node => {
-    // First apply type filter if not "all"
-    if (activeTab !== 'all' && node.type !== activeTab) {
+  // Create nodes from NODE_TYPES if nodes aren't loaded yet
+  const nodeItems = isLoading ? [] : NODE_TYPES.map((type, index) => ({
+    id: index,
+    name: type.name,
+    type: type.id,
+    description: type.description,
+    icon: null,
+    createdAt: new Date(),
+    updatedAt: new Date(),
+    userId: null,
+    category: type.category,
+    configuration: {}
+  } as Node));
+  
+  const filteredNodes = nodeItems.filter(node => {
+    // First apply category filter if not "all"
+    if (activeTab !== 'all' && node.category !== activeTab) {
       return false;
     }
     
@@ -51,13 +83,13 @@ const NodesPanel = () => {
     return true;
   });
 
-  // Group nodes by type
-  const groupedNodes = filteredNodes?.reduce((acc, node) => {
-    const type = node.type || 'custom';
-    if (!acc[type]) {
-      acc[type] = [];
+  // Group nodes by category
+  const groupedNodes = filteredNodes.reduce((acc, node) => {
+    const category = node.category || 'custom';
+    if (!acc[category]) {
+      acc[category] = [];
     }
-    acc[type].push(node);
+    acc[category].push(node);
     return acc;
   }, {} as Record<string, Node[]>);
 
@@ -75,12 +107,13 @@ const NodesPanel = () => {
         />
       </div>
       
-      <Tabs defaultValue="all" className="mb-4" onValueChange={setActiveTab}>
+      <Tabs defaultValue="ai" className="mb-4" onValueChange={setActiveTab}>
         <TabsList className="w-full">
           <TabsTrigger value="all" className="flex-1">All</TabsTrigger>
-          <TabsTrigger value="trigger" className="flex-1">Triggers</TabsTrigger>
-          <TabsTrigger value="processor" className="flex-1">Process</TabsTrigger>
-          <TabsTrigger value="output" className="flex-1">Output</TabsTrigger>
+          <TabsTrigger value="ai" className="flex-1">AI</TabsTrigger>
+          <TabsTrigger value="data" className="flex-1">Data</TabsTrigger>
+          <TabsTrigger value="triggers" className="flex-1">Triggers</TabsTrigger>
+          <TabsTrigger value="actions" className="flex-1">Actions</TabsTrigger>
         </TabsList>
       </Tabs>
 
@@ -91,32 +124,35 @@ const NodesPanel = () => {
           </div>
         ) : (
           <>
-            {NODE_TYPES.map((type) => {
-              const typeNodes = groupedNodes?.[type.id] || [];
+            {NODE_CATEGORIES.map((category) => {
+              // Get nodes for this category
+              const categoryNodes = groupedNodes?.[category.id] || [];
               
-              if (activeTab !== 'all' && activeTab !== type.id) {
+              // Skip if we're filtering by category and this isn't the selected one
+              if (activeTab !== 'all' && activeTab !== category.id) {
                 return null;
               }
               
-              if (typeNodes.length === 0 && activeTab === 'all') {
+              // Skip empty categories when showing all
+              if (categoryNodes.length === 0 && activeTab === 'all') {
                 return null;
               }
               
               return (
                 <Accordion
-                  key={type.id}
+                  key={category.id}
                   type="single"
                   collapsible
-                  defaultValue={type.id}
+                  defaultValue={category.id}
                   className="mb-4"
                 >
-                  <AccordionItem value={type.id} className="border-0">
+                  <AccordionItem value={category.id} className="border-0">
                     <AccordionTrigger className="py-2 text-sm font-medium">
-                      {type.name} ({typeNodes.length})
+                      {category.name} ({categoryNodes.length})
                     </AccordionTrigger>
                     <AccordionContent>
                       <div className="space-y-2">
-                        {typeNodes.map((node) => (
+                        {categoryNodes.map((node) => (
                           <NodeItem 
                             key={node.id} 
                             node={{
@@ -130,9 +166,9 @@ const NodesPanel = () => {
                           />
                         ))}
                         
-                        {typeNodes.length === 0 && (
+                        {categoryNodes.length === 0 && (
                           <div className="p-2 text-center text-sm text-muted-foreground">
-                            No {type.name.toLowerCase()} found
+                            No {category.name.toLowerCase()} nodes found
                           </div>
                         )}
                       </div>
