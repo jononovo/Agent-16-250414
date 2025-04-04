@@ -255,7 +255,7 @@ const AgentPage = () => {
                             <Button 
                               variant="ghost" 
                               size="sm"
-                              className="text-xs text-red-500 hover:text-red-700 hover:bg-red-50"
+                              className="text-xs text-muted-foreground hover:text-primary"
                               onClick={(e) => {
                                 e.stopPropagation();
                                 unlinkWorkflow(workflow.id);
