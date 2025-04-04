@@ -25,8 +25,9 @@ import NodesPanel from './NodesPanel';
 import { useMutation } from '@tanstack/react-query';
 import { queryClient } from '@/lib/queryClient';
 import { apiRequest } from '@/lib/queryClient';
-import { ArrowLeft, Save, Play } from 'lucide-react';
+import { ArrowLeft, Save, Play, Settings } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import NodeSettingsDrawer from './NodeSettingsDrawer';
 
 // Import node components
 import CustomNode from '../flow/nodes/CustomNode';
@@ -200,6 +201,8 @@ const FlowEditor = ({ workflow, isNew = false }: FlowEditorProps) => {
 
   const { toast } = useToast();
   const [isRunning, setIsRunning] = useState(false);
+  const [settingsDrawerOpen, setSettingsDrawerOpen] = useState(false);
+  const [selectedNode, setSelectedNode] = useState<Node | null>(null);
 
   const handleSave = () => {
     saveMutation.mutate({
@@ -208,6 +211,36 @@ const FlowEditor = ({ workflow, isNew = false }: FlowEditorProps) => {
         nodes,
         edges
       }
+    });
+  };
+  
+  const handleNodeClick = (event: React.MouseEvent, node: Node) => {
+    // Don't open settings for every node type, only those that have settings
+    if (node.type && ['perplexity', 'generate_text', 'http_request'].includes(node.type)) {
+      setSelectedNode(node);
+      setSettingsDrawerOpen(true);
+    }
+  };
+  
+  const handleSettingsChange = (nodeId: string, settings: Record<string, any>) => {
+    setNodes((nds) =>
+      nds.map((node) => {
+        if (node.id === nodeId) {
+          return {
+            ...node,
+            data: {
+              ...node.data,
+              settings: settings,
+            },
+          };
+        }
+        return node;
+      })
+    );
+    
+    toast({
+      title: "Settings Updated",
+      description: "Node settings have been updated successfully.",
     });
   };
   
@@ -379,6 +412,7 @@ const FlowEditor = ({ workflow, isNew = false }: FlowEditorProps) => {
               onDrop={onDrop}
               onDragOver={onDragOver}
               nodeTypes={nodeTypes}
+              onNodeClick={handleNodeClick}
               fitView
               snapToGrid
               attributionPosition="bottom-left"
@@ -389,6 +423,14 @@ const FlowEditor = ({ workflow, isNew = false }: FlowEditorProps) => {
           </ReactFlowProvider>
         </div>
       </div>
+      
+      {/* Node Settings Drawer */}
+      <NodeSettingsDrawer
+        isOpen={settingsDrawerOpen}
+        onClose={() => setSettingsDrawerOpen(false)}
+        node={selectedNode}
+        onSettingsChange={handleSettingsChange}
+      />
     </div>
   );
 };

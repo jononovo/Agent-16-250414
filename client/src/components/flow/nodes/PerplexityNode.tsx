@@ -1,4 +1,4 @@
-import { Handle, Position, NodeProps } from 'reactflow';
+import { Handle, Position, NodeProps, useReactFlow } from 'reactflow';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import * as Lucide from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -9,12 +9,16 @@ import { useState, useEffect } from 'react';
 import { Textarea } from '@/components/ui/textarea';
 import { Input } from '@/components/ui/input';
 
-const PerplexityNode = ({ data, selected }: NodeProps<NodeData>) => {
-  // Try to get API key from environment or data
+const PerplexityNode = ({ data, selected, id }: NodeProps<NodeData>) => {
+  // Try to get API key from environment, settings, or direct node data
   const envApiKey = import.meta.env.PERPLEXITY_API_KEY;
   const [isLoading, setIsLoading] = useState(false);
-  const [apiKey, setApiKey] = useState(data.apiKey || envApiKey || '');
   const [searchResult, setSearchResult] = useState('');
+  const reactFlowInstance = useReactFlow();
+  
+  // Handle different sources of API key with proper fallbacks
+  const apiKey = data.settings?.apiKey || data.apiKey || envApiKey || '';
+  const model = data.settings?.model || 'sonar-small-online';
   
   // Check if workflow run is processing this node
   const isProcessing = data._isProcessing || false;
@@ -57,7 +61,7 @@ const PerplexityNode = ({ data, selected }: NodeProps<NodeData>) => {
           'Authorization': `Bearer ${effectiveApiKey}`
         },
         body: JSON.stringify({
-          model: "sonar-small-online",  // Updated to a valid model
+          model: model,  // Use model from settings
           messages: [
             {
               role: "user",
@@ -106,11 +110,36 @@ const PerplexityNode = ({ data, selected }: NodeProps<NodeData>) => {
           </div>
           <span className="font-medium text-sm truncate">{data.label || 'In-house Perplexity API'}</span>
         </div>
-        <Badge variant="outline" className="bg-zinc-800 text-zinc-300 text-[10px] font-normal border-zinc-700">AI Search</Badge>
+        <div className="flex items-center gap-1">
+          <button
+            className="p-1 hover:bg-zinc-800 rounded-sm transition-colors"
+            onClick={(e) => {
+              e.stopPropagation();
+              // Manually trigger a click on the node which will activate the onNodeClick handler
+              if (reactFlowInstance && id) {
+                const node = reactFlowInstance.getNode(id);
+                if (node) {
+                  // Simulate a click event
+                  const nodeElement = document.querySelector(`[data-id="${id}"]`);
+                  if (nodeElement) {
+                    nodeElement.dispatchEvent(
+                      new MouseEvent('click', { bubbles: true, cancelable: true })
+                    );
+                  }
+                }
+              }
+            }}
+            title="Open node settings"
+          >
+            <Lucide.Settings className="h-3 w-3 text-zinc-400" />
+          </button>
+          <Badge variant="outline" className="bg-zinc-800 text-zinc-300 text-[10px] font-normal border-zinc-700">AI Search</Badge>
+        </div>
       </CardHeader>
       
       <CardContent className="p-3 pt-0">
         <div className="mb-2">
+          {/* API Key UI */}
           {envApiKey ? (
             <div className="bg-zinc-900 border border-zinc-700 rounded-md p-2 text-xs mb-2 text-zinc-400 flex items-center">
               <Lucide.Key className="h-3 w-3 mr-1 text-green-500" />
@@ -123,14 +152,30 @@ const PerplexityNode = ({ data, selected }: NodeProps<NodeData>) => {
               type="password"
               value={apiKey}
               onChange={(e) => {
-                setApiKey(e.target.value);
-                // Also save to node data so it can be accessed by workflow execution
-                if (data.apiKey !== e.target.value) {
-                  data.apiKey = e.target.value;
+                // Update the API key directly in node data
+                const newApiKey = e.target.value;
+                if (data.apiKey !== newApiKey) {
+                  data.apiKey = newApiKey;
+                }
+                
+                // Also update in settings if available
+                if (data.settings) {
+                  data.settings.apiKey = newApiKey;
+                } else {
+                  data.settings = { apiKey: newApiKey };
                 }
               }}
             />
           )}
+          
+          {/* Model Indicator */}
+          <div className="bg-zinc-900 border border-zinc-700 rounded-md p-2 text-xs mb-2 text-zinc-400 flex items-center justify-between">
+            <div className="flex items-center">
+              <Lucide.Zap className="h-3 w-3 mr-1 text-yellow-500" />
+              <span>Model:</span>
+            </div>
+            <span className="text-zinc-300">{model}</span>
+          </div>
         </div>
         
         <div className="bg-zinc-900 border border-zinc-700 rounded-md p-2 min-h-[60px] text-xs mb-2">
@@ -147,25 +192,52 @@ const PerplexityNode = ({ data, selected }: NodeProps<NodeData>) => {
           )}
         </div>
         
-        <Button 
-          variant="default" 
-          size="sm" 
-          className="w-full mb-2 bg-blue-600 hover:bg-blue-700 text-white"
-          onClick={handleSearch}
-          disabled={isLoading || isProcessing}
-        >
-          {isLoading || isProcessing ? (
-            <>
-              <Lucide.Loader2 className="h-3 w-3 mr-1 animate-spin" />
-              {isProcessing ? "Processing..." : "Searching..."}
-            </>
-          ) : (
-            <>
-              <Lucide.Search className="h-3 w-3 mr-1" />
-              Search with Perplexity
-            </>
-          )}
-        </Button>
+        <div className="flex gap-2 mb-2">
+          <Button 
+            variant="default" 
+            size="sm" 
+            className="flex-1 bg-blue-600 hover:bg-blue-700 text-white"
+            onClick={handleSearch}
+            disabled={isLoading || isProcessing}
+          >
+            {isLoading || isProcessing ? (
+              <>
+                <Lucide.Loader2 className="h-3 w-3 mr-1 animate-spin" />
+                {isProcessing ? "Processing..." : "Searching..."}
+              </>
+            ) : (
+              <>
+                <Lucide.Search className="h-3 w-3 mr-1" />
+                Search
+              </>
+            )}
+          </Button>
+          
+          <Button
+            variant="outline"
+            size="sm"
+            className="bg-zinc-800 border-zinc-700 text-zinc-300 hover:bg-zinc-700"
+            onClick={(e) => {
+              e.stopPropagation();
+              // Manually trigger a click on the node which will activate the onNodeClick handler
+              if (reactFlowInstance && id) {
+                const node = reactFlowInstance.getNode(id);
+                if (node) {
+                  // Simulate a click event
+                  const nodeElement = document.querySelector(`[data-id="${id}"]`);
+                  if (nodeElement) {
+                    nodeElement.dispatchEvent(
+                      new MouseEvent('click', { bubbles: true, cancelable: true })
+                    );
+                  }
+                }
+              }
+            }}
+          >
+            <Lucide.Settings className="h-3 w-3 mr-1" />
+            Settings
+          </Button>
+        </div>
         
         {(displayResult || searchResult) && (
           <div className="bg-zinc-900 border border-zinc-700 rounded-md p-2 min-h-[80px] text-xs">

@@ -30,10 +30,10 @@ export const perplexityExecutor: NodeExecutor = {
     }
     
     // Try to get API key from multiple sources
-    // 1. First check if it was passed directly to the node
-    let apiKey = nodeData.apiKey;
+    // 1. First check if it's in the node settings (from settings drawer)
+    let apiKey = nodeData.settings?.apiKey || nodeData.apiKey;
     
-    // 2. If not available in node data, try to fetch from our server config endpoint
+    // 2. If not available in node settings, try to fetch from our server config endpoint
     if (!apiKey) {
       try {
         console.log('Fetching API key from server config...');
@@ -72,7 +72,7 @@ export const perplexityExecutor: NodeExecutor = {
           'Authorization': `Bearer ${apiKey}`
         },
         body: JSON.stringify({
-          model: "sonar",  // Updated to a valid model
+          model: nodeData.settings?.model || "sonar",  // Use model from settings or default to sonar
           messages: [{ role: "user", content: query }]
         })
       });
@@ -125,6 +125,6 @@ function simulatePerplexityResponse(query: string): string {
   } else if (lowercaseQuery.includes("recipe") || lowercaseQuery.includes("cook")) {
     return "Based on your query about cooking, I can suggest checking various recipe websites or specifying what dish you're interested in preparing.";
   } else {
-    return `Results for: ${query}\n\nTo get actual results from Perplexity, please provide an API key. The simulation provides limited responses for demonstration purposes.`;
+    return `Results for: ${query}\n\nTo get actual results from Perplexity, please provide an API key in the node settings. Click on the Perplexity node to open the settings drawer and add your API key. The simulation provides limited responses for demonstration purposes.`;
   }
 }
