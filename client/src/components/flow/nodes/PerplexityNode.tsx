@@ -20,7 +20,10 @@ const PerplexityNode = ({ data, selected }: NodeProps<NodeData>) => {
   const isProcessing = data._isProcessing || false;
   
   // Use search result from workflow run if available
-  const displayResult = data._searchResult || searchResult;
+  // Ensure we convert any object to string
+  const displayResult = data._searchResult 
+    ? (typeof data._searchResult === 'object' ? JSON.stringify(data._searchResult) : data._searchResult)
+    : searchResult;
 
   // Update apiKey in data if environment variable is available
   useEffect(() => {
@@ -54,7 +57,7 @@ const PerplexityNode = ({ data, selected }: NodeProps<NodeData>) => {
           'Authorization': `Bearer ${effectiveApiKey}`
         },
         body: JSON.stringify({
-          model: "pplx-7b-online",
+          model: "sonar-small-online",  // Updated to a valid model
           messages: [
             {
               role: "user",
@@ -132,7 +135,11 @@ const PerplexityNode = ({ data, selected }: NodeProps<NodeData>) => {
         
         <div className="bg-zinc-900 border border-zinc-700 rounded-md p-2 min-h-[60px] text-xs mb-2">
           {data.inputText ? (
-            <p className="text-zinc-300">{data.inputText}</p>
+            <p className="text-zinc-300">
+              {typeof data.inputText === 'object' 
+                ? JSON.stringify(data.inputText) 
+                : String(data.inputText)}
+            </p>
           ) : (
             <div className="text-zinc-500 text-xs flex items-center justify-center h-full">
               No input provided
@@ -162,7 +169,13 @@ const PerplexityNode = ({ data, selected }: NodeProps<NodeData>) => {
         
         {(displayResult || searchResult) && (
           <div className="bg-zinc-900 border border-zinc-700 rounded-md p-2 min-h-[80px] text-xs">
-            <p className="text-zinc-300 whitespace-pre-line">{displayResult || searchResult}</p>
+            <p className="text-zinc-300 whitespace-pre-line">
+              {typeof displayResult === 'object' 
+                ? JSON.stringify(displayResult, null, 2) 
+                : typeof searchResult === 'object'
+                  ? JSON.stringify(searchResult, null, 2)
+                  : String(displayResult || searchResult)}
+            </p>
           </div>
         )}
       </CardContent>
