@@ -47,14 +47,16 @@ export default function AgentChainPage() {
       console.log("Agent chain response:", data);
       
       if (data.success) {
-        if (data.coordinatorResult && data.coordinatorResult.result && data.coordinatorResult.result.output) {
-          setCoordinatorResponse(data.coordinatorResult.result.output);
+        // Handle coordinator response based on the new structure
+        if (data.coordinatorResult && data.coordinatorResult.output) {
+          setCoordinatorResponse(data.coordinatorResult.output);
         } else {
           setCoordinatorResponse("No response from Coordinator Agent");
         }
         
-        if (data.generatorResult && data.generatorResult.result && data.generatorResult.result.output) {
-          setGeneratorResponse(data.generatorResult.result.output);
+        // Handle generator response based on the new structure
+        if (data.generatorResult && data.generatorResult.output) {
+          setGeneratorResponse(data.generatorResult.output);
         } else {
           setGeneratorResponse("No response from Generator Agent");
         }
