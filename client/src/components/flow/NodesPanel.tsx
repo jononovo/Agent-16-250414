@@ -108,13 +108,15 @@ const NodesPanel = () => {
       </div>
       
       <Tabs defaultValue="ai" className="mb-4" onValueChange={setActiveTab}>
-        <TabsList className="w-full">
-          <TabsTrigger value="all" className="flex-1">All</TabsTrigger>
-          <TabsTrigger value="ai" className="flex-1">AI</TabsTrigger>
-          <TabsTrigger value="data" className="flex-1">Data</TabsTrigger>
-          <TabsTrigger value="triggers" className="flex-1">Triggers</TabsTrigger>
-          <TabsTrigger value="actions" className="flex-1">Actions</TabsTrigger>
-        </TabsList>
+        <ScrollArea className="w-full" orientation="horizontal">
+          <TabsList className="inline-flex min-w-max px-1">
+            <TabsTrigger value="all" className="min-w-24">All</TabsTrigger>
+            <TabsTrigger value="ai" className="min-w-24">AI</TabsTrigger>
+            <TabsTrigger value="data" className="min-w-24">Data</TabsTrigger>
+            <TabsTrigger value="triggers" className="min-w-24">Triggers</TabsTrigger>
+            <TabsTrigger value="actions" className="min-w-24">Actions</TabsTrigger>
+          </TabsList>
+        </ScrollArea>
       </Tabs>
 
       <ScrollArea className="flex-1">
