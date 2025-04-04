@@ -5,13 +5,15 @@ import { Button } from '@/components/ui/button';
 import { NodeData } from '../NodeItem';
 import { Badge } from '@/components/ui/badge';
 import DynamicIcon from '../DynamicIcon';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Textarea } from '@/components/ui/textarea';
 import { Input } from '@/components/ui/input';
 
 const PerplexityNode = ({ data, selected }: NodeProps<NodeData>) => {
+  // Try to get API key from environment or data
+  const envApiKey = import.meta.env.PERPLEXITY_API_KEY;
   const [isLoading, setIsLoading] = useState(false);
-  const [apiKey, setApiKey] = useState(data.apiKey || '');
+  const [apiKey, setApiKey] = useState(data.apiKey || envApiKey || '');
   const [searchResult, setSearchResult] = useState('');
   
   // Check if workflow run is processing this node
@@ -19,6 +21,13 @@ const PerplexityNode = ({ data, selected }: NodeProps<NodeData>) => {
   
   // Use search result from workflow run if available
   const displayResult = data._searchResult || searchResult;
+
+  // Update apiKey in data if environment variable is available
+  useEffect(() => {
+    if (envApiKey && !data.apiKey) {
+      data.apiKey = envApiKey;
+    }
+  }, [envApiKey, data]);
   
   const handleSearch = async () => {
     if (!data.inputText) {
@@ -26,7 +35,10 @@ const PerplexityNode = ({ data, selected }: NodeProps<NodeData>) => {
       return;
     }
     
-    if (!apiKey) {
+    // Use environment API key if available, otherwise use input
+    const effectiveApiKey = envApiKey || apiKey;
+    
+    if (!effectiveApiKey) {
       setSearchResult('Please enter your Perplexity API key');
       return;
     }
@@ -34,12 +46,12 @@ const PerplexityNode = ({ data, selected }: NodeProps<NodeData>) => {
     setIsLoading(true);
     
     try {
-      // Real Perplexity API call
+      // Simple search with Perplexity API
       const response = await fetch('https://api.perplexity.ai/chat/completions', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${apiKey}`
+          'Authorization': `Bearer ${effectiveApiKey}`
         },
         body: JSON.stringify({
           model: "pplx-7b-online",
@@ -53,6 +65,9 @@ const PerplexityNode = ({ data, selected }: NodeProps<NodeData>) => {
       });
       
       if (!response.ok) {
+        const errorText = await response.text();
+        console.error('API error status:', response.status);
+        console.error('API error text:', errorText);
         throw new Error(`API responded with status: ${response.status}`);
       }
       
@@ -60,18 +75,18 @@ const PerplexityNode = ({ data, selected }: NodeProps<NodeData>) => {
       console.log("Perplexity API response:", result);
       
       if (result.choices && result.choices[0] && result.choices[0].message) {
-        setSearchResult(result.choices[0].message.content);
+        const newResult = result.choices[0].message.content;
+        setSearchResult(newResult);
+        
+        // Send result to next node if available
+        if (data.onOutputChange) {
+          data.onOutputChange(newResult);
+        }
       } else {
         setSearchResult('Unexpected API response format');
       }
-      
-      // Send result to next node if available
-      if (data.onOutputChange) {
-        data.onOutputChange(searchResult);
-      }
     } catch (error: any) {
       console.error('Error searching with Perplexity API:', error);
-      console.error('Error details:', JSON.stringify(error, null, 2));
       setSearchResult(`Error connecting to Perplexity API: ${error.message || 'Unknown error'}`);
     } finally {
       setIsLoading(false);
@@ -93,19 +108,26 @@ const PerplexityNode = ({ data, selected }: NodeProps<NodeData>) => {
       
       <CardContent className="p-3 pt-0">
         <div className="mb-2">
-          <Input 
-            placeholder="Enter Perplexity API key" 
-            className="bg-zinc-900 border-zinc-700 text-zinc-300 text-xs mb-2"
-            type="password"
-            value={apiKey}
-            onChange={(e) => {
-              setApiKey(e.target.value);
-              // Also save to node data so it can be accessed by workflow execution
-              if (data.apiKey !== e.target.value) {
-                data.apiKey = e.target.value;
-              }
-            }}
-          />
+          {envApiKey ? (
+            <div className="bg-zinc-900 border border-zinc-700 rounded-md p-2 text-xs mb-2 text-zinc-400 flex items-center">
+              <Lucide.Key className="h-3 w-3 mr-1 text-green-500" />
+              Using API key from environment
+            </div>
+          ) : (
+            <Input 
+              placeholder="Enter Perplexity API key" 
+              className="bg-zinc-900 border-zinc-700 text-zinc-300 text-xs mb-2"
+              type="password"
+              value={apiKey}
+              onChange={(e) => {
+                setApiKey(e.target.value);
+                // Also save to node data so it can be accessed by workflow execution
+                if (data.apiKey !== e.target.value) {
+                  data.apiKey = e.target.value;
+                }
+              }}
+            />
+          )}
         </div>
         
         <div className="bg-zinc-900 border border-zinc-700 rounded-md p-2 min-h-[60px] text-xs mb-2">

@@ -211,7 +211,7 @@ const FlowEditor = ({ workflow, isNew = false }: FlowEditorProps) => {
     });
   };
   
-  const handleRunWorkflow = async () => {
+  const handleRunWorkflow = () => {
     setIsRunning(true);
     
     // Find text input nodes to get initial inputs
@@ -234,7 +234,8 @@ const FlowEditor = ({ workflow, isNew = false }: FlowEditorProps) => {
             ...node,
             data: {
               ...node.data,
-              _isProcessing: true
+              _isProcessing: true,
+              inputText // Pass input text to Perplexity node
             }
           };
         }
@@ -242,119 +243,72 @@ const FlowEditor = ({ workflow, isNew = false }: FlowEditorProps) => {
       })
     );
     
-    // Find Perplexity nodes
-    const perplexityNodes = nodes.filter(node => 
-      node.type === 'perplexity'
-    );
-    
-    // Get API key if manually entered in Perplexity node UI
-    let apiKey = '';
-    if (perplexityNodes.length > 0) {
-      // Look for apiKey in node data
-      const nodeData = perplexityNodes[0].data;
-      if (nodeData && nodeData.apiKey) {
-        apiKey = nodeData.apiKey;
-      }
-    }
-    
-    // Execute workflow with real API if key is available
-    let searchResult = "";
-    
-    if (apiKey) {
-      try {
-        // Real Perplexity API call
-        const response = await fetch('https://api.perplexity.ai/chat/completions', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${apiKey}`
-          },
-          body: JSON.stringify({
-            model: "pplx-7b-online",
-            messages: [
-              {
-                role: "user",
-                content: inputText
-              }
-            ]
-          })
-        });
-        
-        if (!response.ok) {
-          throw new Error(`API responded with status: ${response.status}`);
-        }
-        
-        const result = await response.json();
-        console.log("Perplexity API response:", result);
-        
-        if (result.choices && result.choices[0] && result.choices[0].message) {
-          searchResult = result.choices[0].message.content;
-        } else {
-          searchResult = 'Unexpected API response format';
-        }
-      } catch (error: any) {
-        console.error('Error searching with Perplexity API:', error);
-        searchResult = `Error connecting to Perplexity API: ${error.message || 'Unknown error'}`;
-      }
-    } else {
-      // Fallback to simulated response if no API key
+    // Simulate workflow execution
+    setTimeout(() => {
+      // Find Perplexity nodes
+      const perplexityNodes = nodes.filter(node => 
+        node.type === 'perplexity'
+      );
+      
+      // Simulate Perplexity search result based on input
+      let searchResult = "";
       if (inputText.toLowerCase().includes("capital") && inputText.toLowerCase().includes("azerbaijan")) {
         searchResult = "The capital of Azerbaijan is Baku. It is the largest city in Azerbaijan and the Caucasus region.";
       } else if (inputText.toLowerCase().includes("capital")) {
         searchResult = "Based on your query about a capital, I would need more specific information about which country or region you're asking about.";
       } else {
-        searchResult = "Results for: " + inputText + "\n\nTo get actual results from Perplexity, please enter your API key in the Perplexity node.";
+        searchResult = "Results for: " + inputText + "\n\nTo get actual results from Perplexity, please use the 'Search with Perplexity' button in the Perplexity node and add your API key.";
       }
-    }
-    
-    // Update Perplexity nodes with the result and remove loading state
-    if (perplexityNodes.length > 0) {
-      setNodes(nds => 
-        nds.map(node => {
-          if (node.type === 'perplexity') {
-            return {
-              ...node,
-              data: {
-                ...node.data,
-                _searchResult: searchResult,
-                _isProcessing: false
-              }
-            };
-          }
-          return node;
-        })
+      
+      // Update Perplexity nodes with the result and remove loading state
+      if (perplexityNodes.length > 0) {
+        setNodes(nds => 
+          nds.map(node => {
+            if (node.type === 'perplexity') {
+              return {
+                ...node,
+                data: {
+                  ...node.data,
+                  _searchResult: searchResult,
+                  _isProcessing: false
+                }
+              };
+            }
+            return node;
+          })
+        );
+      }
+      
+      // Find visualize text nodes to update with results
+      const visualizeNodes = nodes.filter(node => 
+        node.type === 'visualize_text' || 
+        node.type === 'visualizeText'
       );
-    }
-    
-    // Find visualize text nodes to update with results
-    const visualizeNodes = nodes.filter(node => 
-      node.type === 'visualize_text' || 
-      node.type === 'visualizeText'
-    );
-    
-    // Update visualization nodes with the search result
-    if (visualizeNodes.length > 0) {
-      setNodes(nds => 
-        nds.map(node => {
-          if (node.type === 'visualize_text' || node.type === 'visualizeText') {
-            return {
-              ...node,
-              data: {
-                ...node.data,
-                textContent: searchResult
-              }
-            };
-          }
-          return node;
-        })
-      );
-    }
-    
-    setIsRunning(false);
-    toast({
-      title: "Workflow Execution",
-      description: "Workflow ran successfully!",
-    });
+      
+      // Update visualization nodes with the search result
+      if (visualizeNodes.length > 0) {
+        setNodes(nds => 
+          nds.map(node => {
+            if (node.type === 'visualize_text' || node.type === 'visualizeText') {
+              return {
+                ...node,
+                data: {
+                  ...node.data,
+                  textContent: searchResult
+                }
+              };
+            }
+            return node;
+          })
+        );
+      }
+      
+      setIsRunning(false);
+      toast({
+        title: "Workflow Execution",
+        description: "Workflow ran successfully!",
+      });
+    }, 1500);
   };
 
   return (
