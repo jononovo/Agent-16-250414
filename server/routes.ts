@@ -437,6 +437,77 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ message: "Failed to fetch API configuration" });
     }
   });
+  
+  // Test Workflow Execution endpoint - allows testing a specific workflow with a prompt
+  app.post("/api/test-workflow/:id", async (req, res) => {
+    try {
+      const workflowId = parseInt(req.params.id);
+      if (isNaN(workflowId)) {
+        return res.status(400).json({ message: "Invalid workflow ID" });
+      }
+      
+      const { prompt } = req.body;
+      if (!prompt) {
+        return res.status(400).json({ message: "Prompt is required" });
+      }
+      
+      // Get the workflow
+      const workflow = await storage.getWorkflow(workflowId);
+      if (!workflow) {
+        return res.status(404).json({ message: "Workflow not found" });
+      }
+      
+      console.log(`Testing workflow ${workflowId} with prompt: ${prompt}`);
+      
+      // Create a log entry for this execution
+      const log = await storage.createLog({
+        agentId: workflow.agentId || 0,
+        workflowId: workflowId,
+        status: "running",
+        input: { prompt },
+      });
+      
+      // Execute the workflow (mock implementation - in a real app this would connect to the workflow engine)
+      // For now, we'll just simulate execution and return a response
+      
+      // For simplicity, we'll check if this is the Coordinator Workflow and simulate its execution
+      if (workflow.name === "Coordinator Workflow") {
+        // Update log with success status
+        const updatedLog = await storage.updateLog(log.id, {
+          status: "success",
+          output: { 
+            response: `This is a test response from the Coordinator Workflow for prompt: "${prompt}". In a full implementation, this would execute the actual workflow nodes with Claude.` 
+          },
+          completedAt: new Date()
+        });
+        
+        // Return the response
+        return res.json({
+          status: "success",
+          result: updatedLog.output,
+          logId: log.id
+        });
+      } else {
+        // Handle other workflows or return a general response
+        const updatedLog = await storage.updateLog(log.id, {
+          status: "success",
+          output: { 
+            response: `Test execution of workflow "${workflow.name}" completed with prompt: "${prompt}". This is a simulated response.` 
+          },
+          completedAt: new Date()
+        });
+        
+        return res.json({
+          status: "success",
+          result: updatedLog.output,
+          logId: log.id
+        });
+      }
+    } catch (error) {
+      console.error('Error testing workflow:', error);
+      res.status(500).json({ message: "Failed to test workflow execution" });
+    }
+  });
 
   const httpServer = createServer(app);
   return httpServer;
