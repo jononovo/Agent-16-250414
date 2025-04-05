@@ -17,6 +17,7 @@ export async function getAllEnhancedNodeExecutors(): Promise<Record<string, Enha
   const chatInterfaceModule = await import('./chatInterfaceExecutor');
   const claudeModule = await import('./claudeExecutor');
   const textPromptModule = await import('./textPromptExecutor');
+  const generateTextModule = await import('./generateTextExecutor');
   
   return {
     textInputExecutor: textInputModule.textInputExecutor,
@@ -25,7 +26,8 @@ export async function getAllEnhancedNodeExecutors(): Promise<Record<string, Enha
     transformExecutor: transformModule.transformExecutor,
     chatInterfaceExecutor: chatInterfaceModule.chatInterfaceExecutor,
     claudeExecutor: claudeModule.claudeExecutor,
-    textPromptExecutor: textPromptModule.textPromptExecutor
+    textPromptExecutor: textPromptModule.textPromptExecutor,
+    generateTextExecutor: generateTextModule.generateTextExecutor
   };
 }
 
@@ -45,9 +47,9 @@ export async function registerAllEnhancedExecutors(): Promise<void> {
   registerEnhancedNodeExecutor('transform', executors.transformExecutor);
   registerEnhancedNodeExecutor('chat_interface', executors.chatInterfaceExecutor);
   registerEnhancedNodeExecutor('claude', executors.claudeExecutor);
+  registerEnhancedNodeExecutor('generate_text', executors.generateTextExecutor);
   
   // Register aliases for backward compatibility
-  registerEnhancedNodeExecutor('generate_text', executors.claudeExecutor);
   registerEnhancedNodeExecutor('perplexity', executors.claudeExecutor);
   
   console.log('All enhanced node executors registered');

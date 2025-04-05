@@ -1,193 +1,320 @@
+import React, { useState } from 'react';
 import { Handle, Position, NodeProps } from 'reactflow';
-import { Card, CardContent, CardHeader } from '@/components/ui/card';
-import * as Lucide from 'lucide-react';
-import { Button } from '@/components/ui/button';
+import { Sparkles, Settings, RotateCw, Plus, Minus } from 'lucide-react';
+import { 
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger 
+} from '@/components/ui/accordion';
 import { Badge } from '@/components/ui/badge';
-import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
-import { NodeData } from '../NodeItem';
-import DynamicIcon from '../DynamicIcon';
+import { 
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue 
+} from '@/components/ui/select';
+import { cn } from '@/lib/utils';
 
-const GenerateTextNode = ({ data, selected }: NodeProps<NodeData>) => {
+// Types for the dynamic tool handles
+export interface Tool {
+  id: string;
+  name: string;
+  description?: string;
+}
+
+export interface DynamicHandles {
+  tools: Tool[];
+}
+
+// Types for the node data
+export interface GenerateTextNodeData {
+  label?: string;
+  description?: string;
+  status?: 'idle' | 'processing' | 'complete' | 'error';
+  errorMessage?: string;
+  systemInstruction?: string;
+  promptTemplate?: string;
+  config?: {
+    model?: string;
+    temperature?: number;
+    maxTokens?: number;
+  };
+  dynamicHandles?: DynamicHandles;
+  onSettingsClick?: () => void;
+}
+
+// Props interface
+export interface GenerateTextNodeProps extends NodeProps {
+  data: GenerateTextNodeData;
+  onModelChange?: (model: string) => void;
+  onCreateTool?: () => boolean;
+  onRemoveTool?: (id: string) => boolean;
+  onUpdateTool?: (id: string, name: string, description?: string) => boolean;
+  onDeleteNode?: () => void;
+}
+
+const GenerateTextNode: React.FC<GenerateTextNodeProps> = ({ 
+  data, 
+  id,
+  selected,
+  onModelChange,
+  onCreateTool,
+  onRemoveTool,
+  onUpdateTool,
+  onDeleteNode
+}) => {
+  const [systemInstruction, setSystemInstruction] = useState(data.systemInstruction || '');
+  const [promptTemplate, setPromptTemplate] = useState(data.promptTemplate || '');
+  const model = data.config?.model || 'claude-3-opus-20240229';
+  const temperature = data.config?.temperature || 0.7;
+  const maxTokens = data.config?.maxTokens || 1024;
+  
+  const getStatusBadge = () => {
+    switch (data.status) {
+      case 'processing':
+        return <Badge variant="outline" className="bg-blue-500 text-white ml-2">Processing</Badge>;
+      case 'complete':
+        return <Badge variant="outline" className="bg-green-500 text-white ml-2">Complete</Badge>;
+      case 'error':
+        return <Badge variant="destructive" className="ml-2">Error</Badge>;
+      default:
+        return null;
+    }
+  };
+
+  const handleSystemInstructionChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    setSystemInstruction(e.target.value);
+    // You would typically save this to the node data in a real implementation
+  };
+
+  const handlePromptTemplateChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    setPromptTemplate(e.target.value);
+    // You would typically save this to the node data in a real implementation
+  };
+
+  const handleModelChange = (value: string) => {
+    if (onModelChange) {
+      onModelChange(value);
+    }
+  };
+
+  const handleAddTool = () => {
+    if (onCreateTool) {
+      return onCreateTool();
+    }
+    return false;
+  };
+
   return (
-    <Card className={`w-64 transition-all duration-200 ${selected ? 'ring-2 ring-primary' : ''}`}
-        style={{ background: '#111', color: '#fff', borderColor: '#333' }}>
-      <CardHeader className="flex flex-row items-center justify-between p-3 pb-2">
-        <div className="flex items-center gap-2">
-          <div className="w-6 h-6 rounded-md bg-zinc-800 flex items-center justify-center text-zinc-300">
-            <DynamicIcon icon={data.icon || 'cpu'} />
-          </div>
-          <span className="font-medium text-sm truncate">{data.label || 'Generate Text'}</span>
+    <div className={cn(
+      'generate-text-node relative p-0 rounded-md min-w-[300px] max-w-[380px] bg-background border transition-all shadow-md',
+      selected ? 'border-primary ring-2 ring-primary ring-opacity-20' : 'border-border'
+    )}>
+      {/* Header */}
+      <div className="p-3 border-b flex items-center justify-between">
+        <div className="font-medium text-sm flex items-center">
+          <Sparkles className="h-4 w-4 mr-2 text-indigo-500" />
+          <span>{data.label || 'Generate Text'}</span>
+          {getStatusBadge()}
         </div>
-        <Badge variant="outline" className="bg-zinc-800 text-zinc-300 text-[10px] font-normal border-zinc-700">AI</Badge>
-      </CardHeader>
-      
-      <CardContent className="p-3 pt-0 text-xs text-zinc-400">
-        <div className="mb-2">
-          <div className="flex gap-1 mb-1">
-            {data.settings?.apiKey ? (
-              <div className="text-[10px] flex items-center gap-1 text-green-500">
-                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-3 h-3">
-                  <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
-                  <polyline points="22 4 12 14.01 9 11.01"></polyline>
-                </svg>
-                <span>API key set</span>
-              </div>
-            ) : (
-              <div className="text-[10px] flex items-center gap-1 text-yellow-500">
-                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-3 h-3">
-                  <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path>
-                  <line x1="12" y1="9" x2="12" y2="13"></line>
-                  <line x1="12" y1="17" x2="12.01" y2="17"></line>
-                </svg>
-                <span>Set API key in settings</span>
-              </div>
-            )}
-          </div>
-          <Select 
-            defaultValue={data.model || data.settings?.model || 'claude-3.5-sonnet'} 
-            onValueChange={(value) => {
-              if (data.onChange) {
-                // Store model in both data.model for backward compatibility and data.settings.model
-                const settings = data.settings || {};
-                data.onChange({ 
-                  ...data, 
-                  model: value, 
-                  settings: {
-                    ...settings,
-                    model: value
-                  }
-                });
-              }
-            }}
+        {data.onSettingsClick && (
+          <button 
+            onClick={data.onSettingsClick}
+            className="ml-auto hover:bg-muted p-1 rounded-sm"
           >
-            <SelectTrigger className="h-7 text-xs bg-zinc-800 text-zinc-300 border-zinc-700">
-              <SelectValue placeholder="Select model" />
-            </SelectTrigger>
-            <SelectContent className="bg-zinc-800 text-zinc-300 border-zinc-700">
-              <SelectItem value="claude-3.5-sonnet">claude-3.5-sonnet</SelectItem>
-              <SelectItem value="claude-3-opus">claude-3-opus</SelectItem>
-              <SelectItem value="claude-3-sonnet">claude-3-sonnet</SelectItem>
-              <SelectItem value="claude-3-haiku">claude-3-haiku</SelectItem>
-              <SelectItem value="llama-3.3-70b-versatile">llama-3.3-70b-versatile</SelectItem>
-              <SelectItem value="llama-3.1-8b">llama-3.1-8b</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
+            <Settings className="h-4 w-4 text-muted-foreground" />
+          </button>
+        )}
+      </div>
+      
+      {/* Body */}
+      <div className="p-3 space-y-3">
+        {data.description && (
+          <p className="text-sm text-muted-foreground">{data.description}</p>
+        )}
         
-        <Accordion type="single" collapsible className="mb-1">
-          <AccordionItem value="system" className="border-zinc-800">
-            <AccordionTrigger className="py-1 text-xs text-zinc-400 hover:text-zinc-200 hover:no-underline">System</AccordionTrigger>
-            <AccordionContent>
-              <Textarea 
-                className="bg-zinc-900 border-zinc-700 text-zinc-300 min-h-[60px] text-xs font-mono"
-                placeholder="Enter system prompt..."
-                value={data.systemPrompt || 'You are a helpful AI assistant.'}
-                onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => {
-                  if (data.onChange) {
-                    const settings = data.settings || {};
-                    data.onChange({ 
-                      ...data, 
-                      systemPrompt: e.target.value,
-                      settings: {
-                        ...settings,
-                        systemPrompt: e.target.value
-                      }
-                    });
-                  }
-                }}
+        <Accordion type="single" collapsible defaultValue="model" className="w-full">
+          <AccordionItem value="model" className="border-none">
+            <AccordionTrigger className="py-2 text-sm hover:no-underline">
+              Model Settings
+            </AccordionTrigger>
+            <AccordionContent className="pt-1">
+              <div className="space-y-2">
+                <div>
+                  <label className="text-xs font-medium block mb-1">Model</label>
+                  <Select value={model} onValueChange={handleModelChange}>
+                    <SelectTrigger className="w-full">
+                      <SelectValue placeholder="Select model" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="claude-3-opus-20240229">Claude 3 Opus</SelectItem>
+                      <SelectItem value="claude-3-sonnet-20240229">Claude 3 Sonnet</SelectItem>
+                      <SelectItem value="claude-3-haiku-20240229">Claude 3 Haiku</SelectItem>
+                      <SelectItem value="gpt-4o">GPT-4o</SelectItem>
+                      <SelectItem value="gpt-4-turbo">GPT-4 Turbo</SelectItem>
+                      <SelectItem value="gpt-3.5-turbo">GPT-3.5 Turbo</SelectItem>
+                      <SelectItem value="deepseek-chat">DeepSeek Chat</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                
+                <div className="grid grid-cols-2 gap-2">
+                  <div>
+                    <label className="text-xs font-medium block mb-1">Temperature</label>
+                    <Input 
+                      type="number" 
+                      min="0" 
+                      max="1" 
+                      step="0.1" 
+                      defaultValue={temperature.toString()} 
+                      className="w-full"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-xs font-medium block mb-1">Max Tokens</label>
+                    <Input 
+                      type="number" 
+                      min="1" 
+                      defaultValue={maxTokens.toString()} 
+                      className="w-full"
+                    />
+                  </div>
+                </div>
+              </div>
+            </AccordionContent>
+          </AccordionItem>
+          
+          <AccordionItem value="instructions" className="border-none">
+            <AccordionTrigger className="py-2 text-sm hover:no-underline">
+              System Instructions
+            </AccordionTrigger>
+            <AccordionContent className="pt-1">
+              <Textarea
+                value={systemInstruction}
+                onChange={handleSystemInstructionChange}
+                placeholder="Enter system instructions here..."
+                className="min-h-[100px] text-sm resize-y"
               />
             </AccordionContent>
           </AccordionItem>
-          <AccordionItem value="prompt" className="border-zinc-800">
-            <AccordionTrigger className="py-1 text-xs text-zinc-400 hover:text-zinc-200 hover:no-underline">Prompt</AccordionTrigger>
-            <AccordionContent>
-              <Textarea 
-                className="bg-zinc-900 border-zinc-700 text-zinc-300 min-h-[60px] text-xs font-mono"
-                placeholder="Enter user prompt..."
-                value={data.userPrompt || 'Route the input here if the request is about...'}
-                onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => {
-                  if (data.onChange) {
-                    const settings = data.settings || {};
-                    data.onChange({ 
-                      ...data, 
-                      userPrompt: e.target.value,
-                      settings: {
-                        ...settings,
-                        userPrompt: e.target.value
-                      }
-                    });
-                  }
-                }}
+          
+          <AccordionItem value="prompt" className="border-none">
+            <AccordionTrigger className="py-2 text-sm hover:no-underline">
+              Prompt Template
+            </AccordionTrigger>
+            <AccordionContent className="pt-1">
+              <Textarea
+                value={promptTemplate}
+                onChange={handlePromptTemplateChange}
+                placeholder="Enter your prompt template here. Use {{variable}} for dynamic content."
+                className="min-h-[100px] text-sm resize-y"
               />
             </AccordionContent>
           </AccordionItem>
-          <AccordionItem value="outputs" className="border-zinc-800">
-            <AccordionTrigger className="py-1 text-xs text-zinc-400 hover:text-zinc-200 hover:no-underline">Tool outputs</AccordionTrigger>
-            <AccordionContent>
-              <div className="flex flex-col gap-1">
-                <div className="flex items-center justify-between p-2 bg-zinc-800 rounded">
-                  <span className="text-xs text-zinc-300">blog-expert</span>
-                  <Button variant="ghost" size="sm" className="h-5 w-5 p-0 text-zinc-400 hover:text-zinc-200">
-                    <Lucide.Copy className="h-3 w-3" />
-                  </Button>
-                </div>
-                <div className="flex items-center justify-between p-2 bg-zinc-800 rounded">
-                  <span className="text-xs text-zinc-300">short-form-expert</span>
-                  <Button variant="ghost" size="sm" className="h-5 w-5 p-0 text-zinc-400 hover:text-zinc-200">
-                    <Lucide.Copy className="h-3 w-3" />
-                  </Button>
-                </div>
-                <div className="flex items-center justify-between p-2 bg-zinc-800 rounded">
-                  <span className="text-xs text-zinc-300">seo-web-expert</span>
-                  <Button variant="ghost" size="sm" className="h-5 w-5 p-0 text-zinc-400 hover:text-zinc-200">
-                    <Lucide.Copy className="h-3 w-3" />
-                  </Button>
-                </div>
-                <Button variant="outline" size="sm" className="h-6 text-[10px] mt-1 bg-zinc-800 text-zinc-300 border-zinc-700">
-                  <Lucide.Plus className="h-3 w-3 mr-1" />
-                  New tool output
+          
+          <AccordionItem value="tools" className="border-none">
+            <AccordionTrigger className="py-2 text-sm hover:no-underline">
+              Tool Inputs
+            </AccordionTrigger>
+            <AccordionContent className="pt-1">
+              <div className="space-y-3">
+                {data.dynamicHandles?.tools.map((tool) => (
+                  <div key={tool.id} className="space-y-2 p-2 bg-muted/30 rounded-md">
+                    <div className="flex items-center justify-between">
+                      <label className="text-xs font-medium">{tool.name}</label>
+                      <Button 
+                        variant="ghost" 
+                        size="sm" 
+                        className="h-6 w-6 p-0" 
+                        onClick={() => onRemoveTool && onRemoveTool(tool.id)}
+                      >
+                        <Minus className="h-3 w-3" />
+                      </Button>
+                    </div>
+                    <Input 
+                      defaultValue={tool.name} 
+                      className="text-xs" 
+                      placeholder="Tool name"
+                      onChange={(e) => onUpdateTool && onUpdateTool(tool.id, e.target.value, tool.description)}
+                    />
+                    <Input 
+                      defaultValue={tool.description} 
+                      className="text-xs" 
+                      placeholder="Tool description (optional)"
+                      onChange={(e) => onUpdateTool && onUpdateTool(tool.id, tool.name, e.target.value)}
+                    />
+                  </div>
+                ))}
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  className="w-full" 
+                  onClick={handleAddTool}
+                >
+                  <Plus className="h-3 w-3 mr-1" /> Add Tool
                 </Button>
               </div>
             </AccordionContent>
           </AccordionItem>
         </Accordion>
         
-        <div className="flex items-center justify-between mt-2">
-          <div className="flex gap-2">
-            <Badge className="bg-blue-900 text-blue-300 text-[10px] border-none">Input</Badge>
-            <Badge className="bg-blue-900 text-blue-300 text-[10px] border-none">Result</Badge>
+        {data.errorMessage && (
+          <div className="mt-2 text-xs text-red-500 bg-red-50 p-2 rounded">
+            {data.errorMessage}
           </div>
-          <Button 
-            variant="outline" 
-            size="sm" 
-            className="h-6 text-xs bg-zinc-800 text-zinc-300 border-zinc-700"
-            onClick={(e) => {
-              // Call parent node's onClick handler to open settings drawer
-              if (data.onSettingsClick) {
-                e.stopPropagation();
-                data.onSettingsClick();
-              }
-            }}
-          >
-            <Lucide.Settings className="h-3 w-3 mr-1" />
-            Configure
-          </Button>
-        </div>
-      </CardContent>
+        )}
+        
+        {/* Run button */}
+        <Button 
+          variant="default" 
+          size="sm" 
+          className="w-full mt-2"
+          disabled={data.status === 'processing'}
+        >
+          {data.status === 'processing' ? (
+            <>
+              <RotateCw className="h-3 w-3 mr-1 animate-spin" /> 
+              Processing...
+            </>
+          ) : (
+            'Generate Text'
+          )}
+        </Button>
+      </div>
       
+      {/* Input handle - Text Input */}
       <Handle
         type="target"
-        position={Position.Top}
-        className="!w-3 !h-3 !border-2 !border-zinc-500 !bg-zinc-900"
+        position={Position.Left}
+        id="input"
+        className="w-3 h-3 left-[-6px] !bg-indigo-500 border-2 border-background"
       />
+      
+      {/* Tool input handles */}
+      {data.dynamicHandles?.tools.map((tool, index) => (
+        <Handle
+          key={tool.id}
+          type="target"
+          position={Position.Left}
+          id={`tool-${tool.id}`}
+          className="w-3 h-3 left-[-6px] !bg-amber-500 border-2 border-background"
+          style={{ top: `${150 + (index * 20)}px` }}
+        />
+      ))}
+      
+      {/* Output handle */}
       <Handle
         type="source"
-        position={Position.Bottom}
-        className="!w-3 !h-3 !border-2 !border-zinc-500 !bg-zinc-900"
+        position={Position.Right}
+        id="output"
+        className="w-3 h-3 right-[-6px] !bg-indigo-500 border-2 border-background"
       />
-    </Card>
+    </div>
   );
 };
 
