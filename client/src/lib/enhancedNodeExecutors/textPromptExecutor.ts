@@ -1,64 +1,57 @@
-import { 
-  EnhancedNodeExecutor, 
-  NodeExecutionData, 
-  createExecutionDataFromValue 
-} from '../types/workflow';
-import { createEnhancedNodeExecutor } from '../enhancedWorkflowEngine';
-
-interface TextPromptData {
-  prompt?: string;
-  text?: string;
-  label?: string;
-  [key: string]: any;
-}
-
 /**
- * Text Prompt Node Definition
+ * Text Prompt Node Executor
+ * 
+ * Handles the execution of text prompt nodes, which provide static text for the workflow.
  */
-const textPromptDefinition = {
+
+import { EnhancedNodeExecutor, createWorkflowItem, createExecutionDataFromValue, NodeDefinition } from '../types/workflow';
+
+// Define the node definition
+const definition: NodeDefinition = {
   type: 'text_prompt',
   displayName: 'Text Prompt',
-  description: 'Provides text input to the workflow',
-  icon: 'MessageSquare',
-  category: 'input',
+  description: 'Provide static text prompts to your workflow',
+  icon: 'message-square',
+  category: 'AI',
   version: '1.0',
-  
-  // Define the input parameters
-  inputs: {
-    prompt: {
-      type: 'string' as const,
-      displayName: 'Prompt Text',
-      description: 'The text prompt to provide to the workflow',
-      required: true
-    }
-  },
-  
-  // Define the outputs
+  inputs: {},
   outputs: {
-    default: {
-      type: 'string' as const,
-      displayName: 'Prompt Text',
-      description: 'The provided prompt text'
+    text: {
+      type: 'string',
+      displayName: 'Text',
+      description: 'The text prompt'
     }
   }
 };
 
-/**
- * Executor for text prompt nodes
- * 
- * This node passes along the prompt or text as output.
- */
-export const textPromptExecutor: EnhancedNodeExecutor = createEnhancedNodeExecutor(
-  textPromptDefinition,
-  async (nodeData: TextPromptData): Promise<NodeExecutionData> => {
-    // Get the prompt from the node data
-    const promptText = nodeData.prompt || nodeData.text || nodeData.input;
-    
-    if (!promptText) {
-      throw new Error('No prompt text provided');
+export const textPromptExecutor: EnhancedNodeExecutor = {
+  // Provide the node definition
+  definition,
+  
+  // Execute function
+  execute: async (nodeData, inputs) => {
+    try {
+      // Get the prompt text from node configuration
+      const promptText = nodeData.configuration?.promptText || nodeData.configuration?.text || '';
+      
+      // Return the node execution data with our output
+      return createExecutionDataFromValue({
+        text: promptText,
+        output: promptText // For backward compatibility
+      }, 'text_prompt');
+    } catch (error: any) {
+      console.error(`Error executing text prompt node:`, error);
+      
+      // Create error execution data
+      return {
+        items: [],
+        meta: {
+          startTime: new Date(),
+          endTime: new Date(),
+          error: error.message || 'Error processing text prompt',
+          sourceOperation: 'text_prompt'
+        }
+      };
     }
-    
-    // Return the prompt text as output
-    return createExecutionDataFromValue(promptText, 'text_prompt');
   }
-);
+};

@@ -1,73 +1,38 @@
-import { 
-  EnhancedNodeExecutor, 
-  NodeExecutionData,
-  createExecutionDataFromValue,
-  createWorkflowItem
-} from '../types/workflow';
-import { createEnhancedNodeExecutor } from '../enhancedWorkflowEngine';
-
 /**
- * Text Input Node Data Interface
+ * Text Input Node Executor
+ * 
+ * Handles the execution of text input nodes, which collect text input from users.
  */
-interface TextInputNodeData {
-  text?: string;
-  [key: string]: any;
-}
 
-/**
- * Text Input Node Definition
- */
-const textInputDefinition = {
-  type: 'text_input',
-  displayName: 'Text Input',
-  description: 'Provides text input to a workflow',
-  icon: 'Text',
-  category: 'input',
-  version: '1.0',
+import { EnhancedNodeExecutor } from '../types/workflow';
+
+export const textInputExecutor: EnhancedNodeExecutor = {
+  nodeType: 'text_input',
   
-  // Define the input parameters
-  inputs: {
-    text: {
-      type: 'string' as const,
-      displayName: 'Text Input',
-      description: 'Text to provide as input',
-      required: true
-    }
-  },
-  
-  // Define the outputs
-  outputs: {
-    default: {
-      type: 'string' as const,
-      displayName: 'Text Output',
-      description: 'The text input'
+  execute: async (nodeData, inputs) => {
+    try {
+      // Get input value (either from UI or passed from another node)
+      const inputValue = nodeData.inputValue || '';
+      
+      // Return the input text as the node output
+      return {
+        success: true,
+        outputs: {
+          text: inputValue,
+          output: inputValue // For backward compatibility
+        },
+        items: [],
+        meta: {}
+      };
+    } catch (error: any) {
+      console.error(`Error executing text input node:`, error);
+      return {
+        success: false,
+        error: error.message || 'Error processing text input',
+        outputs: {},
+        items: [],
+        meta: {}
+      };
     }
   }
 };
-
-/**
- * Executor for text input nodes
- */
-export const textInputExecutor: EnhancedNodeExecutor = createEnhancedNodeExecutor(
-  textInputDefinition,
-  async (nodeData: TextInputNodeData, inputs: Record<string, NodeExecutionData>): Promise<NodeExecutionData> => {
-    const text = nodeData.text || '';
-    
-    if (!text.trim()) {
-      throw new Error("No text input provided");
-    }
-    
-    // Return text as output
-    const item = createWorkflowItem(text, 'text_input');
-    
-    return {
-      items: [item],
-      meta: {
-        startTime: new Date(),
-        endTime: new Date(),
-        itemsProcessed: 1,
-        sourceOperation: 'text_input'
-      }
-    };
-  }
-);

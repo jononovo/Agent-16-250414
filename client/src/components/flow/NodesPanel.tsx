@@ -45,6 +45,27 @@ const NODE_TYPES = [
     icon: Type
   },
   { 
+    id: 'text_prompt', 
+    name: 'Text Prompt', 
+    description: 'Provide text prompts to your workflow',
+    category: 'ai',
+    icon: MessageSquare
+  },
+  { 
+    id: 'claude', 
+    name: 'Claude API', 
+    description: 'Generate content with Claude AI',
+    category: 'ai',
+    icon: Sparkles
+  },
+  {
+    id: 'chat_interface',
+    name: 'Chat Interface',
+    description: 'Add conversational chat interface',
+    category: 'ai',
+    icon: MessageSquare
+  },
+  { 
     id: 'generate_text', 
     name: 'Generate Text', 
     description: 'Create AI-generated text with model',
@@ -141,6 +162,13 @@ const NODE_TYPES = [
   },
   
   // Data Nodes
+  {
+    id: 'transform',
+    name: 'Transform',
+    description: 'Transform data between nodes',
+    category: 'data',
+    icon: Repeat
+  },
   { 
     id: 'data_transform', 
     name: 'Data Transform', 

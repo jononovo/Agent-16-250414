@@ -1,65 +1,52 @@
-import { 
-  EnhancedNodeExecutor, 
-  NodeExecutionData
-} from '../types/workflow';
-import { createEnhancedNodeExecutor } from '../enhancedWorkflowEngine';
-
-interface OutputNodeData {
-  [key: string]: any;
-}
-
 /**
- * Output Node Definition
+ * Output Node Executor
+ * 
+ * Handles the execution of output nodes, which display the final result of a workflow.
  */
-const outputDefinition = {
-  type: 'output',
-  displayName: 'Output',
-  description: 'Returns the result of a workflow',
-  icon: 'Circle',
-  category: 'output',
-  version: '1.0',
+
+import { EnhancedNodeExecutor } from '../types/workflow';
+
+export const outputExecutor: EnhancedNodeExecutor = {
+  nodeType: 'output',
   
-  // Define the input parameters
-  inputs: {
-    default: {
-      type: 'any' as const,
-      displayName: 'Input',
-      description: 'Input data to be output',
-      required: true
-    }
-  },
-  
-  // Define the outputs
-  outputs: {
-    default: {
-      type: 'any' as const,
-      displayName: 'Output',
-      description: 'Workflow output data'
+  execute: async (nodeData, inputs) => {
+    try {
+      // Get the input from the connected node
+      const inputKeys = Object.keys(inputs);
+      let outputText = '';
+      
+      if (inputKeys.length > 0) {
+        const firstInputKey = inputKeys[0];
+        const firstInput = inputs[firstInputKey];
+        
+        // Try to extract text from the input
+        if (typeof firstInput.text === 'string') {
+          outputText = firstInput.text;
+        } else if (typeof firstInput.output === 'string') {
+          outputText = firstInput.output;
+        } else if (typeof firstInput === 'string') {
+          outputText = firstInput;
+        } else if (firstInput && typeof firstInput === 'object') {
+          outputText = JSON.stringify(firstInput, null, 2);
+        }
+      }
+      
+      // Return the output text
+      return {
+        success: true,
+        outputs: {
+          text: outputText,
+          output: outputText,
+          result: outputText
+        }
+      };
+    } catch (error: any) {
+      console.error(`Error executing output node:`, error);
+      return {
+        success: false,
+        error: error.message || 'Error processing output',
+        outputs: {}
+      };
     }
   }
 };
-
-/**
- * Executor for output nodes
- * 
- * This node simply passes along its input as output.
- */
-export const outputExecutor: EnhancedNodeExecutor = createEnhancedNodeExecutor(
-  outputDefinition,
-  async (_nodeData: OutputNodeData, inputs: Record<string, NodeExecutionData>): Promise<NodeExecutionData> => {
-    // Pass through the default input
-    if (!inputs.default || inputs.default.items.length === 0) {
-      throw new Error('No input provided to output node');
-    }
-    
-    // Add output metadata
-    const result = { ...inputs.default };
-    result.meta = {
-      ...result.meta,
-      isOutput: true,
-      outputTime: new Date()
-    };
-    
-    return result;
-  }
-);
