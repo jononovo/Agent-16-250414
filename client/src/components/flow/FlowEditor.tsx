@@ -350,10 +350,12 @@ const FlowEditor = ({ workflow, isNew = false }: FlowEditorProps) => {
   
   const handleNodeClick = (event: React.MouseEvent, node: Node) => {
     // Don't open settings for every node type, only those that have settings
-    if (node.type && ['perplexity', 'generate_text', 'claude', 'http_request'].includes(node.type)) {
+    // For generate_text node, settings are only opened via the settings button
+    if (node.type && ['perplexity', 'claude', 'http_request'].includes(node.type)) {
       setSelectedNode(node);
       setSettingsDrawerOpen(true);
     }
+    // For generate_text, we'll handle settings opening via the button click in the node component
   };
   
   const handleSettingsChange = (nodeId: string, settingsData: Record<string, any>) => {

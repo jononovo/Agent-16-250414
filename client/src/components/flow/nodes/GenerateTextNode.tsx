@@ -110,11 +110,19 @@ const GenerateTextNode: React.FC<GenerateTextNodeProps> = ({
     return false;
   };
 
+  // Handle node content click to prevent opening settings drawer 
+  const handleContentClick = (e: React.MouseEvent) => {
+    // Stop propagation to prevent the parent node click handler from firing
+    e.stopPropagation();
+  };
+
   return (
-    <div className={cn(
-      'generate-text-node relative p-0 rounded-md min-w-[300px] max-w-[380px] bg-background border transition-all shadow-md',
-      selected ? 'border-primary ring-2 ring-primary ring-opacity-20' : 'border-border'
-    )}>
+    <div 
+      className={cn(
+        'generate-text-node relative p-0 rounded-md min-w-[300px] max-w-[380px] bg-background border transition-all shadow-md',
+        selected ? 'border-primary ring-2 ring-primary ring-opacity-20' : 'border-border'
+      )}
+    >
       {/* Header */}
       <div className="p-3 border-b flex items-center justify-between">
         <div className="font-medium text-sm flex items-center">
@@ -122,18 +130,26 @@ const GenerateTextNode: React.FC<GenerateTextNodeProps> = ({
           <span>{data.label || 'Generate Text'}</span>
           {getStatusBadge()}
         </div>
-        {data.onSettingsClick && (
-          <button 
-            onClick={data.onSettingsClick}
-            className="ml-auto hover:bg-muted p-1 rounded-sm"
-          >
-            <Settings className="h-4 w-4 text-muted-foreground" />
-          </button>
-        )}
+        <button 
+          onClick={(e) => {
+            e.stopPropagation(); // Prevent node click
+            // Only call the function if it exists
+            if (typeof data.onSettingsClick === 'function') {
+              data.onSettingsClick();
+            }
+          }}
+          className="ml-auto hover:bg-muted p-1 rounded-sm"
+          aria-label="Open settings"
+        >
+          <Settings className="h-4 w-4 text-muted-foreground" />
+        </button>
       </div>
       
-      {/* Body */}
-      <div className="p-3 space-y-3">
+      {/* Body - clicking here won't open settings */}
+      <div 
+        className="p-3 space-y-3" 
+        onClick={handleContentClick}
+      >
         {data.description && (
           <p className="text-sm text-muted-foreground">{data.description}</p>
         )}
