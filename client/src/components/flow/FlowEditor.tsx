@@ -41,6 +41,7 @@ import RoutingNode from '../flow/nodes/RoutingNode';
 import PromptCrafterNode from '../flow/nodes/PromptCrafterNode';
 import ValidResponseNode from '../flow/nodes/ValidResponseNode';
 import PerplexityNode from '../flow/nodes/PerplexityNode';
+import ClaudeNode from '../flow/nodes/ClaudeNode';
 
 // Register node types according to the documentation
 const nodeTypes: NodeTypes = {
@@ -51,6 +52,7 @@ const nodeTypes: NodeTypes = {
   prompt_crafter: PromptCrafterNode,
   valid_response: ValidResponseNode,
   perplexity: PerplexityNode,
+  claude: ClaudeNode,
   
   // Legacy/basic node types (with mapping to specialized versions)
   custom: CustomNode,
@@ -340,7 +342,7 @@ const FlowEditor = ({ workflow, isNew = false }: FlowEditorProps) => {
   
   const handleNodeClick = (event: React.MouseEvent, node: Node) => {
     // Don't open settings for every node type, only those that have settings
-    if (node.type && ['perplexity', 'generate_text', 'http_request'].includes(node.type)) {
+    if (node.type && ['perplexity', 'generate_text', 'claude', 'http_request'].includes(node.type)) {
       setSelectedNode(node);
       setSettingsDrawerOpen(true);
     }
