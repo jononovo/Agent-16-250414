@@ -195,14 +195,13 @@ Assistant:`);
             <AccordionContent>
               <div className="space-y-2">
                 {templateTags.map((tag, index) => (
-                  <div key={tag.id} className="flex items-center justify-between p-2 bg-muted/40 rounded-sm">
+                  <div key={tag.id} className="relative flex items-center justify-between p-2 bg-muted/40 rounded-sm">
                     <Handle
                       type="target"
                       position={Position.Left}
                       id={tag.id}
-                      className="!bg-yellow-500"
+                      className="w-3 h-3 -left-[6px] absolute bg-yellow-500 border-2 border-background"
                       data-label={tag.name}
-                      style={{ top: '50%', transform: 'translateY(-50%)' }}
                     />
                     <span className="text-xs font-medium">{tag.name}</span>
                     <div className="flex gap-1">
@@ -262,6 +261,22 @@ Assistant:`);
         className="w-3 h-3 left-[-6px] top-[20px] bg-blue-500 border-2 border-background"
       />
 
+      {/* Dynamic variable input handles - aligned with the variable items - REMOVED as handles are now within the variable divs */}
+      {/* {templateTags.map((tag, index) => (
+        <Handle
+          key={tag.id}
+          type="target"
+          position={Position.Left}
+          id={tag.id}
+          className="w-3 h-3 left-[-6px] bg-yellow-500 border-2 border-background"
+          style={{
+            // Position each handle to align with its variable item in the accordion
+            // Starting at 230px (for accordion headers) with 40px spacing
+            top: `${230 + (index * 40)}px`,
+          }}
+          data-label={tag.name}
+        />
+      ))} */}
 
       {/* Output handle - positioned at the right side at the same level as the input handle */}
       <Handle
