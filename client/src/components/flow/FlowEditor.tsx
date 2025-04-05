@@ -42,23 +42,31 @@ import PromptCrafterNode from '../flow/nodes/PromptCrafterNode';
 import ValidResponseNode from '../flow/nodes/ValidResponseNode';
 import PerplexityNode from '../flow/nodes/PerplexityNode';
 import ClaudeNode from '../flow/nodes/ClaudeNode';
+import TextPromptNode from '../flow/nodes/TextPromptNode';
+import TransformNode from '../flow/nodes/TransformNode';
+import ChatInterfaceNode from '../flow/nodes/ChatInterfaceNode';
 
 // Register node types according to the documentation
 const nodeTypes: NodeTypes = {
-  // Specialized AI nodes
+  // Enhanced system node types
   text_input: TextInputNode,
-  generate_text: GenerateTextNode,
+  text_prompt: TextPromptNode,
+  output: OutputNode,
   visualize_text: VisualizeTextNode,
+  transform: TransformNode,
+  chat_interface: ChatInterfaceNode,
+  claude: ClaudeNode,
+  
+  // Specialized AI nodes
+  generate_text: GenerateTextNode,
   prompt_crafter: PromptCrafterNode,
   valid_response: ValidResponseNode,
   perplexity: PerplexityNode,
-  claude: ClaudeNode,
   
   // Legacy/basic node types (with mapping to specialized versions)
   custom: CustomNode,
   trigger: TriggerNode,
   processor: ProcessorNode,
-  output: OutputNode,
   
   // Maintain backward compatibility
   textInput: TextInputNode,
