@@ -1,0 +1,200 @@
+{
+  "nodes": [
+    {
+      "id": "user_input",
+      "type": "text_prompt",
+      "data": {
+        "label": "User Input",
+        "placeholder": "Describe the agent you want to build...",
+        "description": "Initial user request for agent creation"
+      },
+      "position": {
+        "x": 50,
+        "y": 100
+      }
+    },
+    {
+      "id": "coordinator_handler",
+      "type": "claude",
+      "data": {
+        "label": "Coordinator Agent",
+        "description": "Analyzes user request and determines agent requirements",
+        "config": {
+          "model": "claude-3-opus-20240229",
+          "systemPrompt": "You are a Coordinator Agent responsible for analyzing user requests to build custom agents. Follow these steps:\n\n1. Analyze the user's request to understand what kind of agent they want to build\n2. Extract key capabilities and requirements\n3. Generate a structured specification including:\n   - Agent name\n   - Primary purpose\n   - Key capabilities\n   - Required integrations\n   - Suggested workflow structure\n\nRespond with clear, structured information that can be used by the Generator Agent to create the actual implementation."
+        }
+      },
+      "position": {
+        "x": 350,
+        "y": 100
+      }
+    },
+    {
+      "id": "verification_prompt",
+      "type": "transform",
+      "data": {
+        "label": "Verification Transformer",
+        "description": "Creates a confirmation message for user verification",
+        "transform": "// Create a verification message asking for user confirmation\nreturn {\n  message: `Based on your request, I recommend creating the following agent:\\n\\n${input.split('\\n').join('\\n')}\\n\\nWould you like me to proceed with building this agent?`,\n  specification: input\n};"
+      },
+      "position": {
+        "x": 650,
+        "y": 100
+      }
+    },
+    {
+      "id": "chat_interaction",
+      "type": "visualize_text",
+      "data": {
+        "label": "Chat Interaction",
+        "description": "Displays confirmation message in chat for user verification"
+      },
+      "position": {
+        "x": 950,
+        "y": 100
+      }
+    },
+    {
+      "id": "user_response",
+      "type": "text_prompt",
+      "data": {
+        "label": "User Response",
+        "description": "Captures user confirmation or modification requests"
+      },
+      "position": {
+        "x": 950,
+        "y": 300
+      }
+    },
+    {
+      "id": "response_analyzer",
+      "type": "claude",
+      "data": {
+        "label": "Response Analyzer",
+        "description": "Analyzes user response to determine next steps",
+        "config": {
+          "model": "claude-3-opus-20240229",
+          "systemPrompt": "You are analyzing a user's response to a proposed agent specification. Determine if the user:\n\n1. Approved the specification (positive response)\n2. Requested modifications (specific changes)\n3. Rejected the specification (negative response)\n\nReturn a structured response with:\n- decision: 'approved' | 'modify' | 'rejected'\n- modifications: [] (list of requested changes if any)\n- message: a helpful message explaining next steps"
+        }
+      },
+      "position": {
+        "x": 650,
+        "y": 300
+      }
+    },
+    {
+      "id": "decision_router",
+      "type": "transform",
+      "data": {
+        "label": "Decision Router",
+        "description": "Routes workflow based on user response",
+        "transform": "// Parse the Claude response to extract the decision\nconst result = JSON.parse(input);\n\nif (result.decision === 'approved') {\n  return { route: 'approved', message: result.message, originalSpec: prevInputs.verification_prompt.specification };\n} else if (result.decision === 'modify') {\n  return { route: 'modify', message: result.message, modifications: result.modifications, originalSpec: prevInputs.verification_prompt.specification };\n} else {\n  return { route: 'rejected', message: result.message };\n}"
+      },
+      "position": {
+        "x": 350,
+        "y": 300
+      }
+    },
+    {
+      "id": "generator_trigger",
+      "type": "api",
+      "data": {
+        "label": "Generator Agent Trigger",
+        "description": "Triggers the Generator Agent to build the workflow",
+        "url": "/api/execute-generator-workflow",
+        "method": "POST",
+        "body": "{\n  \"specification\": \"${input.originalSpec}\",\n  \"agentId\": 2\n}"
+      },
+      "position": {
+        "x": 50,
+        "y": 500
+      }
+    },
+    {
+      "id": "confirmation_message",
+      "type": "visualize_text",
+      "data": {
+        "label": "Confirmation Message",
+        "description": "Final confirmation message for chat"
+      },
+      "position": {
+        "x": 350,
+        "y": 500
+      }
+    },
+    {
+      "id": "modification_handler",
+      "type": "claude",
+      "data": {
+        "label": "Modification Handler",
+        "description": "Updates specification based on user feedback",
+        "config": {
+          "model": "claude-3-opus-20240229",
+          "systemPrompt": "You are updating an agent specification based on user feedback. You will receive:\n\n1. The original specification\n2. A list of requested modifications\n\nYour task is to incorporate the requested changes while maintaining the structured format of the specification. Return the updated specification only, without any explanatory text."
+        }
+      },
+      "position": {
+        "x": 650,
+        "y": 500
+      }
+    }
+  ],
+  "edges": [
+    {
+      "id": "user_input-to-coordinator",
+      "source": "user_input",
+      "target": "coordinator_handler",
+      "animated": true
+    },
+    {
+      "id": "coordinator-to-verification",
+      "source": "coordinator_handler",
+      "target": "verification_prompt",
+      "animated": true
+    },
+    {
+      "id": "verification-to-chat",
+      "source": "verification_prompt",
+      "target": "chat_interaction",
+      "animated": true
+    },
+    {
+      "id": "user_response-to-analyzer",
+      "source": "user_response",
+      "target": "response_analyzer",
+      "animated": true
+    },
+    {
+      "id": "analyzer-to-router",
+      "source": "response_analyzer",
+      "target": "decision_router",
+      "animated": true
+    },
+    {
+      "id": "router-to-generator",
+      "source": "decision_router",
+      "target": "generator_trigger",
+      "sourceHandle": "approved",
+      "animated": true
+    },
+    {
+      "id": "generator-to-confirmation",
+      "source": "generator_trigger",
+      "target": "confirmation_message",
+      "animated": true
+    },
+    {
+      "id": "router-to-modification",
+      "source": "decision_router",
+      "target": "modification_handler",
+      "sourceHandle": "modify",
+      "animated": true
+    },
+    {
+      "id": "modification-to-verification",
+      "source": "modification_handler",
+      "target": "verification_prompt",
+      "animated": true
+    }
+  ]
+}
