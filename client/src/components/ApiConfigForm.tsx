@@ -18,9 +18,46 @@ export function ApiConfigForm({ onApiKeysSaved, onClose }: ApiConfigFormProps) {
   const [success, setSuccess] = useState(false);
   const { toast } = useToast();
 
+  // Validate the Claude API key format
+  const validateClaudeApiKey = (key: string): boolean => {
+    return key.startsWith('sk-ant-') || // New Claude API key format
+           key.startsWith('sk-'); // Allow older format too
+  };
+  
+  // Validate the Perplexity API key format
+  const validatePerplexityApiKey = (key: string): boolean => {
+    return key.startsWith('pplx-');
+  };
+  
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
+    
+    const trimmedClaudeKey = claudeApiKey.trim();
+    const trimmedPerplexityKey = perplexityApiKey.trim();
+    
+    // Validate keys if they're provided
+    if (trimmedClaudeKey && !validateClaudeApiKey(trimmedClaudeKey)) {
+      toast({
+        title: "Invalid Claude API Key",
+        description: "Claude API keys should start with 'sk-ant-'. Please check your key format.",
+        variant: "destructive",
+        duration: 5000,
+      });
+      setLoading(false);
+      return;
+    }
+    
+    if (trimmedPerplexityKey && !validatePerplexityApiKey(trimmedPerplexityKey)) {
+      toast({
+        title: "Invalid Perplexity API Key",
+        description: "Perplexity API keys should start with 'pplx-'. Please check your key format.",
+        variant: "destructive",
+        duration: 5000,
+      });
+      setLoading(false);
+      return;
+    }
     
     try {
       const response = await fetch('/api/config', {
@@ -29,8 +66,8 @@ export function ApiConfigForm({ onApiKeysSaved, onClose }: ApiConfigFormProps) {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          claudeApiKey: claudeApiKey.trim(),
-          perplexityApiKey: perplexityApiKey.trim(),
+          claudeApiKey: trimmedClaudeKey,
+          perplexityApiKey: trimmedPerplexityKey,
         }),
       });
       
@@ -42,8 +79,8 @@ export function ApiConfigForm({ onApiKeysSaved, onClose }: ApiConfigFormProps) {
       
       toast({
         title: "API Keys Saved",
-        description: "Your API keys have been saved successfully.",
-        duration: 3000,
+        description: "Your API keys have been saved successfully. You may need to refresh the page for them to take effect.",
+        duration: 4000,
       });
       
       setSuccess(true);

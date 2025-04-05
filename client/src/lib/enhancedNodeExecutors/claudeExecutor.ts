@@ -176,10 +176,12 @@ export const claudeExecutor: EnhancedNodeExecutor = createEnhancedNodeExecutor(
   async (nodeData: ClaudeNodeData, inputs: Record<string, NodeExecutionData>): Promise<NodeExecutionData> => {
     // Get settings from node data (either direct or from settings object)
     const settings = nodeData.settings || {};
-    const model = nodeData.model || settings.model || 'claude-3-opus-20240229';
+    const model = nodeData.model || settings.model || 'claude-3-sonnet-20240229';
     const temperature = settings.temperature !== undefined ? settings.temperature : 0.7;
     const maxTokens = settings.maxTokens !== undefined ? settings.maxTokens : 4096;
-    const apiKey = nodeData.apiKey || settings.apiKey || process.env.ANTHROPIC_API_KEY;
+    
+    // Store API key (we'll try to fetch it if not directly provided)
+    let apiKey = nodeData.apiKey || settings.apiKey || process.env.ANTHROPIC_API_KEY;
     
     // Get prompts from node data
     let systemPrompt = nodeData.systemPrompt || '';
@@ -202,6 +204,36 @@ export const claudeExecutor: EnhancedNodeExecutor = createEnhancedNodeExecutor(
     if (!userPrompt) {
       throw new Error('No user prompt or input text provided');
     }
+    
+    // Log node configuration
+    console.log(`Node data: ${JSON.stringify({
+      hasSettings: !!settings,
+      apiKeyInSettings: !!settings.apiKey,
+      directApiKey: !!nodeData.apiKey,
+      model
+    })}`);
+    
+    // Fetch API key from server if not set in node configuration
+    if (!apiKey) {
+      console.log('Fetching API key from server config...');
+      try {
+        // Use absolute URL for server-side execution
+        const baseUrl = typeof window !== 'undefined' ? window.location.origin : 'http://localhost:5000';
+        const configResponse = await fetch(`${baseUrl}/api/config`);
+        
+        if (configResponse.ok) {
+          const config = await configResponse.json();
+          apiKey = config.claudeApiKey;
+          console.log('Retrieved config from server:', apiKey ? 'Claude API key found' : 'No Claude API key in config');
+        } else {
+          console.error('Failed to fetch config from server:', configResponse.status);
+        }
+      } catch (error) {
+        console.error('Error fetching config from server:', error);
+      }
+    }
+    
+    console.log('Using Claude API:', apiKey ? 'API Key available' : 'No API Key');
     
     console.log(`Executing Claude node with model ${model} and ${userPrompt.length} chars of prompt`);
     
@@ -245,6 +277,8 @@ export const claudeExecutor: EnhancedNodeExecutor = createEnhancedNodeExecutor(
       } else {
         // Make actual API call to Claude
         const apiUrl = 'https://api.anthropic.com/v1/messages';
+        
+        console.log('Making Claude API request with model:', model);
         
         let headers: HeadersInit = {
           'Content-Type': 'application/json',
