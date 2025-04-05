@@ -246,15 +246,15 @@ Assistant:`);
         )}
       </div>
       
-      {/* Main input handle */}
+      {/* Main input handle at the top left */}
       <Handle
         type="target"
         position={Position.Left}
         id="input"
-        className="w-3 h-3 left-[-6px] bg-blue-500 border-2 border-background"
+        className="w-3 h-3 left-[-6px] top-[20px] bg-blue-500 border-2 border-background"
       />
       
-      {/* Dynamic variable input handles - positioned along the left side */}
+      {/* Dynamic variable input handles - aligned with the variable items */}
       {templateTags.map((tag, index) => (
         <Handle
           key={tag.id}
@@ -263,19 +263,20 @@ Assistant:`);
           id={tag.id}
           className="w-3 h-3 left-[-6px] bg-yellow-500 border-2 border-background"
           style={{
-            // Start at 30% of node height and space by 30px
-            top: `${Math.max(30, 60 + (index * 30))}px`,
+            // Position each handle to align with its variable item in the accordion
+            // Starting at 230px (for accordion headers) with 40px spacing
+            top: `${230 + (index * 40)}px`,
           }}
           data-label={tag.name}
         />
       ))}
       
-      {/* Output handle */}
+      {/* Output handle - positioned at the right side at the same level as the input handle */}
       <Handle
         type="source"
         position={Position.Right}
         id="output"
-        className="w-3 h-3 right-[-6px] bg-blue-500 border-2 border-background"
+        className="w-3 h-3 right-[-6px] top-[20px] bg-blue-500 border-2 border-background"
       />
     </div>
   );
