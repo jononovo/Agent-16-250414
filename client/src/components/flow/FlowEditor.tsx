@@ -388,12 +388,11 @@ const FlowEditor = ({ workflow, isNew = false }: FlowEditorProps) => {
     setIsRunning(true);
     
     try {
-      // Import the workflow engine and node executors
-      const { executeWorkflow } = await import('@/lib/workflowEngine');
-      const { registerAllNodeExecutors } = await import('@/lib/nodeExecutors');
+      // Import the enhanced workflow engine
+      const { executeEnhancedWorkflow, registerAllEnhancedNodeExecutors } = await import('@/lib/enhancedWorkflowEngine');
       
-      // Register all node executors
-      registerAllNodeExecutors();
+      // Register all enhanced node executors, which includes legacy node compatibility
+      await registerAllEnhancedNodeExecutors();
       
       // Show all nodes as processing - using type assertion to satisfy TypeScript
       setNodes(nodes.map(node => {
@@ -406,10 +405,26 @@ const FlowEditor = ({ workflow, isNew = false }: FlowEditorProps) => {
         };
       }) as Node[]);
       
-      // Execute the workflow
-      await executeWorkflow(
-        nodes,
-        edges,
+      // Convert ReactFlow nodes/edges to workflow format
+      const workflowData = {
+        nodes: nodes.map(node => ({
+          id: node.id,
+          type: node.type || 'unknown',
+          data: { ...node.data },
+          position: node.position
+        })),
+        edges: edges.map(edge => ({
+          id: edge.id,
+          source: edge.source,
+          target: edge.target,
+          sourceHandle: edge.sourceHandle ? edge.sourceHandle : undefined,
+          targetHandle: edge.targetHandle ? edge.targetHandle : undefined
+        }))
+      };
+      
+      // Execute the enhanced workflow with new data format
+      await executeEnhancedWorkflow(
+        workflowData,
         // Node state change handler
         (nodeId, nodeState) => {
           const updatedNodes = nodes.map(node => {
@@ -418,12 +433,12 @@ const FlowEditor = ({ workflow, isNew = false }: FlowEditorProps) => {
                 ...node,
                 data: {
                   ...node.data,
-                  _isProcessing: nodeState.state === 'running',
-                  _isComplete: nodeState.state === 'complete',
-                  _hasError: nodeState.state === 'error',
+                  _isProcessing: nodeState.status === 'running',
+                  _isComplete: nodeState.status === 'completed',
+                  _hasError: nodeState.status === 'error',
                   _errorMessage: nodeState.error,
-                  _searchResult: nodeState.data, // Store result in node data
-                  textContent: nodeState.data,   // Update text content for visualization nodes
+                  _searchResult: nodeState.output?.items?.[0]?.json, // Store result in node data
+                  textContent: nodeState.output?.items?.[0]?.json,   // Update text content for visualization nodes
                 }
               };
             }
@@ -435,7 +450,7 @@ const FlowEditor = ({ workflow, isNew = false }: FlowEditorProps) => {
         (finalState) => {
           // Check if there were any errors
           const hasErrors = Object.values(finalState.nodeStates).some(
-            state => state.state === 'error'
+            state => state.status === 'error'
           );
           
           if (hasErrors || finalState.status === 'error') {
@@ -457,6 +472,11 @@ const FlowEditor = ({ workflow, isNew = false }: FlowEditorProps) => {
             : null;
             
           console.log(`Workflow execution completed in ${duration}s with status: ${finalState.status}`);
+          
+          // Display the final workflow output if available
+          if (finalState.output) {
+            console.log('Workflow final output:', finalState.output);
+          }
         }
       );
     } catch (error) {
