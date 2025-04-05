@@ -159,16 +159,29 @@ const GenerateTextNode: React.FC<GenerateTextNodeProps> = ({
         description: newToolDescription
       };
       
+      // Update tool collection
+      let updatedTools = [...tools, newTool];
+      
       if (onCreateTool && typeof onCreateTool === 'function') {
         // If the callback is provided by parent, use it
         onCreateTool();
       } else {
         // Otherwise manually update the node data
         if (data.dynamicHandles) {
-          data.dynamicHandles.tools = [...tools, newTool];
+          data.dynamicHandles.tools = updatedTools;
         } else {
-          data.dynamicHandles = { tools: [newTool] };
+          data.dynamicHandles = { tools: updatedTools };
         }
+      }
+      
+      // Force update the node's data to reflect changes immediately
+      if (data.dynamicHandles) {
+        // Create a new reference to ensure React detects the change
+        const updatedHandles = {
+          ...data.dynamicHandles,
+          tools: updatedTools
+        };
+        data.dynamicHandles = updatedHandles;
       }
       
       // Close dialog and reset state
@@ -428,21 +441,36 @@ const GenerateTextNode: React.FC<GenerateTextNodeProps> = ({
           id={`tool-${tool.id}`}
           className={`tool-handle tool-handle-${index} w-3 h-3 left-[-6px] !bg-amber-500 border-2 border-background`}
           style={{ 
-            // Distribute tool handles evenly on the left side
-            top: `${140 + (index * 30)}px`,
+            // Position after the standard input handle with even spacing
+            top: `${120 + (index * 24)}px`,
           }}
           // The label is added via CSS in the component's class
           data-label={tool.name}
         />
       ))}
       
-      {/* Output handle */}
+      {/* Main output handle */}
       <Handle
         type="source"
         position={Position.Right}
         id="output"
         className="w-3 h-3 right-[-6px] !bg-indigo-500 border-2 border-background"
       />
+      
+      {/* Tool output handles */}
+      {data.dynamicHandles?.tools.map((tool, index) => (
+        <Handle
+          key={`output-${tool.id}`}
+          type="source"
+          position={Position.Right}
+          id={`output-${tool.id}`}
+          className={`tool-output-handle w-3 h-3 right-[-6px] !bg-amber-500 border-2 border-background`}
+          style={{ 
+            top: `${120 + (index * 24)}px`, 
+          }}
+          data-label={`${tool.name} output`}
+        />
+      ))}
     </div>
   );
 };
