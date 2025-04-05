@@ -263,7 +263,8 @@ Assistant:`);
           id={tag.id}
           className="w-3 h-3 left-[-6px] bg-yellow-500 border-2 border-background"
           style={{
-            top: `${Math.max(100, 100 + (index * 30))}px`,
+            // Start at 30% of node height and space by 30px
+            top: `${Math.max(30, 60 + (index * 30))}px`,
           }}
           data-label={tag.name}
         />
