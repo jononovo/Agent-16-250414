@@ -1,11 +1,21 @@
-import { useState, useEffect } from 'react';
-import { Handle, Position } from 'reactflow';
+import { useState, useEffect, useCallback } from 'react';
+import { Handle, Position, useUpdateNodeInternals } from 'reactflow';
 import { cn } from '@/lib/utils';
-import { MessageSquare, Settings } from 'lucide-react';
+import { MessageSquare, Settings, Plus } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Textarea } from '@/components/ui/textarea';
+import { Button } from '@/components/ui/button';
+import { nanoid } from 'nanoid';
+import { EditableHandleDialog } from '@/components/ui/flow/editable-handle';
+
+export interface InputHandle {
+  id: string;
+  name: string;
+  description?: string;
+}
 
 export interface TextPromptNodeProps {
+  id: string;
   data: {
     label?: string;
     prompt?: string;
@@ -18,13 +28,20 @@ export interface TextPromptNodeProps {
     settings?: {
       prompt?: string;
     };
+    dynamicHandles?: {
+      inputs: InputHandle[];
+    };
+    onAddInput?: (input: InputHandle) => void;
+    onUpdateInput?: (id: string, name: string, description?: string) => void;
+    onRemoveInput?: (id: string) => void;
   };
   isConnectable?: boolean;
   selected?: boolean;
 }
 
-const TextPromptNode = ({ data, isConnectable = true, selected }: TextPromptNodeProps) => {
+const TextPromptNode = ({ id, data, isConnectable = true, selected }: TextPromptNodeProps) => {
   const [localPrompt, setLocalPrompt] = useState(data.prompt || data.settings?.prompt || '');
+  const updateNodeInternals = useUpdateNodeInternals();
   
   // Update local state when data changes
   useEffect(() => {
@@ -48,6 +65,37 @@ const TextPromptNode = ({ data, isConnectable = true, selected }: TextPromptNode
     }
     return null;
   };
+  
+  // Handle creation of a new input
+  const handleCreateInput = useCallback((name: string, description?: string) => {
+    if (data.onAddInput) {
+      const newInput: InputHandle = {
+        id: `input-${nanoid()}`,
+        name,
+        description
+      };
+      data.onAddInput(newInput);
+      updateNodeInternals(id);
+    }
+    return true;
+  }, [data.onAddInput, id, updateNodeInternals]);
+  
+  // Handle updating an input
+  const handleUpdateInput = useCallback((handleId: string, name: string, description?: string) => {
+    if (data.onUpdateInput) {
+      data.onUpdateInput(handleId, name, description);
+      return true;
+    }
+    return false;
+  }, [data.onUpdateInput]);
+  
+  // Handle removing an input
+  const handleRemoveInput = useCallback((handleId: string) => {
+    if (data.onRemoveInput) {
+      data.onRemoveInput(handleId);
+      updateNodeInternals(id);
+    }
+  }, [data.onRemoveInput, id, updateNodeInternals]);
   
   return (
     <div className={cn(
@@ -83,6 +131,64 @@ const TextPromptNode = ({ data, isConnectable = true, selected }: TextPromptNode
           placeholder="Enter your prompt text here..."
         />
         
+        {/* Dynamic Inputs Section */}
+        {data.dynamicHandles?.inputs && data.dynamicHandles.inputs.length > 0 && (
+          <div className="mt-4 border-t pt-4">
+            <div className="flex items-center justify-between mb-2">
+              <h3 className="text-sm font-medium">Dynamic Inputs</h3>
+            </div>
+            <div className="space-y-2 text-sm">
+              {data.dynamicHandles.inputs.map((input) => (
+                <div key={input.id} className="flex items-center">
+                  <div className="py-1 px-2 bg-muted rounded-md flex-1 flex items-center justify-between">
+                    <span className="truncate">{input.name}</span>
+                    <Button 
+                      variant="ghost" 
+                      size="sm" 
+                      className="h-6 w-6 p-0"
+                      onClick={() => handleRemoveInput(input.id)}
+                    >
+                      <span className="sr-only">Remove</span>
+                      <svg 
+                        xmlns="http://www.w3.org/2000/svg" 
+                        width="16" 
+                        height="16" 
+                        viewBox="0 0 24 24" 
+                        fill="none" 
+                        stroke="currentColor" 
+                        strokeWidth="2" 
+                        strokeLinecap="round" 
+                        strokeLinejoin="round" 
+                        className="h-3 w-3"
+                      >
+                        <line x1="18" y1="6" x2="6" y2="18"></line>
+                        <line x1="6" y1="6" x2="18" y2="18"></line>
+                      </svg>
+                    </Button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+        
+        {/* Add Input Button */}
+        <EditableHandleDialog
+          variant="create"
+          label=""
+          onSave={handleCreateInput}
+          onCancel={() => {}}
+          align="start"
+        >
+          <Button 
+            variant="outline" 
+            size="sm" 
+            className="mt-3 w-full"
+          >
+            <Plus className="h-3 w-3 mr-1" /> Add Input
+          </Button>
+        </EditableHandleDialog>
+        
         {data.errorMessage && (
           <div className="mt-2 text-xs text-red-500 bg-red-50 p-2 rounded">
             {data.errorMessage}
@@ -90,12 +196,28 @@ const TextPromptNode = ({ data, isConnectable = true, selected }: TextPromptNode
         )}
       </div>
       
+      {/* Input handles - dynamically positioned */}
+      {data.dynamicHandles?.inputs?.map((input, index) => (
+        <Handle
+          key={input.id}
+          type="target"
+          position={Position.Left}
+          id={input.id}
+          className="w-3 h-3 left-[-6px] !bg-blue-500 border-2 border-background"
+          style={{
+            top: `${100 + (index * 30)}px`,
+          }}
+          data-label={input.name}
+          isConnectable={isConnectable}
+        />
+      ))}
+      
       {/* Output handle */}
       <Handle
         type="source"
         position={Position.Right}
         id="output"
-        className="w-3 h-3 right-[-6px] bg-blue-500 border-2 border-background"
+        className="w-3 h-3 right-[-6px] !bg-blue-500 border-2 border-background"
         isConnectable={isConnectable}
       />
     </div>

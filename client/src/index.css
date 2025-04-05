@@ -28,3 +28,30 @@
   opacity: 0.8;
   pointer-events: none;
 }
+
+/* Custom styles for editable handles */
+[data-label] {
+  position: relative;
+}
+
+[data-label]::before {
+  content: attr(data-label);
+  position: absolute;
+  left: 12px;
+  top: -6px;
+  font-size: 10px;
+  white-space: nowrap;
+  color: hsl(var(--muted-foreground));
+  opacity: 0.8;
+  pointer-events: none;
+}
+
+/* Handle specific positioning for different node types */
+.text-prompt-node .react-flow__handle {
+  transition: all 0.2s ease;
+}
+
+.text-prompt-node .react-flow__handle:hover {
+  transform: scale(1.2);
+  background-color: hsl(var(--primary)) !important;
+}
