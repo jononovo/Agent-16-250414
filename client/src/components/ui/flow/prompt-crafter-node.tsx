@@ -1,8 +1,15 @@
+"use client";
+
 import { useState, useCallback, useEffect } from "react";
-import { Handle, Position, useUpdateNodeInternals, NodeProps } from 'reactflow';
-import { v4 as uuidv4 } from 'uuid';
-import { NodeData } from '../NodeItem';
+import {
+  Handle,
+  Position,
+  useUpdateNodeInternals,
+  NodeProps as ReactFlowNodeProps,
+} from "reactflow";
 import { cn } from "@/lib/utils";
+import { Label } from "@/components/ui/label";
+import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -17,118 +24,140 @@ import {
   AccordionItem, 
   AccordionTrigger 
 } from "@/components/ui/accordion";
-import { EditableHandleDialog } from "../../ui/flow/editable-handle";
-import DynamicIcon from '../DynamicIcon';
+import { EditableHandleDialog } from "./editable-handle";
 
-const PromptCrafterNode = ({ data, selected, id }: NodeProps<NodeData>) => {
+interface TemplateTags {
+  id: string;
+  name: string;
+  description?: string;
+}
+
+export interface PromptCrafterNodeData {
+  label?: string;
+  description?: string;
+  status?: 'idle' | 'processing' | 'success' | 'error';
+  errorMessage?: string;
+  config?: {
+    template?: string;
+  };
+  dynamicHandles?: {
+    "template-tags": TemplateTags[];
+  };
+}
+
+// We need to make our own simplified version of the NodeProps interface
+// to avoid TypeScript errors with the ReactFlow NodeProps type
+export interface PromptCrafterNodeProps {
+  id: string;
+  data: PromptCrafterNodeData;
+  selected: boolean; 
+  onPromptTextChange?: (text: string) => void;
+  onCreateInput?: (name: string, description?: string) => boolean;
+  onRemoveInput?: (id: string) => boolean;
+  onUpdateInputName?: (id: string, name: string, description?: string) => boolean;
+  onDeleteNode?: () => void;
+}
+
+export function PromptCrafterNode({
+  id,
+  data,
+  selected,
+  onPromptTextChange,
+  onCreateInput,
+  onRemoveInput,
+  onUpdateInputName,
+  onDeleteNode,
+}: PromptCrafterNodeProps) {
   const updateNodeInternals = useUpdateNodeInternals();
-  const [promptText, setPromptText] = useState<string>(data.promptTemplate || `You are a helpful assistant.
-{{system_message}}
-User: {{input}}
-Assistant:`);
+  const [promptText, setPromptText] = useState(data.config?.template || "");
+  const [newTagName, setNewTagName] = useState("");
 
-  // Set up template tags based on the current template variables
-  const [templateTags, setTemplateTags] = useState<Array<{id: string, name: string, description?: string}>>([
-    { id: "system_message", name: "system_message", description: "System instructions for the AI" },
-    { id: "input", name: "input", description: "User input to process" }
-  ]);
-
-  // Update template tags when the prompt changes
+  // Extract template tags - could be dynamically generated from the template
+  const templateTags = data.dynamicHandles?.["template-tags"] || [];
+  
+  // Update local state when data changes
   useEffect(() => {
-    extractTemplateVarsFromText(promptText);
-  }, [promptText]);
-
-  // Extract template variables from the prompt text
-  const extractTemplateVarsFromText = (text: string) => {
+    if (data.config?.template) {
+      setPromptText(data.config.template);
+    }
+  }, [data.config?.template]);
+  
+  // Get template variables from the prompt text
+  const extractTemplateVarsFromText = useCallback((text: string) => {
     const regex = /\{\{([^}]+)\}\}/g;
     const matches: string[] = [];
     let match;
     while ((match = regex.exec(text)) !== null) {
       matches.push(match[1].trim());
     }
-    
-    // Filter duplicates manually
+    // Filter duplicates manually instead of using Set
     const uniqueMatches: string[] = [];
     matches.forEach((item) => {
       if (!uniqueMatches.includes(item)) {
         uniqueMatches.push(item);
       }
     });
-    
-    // Create template tags from matches if they don't already exist
-    const updatedTags = [...templateTags];
-    uniqueMatches.forEach((name) => {
-      if (!templateTags.find(tag => tag.name === name)) {
-        updatedTags.push({ id: uuidv4(), name, description: `Variable for ${name}` });
-      }
-    });
-    
-    // Update tags
-    if (JSON.stringify(updatedTags) !== JSON.stringify(templateTags)) {
-      setTemplateTags(updatedTags);
-      updateNodeInternals(id);
-    }
-  };
+    return uniqueMatches;
+  }, []);
 
   // Handle prompt text changes
-  const handlePromptChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+  const handlePromptChange = useCallback((e: React.ChangeEvent<HTMLTextAreaElement>) => {
     const newText = e.target.value;
     setPromptText(newText);
     
-    // Update the node data with new template
-    if (data.onChange) {
-      data.onChange({ ...data, promptTemplate: newText });
+    if (onPromptTextChange) {
+      onPromptTextChange(newText);
     }
-  };
+  }, [onPromptTextChange]);
   
   // Create a new input tag
-  const handleCreateInput = (name: string, description?: string) => {
-    if (!name) return false;
-    
-    // Check if tag already exists
-    if (templateTags.find(tag => tag.name === name)) return false;
-    
-    // Add new tag
-    const newTag = { id: uuidv4(), name, description };
-    const updatedTags = [...templateTags, newTag];
-    setTemplateTags(updatedTags);
-    updateNodeInternals(id);
-    return true;
-  };
+  const handleCreateInput = useCallback((name: string, description?: string) => {
+    if (onCreateInput) {
+      const result = onCreateInput(name, description);
+      if (result) {
+        updateNodeInternals(id);
+      }
+      return result;
+    }
+    return false;
+  }, [onCreateInput, id, updateNodeInternals]);
   
   // Remove an input tag
-  const handleRemoveInput = (tagId: string) => {
-    const updatedTags = templateTags.filter(tag => tag.id !== tagId);
-    setTemplateTags(updatedTags);
-    updateNodeInternals(id);
-    return true;
-  };
+  const handleRemoveInput = useCallback((tagId: string) => {
+    if (onRemoveInput) {
+      const result = onRemoveInput(tagId);
+      if (result) {
+        updateNodeInternals(id);
+      }
+      return result;
+    }
+    return false;
+  }, [onRemoveInput, id, updateNodeInternals]);
   
   // Update an input tag
-  const handleUpdateInputName = (tagId: string, name: string, description?: string) => {
-    const updatedTags = templateTags.map(tag => 
-      tag.id === tagId ? { ...tag, name, description: description || tag.description } : tag
-    );
-    setTemplateTags(updatedTags);
-    updateNodeInternals(id);
-    return true;
-  };
+  const handleUpdateInputName = useCallback((tagId: string, name: string, description?: string) => {
+    if (onUpdateInputName) {
+      const result = onUpdateInputName(tagId, name, description);
+      if (result) {
+        updateNodeInternals(id);
+      }
+      return result;
+    }
+    return false;
+  }, [onUpdateInputName, id, updateNodeInternals]);
   
   // Add a template variable to the text
-  const addTemplateVariable = (variableName: string) => {
+  const addTemplateVariable = useCallback((variableName: string) => {
     const updatedText = `${promptText}{{${variableName}}}`;
     setPromptText(updatedText);
-    
-    // Update the node data
-    if (data.onChange) {
-      data.onChange({ ...data, promptTemplate: updatedText });
+    if (onPromptTextChange) {
+      onPromptTextChange(updatedText);
     }
-  };
-
+  }, [promptText, onPromptTextChange]);
+  
   // Get status badge
   const getStatusBadge = () => {
-    const status = data.status || 'idle';
-    switch (status) {
+    switch (data.status) {
       case 'processing':
         return <Badge variant="outline" className="bg-blue-500 text-white ml-2">Processing</Badge>;
       case 'success':
@@ -158,7 +187,7 @@ Assistant:`);
           variant="ghost" 
           size="sm" 
           className="h-6 w-6 p-0 rounded-sm"
-          onClick={() => data.onDelete && data.onDelete(id)}
+          onClick={() => onDeleteNode && onDeleteNode()}
         >
           <Settings className="h-4 w-4 text-muted-foreground" />
         </Button>
@@ -278,6 +307,4 @@ Assistant:`);
       />
     </div>
   );
-};
-
-export default PromptCrafterNode;
+}
