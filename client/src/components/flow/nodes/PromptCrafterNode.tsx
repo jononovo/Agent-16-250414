@@ -46,7 +46,7 @@ Assistant:`);
     while ((match = regex.exec(text)) !== null) {
       matches.push(match[1].trim());
     }
-    
+
     // Filter duplicates manually
     const uniqueMatches: string[] = [];
     matches.forEach((item) => {
@@ -54,7 +54,7 @@ Assistant:`);
         uniqueMatches.push(item);
       }
     });
-    
+
     // Create template tags from matches if they don't already exist
     const updatedTags = [...templateTags];
     uniqueMatches.forEach((name) => {
@@ -62,7 +62,7 @@ Assistant:`);
         updatedTags.push({ id: uuidv4(), name, description: `Variable for ${name}` });
       }
     });
-    
+
     // Update tags
     if (JSON.stringify(updatedTags) !== JSON.stringify(templateTags)) {
       setTemplateTags(updatedTags);
@@ -74,20 +74,20 @@ Assistant:`);
   const handlePromptChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     const newText = e.target.value;
     setPromptText(newText);
-    
+
     // Update the node data with new template
     if (data.onChange) {
       data.onChange({ ...data, promptTemplate: newText });
     }
   };
-  
+
   // Create a new input tag
   const handleCreateInput = (name: string, description?: string) => {
     if (!name) return false;
-    
+
     // Check if tag already exists
     if (templateTags.find(tag => tag.name === name)) return false;
-    
+
     // Add new tag
     const newTag = { id: uuidv4(), name, description };
     const updatedTags = [...templateTags, newTag];
@@ -95,7 +95,7 @@ Assistant:`);
     updateNodeInternals(id);
     return true;
   };
-  
+
   // Remove an input tag
   const handleRemoveInput = (tagId: string) => {
     const updatedTags = templateTags.filter(tag => tag.id !== tagId);
@@ -103,7 +103,7 @@ Assistant:`);
     updateNodeInternals(id);
     return true;
   };
-  
+
   // Update an input tag
   const handleUpdateInputName = (tagId: string, name: string, description?: string) => {
     const updatedTags = templateTags.map(tag => 
@@ -113,12 +113,12 @@ Assistant:`);
     updateNodeInternals(id);
     return true;
   };
-  
+
   // Add a template variable to the text
   const addTemplateVariable = (variableName: string) => {
     const updatedText = `${promptText}{{${variableName}}}`;
     setPromptText(updatedText);
-    
+
     // Update the node data
     if (data.onChange) {
       data.onChange({ ...data, promptTemplate: updatedText });
@@ -163,13 +163,13 @@ Assistant:`);
           <Settings className="h-4 w-4 text-muted-foreground" />
         </Button>
       </div>
-      
+
       {/* Body */}
       <div className="p-3 space-y-3">
         {data.description && (
           <p className="text-sm text-muted-foreground">{data.description}</p>
         )}
-        
+
         <Accordion type="single" collapsible defaultValue="template" className="w-full">
           <AccordionItem value="template" className="border-none">
             <AccordionTrigger className="py-2 hover:no-underline">
@@ -187,15 +187,22 @@ Assistant:`);
               </div>
             </AccordionContent>
           </AccordionItem>
-          
+
           <AccordionItem value="variables" className="border-none pt-2">
             <AccordionTrigger className="py-2 hover:no-underline">
               <span className="text-sm font-medium">Variables</span>
             </AccordionTrigger>
             <AccordionContent>
               <div className="space-y-2">
-                {templateTags.map((tag) => (
-                  <div key={tag.id} className="flex items-center justify-between p-2 bg-muted/40 rounded-sm">
+                {templateTags.map((tag, index) => (
+                  <div key={tag.id} className="relative flex items-center justify-between p-2 bg-muted/40 rounded-sm">
+                    <Handle
+                      type="target"
+                      position={Position.Left}
+                      id={tag.id}
+                      className="w-3 h-3 -left-[6px] absolute bg-yellow-500 border-2 border-background"
+                      data-label={tag.name}
+                    />
                     <span className="text-xs font-medium">{tag.name}</span>
                     <div className="flex gap-1">
                       <Button
@@ -238,14 +245,14 @@ Assistant:`);
             </AccordionContent>
           </AccordionItem>
         </Accordion>
-        
+
         {data.errorMessage && (
           <div className="mt-2 text-xs text-red-500 bg-red-50 p-2 rounded">
             {data.errorMessage}
           </div>
         )}
       </div>
-      
+
       {/* Main input handle at the top left */}
       <Handle
         type="target"
@@ -253,9 +260,9 @@ Assistant:`);
         id="input"
         className="w-3 h-3 left-[-6px] top-[20px] bg-blue-500 border-2 border-background"
       />
-      
-      {/* Dynamic variable input handles - aligned with the variable items */}
-      {templateTags.map((tag, index) => (
+
+      {/* Dynamic variable input handles - aligned with the variable items - REMOVED as handles are now within the variable divs */}
+      {/* {templateTags.map((tag, index) => (
         <Handle
           key={tag.id}
           type="target"
@@ -269,8 +276,8 @@ Assistant:`);
           }}
           data-label={tag.name}
         />
-      ))}
-      
+      ))} */}
+
       {/* Output handle - positioned at the right side at the same level as the input handle */}
       <Handle
         type="source"
