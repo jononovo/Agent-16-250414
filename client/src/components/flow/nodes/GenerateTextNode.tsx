@@ -357,16 +357,40 @@ const GenerateTextNode: React.FC<GenerateTextNodeProps> = ({
                       </Button>
                     </div>
                     <Input 
-                      defaultValue={tool.name} 
+                      value={tool.name} 
                       className="text-xs" 
                       placeholder="Tool name"
-                      onChange={(e) => onUpdateTool && onUpdateTool(tool.id, e.target.value, tool.description)}
+                      onChange={(e) => {
+                        // Update locally first for immediate feedback
+                        if (data.dynamicHandles?.tools) {
+                          const toolIndex = data.dynamicHandles.tools.findIndex(t => t.id === tool.id);
+                          if (toolIndex !== -1) {
+                            data.dynamicHandles.tools[toolIndex].name = e.target.value;
+                            // Force a refresh of the node internals to update handle labels
+                            updateNodeInternals(id);
+                          }
+                        }
+                        // Then call the parent handler if available
+                        onUpdateTool && onUpdateTool(tool.id, e.target.value, tool.description);
+                      }}
                     />
                     <Input 
-                      defaultValue={tool.description} 
+                      value={tool.description || ''} 
                       className="text-xs" 
                       placeholder="Tool description (optional)"
-                      onChange={(e) => onUpdateTool && onUpdateTool(tool.id, tool.name, e.target.value)}
+                      onChange={(e) => {
+                        // Update locally first for immediate feedback
+                        if (data.dynamicHandles?.tools) {
+                          const toolIndex = data.dynamicHandles.tools.findIndex(t => t.id === tool.id);
+                          if (toolIndex !== -1) {
+                            data.dynamicHandles.tools[toolIndex].description = e.target.value;
+                            // Force a refresh of the node internals to update handle labels
+                            updateNodeInternals(id);
+                          }
+                        }
+                        // Then call the parent handler if available
+                        onUpdateTool && onUpdateTool(tool.id, tool.name, e.target.value);
+                      }}
                     />
                   </div>
                 ))}
@@ -443,7 +467,7 @@ const GenerateTextNode: React.FC<GenerateTextNodeProps> = ({
         className="w-3 h-3 left-[-6px] !bg-indigo-500 border-2 border-background"
       />
       
-      {/* Tool input handles - positioned dynamically based on the node height */}
+      {/* Tool input handles - positioned correctly along the node's side */}
       {data.dynamicHandles?.tools.map((tool, index) => (
         <Handle
           key={tool.id}
@@ -452,8 +476,8 @@ const GenerateTextNode: React.FC<GenerateTextNodeProps> = ({
           id={`tool-${tool.id}`}
           className={`tool-handle tool-handle-${index} w-3 h-3 left-[-6px] !bg-amber-500 border-2 border-background`}
           style={{ 
-            // Position after the standard input handle with even spacing
-            top: `${120 + (index * 24)}px`,
+            // Position properly along node side - starting about 1/3 down the node
+            top: `${Math.max(100, 100 + (index * 30))}px`,
           }}
           // The label is added via CSS in the component's class
           data-label={tool.name}
@@ -477,7 +501,8 @@ const GenerateTextNode: React.FC<GenerateTextNodeProps> = ({
           id={`output-${tool.id}`}
           className={`tool-output-handle w-3 h-3 right-[-6px] !bg-amber-500 border-2 border-background`}
           style={{ 
-            top: `${120 + (index * 24)}px`, 
+            // Match the position of the input handles for consistency
+            top: `${Math.max(100, 100 + (index * 30))}px`, 
           }}
           data-label={`${tool.name} output`}
         />
