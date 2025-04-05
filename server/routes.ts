@@ -625,20 +625,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       console.log(`Executing workflow with prompt: ${prompt}`);
       
-      // Try to get workflow 7 first (the one specified in the URL)
-      const requestedWorkflow = await storage.getWorkflow(7);
+      // Try to get workflow 13 (our simple chat workflow)
+      const requestedWorkflow = await storage.getWorkflow(13);
       
       if (!requestedWorkflow) {
-        console.log("Workflow 7 not found.");
-        return res.status(404).json({ message: "Workflow 7 not found" });
+        console.log("Workflow 13 not found.");
+        return res.status(404).json({ message: "Simple chat workflow not found" });
       }
       
-      console.log('Executing workflow 7...');
+      console.log('Executing workflow 13...');
       
       // Create a log entry for this execution
       const workflowLog = await storage.createLog({
         agentId: requestedWorkflow.agentId || 0,
-        workflowId: 7,
+        workflowId: 13,
         status: "running",
         input: { prompt },
       });
@@ -669,15 +669,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
         
         console.log(`Executing workflow with ${nodes.length} nodes and ${edges.length} edges`);
         
-        // Inject the prompt into the first text_prompt or prompt node
-        const startNode = nodes.find((node: { type: string }) => node.type === 'text_prompt' || node.type === 'prompt');
+        // Inject the prompt into the first text_input node
+        const startNode = nodes.find((node: { type: string }) => node.type === 'text_input');
         if (startNode) {
           if (!startNode.data) startNode.data = {};
-          startNode.data.prompt = prompt;
+          startNode.data.inputText = prompt;
         } else if (nodes.length > 0) {
           // If no start node found, add the prompt as input to the first node
           if (!nodes[0].data) nodes[0].data = {};
-          nodes[0].data.input = prompt;
+          nodes[0].data.inputText = prompt;
         }
         
         // Initialize node states tracking
