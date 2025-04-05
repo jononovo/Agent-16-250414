@@ -13,28 +13,11 @@
 }
 
 /* Custom styles for tool handles */
-.tool-handle {
-  position: relative;
-}
-
-.tool-handle::before {
-  content: attr(data-label);
-  position: absolute;
-  left: 12px;
-  top: -6px;
-  font-size: 10px;
-  white-space: nowrap;
-  color: hsl(var(--muted-foreground));
-  opacity: 0.8;
-  pointer-events: none;
-}
-
-/* Custom styles for editable handles */
 [data-label] {
   position: relative;
 }
 
-[data-label]::before {
+[data-label]:hover::before {
   content: attr(data-label);
   position: absolute;
   left: 12px;
@@ -42,8 +25,30 @@
   font-size: 10px;
   white-space: nowrap;
   color: hsl(var(--muted-foreground));
-  opacity: 0.8;
+  background-color: hsl(var(--background));
+  padding: 2px 4px;
+  border-radius: 4px;
+  opacity: 0.9;
   pointer-events: none;
+  z-index: 10;
+}
+
+/* Adjust handle positioning */
+.react-flow__handle {
+  position: absolute;
+  width: 10px !important;
+  height: 10px !important;
+  background-color: var(--handle-color, theme('colors.blue.500'));
+  border: 2px solid hsl(var(--background));
+  border-radius: 50%;
+}
+
+.react-flow__handle-left {
+  left: -6px !important;
+}
+
+.react-flow__handle-right {
+  right: -6px !important;
 }
 
 /* Handle specific positioning for different node types */
