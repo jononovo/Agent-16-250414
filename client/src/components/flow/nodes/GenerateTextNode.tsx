@@ -28,6 +28,7 @@ import {
 } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { EditableHandleDialog } from '@/components/ui/flow/editable-handle';
+import { ModelSelector, type Model } from '@/components/ui/model-selector';
 import { cn } from '@/lib/utils';
 
 // Types for the dynamic tool handles
@@ -249,20 +250,10 @@ const GenerateTextNode: React.FC<GenerateTextNodeProps> = ({
               <div className="space-y-2">
                 <div>
                   <label className="text-xs font-medium block mb-1">Model</label>
-                  <Select value={model} onValueChange={handleModelChange}>
-                    <SelectTrigger className="w-full">
-                      <SelectValue placeholder="Select model" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="claude-3-opus-20240229">Claude 3 Opus</SelectItem>
-                      <SelectItem value="claude-3-sonnet-20240229">Claude 3 Sonnet</SelectItem>
-                      <SelectItem value="claude-3-haiku-20240229">Claude 3 Haiku</SelectItem>
-                      <SelectItem value="gpt-4o">GPT-4o</SelectItem>
-                      <SelectItem value="gpt-4-turbo">GPT-4 Turbo</SelectItem>
-                      <SelectItem value="gpt-3.5-turbo">GPT-3.5 Turbo</SelectItem>
-                      <SelectItem value="deepseek-chat">DeepSeek Chat</SelectItem>
-                    </SelectContent>
-                  </Select>
+                  <ModelSelector 
+                    value={model as Model} 
+                    onChange={(value) => handleModelChange(value)} 
+                  />
                 </div>
                 
                 <div className="grid grid-cols-2 gap-2">

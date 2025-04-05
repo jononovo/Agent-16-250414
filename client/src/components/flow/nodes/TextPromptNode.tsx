@@ -139,33 +139,18 @@ const TextPromptNode = ({ id, data, isConnectable = true, selected }: TextPrompt
             </div>
             <div className="space-y-2 text-sm">
               {data.dynamicHandles.inputs.map((input) => (
-                <div key={input.id} className="flex items-center">
-                  <div className="py-1 px-2 bg-muted rounded-md flex-1 flex items-center justify-between">
-                    <span className="truncate">{input.name}</span>
-                    <Button 
-                      variant="ghost" 
-                      size="sm" 
-                      className="h-6 w-6 p-0"
-                      onClick={() => handleRemoveInput(input.id)}
-                    >
-                      <span className="sr-only">Remove</span>
-                      <svg 
-                        xmlns="http://www.w3.org/2000/svg" 
-                        width="16" 
-                        height="16" 
-                        viewBox="0 0 24 24" 
-                        fill="none" 
-                        stroke="currentColor" 
-                        strokeWidth="2" 
-                        strokeLinecap="round" 
-                        strokeLinejoin="round" 
-                        className="h-3 w-3"
-                      >
-                        <line x1="18" y1="6" x2="6" y2="18"></line>
-                        <line x1="6" y1="6" x2="18" y2="18"></line>
-                      </svg>
-                    </Button>
-                  </div>
+                <div key={input.id} className="flex items-center gap-2">
+                  <EditableHandle
+                    nodeId={id}
+                    handleId={input.id}
+                    name={input.name}
+                    description={input.description}
+                    type="target"
+                    position={Position.Left}
+                    wrapperClassName="w-full"
+                    onUpdateTool={handleUpdateInput}
+                    onDelete={handleRemoveInput}
+                  />
                 </div>
               ))}
             </div>
