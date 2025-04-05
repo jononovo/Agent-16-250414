@@ -183,6 +183,12 @@ export const claudeExecutor: EnhancedNodeExecutor = createEnhancedNodeExecutor(
     // Store API key (we'll try to fetch it if not directly provided)
     let apiKey = nodeData.apiKey || settings.apiKey || process.env.ANTHROPIC_API_KEY;
     
+    // Handle special "__ENV_CLAUDE_API_KEY__" placeholder
+    if (apiKey === "__ENV_CLAUDE_API_KEY__") {
+      console.log("Using environment variable for Claude API key");
+      apiKey = process.env.CLAUDE_API_KEY || '';
+    }
+    
     // Get prompts from node data
     let systemPrompt = nodeData.systemPrompt || '';
     let userPrompt = nodeData.userPrompt || '';

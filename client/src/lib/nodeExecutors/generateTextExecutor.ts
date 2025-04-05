@@ -52,6 +52,12 @@ export const generateTextExecutor: NodeExecutor = {
     // Get API key from node settings, node data, or server config
     let apiKey = nodeData.settings?.apiKey || nodeData.apiKey;
     
+    // Handle special "__ENV_CLAUDE_API_KEY__" placeholder
+    if (apiKey === "__ENV_CLAUDE_API_KEY__") {
+      console.log("Using environment variable for Claude API key");
+      apiKey = process.env.CLAUDE_API_KEY || '';
+    }
+    
     // Debug log for node data
     console.log('Node data:', {
       hasSettings: !!nodeData.settings,
