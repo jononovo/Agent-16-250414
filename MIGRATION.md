@@ -49,7 +49,7 @@ To import data into a new database:
 
 Available options:
 - `--clear` - Clear existing data in the target database before import
-- `--skip-users` - Don\'t import user accounts
+- `--skip-users` - Don't import user accounts
 - `--import-logs` - Import execution logs (by default, logs are skipped)
 - `--no-preserve-ids` - Generate new IDs for all imported data
 
@@ -109,6 +109,15 @@ The migration utility handles:
 1. Exporting all data from database tables
 2. Importing data while maintaining referential integrity
 3. Updating references in JSON data (like workflow.flowData) to match new IDs if needed
+4. Automatic conversion of date string fields to proper Date objects during import
+
+### Date Field Handling
+
+The migration utility includes automatic date field processing:
+- A `processDateFields` helper function properly converts string dates to JavaScript Date objects
+- Handled date fields include: `createdAt`, `updatedAt`, `startedAt`, `completedAt`
+- This prevents common errors like `value.toISOString is not a function` during database imports
+- The conversion happens during the import process before insertion into the database
 
 ## Troubleshooting
 
@@ -123,7 +132,12 @@ The migration utility handles:
 
 3. **Missing relationships**:
    - Make sure to import the complete export file
-   - Don\'t manually edit the exported JSON unless you understand the schema relationships
+   - Don't manually edit the exported JSON unless you understand the schema relationships
+
+4. **Date/Timestamp field errors**:
+   - If you encounter errors with timestamp fields during import, ensure the migration utility is using the latest version
+   - Check that all date fields are properly handled in the `processDateFields` function
+   - The error "value.toISOString is not a function" typically indicates a date field that wasn't properly converted
 
 ## Examples
 
