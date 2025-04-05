@@ -91,7 +91,7 @@ export const nodes = pgTable("nodes", {
   id: serial("id").primaryKey(),
   name: text("name").notNull(),
   description: text("description"),
-  type: text("type").notNull(), // "custom", "interface", "workflow", "integration"
+  type: text("type").notNull(), // "custom", "interface", "workflow", "integration", "internal"
   icon: text("icon"),
   category: text("category").notNull().default(""),
   createdAt: timestamp("created_at").defaultNow(),
