@@ -11,3 +11,20 @@
     @apply font-sans antialiased bg-background text-foreground;
   }
 }
+
+/* Custom styles for tool handles */
+.tool-handle {
+  position: relative;
+}
+
+.tool-handle::before {
+  content: attr(data-label);
+  position: absolute;
+  left: 12px;
+  top: -6px;
+  font-size: 10px;
+  white-space: nowrap;
+  color: hsl(var(--muted-foreground));
+  opacity: 0.8;
+  pointer-events: none;
+}

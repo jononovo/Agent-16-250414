@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Handle, Position, NodeProps } from 'reactflow';
-import { Sparkles, Settings, RotateCw, Plus, Minus } from 'lucide-react';
+import { Sparkles, Settings, RotateCw, Plus, Minus, Zap } from 'lucide-react';
 import { 
   Accordion,
   AccordionContent,
@@ -46,6 +46,8 @@ export interface GenerateTextNodeData {
   };
   dynamicHandles?: DynamicHandles;
   onSettingsClick?: () => void;
+  onExecute?: (updatedData: GenerateTextNodeData) => void;
+  setNodeState?: (state: { status?: string; errorMessage?: string }) => void;
 }
 
 // Props interface
@@ -73,11 +75,16 @@ const GenerateTextNode: React.FC<GenerateTextNodeProps> = ({
   const model = data.config?.model || 'claude-3-opus-20240229';
   const temperature = data.config?.temperature || 0.7;
   const maxTokens = data.config?.maxTokens || 1024;
+  const [isLoading, setIsLoading] = useState(false);
+  
+  // Initialize dynamic tools if they don't exist
+  const tools = data.dynamicHandles?.tools || [];
   
   const getStatusBadge = () => {
+    if (isLoading || data.status === 'processing') {
+      return <Badge variant="outline" className="bg-blue-500 text-white ml-2">Processing</Badge>;
+    }
     switch (data.status) {
-      case 'processing':
-        return <Badge variant="outline" className="bg-blue-500 text-white ml-2">Processing</Badge>;
       case 'complete':
         return <Badge variant="outline" className="bg-green-500 text-white ml-2">Complete</Badge>;
       case 'error':
@@ -89,12 +96,12 @@ const GenerateTextNode: React.FC<GenerateTextNodeProps> = ({
 
   const handleSystemInstructionChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     setSystemInstruction(e.target.value);
-    // You would typically save this to the node data in a real implementation
+    // Save to node data through executor in FlowEditor
   };
 
   const handlePromptTemplateChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     setPromptTemplate(e.target.value);
-    // You would typically save this to the node data in a real implementation
+    // Save to node data through executor in FlowEditor
   };
 
   const handleModelChange = (value: string) => {
@@ -103,11 +110,38 @@ const GenerateTextNode: React.FC<GenerateTextNodeProps> = ({
     }
   };
 
+  // Create a tool directly if the callback is not provided
   const handleAddTool = () => {
-    if (onCreateTool) {
-      return onCreateTool();
+    setIsLoading(true);
+    
+    try {
+      if (onCreateTool) {
+        const result = onCreateTool();
+        setIsLoading(false);
+        return result;
+      } else {
+        // If no callback provided, create a default tool structure
+        const newTool = {
+          id: `tool-${Date.now()}`,
+          name: `Tool ${tools.length + 1}`,
+          description: `Description for Tool ${tools.length + 1}`
+        };
+        
+        // Update node data with the new tool
+        if (data.dynamicHandles) {
+          data.dynamicHandles.tools = [...tools, newTool];
+        } else {
+          data.dynamicHandles = { tools: [newTool] };
+        }
+        
+        setIsLoading(false);
+        return true;
+      }
+    } catch (error) {
+      console.error("Error adding tool:", error);
+      setIsLoading(false);
+      return false;
     }
-    return false;
   };
 
   // Handle node content click to prevent opening settings drawer 
@@ -290,15 +324,31 @@ const GenerateTextNode: React.FC<GenerateTextNodeProps> = ({
           variant="default" 
           size="sm" 
           className="w-full mt-2"
-          disabled={data.status === 'processing'}
+          disabled={data.status === 'processing' || isLoading}
+          onClick={(e) => {
+            e.stopPropagation();
+            if (typeof data.onExecute === 'function') {
+              // Update the node data with the latest values before executing
+              const updatedNodeData: GenerateTextNodeData = {
+                ...data,
+                systemInstruction,
+                promptTemplate,
+                status: 'processing' as const
+              };
+              data.onExecute(updatedNodeData);
+            }
+          }}
         >
-          {data.status === 'processing' ? (
+          {data.status === 'processing' || isLoading ? (
             <>
               <RotateCw className="h-3 w-3 mr-1 animate-spin" /> 
               Processing...
             </>
           ) : (
-            'Generate Text'
+            <>
+              <Zap className="h-3 w-3 mr-1" />
+              Generate Text
+            </>
           )}
         </Button>
       </div>
@@ -311,15 +361,20 @@ const GenerateTextNode: React.FC<GenerateTextNodeProps> = ({
         className="w-3 h-3 left-[-6px] !bg-indigo-500 border-2 border-background"
       />
       
-      {/* Tool input handles */}
+      {/* Tool input handles - positioned dynamically based on the node height */}
       {data.dynamicHandles?.tools.map((tool, index) => (
         <Handle
           key={tool.id}
           type="target"
           position={Position.Left}
           id={`tool-${tool.id}`}
-          className="w-3 h-3 left-[-6px] !bg-amber-500 border-2 border-background"
-          style={{ top: `${150 + (index * 20)}px` }}
+          className={`tool-handle tool-handle-${index} w-3 h-3 left-[-6px] !bg-amber-500 border-2 border-background`}
+          style={{ 
+            // Distribute tool handles evenly on the left side
+            top: `${140 + (index * 30)}px`,
+          }}
+          // The label is added via CSS in the component's class
+          data-label={tool.name}
         />
       ))}
       
