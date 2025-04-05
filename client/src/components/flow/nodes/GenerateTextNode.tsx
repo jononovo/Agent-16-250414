@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Handle, Position, NodeProps } from 'reactflow';
+import { Handle, Position, NodeProps, useUpdateNodeInternals } from 'reactflow';
 import { Sparkles, Settings, RotateCw, Plus, Minus, Zap, X } from 'lucide-react';
 import { 
   Accordion,
@@ -27,7 +27,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
-import { EditableHandleDialog } from '@/components/ui/flow/editable-handle';
+import { EditableHandle, EditableHandleDialog } from '@/components/ui/flow/editable-handle';
 import { ModelSelector, type Model } from '@/components/ui/model-selector';
 import { cn } from '@/lib/utils';
 
@@ -86,6 +86,7 @@ const GenerateTextNode: React.FC<GenerateTextNodeProps> = ({
   onUpdateTool,
   onDeleteNode
 }) => {
+  const updateNodeInternals = useUpdateNodeInternals();
   const [systemInstruction, setSystemInstruction] = useState(data.systemInstruction || '');
   const [promptTemplate, setPromptTemplate] = useState(data.promptTemplate || '');
   const model = data.config?.model || 'claude-3-opus-20240229';
@@ -184,6 +185,9 @@ const GenerateTextNode: React.FC<GenerateTextNodeProps> = ({
         data.dynamicHandles = updatedHandles;
       }
       
+      // Update the node internals to ensure the handles are visible
+      updateNodeInternals(id);
+      
       // Close dialog and reset state
       setIsAddToolDialogOpen(false);
       setNewToolName('');
@@ -199,11 +203,18 @@ const GenerateTextNode: React.FC<GenerateTextNodeProps> = ({
   const handleRemoveTool = (toolId: string) => {
     if (onRemoveTool && typeof onRemoveTool === 'function') {
       // Use parent callback if available
-      return onRemoveTool(toolId);
+      const result = onRemoveTool(toolId);
+      if (result) {
+        // Update node internals to refresh the handles
+        updateNodeInternals(id);
+      }
+      return result;
     } else {
       // Otherwise manually update node data
       if (data.dynamicHandles && data.dynamicHandles.tools) {
         data.dynamicHandles.tools = data.dynamicHandles.tools.filter(t => t.id !== toolId);
+        // Update node internals to refresh the handles
+        updateNodeInternals(id);
         return true;
       }
       return false;
