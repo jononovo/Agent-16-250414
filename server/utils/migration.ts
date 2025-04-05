@@ -8,6 +8,30 @@ import {
 import { eq } from 'drizzle-orm';
 
 /**
+ * Helper function to ensure date strings are properly converted to Date objects
+ */
+function processDateFields<T>(obj: T): T {
+  if (!obj || typeof obj !== 'object') return obj;
+  
+  const result = { ...obj } as any;
+  
+  // Process known date fields
+  const dateFields = ['createdAt', 'updatedAt', 'startedAt', 'completedAt'];
+  for (const field of dateFields) {
+    if (field in result && typeof result[field] === 'string') {
+      try {
+        // Convert string date to Date object
+        result[field] = new Date(result[field]);
+      } catch (e) {
+        console.warn(`Failed to parse date field ${field}:`, e);
+      }
+    }
+  }
+  
+  return result as T;
+}
+
+/**
  * Migration Utility
  * 
  * This utility provides functions to export and import data from the database.
@@ -122,10 +146,14 @@ export async function importAllData(
 
           // Insert with preserved ID if specified
           if (preserveIds) {
-            await tx.insert(users).values(user);
+            // Process any potential date fields (none for users, but for consistency)
+            const processedUser = processDateFields(user);
+            await tx.insert(users).values(processedUser);
           } else {
             const { id, ...userData } = user;
-            await tx.insert(users).values(userData);
+            // Process any potential date fields (none for users, but for consistency)
+            const processedUserData = processDateFields(userData);
+            await tx.insert(users).values(processedUserData);
           }
         }
       }
@@ -136,11 +164,15 @@ export async function importAllData(
         let newNodeId: number;
         
         if (preserveIds) {
-          await tx.insert(nodes).values(node);
+          // Process date fields before insertion
+          const processedNode = processDateFields(node);
+          await tx.insert(nodes).values(processedNode);
           newNodeId = node.id;
         } else {
           const { id, ...nodeData } = node;
-          const result = await tx.insert(nodes).values(nodeData).returning({ id: nodes.id });
+          // Process date fields before insertion
+          const processedNodeData = processDateFields(nodeData);
+          const result = await tx.insert(nodes).values(processedNodeData).returning({ id: nodes.id });
           newNodeId = result[0].id;
         }
         
@@ -153,11 +185,15 @@ export async function importAllData(
         let newAgentId: number;
         
         if (preserveIds) {
-          await tx.insert(agents).values(agent);
+          // Process date fields before insertion
+          const processedAgent = processDateFields(agent);
+          await tx.insert(agents).values(processedAgent);
           newAgentId = agent.id;
         } else {
           const { id, ...agentData } = agent;
-          const result = await tx.insert(agents).values(agentData).returning({ id: agents.id });
+          // Process date fields before insertion
+          const processedAgentData = processDateFields(agentData);
+          const result = await tx.insert(agents).values(processedAgentData).returning({ id: agents.id });
           newAgentId = result[0].id;
         }
         
@@ -183,6 +219,9 @@ export async function importAllData(
             newWorkflowData.agentId = newAgentId;
           }
         }
+        
+        // Process date fields before insertion
+        newWorkflowData = processDateFields(newWorkflowData);
         
         // Insert workflow
         let newWorkflowId: number;
@@ -227,6 +266,9 @@ export async function importAllData(
               }
             }
           }
+          
+          // Process date fields before insertion
+          newLogData = processDateFields(newLogData);
           
           // Insert log
           await tx.insert(logs).values(newLogData);
