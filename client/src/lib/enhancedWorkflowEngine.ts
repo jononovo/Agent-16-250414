@@ -56,25 +56,9 @@ export function registerEnhancedNodeExecutor(nodeType: string, executor: Enhance
  */
 export async function registerAllEnhancedNodeExecutors(): Promise<void> {
   try {
-    // Import all executors
-    const { textInputExecutor } = await import('./enhancedNodeExecutors/textInputExecutor');
-    const { claudeExecutor } = await import('./enhancedNodeExecutors/claudeExecutor');
-    const { visualizeTextExecutor } = await import('./enhancedNodeExecutors/visualizeTextExecutor');
-    const { transformExecutor } = await import('./enhancedNodeExecutors/transformExecutor');
-    const { outputExecutor } = await import('./enhancedNodeExecutors/outputExecutor');
-    const { chatInterfaceExecutor } = await import('./enhancedNodeExecutors/chatInterfaceExecutor');
-    
-    // Register all executors
-    registerEnhancedNodeExecutor('text_input', textInputExecutor);
-    registerEnhancedNodeExecutor('claude', claudeExecutor);
-    registerEnhancedNodeExecutor('visualize_text', visualizeTextExecutor);
-    registerEnhancedNodeExecutor('transform', transformExecutor);
-    registerEnhancedNodeExecutor('output', outputExecutor);
-    registerEnhancedNodeExecutor('chat_interface', chatInterfaceExecutor);
-    
-    // Register legacy/compatibility aliases
-    registerEnhancedNodeExecutor('generate_text', claudeExecutor);
-    registerEnhancedNodeExecutor('perplexity', claudeExecutor);
+    // Import and call the registration function from the executors index
+    const { registerAllEnhancedExecutors } = await import('./enhancedNodeExecutors');
+    await registerAllEnhancedExecutors();
     
     console.log('All enhanced node executors registered successfully');
   } catch (error) {

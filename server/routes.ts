@@ -438,6 +438,31 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
+  // API Config update endpoint - store API keys in environment variables for this session
+  app.post("/api/config", async (req, res) => {
+    try {
+      const { claudeApiKey, perplexityApiKey } = req.body;
+      
+      if (claudeApiKey !== undefined) {
+        process.env.CLAUDE_API_KEY = claudeApiKey;
+        console.log("Claude API key updated");
+      }
+      
+      if (perplexityApiKey !== undefined) {
+        process.env.PERPLEXITY_API_KEY = perplexityApiKey;
+        console.log("Perplexity API key updated");
+      }
+      
+      res.json({ 
+        success: true, 
+        message: "API configuration updated successfully"
+      });
+    } catch (error) {
+      console.error('Error updating config:', error);
+      res.status(500).json({ message: "Failed to update API configuration" });
+    }
+  });
+  
   // Test Workflow Execution endpoint - allows testing a specific workflow with a prompt
   app.post("/api/test-workflow/:id", async (req, res) => {
     try {
