@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Handle, Position, NodeProps } from 'reactflow';
-import { Sparkles, Settings, RotateCw, Plus, Minus, Zap } from 'lucide-react';
+import { Sparkles, Settings, RotateCw, Plus, Minus, Zap, X } from 'lucide-react';
 import { 
   Accordion,
   AccordionContent,
@@ -18,6 +18,15 @@ import {
   SelectTrigger,
   SelectValue 
 } from '@/components/ui/select';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Label } from "@/components/ui/label";
 import { cn } from '@/lib/utils';
 
 // Types for the dynamic tool handles
@@ -47,7 +56,12 @@ export interface GenerateTextNodeData {
   dynamicHandles?: DynamicHandles;
   onSettingsClick?: () => void;
   onExecute?: (updatedData: GenerateTextNodeData) => void;
-  setNodeState?: (state: { status?: string; errorMessage?: string }) => void;
+  setNodeState?: (state: { 
+    status?: 'idle' | 'processing' | 'complete' | 'error'; 
+    errorMessage?: string;
+    systemInstruction?: string;
+    promptTemplate?: string;
+  }) => void;
 }
 
 // Props interface
@@ -80,6 +94,11 @@ const GenerateTextNode: React.FC<GenerateTextNodeProps> = ({
   // Initialize dynamic tools if they don't exist
   const tools = data.dynamicHandles?.tools || [];
   
+  // State for the add tool dialog
+  const [isAddToolDialogOpen, setIsAddToolDialogOpen] = useState(false);
+  const [newToolName, setNewToolName] = useState('');
+  const [newToolDescription, setNewToolDescription] = useState('');
+  
   const getStatusBadge = () => {
     if (isLoading || data.status === 'processing') {
       return <Badge variant="outline" className="bg-blue-500 text-white ml-2">Processing</Badge>;
@@ -95,13 +114,27 @@ const GenerateTextNode: React.FC<GenerateTextNodeProps> = ({
   };
 
   const handleSystemInstructionChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
-    setSystemInstruction(e.target.value);
+    const newValue = e.target.value;
+    setSystemInstruction(newValue);
     // Save to node data through executor in FlowEditor
+    if (data.setNodeState) {
+      // Update the node's data directly
+      if (data.systemInstruction !== undefined) {
+        data.systemInstruction = newValue;
+      }
+    }
   };
 
   const handlePromptTemplateChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
-    setPromptTemplate(e.target.value);
+    const newValue = e.target.value;
+    setPromptTemplate(newValue);
     // Save to node data through executor in FlowEditor
+    if (data.setNodeState) {
+      // Update the node's data directly
+      if (data.promptTemplate !== undefined) {
+        data.promptTemplate = newValue;
+      }
+    }
   };
 
   const handleModelChange = (value: string) => {
@@ -110,36 +143,61 @@ const GenerateTextNode: React.FC<GenerateTextNodeProps> = ({
     }
   };
 
-  // Create a tool directly if the callback is not provided
-  const handleAddTool = () => {
+  // Show the dialog to add a new tool
+  const handleOpenAddToolDialog = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setNewToolName(`Tool ${tools.length + 1}`);
+    setNewToolDescription('');
+    setIsAddToolDialogOpen(true);
+  };
+
+  // Create a tool with the data from the dialog
+  const handleCreateTool = (e: React.MouseEvent) => {
+    e.stopPropagation();
     setIsLoading(true);
     
     try {
-      if (onCreateTool) {
-        const result = onCreateTool();
-        setIsLoading(false);
-        return result;
+      // Create the new tool
+      const newTool = {
+        id: `tool-${Date.now()}`,
+        name: newToolName || `Tool ${tools.length + 1}`,
+        description: newToolDescription
+      };
+      
+      if (onCreateTool && typeof onCreateTool === 'function') {
+        // If the callback is provided by parent, use it
+        onCreateTool();
       } else {
-        // If no callback provided, create a default tool structure
-        const newTool = {
-          id: `tool-${Date.now()}`,
-          name: `Tool ${tools.length + 1}`,
-          description: `Description for Tool ${tools.length + 1}`
-        };
-        
-        // Update node data with the new tool
+        // Otherwise manually update the node data
         if (data.dynamicHandles) {
           data.dynamicHandles.tools = [...tools, newTool];
         } else {
           data.dynamicHandles = { tools: [newTool] };
         }
-        
-        setIsLoading(false);
-        return true;
       }
+      
+      // Close dialog and reset state
+      setIsAddToolDialogOpen(false);
+      setNewToolName('');
+      setNewToolDescription('');
+      setIsLoading(false);
     } catch (error) {
       console.error("Error adding tool:", error);
       setIsLoading(false);
+    }
+  };
+  
+  // Remove a tool by ID
+  const handleRemoveTool = (toolId: string) => {
+    if (onRemoveTool && typeof onRemoveTool === 'function') {
+      // Use parent callback if available
+      return onRemoveTool(toolId);
+    } else {
+      // Otherwise manually update node data
+      if (data.dynamicHandles && data.dynamicHandles.tools) {
+        data.dynamicHandles.tools = data.dynamicHandles.tools.filter(t => t.id !== toolId);
+        return true;
+      }
       return false;
     }
   };
@@ -281,7 +339,10 @@ const GenerateTextNode: React.FC<GenerateTextNodeProps> = ({
                         variant="ghost" 
                         size="sm" 
                         className="h-6 w-6 p-0" 
-                        onClick={() => onRemoveTool && onRemoveTool(tool.id)}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleRemoveTool(tool.id);
+                        }}
                       >
                         <Minus className="h-3 w-3" />
                       </Button>
@@ -304,7 +365,7 @@ const GenerateTextNode: React.FC<GenerateTextNodeProps> = ({
                   variant="outline" 
                   size="sm" 
                   className="w-full" 
-                  onClick={handleAddTool}
+                  onClick={handleOpenAddToolDialog}
                 >
                   <Plus className="h-3 w-3 mr-1" /> Add Tool
                 </Button>
@@ -385,6 +446,63 @@ const GenerateTextNode: React.FC<GenerateTextNodeProps> = ({
         id="output"
         className="w-3 h-3 right-[-6px] !bg-indigo-500 border-2 border-background"
       />
+      
+      {/* Add Tool Dialog */}
+      <Dialog open={isAddToolDialogOpen} onOpenChange={setIsAddToolDialogOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>New Tool Output</DialogTitle>
+            <DialogDescription>
+              Create a new tool output that can provide data to this Generate Text node.
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="grid gap-4 py-4">
+            <div className="grid gap-2">
+              <Label htmlFor="tool-name">Label</Label>
+              <Input
+                id="tool-name"
+                value={newToolName}
+                onChange={(e) => setNewToolName(e.target.value)}
+                placeholder="Enter label"
+              />
+            </div>
+            
+            <div className="grid gap-2">
+              <Label htmlFor="tool-description">Description (optional)</Label>
+              <Textarea
+                id="tool-description"
+                value={newToolDescription}
+                onChange={(e) => setNewToolDescription(e.target.value)}
+                placeholder="Enter description"
+                rows={3}
+              />
+            </div>
+          </div>
+          
+          <DialogFooter className="flex justify-between">
+            <Button 
+              type="button" 
+              variant="outline" 
+              onClick={() => setIsAddToolDialogOpen(false)}
+            >
+              Cancel
+            </Button>
+            <Button 
+              type="button" 
+              onClick={handleCreateTool}
+              disabled={isLoading}
+            >
+              {isLoading ? (
+                <>
+                  <RotateCw className="h-4 w-4 mr-2 animate-spin" />
+                  Creating...
+                </>
+              ) : 'Create'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
