@@ -182,18 +182,27 @@ export const workflowTriggerExecutor: EnhancedNodeExecutor = {
         
         const workflow = await apiRequest(`/api/workflows/${workflowId}`);
         
+        // Extract critical fields from the response for easier consumption by downstream nodes
+        const extractedResult = {
+          result: response,
+          workflowId,
+          workflowName: workflow?.name || 'Unknown',
+          // Extract nested response data to make it easier for downstream nodes to access
+          agent: response?.agent || (response?.result?.agent ? response.result.agent : null),
+          workflow: response?.workflow || (response?.result?.workflow ? response.result.workflow : null),
+          output: response?.output || response?.result || response,
+          status: response?.status || 'complete',
+          fullResponse: response,
+          _callStack: updatedCallStack // Include call stack in the output
+        };
+        
+        console.log('Workflow Trigger Node - Extracted result:', JSON.stringify(extractedResult, null, 2));
+        
         // Return a success response with all the data from the workflow response
         return {
           items: [
             {
-              json: {
-                result: response,
-                workflowId,
-                workflowName: workflow?.name || 'Unknown',
-                output: response?.output || response?.result || response,
-                fullResponse: response,
-                _callStack: updatedCallStack // Include call stack in the output
-              }
+              json: extractedResult
             }
           ],
           meta: {
