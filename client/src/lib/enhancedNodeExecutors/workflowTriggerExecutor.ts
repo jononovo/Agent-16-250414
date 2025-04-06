@@ -62,11 +62,26 @@ export const workflowTriggerExecutor: EnhancedNodeExecutor = {
       
       // Get the input data to send to the workflow
       let inputData = '';
+      let rawInputData: any = null;
+      
       if (inputs.input && inputs.input.items && inputs.input.items.length > 0) {
         const inputItem = inputs.input.items[0].json;
+        rawInputData = inputItem; // Store the raw input data for passing through
         
         // Try to extract the input from different possible input formats
         if (typeof inputItem === 'object' && inputItem !== null) {
+          // Record extracted fields for logging
+          const possibleFields = ['text', 'content', 'input', inputField];
+          const extractedFields: Record<string, any> = {};
+          
+          possibleFields.forEach(field => {
+            if (typeof (inputItem as any)[field] !== 'undefined') {
+              extractedFields[field] = (inputItem as any)[field];
+            }
+          });
+          
+          console.log('Workflow Trigger Node - Available input fields:', extractedFields);
+          
           if (typeof (inputItem as any).text === 'string') {
             inputData = (inputItem as any).text;
           } else if (typeof (inputItem as any).content === 'string') {
@@ -76,7 +91,7 @@ export const workflowTriggerExecutor: EnhancedNodeExecutor = {
           } else if (typeof (inputItem as any)[inputField] === 'string') {
             inputData = (inputItem as any)[inputField];
           } else {
-            // Fallback to stringifying the entire object
+            // Fallback to the full object
             inputData = JSON.stringify(inputItem);
           }
         } else if (typeof inputItem === 'string') {
@@ -87,8 +102,16 @@ export const workflowTriggerExecutor: EnhancedNodeExecutor = {
       }
   
       if (!inputData) {
-        console.warn('Workflow Trigger Node - Empty input data');
+        console.warn('Workflow Trigger Node - Empty input data, defaulting to empty string');
       }
+      
+      // For debugging
+      console.log('Workflow Trigger Node - Input data details:', {
+        inputDataType: typeof inputData,
+        inputDataLength: inputData ? inputData.length : 0,
+        inputDataSample: inputData ? inputData.substring(0, 50) : '',
+        rawInputType: typeof rawInputData
+      });
       
       console.log(`Workflow Trigger Node - Calling workflow ID: ${workflowId} with input: ${inputData.substring(0, 100)}...`);
       
@@ -127,14 +150,29 @@ export const workflowTriggerExecutor: EnhancedNodeExecutor = {
         // Add the current workflow to the call stack
         const updatedCallStack = [...callStack, workflowId];
         
+        // Enhance request payload for better debugging
+        const requestPayload = {
+          prompt: inputData,
+          _callStack: updatedCallStack, // Pass the call stack to prevent circular dependencies
+          metadata: {
+            source: 'workflowTriggerNode',
+            sourceNodeId: nodeData.id,
+            parentWorkflowId: nodeData.workflowId || 'unknown'
+          }
+        };
+
+        console.log(`Workflow Trigger Node - Request payload to workflow ${workflowId}:`, 
+          JSON.stringify({
+            ...requestPayload,
+            prompt: inputData.length > 100 ? `${inputData.substring(0, 100)}...` : inputData
+          })
+        );
+        
         // Call the workflow through the API with a timeout race and pass the call stack
         const responsePromise = apiRequest(
           `/api/workflows/${workflowId}/trigger`,
           'POST',
-          {
-            prompt: inputData,
-            _callStack: updatedCallStack // Pass the call stack to prevent circular dependencies
-          }
+          requestPayload
         );
         
         // Race between the API call and the timeout
