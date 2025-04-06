@@ -23,6 +23,7 @@ import {
   Filter,
   Repeat,
   GitBranch,
+  AlertCircle,
   Search as SearchIcon
 } from 'lucide-react';
 import NodeItem from './NodeItem';
@@ -175,6 +176,13 @@ const NODE_TYPES = [
     description: 'Call another workflow within the system',
     category: 'actions',
     icon: GitBranch
+  },
+  { 
+    id: 'response_message', 
+    name: 'Response Message', 
+    description: 'Display conditional success/error messages',
+    category: 'actions',
+    icon: AlertCircle
   },
   
   // Data Nodes

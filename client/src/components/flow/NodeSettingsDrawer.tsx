@@ -123,7 +123,7 @@ const NodeSettingsDrawer: React.FC<NodeSettingsDrawerProps> = ({
     if (workflows && workflows.length > 0) {
       const workflowOptions = workflows.map((workflow: any) => ({
         value: workflow.id.toString(),
-        label: workflow.name
+        label: `${workflow.name} (ID: ${workflow.id})`
       }));
       
       if (node?.type === 'workflow_trigger') {
@@ -136,6 +136,14 @@ const NodeSettingsDrawer: React.FC<NodeSettingsDrawerProps> = ({
           workflowIdField.options = workflowOptions;
           // Update the fieldOptions state to trigger a re-render with the new options
           setFieldOptions([...updatedFields]);
+        }
+        
+        // Set the current value in the settings if it exists in node.data
+        if (node.data?.workflowId && !settings.workflowId) {
+          setSettings(prev => ({
+            ...prev,
+            workflowId: node.data.workflowId.toString()
+          }));
         }
       }
       
@@ -150,9 +158,17 @@ const NodeSettingsDrawer: React.FC<NodeSettingsDrawerProps> = ({
           // Update the fieldOptions state to trigger a re-render with the new options
           setFieldOptions([...updatedFields]);
         }
+        
+        // Set the current value in the settings if it exists in node.data
+        if (node.data?.workflowId && !settings.workflowId) {
+          setSettings(prev => ({
+            ...prev,
+            workflowId: node.data.workflowId.toString()
+          }));
+        }
       }
     }
-  }, [workflows, node]);
+  }, [workflows, node, settings]);
 
   // Get fields configuration based on node type
   const getFieldsForNodeType = (type: string | undefined): SettingsField[] => {
@@ -367,6 +383,38 @@ const NodeSettingsDrawer: React.FC<NodeSettingsDrawerProps> = ({
               { value: 'standard', label: 'Standard' },
               { value: 'verbose', label: 'Verbose' }
             ]
+          }
+        ];
+        
+      case 'response_message':
+        return [
+          {
+            id: 'successMessage',
+            label: 'Success Message',
+            type: 'textarea',
+            placeholder: 'Enter success message...',
+            description: 'Message to display when the operation is successful.'
+          },
+          {
+            id: 'errorMessage',
+            label: 'Error Message',
+            type: 'textarea',
+            placeholder: 'Enter error message...',
+            description: 'Message to display when there is an error.'
+          },
+          {
+            id: 'conditionField',
+            label: 'Condition Field',
+            type: 'text',
+            placeholder: 'e.g., result, status, success',
+            description: 'The input field to check for success/error determination.'
+          },
+          {
+            id: 'successValue',
+            label: 'Success Value',
+            type: 'text',
+            placeholder: 'e.g., success, true, 1',
+            description: 'The value that indicates success in the condition field.'
           }
         ];
       case 'agent_trigger':
