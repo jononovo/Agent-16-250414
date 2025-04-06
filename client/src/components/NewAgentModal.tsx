@@ -34,25 +34,7 @@ export function NewAgentModal({ isOpen, onClose, onAgentCreated }: NewAgentModal
     try {
       setIsLoading(true);
       
-      // Direct API call to create the agent
-      const agentResponse = await apiPost('/api/agents', {
-        name,
-        description: description.trim() || `A new agent created on ${new Date().toLocaleDateString()}`,
-        type: 'custom',
-        icon: 'brain',
-        status: 'active',
-        configuration: {}, // Add empty configuration object
-        userId: 1 // Add default user ID
-      });
-      
-      // Parse the response JSON only once
-      const agentData = await agentResponse.json();
-      
-      if (!agentResponse.ok) {
-        throw new Error(agentData.message || 'Server error creating agent');
-      }
-      
-      // Also make the workflow call for logging/tracking purposes
+      // Execute the workflow to create the agent
       const response = await apiPost('/api/workflows/run', {
         workflowId: 16, // ID of "Build New Agent Structure v1" workflow
         source: 'ui_form',
@@ -67,16 +49,31 @@ export function NewAgentModal({ isOpen, onClose, onAgentCreated }: NewAgentModal
       
       const data = await response.json();
       
-      // Use agent data for response
-      data.agent = agentData;
+      if (!response.ok) {
+        throw new Error(data.error || 'Error executing workflow');
+      }
+      
+      // Get the created agent data from the workflow result
+      let agentData = null;
+      
+      if (data.result && data.result.agent) {
+        // New format - agent data is in result.agent
+        agentData = data.result.agent;
+      } else if (data.agent) {
+        // Old format - agent data is directly in the response
+        agentData = data.agent;
+      } else {
+        throw new Error('No agent data returned from workflow');
+      }
+      
+      console.log("New agent created:", agentData);
       
       toast({
         title: "Agent Created Successfully",
-        description: `The agent "${name}" has been created.`,
+        description: `The agent "${agentData.name}" has been created.`,
       });
       
       if (onAgentCreated) {
-        // Use the agent data directly from the creation response
         onAgentCreated(agentData);
       }
       

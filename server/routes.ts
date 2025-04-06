@@ -498,27 +498,38 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Log the execution request
       console.log(`Workflow execution request for workflow ${workflowId} from ${source || 'unknown'}`);
-      console.log(`Trigger type: ${triggerType || 'none'}, Input:`, JSON.stringify(input || {}));
+      console.log(`Trigger type: ${triggerType || 'none'}, Input:`, input ? JSON.stringify(input) : '{}');
       
-      // Create a log entry for the execution
-      await storage.createLog({
-        agentId: workflow.agentId || 0, // Provide default value if agentId is null
-        workflowId: workflowId, // Add required workflowId
-        status: 'running', // Add required status
-        input: input || {}, // Add input field
-        // Note: other fields like timestamp are handled by db defaults
+      // Import the workflow engine (lazy-loaded to avoid circular dependencies)
+      const { workflowEngine } = await import('./workflowEngine');
+      
+      // Execute the workflow
+      const result = await workflowEngine.executeWorkflow({
+        workflowId,
+        input: input || {},
+        source: source || 'unknown',
+        triggerType: triggerType || 'unknown'
       });
       
-      // In a real implementation, we would actually execute the workflow
-      // For now, we're just returning success
+      if (result.status === 'error') {
+        return res.status(500).json({
+          success: false,
+          message: "Workflow execution failed",
+          error: result.error || "Unknown error",
+          executionId: `exec-${Date.now()}`
+        });
+      }
+      
+      // Return the result
       res.status(200).json({ 
         success: true, 
-        message: "Workflow execution initiated",
+        message: "Workflow executed successfully",
         executionId: `exec-${Date.now()}`,
         workflow: {
           id: workflow.id,
           name: workflow.name
-        }
+        },
+        result: result.output
       });
     } catch (error) {
       console.error('Error executing workflow:', error);
