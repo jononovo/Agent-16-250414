@@ -20,12 +20,19 @@ const rawInternalExecutor: InternalNodeExecutor = async (
     
     // For internal trigger nodes (just pass through data in test mode)
     if (nodeType.includes('trigger') || nodeType.includes('new_agent') || nodeType.includes('chat_agent') || nodeType.includes('ai_chat')) {
+      // Process the input data - extract the name and description if they were provided directly
+      const inputData = context.inputData || {};
+      const name = inputData.name || inputData.json?.name || '';
+      const description = inputData.description || inputData.json?.description || '';
+      
       return {
         status: 'success',
         output: createExecutionDataFromValue({
           trigger_type: nodeType,
           timestamp: new Date().toISOString(),
-          ...context.inputData // Pass any input data to the next node
+          name,
+          description,
+          ...context.inputData // Pass any additional input data to the next node
         }, 'internal_trigger')
       };
     }
@@ -38,13 +45,37 @@ const rawInternalExecutor: InternalNodeExecutor = async (
     // Handle different action types
     switch (actionType) {
       case 'create_agent': {
-        // Get agent data from the input
-        const inputData = context.inputData?.json || {};
+        // Get agent data from the input - support both direct and nested json format
+        const inputData = context.inputData || {};
+        
+        // First try to get data directly from the context
+        let name = inputData.name || '';
+        let description = inputData.description || '';
+        
+        // If not found, try to get from json property
+        if (!name && inputData.json?.name) {
+          name = inputData.json.name;
+        }
+        
+        if (!description && inputData.json?.description) {
+          description = inputData.json.description;
+        }
+        
+        // If still no name, use default
+        if (!name) {
+          name = 'New Agent';
+        }
+        
+        // Use either the description or a default
+        if (!description) {
+          description = 'A new agent created by workflow';
+        }
+        
         const agentData = {
-          name: inputData.name || 'New Agent',
-          description: inputData.description || 'A new agent created by workflow',
-          type: inputData.type || 'custom',
-          icon: inputData.icon || 'user'
+          name,
+          description,
+          type: inputData.type || inputData.json?.type || 'custom',
+          icon: inputData.icon || inputData.json?.icon || 'user-plus'
         };
         
         // Create the agent via API

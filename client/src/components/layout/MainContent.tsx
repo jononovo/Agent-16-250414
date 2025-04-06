@@ -6,6 +6,7 @@ import { Dialog, DialogContent, DialogTrigger } from '@/components/ui/dialog';
 import { ApiConfigForm } from '@/components/ApiConfigForm';
 import { useToast } from '@/hooks/use-toast';
 import { apiRequest, apiPost } from '@/lib/apiClient';
+import NewAgentModal from '@/components/NewAgentModal';
 
 interface MainContentProps {
   children: ReactNode;
@@ -14,6 +15,7 @@ interface MainContentProps {
 const MainContent = ({ children }: MainContentProps) => {
   const { activeTab } = useBuilderContext();
   const [isApiDialogOpen, setIsApiDialogOpen] = useState(false);
+  const [isNewAgentModalOpen, setIsNewAgentModalOpen] = useState(false);
   const [apiKeyStatus, setApiKeyStatus] = useState<'missing' | 'present' | 'checking'>('checking');
   const { toast } = useToast();
   
@@ -124,11 +126,21 @@ const MainContent = ({ children }: MainContentProps) => {
               variant="outline" 
               size="sm" 
               className="flex items-center gap-1"
-              onClick={triggerNewAgentWorkflow}
+              onClick={() => setIsNewAgentModalOpen(true)}
             >
               <UserPlus size={16} />
               <span>New Agent</span>
             </Button>
+            
+            {/* New Agent Modal */}
+            <NewAgentModal 
+              isOpen={isNewAgentModalOpen}
+              onClose={() => setIsNewAgentModalOpen(false)}
+              onAgentCreated={(agent) => {
+                console.log('New agent created:', agent);
+                // We could add a refresh of the agents list here if needed
+              }}
+            />
             
             <Button variant="outline" size="sm" className="flex items-center gap-1">
               <Settings size={16} />

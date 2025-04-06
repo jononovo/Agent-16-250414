@@ -494,16 +494,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Create a log entry for the execution
       await storage.createLog({
-        agentId: workflow.agentId,
-        level: 'info',
-        message: `Workflow execution initiated: ${workflow.name}`,
-        source: source || 'api',
-        timestamp: new Date(),
-        data: JSON.stringify({
-          workflowId,
-          triggerType,
-          input
-        })
+        agentId: workflow.agentId || 0, // Provide default value if agentId is null
+        workflowId: workflowId, // Add required workflowId
+        status: 'running', // Add required status
+        input: input || {}, // Add input field
+        // Note: other fields like timestamp are handled by db defaults
       });
       
       // In a real implementation, we would actually execute the workflow
