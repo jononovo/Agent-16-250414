@@ -18,6 +18,7 @@ export async function getAllEnhancedNodeExecutors(): Promise<Record<string, Enha
   const claudeModule = await import('./claudeExecutor');
   const textPromptModule = await import('./textPromptExecutor');
   const generateTextModule = await import('./generateTextExecutor');
+  const internalModule = await import('./internalExecutor');
   
   return {
     textInputExecutor: textInputModule.textInputExecutor,
@@ -27,7 +28,8 @@ export async function getAllEnhancedNodeExecutors(): Promise<Record<string, Enha
     chatInterfaceExecutor: chatInterfaceModule.chatInterfaceExecutor,
     claudeExecutor: claudeModule.claudeExecutor,
     textPromptExecutor: textPromptModule.textPromptExecutor,
-    generateTextExecutor: generateTextModule.generateTextExecutor
+    generateTextExecutor: generateTextModule.generateTextExecutor,
+    internalExecutor: internalModule.default // Using default export
   };
 }
 
@@ -51,6 +53,10 @@ export async function registerAllEnhancedExecutors(): Promise<void> {
   
   // Register aliases for backward compatibility
   registerEnhancedNodeExecutor('perplexity', executors.claudeExecutor);
+  
+  // Register internal node executors
+  registerEnhancedNodeExecutor('internal_new_agent', executors.internalExecutor);
+  registerEnhancedNodeExecutor('internal_ai_chat_agent', executors.internalExecutor);
   
   console.log('All enhanced node executors registered');
 }

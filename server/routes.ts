@@ -5,6 +5,16 @@ import { insertAgentSchema, insertWorkflowSchema, insertNodeSchema, insertLogSch
 import { z } from "zod";
 import { fromZodError } from "zod-validation-error";
 
+// Definition of the internal API request schema
+const createAgentFromInternal = z.object({
+  source: z.enum(['ui_button', 'ai_chat']),
+  trigger_type: z.enum(['new_agent', 'chat_instruction']),
+  trigger_node_id: z.string().optional(),
+  agent_template_id: z.number().optional(),
+  workflow_template_id: z.number().optional(),
+  input_data: z.object({}).passthrough()
+});
+
 export async function registerRoutes(app: Express): Promise<Server> {
   // Agents API
   app.get("/api/agents", async (req, res) => {
@@ -460,6 +470,140 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error('Error updating config:', error);
       res.status(500).json({ message: "Failed to update API configuration" });
+    }
+  });
+  
+  // Internal API endpoint for agent creation 
+  app.post("/api/internal/create-agent", async (req, res) => {
+    try {
+      // Validate request body against schema
+      const result = createAgentFromInternal.safeParse(req.body);
+      if (!result.success) {
+        const validationError = fromZodError(result.error);
+        return res.status(400).json({ message: validationError.message });
+      }
+      
+      // Extract data from request
+      const { 
+        source, 
+        trigger_type, 
+        agent_template_id, 
+        workflow_template_id,
+        input_data 
+      } = result.data;
+      
+      console.log(`Internal agent creation request from ${source}, trigger: ${trigger_type}`);
+      
+      // Get template agent if provided
+      let templateAgent = null;
+      if (agent_template_id) {
+        templateAgent = await storage.getAgent(agent_template_id);
+        if (!templateAgent) {
+          return res.status(404).json({ message: "Template agent not found" });
+        }
+      }
+      
+      // Create a new agent based on template or default values
+      const agentName = typeof input_data.name === 'string' ? input_data.name : 
+                     (templateAgent?.name || `New Agent (${new Date().toISOString().slice(0, 10)})`);
+                     
+      const agentDescription = typeof input_data.description === 'string' ? input_data.description : 
+                            (templateAgent?.description || "Agent created via internal workflow");
+                            
+      const newAgentData = {
+        name: agentName,
+        description: agentDescription,
+        type: templateAgent?.type || "custom",
+        configuration: {
+          ...(templateAgent?.configuration || {}),
+          metadata: {
+            createdFrom: source,
+            triggerType: trigger_type,
+            templateId: agent_template_id
+          }
+        }
+      };
+      
+      // Create the agent
+      const newAgent = await storage.createAgent(newAgentData);
+      console.log(`New agent created with ID: ${newAgent.id}`);
+      
+      // If workflow template ID is provided, create a workflow for this agent
+      if (workflow_template_id) {
+        const templateWorkflow = await storage.getWorkflow(workflow_template_id);
+        if (!templateWorkflow) {
+          return res.status(404).json({ 
+            message: "Template workflow not found, but agent was created",
+            agent: newAgent
+          });
+        }
+        
+        // Create a new workflow based on the template
+        const newWorkflowData = {
+          name: `${newAgent.name} Workflow`,
+          description: templateWorkflow.description || "Workflow created for new agent",
+          agentId: newAgent.id,
+          type: templateWorkflow.type || "standard",
+          flowData: {
+            ...(templateWorkflow.flowData || {}),
+            metadata: {
+              createdFrom: source,
+              triggerType: trigger_type,
+              templateId: workflow_template_id
+            }
+          }
+        };
+        
+        // Create the workflow
+        const newWorkflow = await storage.createWorkflow(newWorkflowData);
+        console.log(`New workflow created with ID: ${newWorkflow.id} for agent ${newAgent.id}`);
+        
+        // Log the creation
+        await storage.createLog({
+          agentId: newAgent.id,
+          workflowId: newWorkflow.id,
+          status: "success",
+          output: {
+            message: `Agent created from ${source} via ${trigger_type}`,
+            source,
+            trigger_type,
+            templateAgentId: agent_template_id,
+            templateWorkflowId: workflow_template_id
+          }
+        });
+        
+        // Return both the new agent and workflow
+        return res.status(201).json({
+          agent: newAgent,
+          workflow: newWorkflow,
+          status: "created"
+        });
+      }
+      
+      // Log the creation
+      await storage.createLog({
+        agentId: newAgent.id,
+        workflowId: 0, // No specific workflow
+        status: "success",
+        output: {
+          message: `Agent created from ${source} via ${trigger_type}`,
+          source,
+          trigger_type,
+          templateAgentId: agent_template_id
+        }
+      });
+      
+      // Return just the new agent if no workflow was created
+      return res.status(201).json({
+        agent: newAgent,
+        status: "created"
+      });
+    } catch (error) {
+      console.error("Error creating agent from internal workflow:", error);
+      res.status(500).json({ 
+        message: "Failed to create agent from internal workflow",
+        error: error instanceof Error ? error.message : "Unknown error"
+      });
     }
   });
   

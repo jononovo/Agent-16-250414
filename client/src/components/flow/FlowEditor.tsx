@@ -45,6 +45,7 @@ import ClaudeNode from '../flow/nodes/ClaudeNode';
 import TextPromptNode from '../flow/nodes/TextPromptNode';
 import TransformNode from '../flow/nodes/TransformNode';
 import ChatInterfaceNode from '../flow/nodes/ChatInterfaceNode';
+import InternalNode from '../flow/nodes/InternalNode';
 
 // Register node types according to the documentation
 const nodeTypes: NodeTypes = {
@@ -62,6 +63,10 @@ const nodeTypes: NodeTypes = {
   prompt_crafter: PromptCrafterNode,
   valid_response: ValidResponseNode,
   perplexity: PerplexityNode,
+  
+  // Internal system node types
+  internal_new_agent: InternalNode,
+  internal_ai_chat_agent: InternalNode,
   
   // Legacy/basic node types (with mapping to specialized versions)
   custom: CustomNode,
@@ -84,7 +89,11 @@ const nodeTypes: NodeTypes = {
   email_send: OutputNode,
   database_query: ProcessorNode,
   data_transform: ProcessorNode,
-  filter: ProcessorNode
+  filter: ProcessorNode,
+  
+  // Internal node types
+  internal_new_agent: InternalNode,
+  internal_ai_chat_agent: InternalNode
 };
 
 interface FlowEditorProps {
@@ -354,6 +363,21 @@ const FlowEditor = ({ workflow, isNew = false }: FlowEditorProps) => {
     if (node.type && ['perplexity', 'claude', 'http_request'].includes(node.type)) {
       setSelectedNode(node);
       setSettingsDrawerOpen(true);
+    }
+    // Handle internal node clicks - direct trigger of internal actions
+    else if (node.type && node.type.startsWith('internal_')) {
+      // Potentially trigger the internal workflow directly
+      console.log('Internal node clicked:', node.type, node.data);
+      toast({
+        title: "Internal Action Triggered",
+        description: `Internal action ${node.data.label || node.type} triggered`
+      });
+      
+      // In a real implementation, we would call into a service that handles agent calls:
+      // triggerInternalWorkflow(node.data.configuration.agent_id, node.data.configuration.workflow_id, {
+      //   source: node.type,
+      //   trigger_data: node.data
+      // });
     }
     // For generate_text, we'll handle settings opening via the button click in the node component
   };

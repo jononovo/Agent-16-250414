@@ -31,7 +31,8 @@ const NODE_CATEGORIES = [
   { id: 'ai', name: 'AI', description: 'AI model interactions, prompt engineering, and text generation' },
   { id: 'data', name: 'Data', description: 'Data visualization, transformation, and filtering' },
   { id: 'triggers', name: 'Triggers', description: 'Nodes that initiate workflows based on events or schedules' },
-  { id: 'actions', name: 'Actions', description: 'Nodes that perform operations such as API requests or database queries' }
+  { id: 'actions', name: 'Actions', description: 'Nodes that perform operations such as API requests or database queries' },
+  { id: 'internal', name: 'Internal', description: 'Internal system nodes that trigger system operations' }
 ];
 
 // Specialized AI node types based on the documentation and screenshot
@@ -182,6 +183,30 @@ const NODE_TYPES = [
     description: 'Filters data based on conditions',
     category: 'data',
     icon: Filter
+  },
+  
+  // Internal Nodes
+  {
+    id: 'internal_new_agent',
+    name: 'New Agent Trigger',
+    description: 'Triggers the creation of a new agent from UI interaction',
+    category: 'internal',
+    icon: 'plus-circle',
+    configuration: {
+      agent_id: 12,
+      workflow_id: 15
+    }
+  },
+  {
+    id: 'internal_ai_chat_agent',
+    name: 'AI Chat Agent Trigger',
+    description: 'Triggers the creation of a new agent from AI chat instructions',
+    category: 'internal',
+    icon: 'message-circle',
+    configuration: {
+      agent_id: 12,
+      workflow_id: 15
+    }
   }
 ];
 
@@ -209,7 +234,7 @@ const NodesPanel = () => {
     updatedAt: new Date(),
     userId: null,
     category: type.category,
-    configuration: {}
+    configuration: type.configuration || {}
   } as Node));
   
   const filteredNodes = nodeItems.filter(node => {
@@ -261,6 +286,7 @@ const NodesPanel = () => {
             <TabsTrigger value="data" className="px-4">Data</TabsTrigger>
             <TabsTrigger value="triggers" className="px-4">Triggers</TabsTrigger>
             <TabsTrigger value="actions" className="px-4">Actions</TabsTrigger>
+            <TabsTrigger value="internal" className="px-4">Internal</TabsTrigger>
           </TabsList>
         </div>
       </Tabs>
@@ -308,7 +334,9 @@ const NodesPanel = () => {
                               data: {
                                 label: node.name,
                                 description: node.description || '',
-                                icon: node.icon || 'circle'
+                                icon: node.icon || 'circle',
+                                configuration: node.configuration || {},
+                                category: node.category
                               }
                             }} 
                           />
