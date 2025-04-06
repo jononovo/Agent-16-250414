@@ -161,6 +161,13 @@ const NODE_TYPES = [
     category: 'actions',
     icon: Database
   },
+  { 
+    id: 'agent_trigger', 
+    name: 'Agent Trigger', 
+    description: 'Call another agent within the system',
+    category: 'actions',
+    icon: Cpu
+  },
   
   // Data Nodes
   {

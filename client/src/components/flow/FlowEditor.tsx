@@ -46,6 +46,7 @@ import TextPromptNode from '../flow/nodes/TextPromptNode';
 import TransformNode from '../flow/nodes/TransformNode';
 import ChatInterfaceNode from '../flow/nodes/ChatInterfaceNode';
 import InternalNode from '../flow/nodes/InternalNode';
+import AgentTriggerNode from '../flow/nodes/AgentTriggerNode';
 
 // Register node types according to the documentation
 const nodeTypes: NodeTypes = {
@@ -63,6 +64,9 @@ const nodeTypes: NodeTypes = {
   prompt_crafter: PromptCrafterNode,
   valid_response: ValidResponseNode,
   perplexity: PerplexityNode,
+  
+  // Agent node types
+  agent_trigger: AgentTriggerNode,
   
   // Internal system node types
   internal_new_agent: InternalNode,
@@ -311,11 +315,11 @@ const FlowEditor = ({ workflow, isNew = false }: FlowEditorProps) => {
         y: event.clientY - reactFlowBounds.top,
       });
 
-      // Add onSettingsClick to GenerateText node data
+      // Add onSettingsClick to specific node types
       const nodeDataWithHandlers = {
         ...nodeData,
-        // Add settings click handler for generate_text nodes
-        ...(type === 'generate_text' ? {
+        // Add settings click handler for node types that need configuration
+        ...((type === 'generate_text' || type === 'agent_trigger') ? {
           onSettingsClick: () => {
             // We need to find the node by ID later because this is a closure
             const node = reactFlowInstance.getNode(`${type}-${Date.now()}`);
@@ -378,16 +382,19 @@ const FlowEditor = ({ workflow, isNew = false }: FlowEditorProps) => {
   }, [nodes, setSelectedNode, setSettingsDrawerOpen]);
   
   const handleNodeClick = (event: React.MouseEvent, node: Node) => {
-    // Don't automatically open settings for any node type
-    // Only internal nodes should open settings when their main body is clicked
-    if (node.type && node.type.startsWith('internal_')) {
-      console.log('Internal node clicked:', node.type, node.data);
+    // Don't automatically open settings for most node types
+    // Only specific nodes should open settings when their main body is clicked
+    if (
+      (node.type && node.type.startsWith('internal_')) || 
+      node.type === 'agent_trigger'
+    ) {
+      console.log('Node clicked that supports settings:', node.type, node.data);
       
-      // Open settings drawer for internal nodes only
+      // Open settings drawer for supported nodes
       setSelectedNode(node);
       setSettingsDrawerOpen(true);
     }
-    // For other node types (like generate_text), we'll handle settings opening
+    // For other node types, we'll handle settings opening
     // via the button click in the node component itself
   };
   

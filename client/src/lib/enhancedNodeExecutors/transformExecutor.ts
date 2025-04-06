@@ -7,7 +7,29 @@
 import { EnhancedNodeExecutor } from '../types/workflow';
 
 export const transformExecutor: EnhancedNodeExecutor = {
-  nodeType: 'transform',
+  definition: {
+    type: 'transform',
+    displayName: 'Transform Node',
+    description: 'Transforms data between nodes using JavaScript code',
+    icon: 'code',
+    category: 'Data Processing',
+    version: '1.0',
+    inputs: {
+      input: {
+        type: 'any',
+        displayName: 'Input',
+        description: 'The input data to transform',
+        required: true
+      }
+    },
+    outputs: {
+      output: {
+        type: 'any',
+        displayName: 'Output',
+        description: 'The transformed data'
+      }
+    }
+  },
   
   execute: async (nodeData, inputs) => {
     try {
@@ -19,11 +41,9 @@ export const transformExecutor: EnhancedNodeExecutor = {
         const firstInputKey = inputKeys[0];
         const firstInput = inputs[firstInputKey];
         
-        // Set the input data based on what's available
-        if (firstInput && typeof firstInput === 'object') {
-          inputData = firstInput;
-        } else if (typeof firstInput === 'string') {
-          inputData = { text: firstInput };
+        // Set the input data based on what's available in NodeExecutionData
+        if (firstInput && firstInput.items && firstInput.items.length > 0) {
+          inputData = firstInput.items[0].json || {};
         }
       }
       
@@ -31,7 +51,7 @@ export const transformExecutor: EnhancedNodeExecutor = {
       const transformType = nodeData.configuration?.transformType || 'text';
       const transformScript = nodeData.configuration?.script || '';
       
-      let outputData = {};
+      let outputData: any = {};
       
       // Execute the transformation based on type
       switch (transformType) {
@@ -53,19 +73,27 @@ export const transformExecutor: EnhancedNodeExecutor = {
             
             outputData = transformFunction(JSON.parse(JSON.stringify(inputData)));
             console.log('Transform output data:', outputData);
-          } catch (e) {
-            throw new Error(`JSON transform error: ${e.message}`);
+          } catch (error) {
+            const typedError = error as Error;
+            throw new Error(`JSON transform error: ${typedError.message}`);
           }
           break;
           
         case 'text':
           try {
             // Extract text from input
-            const inputText = typeof inputData.text === 'string' 
-              ? inputData.text 
-              : typeof inputData.output === 'string'
-                ? inputData.output
-                : JSON.stringify(inputData);
+            let inputText = '';
+            if (typeof inputData === 'object' && inputData !== null) {
+              if (typeof (inputData as any).text === 'string') {
+                inputText = (inputData as any).text;
+              } else if (typeof (inputData as any).output === 'string') {
+                inputText = (inputData as any).output;
+              } else {
+                inputText = JSON.stringify(inputData);
+              }
+            } else {
+              inputText = String(inputData);
+            }
             
             // Safe evaluation of text transform
             const transformFunction = new Function('text', `
@@ -83,19 +111,24 @@ export const transformExecutor: EnhancedNodeExecutor = {
               text: transformedText,
               output: transformedText
             };
-          } catch (e) {
-            throw new Error(`Text transform error: ${e.message}`);
+          } catch (error) {
+            const typedError = error as Error;
+            throw new Error(`Text transform error: ${typedError.message}`);
           }
           break;
           
         case 'filter':
           try {
             // Extract array to filter from input
-            const dataToFilter = Array.isArray(inputData) 
-              ? inputData 
-              : Array.isArray(inputData.items) 
-                ? inputData.items 
-                : [];
+            let dataToFilter: any[] = [];
+            
+            if (Array.isArray(inputData)) {
+              dataToFilter = inputData;
+            } else if (typeof inputData === 'object' && inputData !== null) {
+              if (Array.isArray((inputData as any).items)) {
+                dataToFilter = (inputData as any).items;
+              }
+            }
             
             // Safe evaluation of filter transform
             const filterFunction = new Function('items', `
@@ -115,8 +148,9 @@ export const transformExecutor: EnhancedNodeExecutor = {
               filtered: filteredItems,
               count: filteredItems.length
             };
-          } catch (e) {
-            throw new Error(`Filter transform error: ${e.message}`);
+          } catch (error) {
+            const typedError = error as Error;
+            throw new Error(`Filter transform error: ${typedError.message}`);
           }
           break;
           
@@ -140,8 +174,9 @@ export const transformExecutor: EnhancedNodeExecutor = {
             `);
             
             outputData = extractFunction(dataToExtract);
-          } catch (e) {
-            throw new Error(`Extract transform error: ${e.message}`);
+          } catch (error) {
+            const typedError = error as Error;
+            throw new Error(`Extract transform error: ${typedError.message}`);
           }
           break;
           
@@ -149,22 +184,43 @@ export const transformExecutor: EnhancedNodeExecutor = {
           throw new Error(`Unknown transform type: ${transformType}`);
       }
       
-      // Return the transformed data
+      // Return the transformed data in NodeExecutionData format
+      const now = new Date();
+      
       return {
-        success: true,
-        outputs: {
-          ...outputData,
-          // Add these for backward compatibility
-          result: outputData,
-          transformed: outputData
+        items: [
+          {
+            json: {
+              ...outputData,
+              result: outputData,
+              transformed: outputData
+            }
+          }
+        ],
+        meta: {
+          startTime: now,
+          endTime: now,
+          status: 'success'
         }
       };
     } catch (error: any) {
       console.error(`Error executing transform node:`, error);
+      const now = new Date();
+      
       return {
-        success: false,
-        error: error.message || 'Error processing transform',
-        outputs: {}
+        items: [
+          {
+            json: {
+              error: error.message || 'Error processing transform'
+            }
+          }
+        ],
+        meta: {
+          startTime: now,
+          endTime: now,
+          status: 'error',
+          message: error.message || 'Error processing transform'
+        }
       };
     }
   }

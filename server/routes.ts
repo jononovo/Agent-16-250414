@@ -983,13 +983,132 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // Execute workflow from the chat UI
 
-  app.post("/api/execute-agent-chain", async (req, res) => {
+  // API endpoint for agent trigger functionality
+  app.post("/api/agents/:id/trigger", async (req, res) => {
     try {
+      const agentId = parseInt(req.params.id);
+      if (isNaN(agentId)) {
+        return res.status(400).json({ message: "Invalid agent ID format" });
+      }
+
       const { prompt } = req.body;
       if (!prompt) {
         return res.status(400).json({ message: "Prompt is required" });
       }
+
+      // Get the agent and its workflows
+      const agent = await storage.getAgent(agentId);
+      if (!agent) {
+        return res.status(404).json({ message: `Agent with ID ${agentId} not found` });
+      }
       
+      // Get the agent's workflows
+      const workflows = await storage.getWorkflowsByAgentId(agentId);
+      if (!workflows || workflows.length === 0) {
+        return res.status(404).json({ message: `No workflows found for agent with ID ${agentId}` });
+      }
+      
+      // Use the first workflow
+      const agentWorkflow = workflows[0];
+      
+      // Import and register workflow engine and executors
+      const { executeWorkflow } = await import('../client/src/lib/workflowEngine');
+      const { registerAllNodeExecutors } = await import('../client/src/lib/nodeExecutors');
+      registerAllNodeExecutors();
+      
+      // Execute the agent's workflow
+      console.log(`Triggering agent ${agent.name} (ID: ${agentId}) with prompt: ${prompt.substring(0, 100)}...`);
+      const result = await runWorkflow(agentWorkflow, agentWorkflow.name, prompt, executeWorkflow);
+      
+      // Return results in format expected by the agent trigger node
+      return res.json({
+        success: true,
+        output: result.output,
+        content: result.output, // For compatibility with different client expectations
+        result: result.output,  // For compatibility with different client expectations  
+        status: result.status,
+        agent: {
+          id: agent.id,
+          name: agent.name
+        },
+        workflow: {
+          id: agentWorkflow.id,
+          name: agentWorkflow.name
+        },
+        logId: result.logId
+      });
+    } catch (error) {
+      console.error(`Error triggering agent:`, error);
+      return res.status(500).json({ 
+        success: false,
+        message: "Failed to trigger agent workflow",
+        error: error instanceof Error ? error.message : String(error)
+      });
+    }
+  });
+
+  app.post("/api/execute-agent-chain", async (req, res) => {
+    try {
+      const { prompt, agentId } = req.body;
+      if (!prompt) {
+        return res.status(400).json({ message: "Prompt is required" });
+      }
+      
+      // If specific agent ID is provided, execute that agent's workflow
+      if (agentId) {
+        console.log(`Executing specific agent chain (agentId: ${agentId}) with prompt: ${prompt}`);
+        
+        // Import and register workflow engine and executors
+        const { executeWorkflow } = await import('../client/src/lib/workflowEngine');
+        const { registerAllNodeExecutors } = await import('../client/src/lib/nodeExecutors');
+        registerAllNodeExecutors();
+        
+        try {
+          // Get the agent and its workflows
+          const agent = await storage.getAgent(agentId);
+          if (!agent) {
+            return res.status(404).json({ message: `Agent with ID ${agentId} not found` });
+          }
+          
+          // Get the agent's workflows
+          const workflows = await storage.getWorkflowsByAgentId(agentId);
+          if (!workflows || workflows.length === 0) {
+            return res.status(404).json({ message: `No workflows found for agent with ID ${agentId}` });
+          }
+          
+          // Use the first workflow
+          const agentWorkflow = workflows[0];
+          
+          // Execute the agent's workflow
+          console.log(`Executing ${agent.name}'s workflow (${agentWorkflow.name})...`);
+          const result = await runWorkflow(agentWorkflow, agentWorkflow.name, prompt, executeWorkflow);
+          
+          // Return results in format expected by the agent trigger node
+          return res.json({
+            success: true,
+            result: result.output,
+            status: result.status,
+            agent: {
+              id: agent.id,
+              name: agent.name
+            },
+            workflow: {
+              id: agentWorkflow.id,
+              name: agentWorkflow.name
+            },
+            logId: result.logId
+          });
+        } catch (error) {
+          console.error(`Error executing agent ${agentId}:`, error);
+          return res.status(500).json({ 
+            success: false,
+            message: "Failed to execute agent workflow",
+            error: error instanceof Error ? error.message : String(error)
+          });
+        }
+      }
+      
+      // Default behavior (no specific agent ID) - general conversation flow
       console.log(`Starting intelligent chain execution with prompt: ${prompt}`);
       
       // Get the simple chat workflow (ID 13) and coordinator workflow (ID 7)

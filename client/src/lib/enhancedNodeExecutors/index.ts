@@ -19,6 +19,7 @@ export async function getAllEnhancedNodeExecutors(): Promise<Record<string, Enha
   const textPromptModule = await import('./textPromptExecutor');
   const generateTextModule = await import('./generateTextExecutor');
   const internalModule = await import('./internalExecutor');
+  const agentTriggerModule = await import('./agentTriggerExecutor');
   
   return {
     textInputExecutor: textInputModule.textInputExecutor,
@@ -29,7 +30,8 @@ export async function getAllEnhancedNodeExecutors(): Promise<Record<string, Enha
     claudeExecutor: claudeModule.claudeExecutor,
     textPromptExecutor: textPromptModule.textPromptExecutor,
     generateTextExecutor: generateTextModule.generateTextExecutor,
-    internalExecutor: internalModule.default // Using default export
+    internalExecutor: internalModule.default, // Using default export
+    agentTriggerExecutor: agentTriggerModule.default // Using default export
   };
 }
 
@@ -58,6 +60,9 @@ export async function registerAllEnhancedExecutors(): Promise<void> {
   registerEnhancedNodeExecutor('internal_new_agent', executors.internalExecutor);
   registerEnhancedNodeExecutor('internal_ai_chat_agent', executors.internalExecutor);
   registerEnhancedNodeExecutor('internal', executors.internalExecutor);
+  
+  // Register agent trigger node executor
+  registerEnhancedNodeExecutor('agent_trigger', executors.agentTriggerExecutor);
   
   console.log('All enhanced node executors registered');
 }
