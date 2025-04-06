@@ -356,27 +356,22 @@ const FlowEditor = ({ workflow, isNew = false }: FlowEditorProps) => {
   
   const handleNodeClick = (event: React.MouseEvent, node: Node) => {
     // Don't open settings for every node type, only those that have settings
-    // For generate_text node, settings are only opened via the settings button
-    if (node.type && ['perplexity', 'claude', 'http_request'].includes(node.type)) {
+    // Get list of node types that should open settings drawer when clicked
+    if (node.type && 
+        (['perplexity', 'claude', 'http_request'].includes(node.type) || 
+         node.type.startsWith('internal_'))) {
+      
+      // For internal nodes, just log the click but don't trigger the action
+      if (node.type.startsWith('internal_')) {
+        console.log('Internal node clicked:', node.type, node.data);
+      }
+      
+      // Open settings drawer for the node
       setSelectedNode(node);
       setSettingsDrawerOpen(true);
     }
-    // Handle internal node clicks - direct trigger of internal actions
-    else if (node.type && node.type.startsWith('internal_')) {
-      // Potentially trigger the internal workflow directly
-      console.log('Internal node clicked:', node.type, node.data);
-      toast({
-        title: "Internal Action Triggered",
-        description: `Internal action ${node.data.label || node.type} triggered`
-      });
-      
-      // In a real implementation, we would call into a service that handles agent calls:
-      // triggerInternalWorkflow(node.data.configuration.agent_id, node.data.configuration.workflow_id, {
-      //   source: node.type,
-      //   trigger_data: node.data
-      // });
-    }
-    // For generate_text, we'll handle settings opening via the button click in the node component
+    // For other node types (like generate_text), we'll handle settings opening
+    // via the button click in the node component itself
   };
   
   const handleSettingsChange = (nodeId: string, settingsData: Record<string, any>) => {
