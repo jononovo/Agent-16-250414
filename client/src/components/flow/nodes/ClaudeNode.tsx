@@ -1,8 +1,10 @@
-import { useState } from 'react';
-import { NodeProps, Handle, Position } from 'reactflow';
+import { useState, useEffect } from 'react';
+import { NodeProps, Handle, Position, useReactFlow } from 'reactflow';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Bot, Settings } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
+import { Textarea } from '@/components/ui/textarea';
+import * as Lucide from 'lucide-react';
 import DynamicIcon from '@/components/ui/dynamic-icon';
 
 // Define the node data interface
@@ -10,72 +12,307 @@ interface NodeData {
   label?: string;
   description?: string;
   icon?: string;
+  inputText?: string;
   settings?: {
     model?: string;
     systemPrompt?: string;
     temperature?: number;
     maxTokens?: number;
+    apiKey?: string;
     [key: string]: any;
   };
+  _isProcessing?: boolean;
+  _isComplete?: boolean;
+  _hasError?: boolean;
+  _errorMessage?: string;
+  _generatedText?: string;
+  onOutputChange?: (output: string) => void;
   [key: string]: any;
 }
 
 /**
  * Claude AI node for generating text using Anthropic's Claude API
  */
-const ClaudeNode = ({ data, selected }: NodeProps<NodeData>) => {
+const ClaudeNode = ({ data, selected, id }: NodeProps<NodeData>) => {
   const [expanded, setExpanded] = useState(false);
+  const [isGenerating, setIsGenerating] = useState(false);
+  const [generatedText, setGeneratedText] = useState('');
+  const reactFlowInstance = useReactFlow();
+  
+  // Try to get API key from environment, settings, or direct node data
+  const envApiKey = import.meta.env.CLAUDE_API_KEY;
   
   // Default node data if not provided
   const nodeLabel = data.label || 'Claude AI';
   const nodeDescription = data.description || 'Generate text using Claude AI';
   const nodeIcon = data.icon || 'Bot';
   
-  // Extract model information from settings
+  // Extract settings with defaults
+  const apiKey = data.settings?.apiKey || data.apiKey || envApiKey || '';
   const model = data.settings?.model || 'claude-3-sonnet-20240229';
-  const modelDisplay = model.split('-').slice(0, 2).join(' ').toUpperCase();
+  const temperature = data.settings?.temperature || 0.7;
+  const maxTokens = data.settings?.maxTokens || 2000;
+  const systemPrompt = data.settings?.systemPrompt || '';
+  
+  // Format model name for display
+  const modelDisplay = model.includes('claude') 
+    ? `CLAUDE ${model.split('-').slice(2, 3).join(' ').toUpperCase()}`
+    : model.toUpperCase();
+  
+  // Check if workflow run is processing this node
+  const isProcessing = data._isProcessing || false;
+  
+  // Use generated text from workflow run if available
+  const displayResult = data._generatedText 
+    ? (typeof data._generatedText === 'object' ? JSON.stringify(data._generatedText) : data._generatedText)
+    : generatedText;
+    
+  // Update apiKey in data if environment variable is available
+  useEffect(() => {
+    if (envApiKey && !data.apiKey) {
+      data.apiKey = envApiKey;
+    }
+  }, [envApiKey, data]);
+  
+  // Handle text generation with Claude API
+  const handleGenerate = async () => {
+    if (!data.inputText) {
+      setGeneratedText('No input provided');
+      return;
+    }
+    
+    // Use environment API key if available, otherwise use input
+    const effectiveApiKey = envApiKey || apiKey;
+    
+    if (!effectiveApiKey) {
+      setGeneratedText('Please enter your Claude API key in settings');
+      return;
+    }
+    
+    setIsGenerating(true);
+    
+    try {
+      console.log('Using Claude API:', apiKey ? 'API Key available' : 'No API key');
+      
+      // Prepare messages array with system prompt if available
+      const messages = [];
+      if (systemPrompt) {
+        messages.push({
+          role: "system",
+          content: systemPrompt
+        });
+      }
+      
+      // Add user message
+      messages.push({
+        role: "user",
+        content: data.inputText
+      });
+      
+      console.log(`Making Claude API request with model: ${model}...`);
+      
+      // Call Claude API
+      const response = await fetch('https://api.anthropic.com/v1/messages', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-api-key': effectiveApiKey,
+          'anthropic-version': '2023-06-01'
+        },
+        body: JSON.stringify({
+          model: model,
+          messages: messages,
+          temperature: temperature,
+          max_tokens: maxTokens
+        })
+      });
+      
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error('Claude API error status:', response.status);
+        console.error('Claude API error text:', errorText);
+        throw new Error(`API responded with status: ${response.status}`);
+      }
+      
+      const result = await response.json();
+      console.log('Claude API response received:', result);
+      
+      // Extract and display the assistant's response
+      if (result.content && result.content.length > 0) {
+        const assistantResponse = result.content[0].text;
+        console.log('Claude API content:', assistantResponse.substring(0, 50) + '...');
+        setGeneratedText(assistantResponse);
+        
+        // Send result to next node if available
+        if (data.onOutputChange) {
+          data.onOutputChange(assistantResponse);
+        }
+      } else {
+        setGeneratedText('Unexpected API response format');
+      }
+    } catch (error: any) {
+      console.error('Error generating text with Claude API:', error);
+      setGeneratedText(`Error connecting to Claude API: ${error.message || 'Unknown error'}`);
+    } finally {
+      setIsGenerating(false);
+    }
+  };
+
+  // Open settings drawer when settings button is clicked
+  const openSettings = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (reactFlowInstance && id) {
+      const node = reactFlowInstance.getNode(id);
+      if (node) {
+        // Simulate a click event on the node to trigger onNodeClick
+        const nodeElement = document.querySelector(`[data-id="${id}"]`);
+        if (nodeElement) {
+          nodeElement.dispatchEvent(
+            new MouseEvent('click', { bubbles: true, cancelable: true })
+          );
+        }
+      }
+    }
+  };
   
   return (
     <Card 
-      className={`w-56 transition-all duration-200 ${selected ? 'ring-2 ring-primary' : ''}`}
+      className={`w-64 transition-all duration-200 ${selected ? 'ring-2 ring-primary' : ''}`}
       style={{ background: 'linear-gradient(135deg, #f0f4ff 0%, #e0e7ff 100%)' }}
     >
       <CardHeader className="flex flex-row items-center justify-between p-3 pb-2">
         <div className="flex items-center gap-2">
           <div className="w-6 h-6 rounded-md bg-indigo-100 flex items-center justify-center text-indigo-600">
-            {typeof nodeIcon === 'string' ? <DynamicIcon icon={nodeIcon} /> : <Bot size={14} />}
+            {typeof nodeIcon === 'string' ? <DynamicIcon icon={nodeIcon} /> : <Lucide.Bot size={14} />}
           </div>
           <span className="font-medium text-sm truncate">{nodeLabel}</span>
         </div>
-        <Button 
-          variant="ghost" 
-          size="icon" 
-          className="h-6 w-6"
-          onClick={(e) => {
-            e.stopPropagation();
-            setExpanded(!expanded);
-          }}
-        >
-          <Settings className="h-3 w-3" />
-        </Button>
+        <div className="flex items-center gap-1">
+          <button
+            className="p-1 hover:bg-indigo-100 rounded-sm transition-colors"
+            onClick={openSettings}
+            title="Open node settings"
+          >
+            <Lucide.Settings className="h-3 w-3 text-indigo-500" />
+          </button>
+          <Badge variant="outline" className="bg-indigo-100 text-indigo-700 text-[10px] font-normal border-indigo-200">LLM</Badge>
+        </div>
       </CardHeader>
       
       <CardContent className="p-3 pt-0">
-        {expanded ? (
-          <div className="space-y-2">
-            <div className="text-xs font-medium text-indigo-600">{modelDisplay}</div>
-            <div className="text-xs text-slate-500">{nodeDescription}</div>
-            {data.settings?.systemPrompt && (
-              <div className="mt-2 text-xs">
-                <div className="font-medium text-slate-700">System Prompt:</div>
-                <div className="text-slate-500 truncate">{data.settings.systemPrompt}</div>
+        <div className="mb-2">
+          {/* API Key Indicator */}
+          {apiKey ? (
+            <div className="bg-white border border-indigo-200 rounded-md p-2 text-xs mb-2 text-slate-600 flex items-center">
+              <Lucide.Key className="h-3 w-3 mr-1 text-green-500" />
+              API key configured
+            </div>
+          ) : (
+            <div className="bg-white border border-indigo-200 rounded-md p-2 text-xs mb-2 text-slate-600 flex items-center">
+              <Lucide.Key className="h-3 w-3 mr-1 text-red-500" />
+              No API key configured
+            </div>
+          )}
+          
+          {/* Model Indicator */}
+          <div className="bg-white border border-indigo-200 rounded-md p-2 text-xs mb-2 text-slate-600 flex items-center justify-between">
+            <div className="flex items-center">
+              <Lucide.Cpu className="h-3 w-3 mr-1 text-indigo-500" />
+              <span>Model:</span>
+            </div>
+            <span className="text-indigo-700 font-medium">{modelDisplay}</span>
+          </div>
+          
+          {/* Parameters Indicator */}
+          <div className="bg-white border border-indigo-200 rounded-md p-2 text-xs mb-2 text-slate-600 flex items-center justify-between">
+            <div className="flex items-center">
+              <Lucide.Sliders className="h-3 w-3 mr-1 text-indigo-500" />
+              <span>Parameters:</span>
+            </div>
+            <div className="flex gap-2">
+              <span title="Temperature" className="text-indigo-700 font-medium">{temperature}</span>
+              <span>|</span>
+              <span title="Max tokens" className="text-indigo-700 font-medium">{maxTokens}t</span>
+            </div>
+          </div>
+        </div>
+        
+        {/* Input text display */}
+        <div className="bg-white border border-indigo-200 rounded-md p-2 min-h-[60px] text-xs mb-2">
+          {data.inputText ? (
+            <p className="text-slate-700">
+              {typeof data.inputText === 'object' 
+                ? JSON.stringify(data.inputText) 
+                : String(data.inputText)}
+            </p>
+          ) : (
+            <div className="text-slate-400 text-xs flex items-center justify-center h-full">
+              No input provided
+            </div>
+          )}
+        </div>
+        
+        {/* Action buttons */}
+        <div className="flex gap-2 mb-2">
+          <Button 
+            variant="default" 
+            size="sm" 
+            className="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white"
+            onClick={handleGenerate}
+            disabled={isGenerating || isProcessing}
+          >
+            {isGenerating || isProcessing ? (
+              <>
+                <Lucide.Loader2 className="h-3 w-3 mr-1 animate-spin" />
+                {isProcessing ? "Processing..." : "Generating..."}
+              </>
+            ) : (
+              <>
+                <Lucide.Sparkles className="h-3 w-3 mr-1" />
+                Generate
+              </>
+            )}
+          </Button>
+          
+          <Button
+            variant="outline"
+            size="sm"
+            className="bg-white border-indigo-300 text-indigo-700 hover:bg-indigo-50"
+            onClick={openSettings}
+          >
+            <Lucide.Settings className="h-3 w-3 mr-1" />
+            Settings
+          </Button>
+        </div>
+        
+        {/* Output display */}
+        {(displayResult || data._hasError) && (
+          <div className={`bg-white border rounded-md p-2 min-h-[80px] text-xs ${
+            data._hasError ? 'border-red-300 bg-red-50' : 'border-indigo-200'
+          }`}>
+            {data._hasError ? (
+              <div className="text-red-600 whitespace-pre-line">
+                <Lucide.AlertTriangle className="h-3 w-3 inline mr-1" />
+                {data._errorMessage || 'An error occurred during generation'}
               </div>
+            ) : (
+              <p className="text-slate-700 whitespace-pre-line">
+                {displayResult}
+              </p>
             )}
           </div>
-        ) : (
-          <div className="text-xs text-slate-500">
-            <span className="font-medium text-indigo-600 mr-1">{modelDisplay}</span>
-            {nodeDescription}
+        )}
+        
+        {/* System prompt indicator if present */}
+        {systemPrompt && (
+          <div className="mt-2 bg-indigo-50 border border-indigo-200 rounded-md p-2 text-xs">
+            <div className="font-medium text-indigo-700 flex items-center">
+              <Lucide.MessageSquare className="h-3 w-3 mr-1" />
+              System Prompt:
+            </div>
+            <div className="text-slate-600 mt-1 line-clamp-2">
+              {systemPrompt}
+            </div>
           </div>
         )}
       </CardContent>
@@ -83,12 +320,12 @@ const ClaudeNode = ({ data, selected }: NodeProps<NodeData>) => {
       <Handle
         type="target"
         position={Position.Top}
-        className="!w-3 !h-3 !border-2 !border-indigo-400 !bg-background"
+        className="!w-3 !h-3 !border-2 !border-indigo-400 !bg-white"
       />
       <Handle
         type="source"
         position={Position.Bottom}
-        className="!w-3 !h-3 !border-2 !border-indigo-400 !bg-background"
+        className="!w-3 !h-3 !border-2 !border-indigo-400 !bg-white"
       />
     </Card>
   );

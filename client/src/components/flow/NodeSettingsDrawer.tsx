@@ -85,6 +85,51 @@ const NodeSettingsDrawer: React.FC<NodeSettingsDrawerProps> = ({
             description: 'The Perplexity model to use for search queries.'
           },
         ];
+      case 'claude':
+        return [
+          {
+            id: 'apiKey',
+            label: 'API Key',
+            type: 'password',
+            placeholder: 'Enter your Claude API key',
+            description: 'Your Claude API key is securely stored and used only for this node.'
+          },
+          {
+            id: 'model',
+            label: 'Model',
+            type: 'select',
+            placeholder: 'Select Claude model',
+            description: 'The Claude AI model to use for text generation.',
+            options: [
+              { value: 'claude-3-sonnet-20240229', label: 'Claude 3 Sonnet' },
+              { value: 'claude-3-opus-20240229', label: 'Claude 3 Opus' },
+              { value: 'claude-3-haiku-20240307', label: 'Claude 3 Haiku' },
+              { value: 'claude-2.1', label: 'Claude 2.1' },
+              { value: 'claude-instant-1.2', label: 'Claude Instant 1.2' }
+            ]
+          },
+          {
+            id: 'systemPrompt',
+            label: 'System Prompt',
+            type: 'textarea',
+            placeholder: 'Enter a system prompt to guide Claude...',
+            description: 'Initial instructions that prime Claude on how to respond (optional).'
+          },
+          {
+            id: 'temperature',
+            label: 'Temperature',
+            type: 'text',
+            placeholder: '0.7',
+            description: 'Controls randomness. Lower values (0.1) are more deterministic, higher values (1.0) more creative.'
+          },
+          {
+            id: 'maxTokens',
+            label: 'Max Tokens',
+            type: 'text',
+            placeholder: '2000',
+            description: 'Maximum number of tokens to generate. Higher values allow longer responses.'
+          },
+        ];
       case 'generate_text':
       case 'generateText':
         return [
@@ -409,6 +454,21 @@ const NodeSettingsDrawer: React.FC<NodeSettingsDrawerProps> = ({
                 </div>
               )}
               
+              {node.type === 'claude' && (
+                <div className="mb-4">
+                  <p className="text-sm text-muted-foreground">
+                    Configure settings for the Claude AI text generation.
+                  </p>
+                  
+                  <Alert className="mt-2">
+                    <AlertDescription>
+                      Claude is a powerful AI assistant by Anthropic that excels at thoughtful, nuanced responses.
+                      Configure your Claude API settings below with your API key from Anthropic's developer portal.
+                    </AlertDescription>
+                  </Alert>
+                </div>
+              )}
+              
               {(node.type === 'generate_text' || node.type === 'generateText') && (
                 <div className="mb-4">
                   <p className="text-sm text-muted-foreground">
@@ -537,6 +597,11 @@ const NodeSettingsDrawer: React.FC<NodeSettingsDrawerProps> = ({
                           {field.id === 'model' && node.type === 'perplexity' && (
                             <p className="text-xs text-muted-foreground mt-1">
                               Common models: sonar, sonar-small-online, sonar-medium-online, mistral-7b-instruct
+                            </p>
+                          )}
+                          {field.id === 'model' && (node.type === 'claude') && (
+                            <p className="text-xs text-muted-foreground mt-1">
+                              Claude models: claude-3-sonnet-20240229, claude-3-opus-20240229, claude-3-haiku-20240307
                             </p>
                           )}
                           {field.id === 'model' && (node.type === 'generate_text' || node.type === 'generateText') && (
