@@ -19,7 +19,13 @@ const createAgentFromInternal = z.object({
  * Utility function to execute a workflow
  * This is outside registerRoutes to avoid strict mode issues
  */
-async function runWorkflow(workflow: any, workflowName: string, prompt: string, executeWorkflow: any) {
+async function runWorkflow(
+  workflow: any, 
+  workflowName: string, 
+  prompt: string, 
+  executeWorkflow: any,
+  context: Record<string, any> = {}
+) {
   console.log(`Executing workflow ${workflowName}...`);
   
   // Create a log entry for this execution
@@ -27,7 +33,7 @@ async function runWorkflow(workflow: any, workflowName: string, prompt: string, 
     agentId: workflow.agentId || 0,
     workflowId: workflow.id,
     status: "running",
-    input: { prompt },
+    input: { prompt, ...context },
   });
   
   try {
@@ -68,6 +74,19 @@ async function runWorkflow(workflow: any, workflowName: string, prompt: string, 
     
     // Initialize node states tracking
     const nodeStates: Record<string, any> = {};
+    
+    // Add debugging info for workflow and nodes
+    console.log('DEBUG - Workflow data:', workflowName, workflowLog.id);
+    console.log('DEBUG - Nodes:', JSON.stringify(nodes.map((n: any) => ({
+      id: n.id,
+      type: n.type,
+      data: { 
+        ...n.data,
+        label: n.data?.label, 
+        workflowId: n.data?.workflowId,
+        triggerType: n.data?.triggerType 
+      }
+    }))));
     
     // Execute the workflow
     const result = await executeWorkflow(
@@ -1032,9 +1051,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "Invalid agent ID format" });
       }
 
-      const { prompt } = req.body;
+      const { prompt, _callStack = [] } = req.body;
       if (!prompt) {
         return res.status(400).json({ message: "Prompt is required" });
+      }
+
+      // Check for circular agent triggering
+      if (_callStack.includes(`agent-${agentId}`)) {
+        console.error(`Circular agent dependency detected! Agent ${agentId} is already in the call stack: ${_callStack.join(' -> ')}`);
+        return res.status(400).json({
+          success: false,
+          error: `Circular agent dependency detected: ${_callStack.join(' -> ')} -> agent-${agentId}`,
+          circularDependency: true,
+          agentId,
+          _callStack
+        });
       }
 
       // Get the agent and its workflows
@@ -1052,14 +1083,39 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Use the first workflow
       const agentWorkflow = workflows[0];
       
+      // Create updated call stack with this agent
+      const updatedCallStack = [..._callStack, `agent-${agentId}`];
+      console.log(`Triggering agent ${agent.name} (ID: ${agentId}) with call stack:`, updatedCallStack);
+      
       // Import and register workflow engine and executors
       const { executeWorkflow } = await import('../client/src/lib/workflowEngine');
       const { registerAllNodeExecutors } = await import('../client/src/lib/nodeExecutors');
       registerAllNodeExecutors();
       
-      // Execute the agent's workflow
+      // We need to modify the nodes data to include the call stack context in the initial node
+      const flowData = typeof agentWorkflow.flowData === 'string' 
+          ? JSON.parse(agentWorkflow.flowData) 
+          : agentWorkflow.flowData;
+      
+      // Clone the workflow and add the call stack to each node to prevent circular dependencies
+      const enhancedWorkflow = {
+        ...agentWorkflow,
+        flowData: {
+          ...flowData,
+          nodes: (flowData.nodes || []).map((node: any) => ({
+            ...node,
+            data: {
+              ...(node.data || {}),
+              _callStack: updatedCallStack,
+              _workflowInput: { prompt }
+            }
+          }))
+        }
+      };
+      
+      // Execute the agent's workflow with the call stack
       console.log(`Triggering agent ${agent.name} (ID: ${agentId}) with prompt: ${prompt.substring(0, 100)}...`);
-      const result = await runWorkflow(agentWorkflow, agentWorkflow.name, prompt, executeWorkflow);
+      const result = await runWorkflow(enhancedWorkflow, agentWorkflow.name, prompt, executeWorkflow, { _callStack: updatedCallStack });
       
       // Return results in format expected by the agent trigger node
       return res.json({
@@ -1076,7 +1132,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
           id: agentWorkflow.id,
           name: agentWorkflow.name
         },
-        logId: result.logId
+        logId: result.logId,
+        _callStack: updatedCallStack // Include the updated call stack
       });
     } catch (error) {
       console.error(`Error triggering agent:`, error);
@@ -1096,9 +1153,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "Invalid workflow ID format" });
       }
 
-      const { prompt } = req.body;
+      const { prompt, _callStack = [] } = req.body;
       if (!prompt) {
         return res.status(400).json({ message: "Prompt is required" });
+      }
+
+      // Check for circular workflow triggering
+      if (_callStack.includes(workflowId)) {
+        console.error(`Circular workflow dependency detected! Workflow ${workflowId} is already in the call stack: ${_callStack.join(' -> ')}`);
+        return res.status(400).json({
+          success: false,
+          error: `Circular workflow dependency detected: ${_callStack.join(' -> ')} -> ${workflowId}`,
+          circularDependency: true,
+          workflowId,
+          _callStack
+        });
       }
 
       // Get the workflow directly
@@ -1114,7 +1183,39 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Execute the workflow directly
       console.log(`Triggering workflow ${workflow.name} (ID: ${workflowId}) with prompt: ${prompt.substring(0, 100)}...`);
-      const result = await runWorkflow(workflow, workflow.name, prompt, executeWorkflow);
+      console.log(`Call stack: ${_callStack.join(' -> ')}`);
+      
+      // Extract the context with call stack for the workflow executor
+      const context = { _callStack: [..._callStack, workflowId] }; // Add this workflow ID to the call stack
+      
+      // We need to modify the nodes data to include the call stack context in the initial node
+      const flowData = typeof workflow.flowData === 'string' 
+          ? JSON.parse(workflow.flowData) 
+          : workflow.flowData;
+      
+      // Clone the workflow and add the call stack to each node to prevent circular dependencies
+      const enhancedWorkflow = {
+        ...workflow,
+        flowData: {
+          ...flowData,
+          nodes: (flowData.nodes || []).map((node: any) => ({
+            ...node,
+            data: {
+              ...(node.data || {}),
+              _callStack: context._callStack,
+              _workflowInput: { prompt }
+            }
+          }))
+        }
+      };
+      
+      // Execute the workflow
+      const result = await runWorkflow(
+        enhancedWorkflow, 
+        workflow.name, 
+        prompt, 
+        executeWorkflow
+      );
       
       // Return results in format expected by the workflow trigger node
       return res.json({
@@ -1127,7 +1228,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
           id: workflow.id,
           name: workflow.name
         },
-        logId: result.logId
+        logId: result.logId,
+        _callStack: [..._callStack, workflowId] // Include the updated call stack
       });
     } catch (error) {
       console.error(`Error triggering workflow:`, error);

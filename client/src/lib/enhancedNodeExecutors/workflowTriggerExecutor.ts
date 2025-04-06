@@ -34,8 +34,11 @@ export const workflowTriggerExecutor: EnhancedNodeExecutor = {
     console.log('Workflow Trigger Node - Starting execution', nodeData);
     
     try {
-      const settings = nodeData.settings || {};
-      const { workflowId, inputField = 'text', timeout = 30000 } = settings;
+      // Check for data directly on nodeData first (as used in the workflow definition)
+      // Then fall back to the settings object for backward compatibility
+      const workflowId = nodeData.workflowId || (nodeData.settings?.workflowId);
+      const inputField = nodeData.inputField || nodeData.settings?.inputField || 'text';
+      const timeout = nodeData.timeout || nodeData.settings?.timeout || 30000;
       
       // Validate workflow ID
       if (!workflowId) {
@@ -95,12 +98,42 @@ export const workflowTriggerExecutor: EnhancedNodeExecutor = {
       });
       
       try {
-        // Call the workflow through the API with a timeout race
+        // Check for circular workflow triggering
+        // Get call stack from nodeData if it exists or initialize a new one
+        const callStack = nodeData._callStack || [];
+        
+        // Check if we're trying to trigger a workflow already in the call stack (circular dependency)
+        if (callStack.includes(workflowId)) {
+          console.error(`Circular workflow dependency detected! Workflow ${workflowId} is already in the call stack: ${callStack.join(' -> ')}`);
+          return {
+            items: [
+              {
+                json: { 
+                  error: `Circular workflow dependency detected: ${callStack.join(' -> ')} -> ${workflowId}`,
+                  circularDependency: true,
+                  workflowId
+                }
+              }
+            ],
+            meta: {
+              startTime: new Date(),
+              endTime: new Date(),
+              status: 'error',
+              message: `Circular workflow dependency detected: ${callStack.join(' -> ')} -> ${workflowId}`
+            }
+          };
+        }
+        
+        // Add the current workflow to the call stack
+        const updatedCallStack = [...callStack, workflowId];
+        
+        // Call the workflow through the API with a timeout race and pass the call stack
         const responsePromise = apiRequest(
           `/api/workflows/${workflowId}/trigger`,
           'POST',
           {
-            prompt: inputData
+            prompt: inputData,
+            _callStack: updatedCallStack // Pass the call stack to prevent circular dependencies
           }
         );
         
@@ -120,7 +153,8 @@ export const workflowTriggerExecutor: EnhancedNodeExecutor = {
                 workflowId,
                 workflowName: workflow?.name || 'Unknown',
                 output: response?.output || response?.result || response,
-                fullResponse: response
+                fullResponse: response,
+                _callStack: updatedCallStack // Include call stack in the output
               }
             }
           ],

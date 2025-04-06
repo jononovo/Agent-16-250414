@@ -36,14 +36,12 @@ export const agentTriggerExecutor: EnhancedNodeExecutor = {
     console.log('Agent/Workflow Trigger Node - Starting execution', nodeData);
     
     try {
-      const settings = nodeData.settings || {};
-      const { 
-        triggerType = 'agent',
-        agentId, 
-        workflowId,
-        promptField = 'text', 
-        timeout = 30000 
-      } = settings;
+      // Check for data directly on nodeData first, then fall back to settings
+      const triggerType = nodeData.triggerType || nodeData.settings?.triggerType || 'agent';
+      const agentId = nodeData.agentId || nodeData.settings?.agentId;
+      const workflowId = nodeData.workflowId || nodeData.settings?.workflowId;
+      const promptField = nodeData.promptField || nodeData.settings?.promptField || 'text';
+      const timeout = nodeData.timeout || nodeData.settings?.timeout || 30000;
       
       // Validate based on trigger type
       if (triggerType === 'agent' && !agentId) {
@@ -123,15 +121,46 @@ export const agentTriggerExecutor: EnhancedNodeExecutor = {
         let responsePromise;
         let entityInfo;
         
+        // Check for circular workflow/agent triggering
+        // Get call stack from nodeData if it exists or initialize a new one
+        const callStack = nodeData._callStack || [];
+        
         // Call the appropriate API endpoint based on trigger type
         if (triggerType === 'agent') {
           console.log(`Agent Trigger - Calling agent ID: ${agentId} with prompt: ${promptData.substring(0, 100)}...`);
+          console.log(`Current call stack:`, callStack);
+          
+          // Check for circular agent calls
+          if (callStack.includes(`agent-${agentId}`)) {
+            console.error(`Circular agent dependency detected! Agent ${agentId} is already in the call stack: ${callStack.join(' -> ')}`);
+            return {
+              items: [
+                {
+                  json: { 
+                    error: `Circular agent dependency detected: ${callStack.join(' -> ')} -> agent-${agentId}`,
+                    circularDependency: true,
+                    agentId
+                  }
+                }
+              ],
+              meta: {
+                startTime: new Date(),
+                endTime: new Date(),
+                status: 'error',
+                message: `Circular agent dependency detected: ${callStack.join(' -> ')} -> agent-${agentId}`
+              }
+            };
+          }
+          
+          // Add the agent to the call stack
+          const updatedCallStack = [...callStack, `agent-${agentId}`];
           
           responsePromise = apiRequest(
             `/api/agents/${agentId}/trigger`,
             'POST',
             {
-              prompt: promptData
+              prompt: promptData,
+              _callStack: updatedCallStack // Pass the call stack to prevent circular dependencies
             }
           );
           
@@ -140,12 +169,39 @@ export const agentTriggerExecutor: EnhancedNodeExecutor = {
         } else {
           // Workflow trigger
           console.log(`Workflow Trigger - Calling workflow ID: ${workflowId} with prompt: ${promptData.substring(0, 100)}...`);
+          console.log(`Current call stack:`, callStack);
+          
+          // Check for circular workflow calls
+          if (callStack.includes(`workflow-${workflowId}`)) {
+            console.error(`Circular workflow dependency detected! Workflow ${workflowId} is already in the call stack: ${callStack.join(' -> ')}`);
+            return {
+              items: [
+                {
+                  json: { 
+                    error: `Circular workflow dependency detected: ${callStack.join(' -> ')} -> workflow-${workflowId}`,
+                    circularDependency: true,
+                    workflowId
+                  }
+                }
+              ],
+              meta: {
+                startTime: new Date(),
+                endTime: new Date(),
+                status: 'error',
+                message: `Circular workflow dependency detected: ${callStack.join(' -> ')} -> workflow-${workflowId}`
+              }
+            };
+          }
+          
+          // Add the workflow to the call stack
+          const updatedCallStack = [...callStack, `workflow-${workflowId}`];
           
           responsePromise = apiRequest(
             `/api/workflows/${workflowId}/trigger`,
             'POST',
             {
-              prompt: promptData
+              prompt: promptData,
+              _callStack: updatedCallStack // Pass the call stack to prevent circular dependencies
             }
           );
           

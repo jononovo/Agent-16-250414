@@ -68,6 +68,7 @@ export async function registerAllEnhancedExecutors(): Promise<void> {
   
   // Register workflow trigger node executor
   registerEnhancedNodeExecutor('workflow_trigger', executors.workflowTriggerExecutor);
+  registerEnhancedNodeExecutor('workflowTriggerNode', executors.workflowTriggerExecutor);
   
   console.log('All enhanced node executors registered');
 }
