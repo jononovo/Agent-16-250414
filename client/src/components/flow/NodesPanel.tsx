@@ -193,21 +193,32 @@ const NODE_TYPES = [
     category: 'internal',
     icon: 'plus-circle',
     configuration: {
-      agent_id: 12,
-      workflow_id: 15
+      agent_id: 13,
+      workflow_id: 16
     }
   },
   {
     id: 'internal_ai_chat_agent',
     name: 'AI Chat Agent Trigger',
-    description: 'Triggers the creation of a new agent from AI chat instructions',
+    description: 'Triggers the creation of a new agent from chat instruction',
     category: 'internal',
     icon: 'message-circle',
     configuration: {
-      agent_id: 12,
-      workflow_id: 15
+      agent_id: 13,
+      workflow_id: 16
     }
-  }
+  },
+  {
+    id: 'internal',
+    name: 'Internal Action',
+    description: 'Performs internal system actions',
+    category: 'internal',
+    icon: 'cog',
+    configuration: {
+      action_type: 'create_agent'
+    }
+  },
+  // Additional internal nodes can be added here
 ];
 
 const NodesPanel = () => {

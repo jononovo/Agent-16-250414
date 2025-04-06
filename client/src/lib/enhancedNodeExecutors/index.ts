@@ -6,7 +6,7 @@
  */
 
 // Import types only
-import { EnhancedNodeExecutor } from '../types/workflow';
+import { EnhancedNodeExecutor, InternalNodeExecutor } from '../types/workflow';
 
 // Export collection getter method (async)
 export async function getAllEnhancedNodeExecutors(): Promise<Record<string, EnhancedNodeExecutor>> {
@@ -57,6 +57,7 @@ export async function registerAllEnhancedExecutors(): Promise<void> {
   // Register internal node executors
   registerEnhancedNodeExecutor('internal_new_agent', executors.internalExecutor);
   registerEnhancedNodeExecutor('internal_ai_chat_agent', executors.internalExecutor);
+  registerEnhancedNodeExecutor('internal', executors.internalExecutor);
   
   console.log('All enhanced node executors registered');
 }

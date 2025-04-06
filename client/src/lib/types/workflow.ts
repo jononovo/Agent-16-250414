@@ -206,8 +206,15 @@ export interface WorkflowExecutionState {
  */
 export interface EnhancedNodeExecutor {
   // Node definition
-  definition: NodeDefinition;
+  definition?: NodeDefinition;
   
   // Execute function
   execute: (nodeData: Record<string, any>, inputs: Record<string, NodeExecutionData>) => Promise<NodeExecutionData>;
 }
+
+/**
+ * Internal Node Executor - Specialized executor for internal system nodes
+ */
+export type InternalNodeExecutor = 
+  (nodeData: WorkflowData['nodes'][0], context: { inputData?: any }) => 
+  Promise<{ status: string; output?: NodeExecutionData; error?: string }>;

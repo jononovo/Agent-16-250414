@@ -1,111 +1,109 @@
-import { useCallback } from 'react';
-import { Handle, Position } from 'reactflow';
-import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import DynamicIcon from '@/components/flow/DynamicIcon';
-import { Button } from '@/components/ui/button';
+import { memo } from 'react';
+import { Handle, Position, NodeProps } from 'reactflow';
 import { Badge } from '@/components/ui/badge';
+import { Card } from '@/components/ui/card';
+import DynamicIcon from '../DynamicIcon';
 
-// Props interface for the internal node
-interface InternalNodeProps {
-  id: string;
-  data: {
-    label?: string;
-    description?: string;
-    operation?: string;
-    icon?: string;
-    agent_id?: number;
-    workflow_id?: number;
-    trigger_type?: string;
-    parameters?: Record<string, any>;
-    [key: string]: any;
-  };
-  selected?: boolean;
+interface InternalNodeData {
+  label: string;
+  description?: string;
+  settings?: Record<string, unknown>;
+  isProcessing?: boolean;
+  isComplete?: boolean;
+  hasError?: boolean;
+  errorMessage?: string;
 }
 
 /**
- * InternalNode Component
+ * InternalNode - A node type for internal system operations
  * 
- * This component represents nodes that can trigger internal operations like
- * creating new agents or triggering processes within the application.
+ * This node type is used for operations that interface directly with
+ * the system itself, such as:
+ * - Creating new agents
+ * - Triggering workflows from UI events
+ * - Handling AI chat instructions
+ * - Performing system actions
  */
-export default function InternalNode({ id, data, selected }: InternalNodeProps) {
-  // Default values for node appearance
-  const label = data.label || 'Internal Node';
-  const description = data.description || 'Executes internal system operations';
-  const icon = data.icon || 'BrainCircuit';
-  const operation = data.operation || 'internal_operation';
+function InternalNode({ data, id, selected }: NodeProps<InternalNodeData>) {
+  // Destructure node data with defaults
+  const {
+    label = 'Internal Node',
+    description = 'Interfaces with internal system operations',
+    settings = {},
+    isProcessing = false,
+    isComplete = false,
+    hasError = false,
+    errorMessage = '',
+  } = data;
+
+  // Determine icon based on node type (using the node ID to infer type)
+  const nodeType = id.split('-')[0]; // e.g., "internal_new_agent-1" -> "internal_new_agent"
+  let icon = 'cog';
   
-  // Handle node selection for editing
-  const handleSelect = useCallback(() => {
-    // Can be extended for additional behavior when node is selected
-    console.log('Internal node selected:', id, data);
-  }, [id, data]);
+  if (nodeType.includes('new_agent')) {
+    icon = 'user-plus';
+  } else if (nodeType.includes('chat_agent') || nodeType.includes('ai_chat')) {
+    icon = 'message-circle';
+  } else if (id.includes('trigger')) {
+    icon = 'zap';
+  } else if (id.includes('action')) {
+    icon = 'save';
+  }
+
+  // Style for different node states
+  const nodeStateStyle = isProcessing
+    ? 'animate-pulse border-blue-500'
+    : isComplete
+    ? 'border-green-500'
+    : hasError
+    ? 'border-red-500'
+    : selected
+    ? 'border-slate-700 dark:border-slate-300'
+    : 'border-slate-200 dark:border-slate-700';
 
   return (
-    <div onDoubleClick={handleSelect}>
-      <Card 
-        className={`w-[280px] overflow-hidden shadow-md ${
-          selected ? 'ring-2 ring-primary' : ''
-        }`}
-      >
-        <CardHeader className="p-3 pb-0">
-          <div className="flex justify-between items-center">
-            <div className="flex items-center gap-2">
-              <DynamicIcon 
-                icon={icon} 
-                className="text-primary w-5 h-5" 
-              />
-              <CardTitle className="text-sm font-medium">{label}</CardTitle>
-            </div>
-            
-            <Badge variant="outline" className="text-xs">
-              {operation}
-            </Badge>
-          </div>
-        </CardHeader>
-        
-        <CardContent className="p-3 pt-2">
-          <p className="text-xs text-muted-foreground">{description}</p>
-          
-          {data.agent_id && (
-            <div className="mt-2 text-xs">
-              <span className="font-semibold">Agent Template:</span> #{data.agent_id}
-            </div>
-          )}
-          
-          {data.workflow_id && (
-            <div className="mt-1 text-xs">
-              <span className="font-semibold">Workflow Template:</span> #{data.workflow_id}
-            </div>
-          )}
-          
-          {data.trigger_type && (
-            <div className="mt-1 text-xs">
-              <span className="font-semibold">Trigger:</span> {data.trigger_type}
-            </div>
-          )}
-        </CardContent>
-        
-        <CardFooter className="p-3 pt-0 flex justify-end">
-          <Button size="sm" variant="secondary" className="text-xs h-7">
-            Configure
-          </Button>
-        </CardFooter>
-      </Card>
-      
-      {/* Input handle on the left side */}
+    <Card
+      className={`w-64 p-3 shadow border-2 ${nodeStateStyle} transition-all duration-200`}
+    >
+      {/* Input handle for triggering the node */}
       <Handle
         type="target"
         position={Position.Left}
-        className="w-2 h-2 bg-primary border-2 border-background"
+        className="w-3 h-3 rounded-full border-2 bg-slate-50 border-slate-500"
       />
-      
-      {/* Output handle on the right side */}
+
+      <div className="flex items-center gap-2">
+        <div className="p-2 rounded-md bg-slate-100 dark:bg-slate-800">
+          <DynamicIcon icon={icon} className="h-5 w-5 text-primary" />
+        </div>
+        <div className="flex-1">
+          <div className="flex justify-between items-center">
+            <h3 className="text-sm font-medium">{label}</h3>
+            <Badge variant="outline" className="text-xs px-1 bg-slate-100 dark:bg-slate-800">
+              {nodeType.replace(/_/g, ' ')}
+            </Badge>
+          </div>
+          <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 line-clamp-2">
+            {description}
+          </p>
+        </div>
+      </div>
+
+      {/* Show error message if node has an error */}
+      {hasError && (
+        <div className="mt-2 p-2 text-xs bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 rounded border border-red-200 dark:border-red-800">
+          {errorMessage || 'An error occurred during execution'}
+        </div>
+      )}
+
+      {/* Output handle for continuing to the next node */}
       <Handle
         type="source"
         position={Position.Right}
-        className="w-2 h-2 bg-primary border-2 border-background"
+        className="w-3 h-3 rounded-full border-2 bg-slate-50 border-slate-500"
       />
-    </div>
+    </Card>
   );
 }
+
+export default memo(InternalNode);

@@ -67,6 +67,7 @@ const nodeTypes: NodeTypes = {
   // Internal system node types
   internal_new_agent: InternalNode,
   internal_ai_chat_agent: InternalNode,
+  internal: InternalNode,
   
   // Legacy/basic node types (with mapping to specialized versions)
   custom: CustomNode,
@@ -89,11 +90,7 @@ const nodeTypes: NodeTypes = {
   email_send: OutputNode,
   database_query: ProcessorNode,
   data_transform: ProcessorNode,
-  filter: ProcessorNode,
-  
-  // Internal node types
-  internal_new_agent: InternalNode,
-  internal_ai_chat_agent: InternalNode
+  filter: ProcessorNode
 };
 
 interface FlowEditorProps {

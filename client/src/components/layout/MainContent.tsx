@@ -1,10 +1,11 @@
 import { ReactNode, useState, useEffect } from 'react';
 import { useBuilderContext } from '@/contexts/BuilderContext';
-import { Key, Settings } from 'lucide-react';
+import { Key, Settings, UserPlus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogTrigger } from '@/components/ui/dialog';
 import { ApiConfigForm } from '@/components/ApiConfigForm';
 import { useToast } from '@/hooks/use-toast';
+import { apiRequest, apiPost } from '@/lib/apiClient';
 
 interface MainContentProps {
   children: ReactNode;
@@ -62,6 +63,37 @@ const MainContent = ({ children }: MainContentProps) => {
     
     setApiKeyStatus('present');
   };
+  
+  // Function to trigger the internal workflow for creating a new agent
+  const triggerNewAgentWorkflow = async () => {
+    try {
+      // Trigger the internal workflow through the API
+      const response = await apiPost('/api/workflows/run', {
+        workflowId: 16, // ID of the "Build New Agent Structure v1" workflow
+        source: 'ui_trigger',
+        triggerType: 'internal_new_agent',
+        input: {
+          request_type: 'new_agent',
+          source: 'ui_button'
+        }
+      });
+      
+      // Handle the response
+      toast({
+        title: "Agent Creation Started",
+        description: "The new agent creation process has been initiated.",
+      });
+      
+      console.log('Workflow triggered:', response);
+    } catch (error) {
+      console.error('Error triggering workflow:', error);
+      toast({
+        title: "Error",
+        description: "Failed to trigger agent creation workflow. Please try again.",
+        variant: "destructive"
+      });
+    }
+  };
 
   return (
     <div className="flex-grow overflow-y-auto">
@@ -87,6 +119,16 @@ const MainContent = ({ children }: MainContentProps) => {
                 />
               </DialogContent>
             </Dialog>
+            
+            <Button 
+              variant="outline" 
+              size="sm" 
+              className="flex items-center gap-1"
+              onClick={triggerNewAgentWorkflow}
+            >
+              <UserPlus size={16} />
+              <span>New Agent</span>
+            </Button>
             
             <Button variant="outline" size="sm" className="flex items-center gap-1">
               <Settings size={16} />

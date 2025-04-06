@@ -473,6 +473,56 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
+  // Workflow execution endpoint
+  app.post("/api/workflows/run", async (req, res) => {
+    try {
+      const { workflowId, source, triggerType, input } = req.body;
+      
+      if (!workflowId || typeof workflowId !== 'number') {
+        return res.status(400).json({ message: "Invalid or missing workflowId" });
+      }
+      
+      // Get the workflow
+      const workflow = await storage.getWorkflow(workflowId);
+      if (!workflow) {
+        return res.status(404).json({ message: "Workflow not found" });
+      }
+      
+      // Log the execution request
+      console.log(`Workflow execution request for workflow ${workflowId} from ${source || 'unknown'}`);
+      console.log(`Trigger type: ${triggerType || 'none'}, Input:`, JSON.stringify(input || {}));
+      
+      // Create a log entry for the execution
+      await storage.createLog({
+        agentId: workflow.agentId,
+        level: 'info',
+        message: `Workflow execution initiated: ${workflow.name}`,
+        source: source || 'api',
+        timestamp: new Date(),
+        data: JSON.stringify({
+          workflowId,
+          triggerType,
+          input
+        })
+      });
+      
+      // In a real implementation, we would actually execute the workflow
+      // For now, we're just returning success
+      res.status(200).json({ 
+        success: true, 
+        message: "Workflow execution initiated",
+        executionId: `exec-${Date.now()}`,
+        workflow: {
+          id: workflow.id,
+          name: workflow.name
+        }
+      });
+    } catch (error) {
+      console.error('Error executing workflow:', error);
+      res.status(500).json({ message: "Failed to execute workflow" });
+    }
+  });
+  
   // Internal API endpoint for agent creation 
   app.post("/api/internal/create-agent", async (req, res) => {
     try {
