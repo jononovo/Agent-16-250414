@@ -117,7 +117,161 @@ const NodeSettingsDrawer: React.FC<NodeSettingsDrawerProps> = ({
             description: 'Maximum number of tokens to generate.'
           },
         ];
+      case 'internal_new_agent':
+        return [
+          {
+            id: 'agentTemplate',
+            label: 'Agent Template',
+            type: 'select',
+            placeholder: 'Select an agent template',
+            description: 'Optional template to use as a base for the new agent.',
+            options: [
+              { value: 'blank', label: 'Blank Agent' },
+              { value: 'customer-support', label: 'Customer Support Agent' },
+              { value: 'data-analysis', label: 'Data Analysis Agent' },
+              { value: 'content-creation', label: 'Content Creation Agent' }
+            ]
+          },
+          {
+            id: 'defaultWorkflow',
+            label: 'Default Workflow',
+            type: 'select',
+            placeholder: 'Create default workflow?',
+            description: 'Automatically create a starter workflow for the new agent',
+            options: [
+              { value: 'none', label: 'No Default Workflow' },
+              { value: 'basic-chat', label: 'Basic Chat Workflow' },
+              { value: 'data-processing', label: 'Data Processing Workflow' },
+              { value: 'custom', label: 'Custom Template' }
+            ]
+          },
+          {
+            id: 'autoActivate',
+            label: 'Auto-Activate',
+            type: 'select',
+            placeholder: 'Automatically activate the agent?',
+            description: 'Set the agent as active immediately after creation.',
+            options: [
+              { value: 'true', label: 'Yes - Activate Immediately' },
+              { value: 'false', label: 'No - Manual Activation' }
+            ]
+          },
+          {
+            id: 'sendWelcomeMessage',
+            label: 'Welcome Message',
+            type: 'textarea',
+            placeholder: 'Enter a welcome message to display when the agent is created...',
+            description: 'Optional message to show upon successful agent creation.'
+          }
+        ];
+      case 'internal_ai_chat_agent':
+        return [
+          {
+            id: 'triggerPhrases',
+            label: 'Trigger Phrases',
+            type: 'textarea',
+            placeholder: 'create a new agent, build agent, make an agent...',
+            description: 'Comma-separated list of phrases that will trigger this node when detected in chat.'
+          },
+          {
+            id: 'responseTemplate',
+            label: 'Response Template',
+            type: 'textarea',
+            placeholder: 'I\'ll create a new agent called {{name}} for you...',
+            description: 'Template for the response when this node is triggered. Use {{variable}} for placeholders.'
+          },
+          {
+            id: 'extractionPrompt',
+            label: 'Extraction Prompt',
+            type: 'textarea',
+            placeholder: 'Extract the name and description for the new agent...',
+            description: 'Prompt to extract structured data from the user\'s chat message.'
+          }
+        ];
+      case 'internal_create_agent':
+        return [
+          {
+            id: 'defaultAgentType',
+            label: 'Default Agent Type',
+            type: 'select',
+            placeholder: 'Select default agent type',
+            description: 'The type of agent to create if not specified in the input.',
+            options: [
+              { value: 'custom', label: 'Custom Agent' },
+              { value: 'specialized', label: 'Specialized Agent' },
+              { value: 'system', label: 'System Agent' }
+            ]
+          },
+          {
+            id: 'defaultIcon',
+            label: 'Default Icon',
+            type: 'text',
+            placeholder: 'e.g., brain',
+            description: 'Default icon to use if not specified in the input.'
+          },
+          {
+            id: 'notifyOnCreate',
+            label: 'Notification',
+            type: 'select',
+            placeholder: 'Send notification on creation?',
+            description: 'Whether to show a notification when the agent is created.',
+            options: [
+              { value: 'true', label: 'Yes - Show Notification' },
+              { value: 'false', label: 'No - Silent Creation' }
+            ]
+          },
+          {
+            id: 'logLevel',
+            label: 'Logging Level',
+            type: 'select',
+            placeholder: 'Select logging level',
+            description: 'Level of detail for logging agent creation events.',
+            options: [
+              { value: 'minimal', label: 'Minimal' },
+              { value: 'standard', label: 'Standard' },
+              { value: 'verbose', label: 'Verbose' }
+            ]
+          }
+        ];
       default:
+        // For any other node that starts with "internal_"
+        if (type && type.startsWith('internal_')) {
+          return [
+            {
+              id: 'eventType',
+              label: 'Event Type',
+              type: 'select',
+              placeholder: 'Select event type',
+              description: 'The type of system event this node responds to.',
+              options: [
+                { value: 'ui_action', label: 'UI Action' },
+                { value: 'system_event', label: 'System Event' },
+                { value: 'scheduled', label: 'Scheduled Task' },
+                { value: 'manual', label: 'Manual Trigger' }
+              ]
+            },
+            {
+              id: 'priority',
+              label: 'Priority Level',
+              type: 'select',
+              placeholder: 'Select priority',
+              description: 'Execution priority for this internal operation.',
+              options: [
+                { value: 'low', label: 'Low' },
+                { value: 'medium', label: 'Medium' },
+                { value: 'high', label: 'High' },
+                { value: 'critical', label: 'Critical' }
+              ]
+            },
+            {
+              id: 'customConfig',
+              label: 'Custom Configuration',
+              type: 'textarea',
+              placeholder: 'Enter any custom configuration as JSON...',
+              description: 'Additional configuration options in JSON format.'
+            }
+          ];
+        }
         return [];
     }
   };
@@ -265,6 +419,69 @@ const NodeSettingsDrawer: React.FC<NodeSettingsDrawerProps> = ({
                     <AlertDescription>
                       Configure your Claude API settings below. An API key is required for actual AI text generation.
                       Without an API key, the node will use simulated responses for testing purposes.
+                    </AlertDescription>
+                  </Alert>
+                </div>
+              )}
+              
+              {node.type === 'internal_new_agent' && (
+                <div className="mb-4">
+                  <p className="text-sm text-muted-foreground">
+                    Configure settings for the New Agent Trigger node.
+                  </p>
+                  
+                  <Alert className="mt-2">
+                    <AlertDescription>
+                      This node triggers when a user clicks the "New Agent" button in the UI. 
+                      Configure the template settings and default behavior when creating new agents.
+                    </AlertDescription>
+                  </Alert>
+                </div>
+              )}
+              
+              {node.type === 'internal_ai_chat_agent' && (
+                <div className="mb-4">
+                  <p className="text-sm text-muted-foreground">
+                    Configure settings for the AI Chat Agent Trigger node.
+                  </p>
+                  
+                  <Alert className="mt-2">
+                    <AlertDescription>
+                      This node triggers when a user asks the chat agent to create a new agent.
+                      Configure trigger phrases and response templates to customize how the agent responds.
+                    </AlertDescription>
+                  </Alert>
+                </div>
+              )}
+              
+              {node.type === 'internal_create_agent' && (
+                <div className="mb-4">
+                  <p className="text-sm text-muted-foreground">
+                    Configure settings for the Create Agent Action node.
+                  </p>
+                  
+                  <Alert className="mt-2">
+                    <AlertDescription>
+                      This node creates a new agent in the system with the specified properties.
+                      Configure default settings and notification preferences for agent creation.
+                    </AlertDescription>
+                  </Alert>
+                </div>
+              )}
+              
+              {node.type && node.type.startsWith('internal_') && 
+               node.type !== 'internal_new_agent' && 
+               node.type !== 'internal_ai_chat_agent' && 
+               node.type !== 'internal_create_agent' && (
+                <div className="mb-4">
+                  <p className="text-sm text-muted-foreground">
+                    Configure settings for this Internal System node.
+                  </p>
+                  
+                  <Alert className="mt-2">
+                    <AlertDescription>
+                      Internal nodes connect directly to system functions and events.
+                      Configure how this node interacts with internal system components.
                     </AlertDescription>
                   </Alert>
                 </div>
