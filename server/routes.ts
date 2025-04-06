@@ -1078,6 +1078,57 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
     }
   });
+  
+  // API endpoint for direct workflow trigger functionality
+  app.post("/api/workflows/:id/trigger", async (req, res) => {
+    try {
+      const workflowId = parseInt(req.params.id);
+      if (isNaN(workflowId)) {
+        return res.status(400).json({ message: "Invalid workflow ID format" });
+      }
+
+      const { prompt } = req.body;
+      if (!prompt) {
+        return res.status(400).json({ message: "Prompt is required" });
+      }
+
+      // Get the workflow directly
+      const workflow = await storage.getWorkflow(workflowId);
+      if (!workflow) {
+        return res.status(404).json({ message: `Workflow with ID ${workflowId} not found` });
+      }
+      
+      // Import and register workflow engine and executors
+      const { executeWorkflow } = await import('../client/src/lib/workflowEngine');
+      const { registerAllNodeExecutors } = await import('../client/src/lib/nodeExecutors');
+      registerAllNodeExecutors();
+      
+      // Execute the workflow directly
+      console.log(`Triggering workflow ${workflow.name} (ID: ${workflowId}) with prompt: ${prompt.substring(0, 100)}...`);
+      const result = await runWorkflow(workflow, workflow.name, prompt, executeWorkflow);
+      
+      // Return results in format expected by the workflow trigger node
+      return res.json({
+        success: true,
+        output: result.output,
+        content: result.output,
+        result: result.output,
+        status: result.status,
+        workflow: {
+          id: workflow.id,
+          name: workflow.name
+        },
+        logId: result.logId
+      });
+    } catch (error) {
+      console.error(`Error triggering workflow:`, error);
+      return res.status(500).json({ 
+        success: false,
+        message: "Failed to trigger workflow directly",
+        error: error instanceof Error ? error.message : String(error)
+      });
+    }
+  });
 
   app.post("/api/execute-agent-chain", async (req, res) => {
     try {

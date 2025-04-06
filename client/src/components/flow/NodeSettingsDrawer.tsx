@@ -17,6 +17,7 @@ import { NodeData } from './NodeItem';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { cn } from '@/lib/utils';
 import { Save, X } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
@@ -34,10 +35,12 @@ type TabType = 'properties' | 'variables' | 'settings';
 interface SettingsField {
   id: string;
   label: string;
-  type: 'text' | 'password' | 'select' | 'textarea';
+  type: 'text' | 'password' | 'select' | 'textarea' | 'radio';
   placeholder?: string;
   description?: string;
   options?: { value: string; label: string }[];
+  defaultValue?: string;
+  showWhen?: (settings: Record<string, any>) => boolean;
 }
 
 const NodeSettingsDrawer: React.FC<NodeSettingsDrawerProps> = ({
@@ -110,19 +113,32 @@ const NodeSettingsDrawer: React.FC<NodeSettingsDrawerProps> = ({
   
   // Dynamically update the workflow dropdown options when workflows are loaded
   useEffect(() => {
-    if (node?.type === 'workflow_trigger' && workflows && workflows.length > 0) {
+    if (workflows && workflows.length > 0) {
       const workflowOptions = workflows.map((workflow: any) => ({
         value: workflow.id.toString(),
         label: workflow.name
       }));
       
-      // Find the fields array in the settings
-      const updatedFields = getFieldsForNodeType(node.type);
+      if (node?.type === 'workflow_trigger') {
+        // Find the fields array in the settings
+        const updatedFields = getFieldsForNodeType(node.type);
+        
+        // Find the workflowId field and update its options
+        const workflowIdField = updatedFields.find(f => f.id === 'workflowId');
+        if (workflowIdField) {
+          workflowIdField.options = workflowOptions;
+        }
+      }
       
-      // Find the workflowId field and update its options
-      const workflowIdField = updatedFields.find(f => f.id === 'workflowId');
-      if (workflowIdField) {
-        workflowIdField.options = workflowOptions;
+      if (node?.type === 'agent_trigger') {
+        // Find the fields array in the settings
+        const updatedFields = getFieldsForNodeType(node.type);
+        
+        // Find the workflowId field and update its options
+        const workflowIdField = updatedFields.find(f => f.id === 'workflowId');
+        if (workflowIdField) {
+          workflowIdField.options = workflowOptions;
+        }
       }
     }
   }, [workflows, node]);
@@ -345,19 +361,40 @@ const NodeSettingsDrawer: React.FC<NodeSettingsDrawerProps> = ({
       case 'agent_trigger':
         return [
           {
+            id: 'triggerType',
+            label: 'Trigger Type',
+            type: 'radio',
+            description: 'Choose whether to trigger an agent or a workflow.',
+            options: [
+              { value: 'agent', label: 'Agent' },
+              { value: 'workflow', label: 'Workflow' }
+            ],
+            defaultValue: 'agent'
+          },
+          {
             id: 'agentId',
             label: 'Target Agent',
             type: 'select',
             placeholder: 'Select target agent',
             description: 'The agent that will be triggered by this node.',
-            options: [] // Will be populated dynamically with available agents
+            options: [], // Will be populated dynamically with available agents
+            showWhen: (settings) => !settings.triggerType || settings.triggerType === 'agent'
+          },
+          {
+            id: 'workflowId',
+            label: 'Target Workflow',
+            type: 'select',
+            placeholder: 'Select target workflow',
+            description: 'The workflow that will be triggered by this node.',
+            options: [], // Will be populated dynamically with available workflows
+            showWhen: (settings) => settings.triggerType === 'workflow'
           },
           {
             id: 'promptField',
             label: 'Prompt Field',
             type: 'text',
             placeholder: 'Enter prompt field name',
-            description: 'The field from input data to use as the prompt for the agent.'
+            description: 'The field from input data to use as the prompt for the agent or workflow.'
           },
           {
             id: 'timeout',
@@ -646,13 +683,14 @@ const NodeSettingsDrawer: React.FC<NodeSettingsDrawerProps> = ({
               {node.type === 'agent_trigger' && (
                 <div className="mb-4">
                   <p className="text-sm text-muted-foreground">
-                    Configure settings for the Agent Trigger node.
+                    Configure settings for the Agent/Workflow Trigger node.
                   </p>
                   
                   <Alert className="mt-2">
                     <AlertDescription>
-                      This node triggers another agent from within your workflow. Select the agent to call,
-                      specify which input field to use as the prompt, and set a timeout if needed.
+                      This node triggers another agent or workflow from within your workflow. Choose the trigger type, 
+                      select the agent or workflow to call, specify which input field to use as the prompt, 
+                      and set a timeout if needed.
                     </AlertDescription>
                   </Alert>
                 </div>
@@ -693,11 +731,17 @@ const NodeSettingsDrawer: React.FC<NodeSettingsDrawerProps> = ({
               
               {fields.length > 0 ? (
                 <div className="space-y-4 pb-6">
-                  {fields.map((field) => (
-                    <div key={field.id} className="space-y-2">
-                      <Label htmlFor={field.id}>{field.label}</Label>
-                      
-                      {field.type === 'password' ? (
+                  {fields.map((field) => {
+                    // Check if this field should be shown based on the showWhen condition
+                    if (field.showWhen && !field.showWhen(settings)) {
+                      return null;
+                    }
+                    
+                    return (
+                      <div key={field.id} className="space-y-2">
+                        <Label htmlFor={field.id}>{field.label}</Label>
+                        
+                        {field.type === 'password' ? (
                         <Input
                           id={field.id}
                           type="password"
@@ -721,6 +765,19 @@ const NodeSettingsDrawer: React.FC<NodeSettingsDrawerProps> = ({
                             ))}
                           </SelectContent>
                         </Select>
+                      ) : field.type === 'radio' && field.options ? (
+                        <RadioGroup
+                          value={settings[field.id] || field.defaultValue || ''}
+                          onValueChange={(value) => handleSettingChange(field.id, value)}
+                          className="flex flex-col space-y-1"
+                        >
+                          {field.options.map((option) => (
+                            <div key={option.value} className="flex items-center space-x-2">
+                              <RadioGroupItem value={option.value} id={`${field.id}-${option.value}`} />
+                              <Label htmlFor={`${field.id}-${option.value}`}>{option.label}</Label>
+                            </div>
+                          ))}
+                        </RadioGroup>
                       ) : field.type === 'textarea' ? (
                         <Textarea
                           id={field.id}

@@ -1,23 +1,25 @@
 /**
  * Executor for the AgentTrigger node
- * This node allows triggering another agent from within a workflow
+ * This node allows triggering another agent or workflow from within a workflow
  */
 import { apiRequest } from '../apiClient';
 import { EnhancedNodeExecutor, NodeExecutionData } from '../types/workflow';
 
+type TriggerType = 'agent' | 'workflow';
+
 export const agentTriggerExecutor: EnhancedNodeExecutor = {
   definition: {
     type: 'agent_trigger',
-    displayName: 'Agent Trigger Node',
-    description: 'Triggers another agent from within a workflow',
+    displayName: 'Agent/Workflow Trigger Node',
+    description: 'Triggers another agent or workflow from within a workflow',
     icon: 'refresh-cw',
     category: 'Workflow',
-    version: '1.0',
+    version: '2.0',
     inputs: {
       input: {
         type: 'any',
         displayName: 'Input',
-        description: 'The input data to pass to the agent',
+        description: 'The input data to pass to the agent or workflow',
         required: true
       }
     },
@@ -25,20 +27,26 @@ export const agentTriggerExecutor: EnhancedNodeExecutor = {
       output: {
         type: 'any',
         displayName: 'Output',
-        description: 'The response from the agent'
+        description: 'The response from the agent or workflow'
       }
     }
   },
   
   execute: async (nodeData: Record<string, any>, inputs: Record<string, NodeExecutionData>): Promise<NodeExecutionData> => {
-    console.log('Agent Trigger Node - Starting execution', nodeData);
+    console.log('Agent/Workflow Trigger Node - Starting execution', nodeData);
     
     try {
       const settings = nodeData.settings || {};
-      const { agentId, promptField = 'text', timeout = 30000 } = settings;
+      const { 
+        triggerType = 'agent',
+        agentId, 
+        workflowId,
+        promptField = 'text', 
+        timeout = 30000 
+      } = settings;
       
-      // Validate agent ID
-      if (!agentId) {
+      // Validate based on trigger type
+      if (triggerType === 'agent' && !agentId) {
         console.error('Agent Trigger Node - Missing agent ID');
         return {
           items: [
@@ -57,7 +65,26 @@ export const agentTriggerExecutor: EnhancedNodeExecutor = {
         };
       }
       
-      // Get the input data to send to the agent
+      if (triggerType === 'workflow' && !workflowId) {
+        console.error('Workflow Trigger Node - Missing workflow ID');
+        return {
+          items: [
+            {
+              json: { 
+                error: 'Missing workflow ID in settings'
+              }
+            }
+          ],
+          meta: {
+            startTime: new Date(),
+            endTime: new Date(),
+            status: 'error',
+            message: 'Workflow ID is required'
+          }
+        };
+      }
+      
+      // Get the input data to send to the agent or workflow
       let promptData = '';
       if (inputs.input && inputs.input.items && inputs.input.items.length > 0) {
         const inputItem = inputs.input.items[0].json;
@@ -84,10 +111,8 @@ export const agentTriggerExecutor: EnhancedNodeExecutor = {
       }
   
       if (!promptData) {
-        console.warn('Agent Trigger Node - Empty prompt data');
+        console.warn('Trigger Node - Empty prompt data');
       }
-      
-      console.log(`Agent Trigger Node - Calling agent ID: ${agentId} with prompt: ${promptData.substring(0, 100)}...`);
       
       // Set up timeout
       const timeoutPromise = new Promise((_, reject) => {
@@ -95,54 +120,97 @@ export const agentTriggerExecutor: EnhancedNodeExecutor = {
       });
       
       try {
-        // Call the agent through the API with a timeout race
-        const responsePromise = apiRequest(
-          `/api/agents/${agentId}/trigger`,
-          'POST',
-          {
-            prompt: promptData
-          }
-        );
+        let responsePromise;
+        let entityInfo;
+        
+        // Call the appropriate API endpoint based on trigger type
+        if (triggerType === 'agent') {
+          console.log(`Agent Trigger - Calling agent ID: ${agentId} with prompt: ${promptData.substring(0, 100)}...`);
+          
+          responsePromise = apiRequest(
+            `/api/agents/${agentId}/trigger`,
+            'POST',
+            {
+              prompt: promptData
+            }
+          );
+          
+          // Get the agent info for response
+          entityInfo = await apiRequest(`/api/agents/${agentId}`);
+        } else {
+          // Workflow trigger
+          console.log(`Workflow Trigger - Calling workflow ID: ${workflowId} with prompt: ${promptData.substring(0, 100)}...`);
+          
+          responsePromise = apiRequest(
+            `/api/workflows/${workflowId}/trigger`,
+            'POST',
+            {
+              prompt: promptData
+            }
+          );
+          
+          // Get the workflow info for response
+          entityInfo = await apiRequest(`/api/workflows/${workflowId}`);
+        }
         
         // Race between the API call and the timeout
         const response = await Promise.race([responsePromise, timeoutPromise]) as any;
         
-        console.log('Agent Trigger Node - Response received', response);
+        console.log(`${triggerType === 'agent' ? 'Agent' : 'Workflow'} Trigger Node - Response received`, response);
         
-        const agent = await apiRequest(`/api/agents/${agentId}`);
-        
-        // Return a success response with all the data from the agent response
-        return {
-          items: [
-            {
-              json: {
-                result: response,
-                agentId,
-                agentName: agent?.name || 'Unknown',
-                generatedText: response?.output || response?.content || response?.result || response,
-                fullResponse: response
+        // Return a success response with all the data from the response
+        if (triggerType === 'agent') {
+          return {
+            items: [
+              {
+                json: {
+                  result: response,
+                  agentId,
+                  agentName: entityInfo?.name || 'Unknown',
+                  generatedText: response?.output || response?.content || response?.result || response,
+                  fullResponse: response
+                }
               }
+            ],
+            meta: {
+              startTime: new Date(),
+              endTime: new Date(),
+              status: 'success'
             }
-          ],
-          meta: {
-            startTime: new Date(),
-            endTime: new Date(),
-            status: 'success'
-          }
-        };
+          };
+        } else {
+          return {
+            items: [
+              {
+                json: {
+                  result: response,
+                  workflowId,
+                  workflowName: entityInfo?.name || 'Unknown',
+                  generatedText: response?.output || response?.content || response?.result || response,
+                  fullResponse: response
+                }
+              }
+            ],
+            meta: {
+              startTime: new Date(),
+              endTime: new Date(),
+              status: 'success'
+            }
+          };
+        }
       } catch (error) {
         // Just rethrow the error since Promise.race handles the timeout
         throw error;
       }
     } catch (error: any) {
-      console.error('Agent Trigger Node - Execution error:', error);
+      console.error('Trigger Node - Execution error:', error);
       
       // Return error result
       return {
         items: [
           {
             json: { 
-              error: error.message || 'Error in Agent Trigger node'
+              error: error.message || 'Error in Trigger node'
             }
           }
         ],
@@ -150,7 +218,7 @@ export const agentTriggerExecutor: EnhancedNodeExecutor = {
           startTime: new Date(),
           endTime: new Date(),
           status: 'error',
-          message: error.message || 'Error in Agent Trigger node'
+          message: error.message || 'Error in Trigger node'
         }
       };
     }

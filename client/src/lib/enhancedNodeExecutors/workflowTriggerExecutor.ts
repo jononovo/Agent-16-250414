@@ -97,10 +97,10 @@ export const workflowTriggerExecutor: EnhancedNodeExecutor = {
       try {
         // Call the workflow through the API with a timeout race
         const responsePromise = apiRequest(
-          `/api/workflows/${workflowId}/execute`,
+          `/api/workflows/${workflowId}/trigger`,
           'POST',
           {
-            input: inputData
+            prompt: inputData
           }
         );
         
