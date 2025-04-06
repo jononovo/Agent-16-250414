@@ -58,13 +58,24 @@ const NodeSettingsDrawer: React.FC<NodeSettingsDrawerProps> = ({
   // Reset settings when node changes
   React.useEffect(() => {
     if (node && node.data) {
-      // Initialize with current settings or defaults
-      setSettings(node.data.settings || {});
+      // Initialize with current settings or defaults, merging direct properties and settings
+      const initialSettings: Record<string, any> = {
+        ...(node.data.settings || {}),
+      };
+      
+      // Check for direct properties that should be in settings (like workflowId)
+      if (node.type === 'workflow_trigger' && node.data.workflowId) {
+        initialSettings.workflowId = node.data.workflowId.toString();
+      }
+      
+      setSettings(initialSettings);
       setNodeName(node.data.label || '');
       setNodeDescription(node.data.description || '');
       
       // Initialize field options based on node type
       setFieldOptions(getFieldsForNodeType(node.type));
+      
+      console.log(`Initialized settings for node ${node.id} (${node.type}):`, initialSettings);
     } else {
       setSettings({});
       setNodeName('');
@@ -127,11 +138,8 @@ const NodeSettingsDrawer: React.FC<NodeSettingsDrawerProps> = ({
       }));
       
       // Handle both workflow_trigger and any node with workflowId in its data
-      if (node && (node.type === 'workflow_trigger' || 
-                   node.type === 'agent_trigger' || 
-                   node.data?.workflowId !== undefined)) {
-        
-        // Get a fresh copy of the fields based on the node type
+      if (node) {
+        // Always get a fresh copy of the fields based on the node type
         const updatedFields = getFieldsForNodeType(node.type);
         
         // Find the workflowId field and update its options
@@ -142,16 +150,19 @@ const NodeSettingsDrawer: React.FC<NodeSettingsDrawerProps> = ({
           setFieldOptions([...updatedFields]);
         }
         
-        // Set the current value in the settings if it exists in node.data
-        if (node.data?.workflowId && !settings.workflowId) {
+        // Set the current workflowId value in settings from node.data if it exists
+        // This handles both direct workflowId property and nested settings.workflowId
+        const nodeWorkflowId = node.data?.workflowId || node.data?.settings?.workflowId;
+        if (nodeWorkflowId && !settings.workflowId) {
+          console.log(`Setting workflowId in settings: ${nodeWorkflowId}`);
           setSettings(prev => ({
             ...prev,
-            workflowId: node.data.workflowId.toString()
+            workflowId: nodeWorkflowId.toString()
           }));
         }
       }
     }
-  }, [workflows, node, settings]);
+  }, [workflows, node]);
 
   // Get fields configuration based on node type
   const getFieldsForNodeType = (type: string | undefined): SettingsField[] => {
@@ -526,14 +537,25 @@ const NodeSettingsDrawer: React.FC<NodeSettingsDrawerProps> = ({
       // Create a copy of the current settings
       const updatedSettings = { ...settings };
       
-      // Update the node with all changes (properties and settings)
-      onSettingsChange(node.id, {
+      // For workflow_trigger nodes, we need to make the workflowId directly accessible
+      // in the node data as well as in settings
+      const nodeUpdates: Record<string, any> = {
         ...updatedSettings,
         nodeProperties: {
           label: nodeName,
           description: nodeDescription
         }
-      });
+      };
+      
+      // For workflow_trigger nodes, add workflowId as a direct property 
+      // This is required for the workflowTriggerExecutor
+      if (node.type === 'workflow_trigger' && updatedSettings.workflowId) {
+        nodeUpdates.workflowId = updatedSettings.workflowId;
+        console.log('Saving workflow_trigger node with workflowId:', updatedSettings.workflowId);
+      }
+      
+      // Update the node with all changes
+      onSettingsChange(node.id, nodeUpdates);
       onClose();
     }
   };
