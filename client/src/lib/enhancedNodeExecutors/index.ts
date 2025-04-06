@@ -22,6 +22,8 @@ export async function getAllEnhancedNodeExecutors(): Promise<Record<string, Enha
   const agentTriggerModule = await import('./agentTriggerExecutor');
   const workflowTriggerModule = await import('./workflowTriggerExecutor');
   const responseMessageModule = await import('./responseMessageExecutor');
+  const createWorkflowModule = await import('./createWorkflowExecutor');
+  const linkWorkflowToAgentModule = await import('./linkWorkflowToAgentExecutor');
   
   return {
     textInputExecutor: textInputModule.textInputExecutor,
@@ -35,7 +37,9 @@ export async function getAllEnhancedNodeExecutors(): Promise<Record<string, Enha
     internalExecutor: internalModule.default, // Using default export
     agentTriggerExecutor: agentTriggerModule.default, // Using default export
     workflowTriggerExecutor: workflowTriggerModule.default, // Using default export
-    responseMessageExecutor: responseMessageModule.responseMessageExecutor
+    responseMessageExecutor: responseMessageModule.responseMessageExecutor,
+    createWorkflowExecutor: createWorkflowModule.default, // Using default export
+    linkWorkflowToAgentExecutor: linkWorkflowToAgentModule.default // Using default export
   };
 }
 
@@ -74,6 +78,10 @@ export async function registerAllEnhancedExecutors(): Promise<void> {
   
   // Register response message node executor
   registerEnhancedNodeExecutor('response_message', executors.responseMessageExecutor);
+  
+  // Register workflow creation and linking node executors
+  registerEnhancedNodeExecutor('create_workflow', executors.createWorkflowExecutor);
+  registerEnhancedNodeExecutor('link_workflow_to_agent', executors.linkWorkflowToAgentExecutor);
   
   console.log('All enhanced node executors registered');
 }
