@@ -55,9 +55,43 @@ export function registerAllNodeExecutors() {
   registerNodeExecutor('workflow_trigger', {
     execute: async (nodeData, inputs) => {
       console.log('Basic workflow_trigger node executor - passing through input', nodeData);
-      const input = inputs.input?.items?.[0]?.text || 
-                   inputs.input?.items?.[0]?.json?.prompt || 
-                   JSON.stringify(inputs.input?.items?.[0]?.json || {});
+      
+      // Check for direct input from workflow execution first
+      let input = '';
+      
+      // Check if we have a prompt in the nodeData (from the workflow execution)
+      if (nodeData._workflowInput && nodeData._workflowInput.prompt) {
+        input = nodeData._workflowInput.prompt;
+        console.log('Found prompt in _workflowInput:', input);
+      }
+      // Then try to extract from the incoming items
+      else if (inputs.input && inputs.input.items && inputs.input.items.length > 0) {
+        const item = inputs.input.items[0];
+        
+        // Try different possible input formats
+        if (item.text) {
+          input = item.text;
+        } else if (item.json) {
+          if (typeof item.json === 'string') {
+            input = item.json;
+          } else if (item.json.prompt) {
+            input = item.json.prompt;
+          } else if (item.json.content) {
+            input = item.json.content;
+          } else if (item.json.input) {
+            input = item.json.input;
+          } else {
+            // Fallback to full JSON if we can't find a specific field
+            input = JSON.stringify(item.json);
+          }
+        }
+      }
+      // Fallback if all else fails
+      else if (nodeData.inputText) {
+        input = nodeData.inputText;
+      }
+      
+      console.log('Workflow trigger using input:', input);
       
       return {
         output: [{ text: input, json: { prompt: input, workflowId: nodeData.workflowId } }]
