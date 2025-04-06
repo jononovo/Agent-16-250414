@@ -47,6 +47,7 @@ import TransformNode from '../flow/nodes/TransformNode';
 import ChatInterfaceNode from '../flow/nodes/ChatInterfaceNode';
 import InternalNode from '../flow/nodes/InternalNode';
 import AgentTriggerNode from '../flow/nodes/AgentTriggerNode';
+import WorkflowTriggerNode from '../flow/nodes/WorkflowTriggerNode';
 
 // Register node types according to the documentation
 const nodeTypes: NodeTypes = {
@@ -65,8 +66,9 @@ const nodeTypes: NodeTypes = {
   valid_response: ValidResponseNode,
   perplexity: PerplexityNode,
   
-  // Agent node types
+  // Agent and Workflow node types
   agent_trigger: AgentTriggerNode,
+  workflow_trigger: WorkflowTriggerNode,
   
   // Internal system node types
   internal_new_agent: InternalNode,
@@ -319,7 +321,7 @@ const FlowEditor = ({ workflow, isNew = false }: FlowEditorProps) => {
       const nodeDataWithHandlers = {
         ...nodeData,
         // Add settings click handler for node types that need configuration
-        ...((type === 'generate_text' || type === 'agent_trigger') ? {
+        ...((type === 'generate_text' || type === 'agent_trigger' || type === 'workflow_trigger') ? {
           onSettingsClick: () => {
             // We need to find the node by ID later because this is a closure
             const node = reactFlowInstance.getNode(`${type}-${Date.now()}`);
@@ -398,14 +400,42 @@ const FlowEditor = ({ workflow, isNew = false }: FlowEditorProps) => {
       }
     };
 
+    const handleWorkflowTriggerUpdate = (event: CustomEvent) => {
+      if (event.detail && event.detail.nodeId && event.detail.settings) {
+        const { nodeId, settings } = event.detail;
+        
+        // Update the node with the new settings (same behavior as agent trigger)
+        setNodes(nds => {
+          return nds.map(node => {
+            if (node.id === nodeId) {
+              // Update node with new settings
+              return {
+                ...node,
+                data: {
+                  ...node.data,
+                  settings: {
+                    ...node.data.settings,
+                    ...settings
+                  }
+                }
+              };
+            }
+            return node;
+          });
+        });
+      }
+    };
+
     // Add event listeners for custom events
     window.addEventListener('node-settings-open', handleNodeSettingsOpen as EventListener);
     window.addEventListener('agent-trigger-update', handleAgentTriggerUpdate as EventListener);
+    window.addEventListener('workflow-trigger-update', handleWorkflowTriggerUpdate as EventListener);
     
     // Cleanup function to remove event listeners
     return () => {
       window.removeEventListener('node-settings-open', handleNodeSettingsOpen as EventListener);
       window.removeEventListener('agent-trigger-update', handleAgentTriggerUpdate as EventListener);
+      window.removeEventListener('workflow-trigger-update', handleWorkflowTriggerUpdate as EventListener);
     };
   }, [nodes, setSelectedNode, setSettingsDrawerOpen]);
   
@@ -413,8 +443,8 @@ const FlowEditor = ({ workflow, isNew = false }: FlowEditorProps) => {
     // Don't automatically open settings for most node types
     // Only specific nodes should open settings when their main body is clicked
     if (
-      (node.type && node.type.startsWith('internal_')) || 
-      node.type === 'agent_trigger'
+      (node.type && node.type.startsWith('internal_')) 
+      // Removed agent_trigger from here to allow dropdown interaction
     ) {
       console.log('Node clicked that supports settings:', node.type, node.data);
       

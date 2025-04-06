@@ -96,8 +96,17 @@ const AgentTriggerNode = ({ id, data, selected }: AgentTriggerNodeProps) => {
     return null;
   };
 
+  // This handler will stop click propagation when clicking inside the card
+  // to prevent the node settings drawer from opening when interacting with the dropdown
+  const handleCardClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+  };
+
   return (
-    <Card className={`w-64 shadow-md ${selected ? 'ring-2 ring-blue-500' : ''} ${data._hasError ? 'ring-2 ring-red-500' : ''}`}>
+    <Card 
+      className={`w-64 shadow-md ${selected ? 'ring-2 ring-blue-500' : ''} ${data._hasError ? 'ring-2 ring-red-500' : ''}`}
+      onClick={handleCardClick}
+    >
       <CardHeader className="p-4 pb-0">
         <div className="flex justify-between items-start">
           <div className="flex items-center space-x-2">

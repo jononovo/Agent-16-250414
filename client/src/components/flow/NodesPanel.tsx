@@ -22,6 +22,7 @@ import {
   CheckCheck,
   Filter,
   Repeat,
+  GitBranch,
   Search as SearchIcon
 } from 'lucide-react';
 import NodeItem from './NodeItem';
@@ -167,6 +168,13 @@ const NODE_TYPES = [
     description: 'Call another agent within the system',
     category: 'actions',
     icon: Cpu
+  },
+  { 
+    id: 'workflow_trigger', 
+    name: 'Workflow Trigger', 
+    description: 'Call another workflow within the system',
+    category: 'actions',
+    icon: GitBranch
   },
   
   // Data Nodes

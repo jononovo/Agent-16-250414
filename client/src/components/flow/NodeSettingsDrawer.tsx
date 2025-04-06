@@ -77,6 +77,18 @@ const NodeSettingsDrawer: React.FC<NodeSettingsDrawerProps> = ({
     enabled: isOpen && node?.type === 'agent_trigger'
   });
   
+  // Fetch available workflows for workflow_trigger node
+  const { data: workflows } = useQuery({
+    queryKey: ['/api/workflows'],
+    queryFn: async () => {
+      const res = await fetch('/api/workflows');
+      if (!res.ok) throw new Error('Failed to fetch workflows');
+      return res.json();
+    },
+    // Only fetch when node is workflow_trigger and drawer is open
+    enabled: isOpen && node?.type === 'workflow_trigger'
+  });
+  
   // Dynamically update the agent dropdown options when agents are loaded
   useEffect(() => {
     if (node?.type === 'agent_trigger' && agents && agents.length > 0) {
@@ -95,6 +107,25 @@ const NodeSettingsDrawer: React.FC<NodeSettingsDrawerProps> = ({
       }
     }
   }, [agents, node]);
+  
+  // Dynamically update the workflow dropdown options when workflows are loaded
+  useEffect(() => {
+    if (node?.type === 'workflow_trigger' && workflows && workflows.length > 0) {
+      const workflowOptions = workflows.map((workflow: any) => ({
+        value: workflow.id.toString(),
+        label: workflow.name
+      }));
+      
+      // Find the fields array in the settings
+      const updatedFields = getFieldsForNodeType(node.type);
+      
+      // Find the workflowId field and update its options
+      const workflowIdField = updatedFields.find(f => f.id === 'workflowId');
+      if (workflowIdField) {
+        workflowIdField.options = workflowOptions;
+      }
+    }
+  }, [workflows, node]);
 
   // Get fields configuration based on node type
   const getFieldsForNodeType = (type: string | undefined): SettingsField[] => {
@@ -334,6 +365,31 @@ const NodeSettingsDrawer: React.FC<NodeSettingsDrawerProps> = ({
             type: 'text',
             placeholder: '30000',
             description: 'Maximum time in milliseconds to wait for agent response. Default: 30000 (30 seconds)'
+          }
+        ];
+      case 'workflow_trigger':
+        return [
+          {
+            id: 'workflowId',
+            label: 'Target Workflow',
+            type: 'select',
+            placeholder: 'Select target workflow',
+            description: 'The workflow that will be triggered by this node.',
+            options: [] // Will be populated dynamically with available workflows
+          },
+          {
+            id: 'inputField',
+            label: 'Input Field',
+            type: 'text',
+            placeholder: 'Enter input field name',
+            description: 'The field from input data to use as the input for the workflow.'
+          },
+          {
+            id: 'timeout',
+            label: 'Timeout (ms)',
+            type: 'text',
+            placeholder: '30000',
+            description: 'Maximum time in milliseconds to wait for workflow response. Default: 30000 (30 seconds)'
           }
         ];
       default:
@@ -597,6 +653,21 @@ const NodeSettingsDrawer: React.FC<NodeSettingsDrawerProps> = ({
                     <AlertDescription>
                       This node triggers another agent from within your workflow. Select the agent to call,
                       specify which input field to use as the prompt, and set a timeout if needed.
+                    </AlertDescription>
+                  </Alert>
+                </div>
+              )}
+              
+              {node.type === 'workflow_trigger' && (
+                <div className="mb-4">
+                  <p className="text-sm text-muted-foreground">
+                    Configure settings for the Workflow Trigger node.
+                  </p>
+                  
+                  <Alert className="mt-2">
+                    <AlertDescription>
+                      This node triggers another workflow from within your current workflow. Select the workflow to call,
+                      specify which input field to use as the input data, and set a timeout if needed.
                     </AlertDescription>
                   </Alert>
                 </div>

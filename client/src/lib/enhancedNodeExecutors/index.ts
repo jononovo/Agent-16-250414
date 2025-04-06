@@ -20,6 +20,7 @@ export async function getAllEnhancedNodeExecutors(): Promise<Record<string, Enha
   const generateTextModule = await import('./generateTextExecutor');
   const internalModule = await import('./internalExecutor');
   const agentTriggerModule = await import('./agentTriggerExecutor');
+  const workflowTriggerModule = await import('./workflowTriggerExecutor');
   
   return {
     textInputExecutor: textInputModule.textInputExecutor,
@@ -31,7 +32,8 @@ export async function getAllEnhancedNodeExecutors(): Promise<Record<string, Enha
     textPromptExecutor: textPromptModule.textPromptExecutor,
     generateTextExecutor: generateTextModule.generateTextExecutor,
     internalExecutor: internalModule.default, // Using default export
-    agentTriggerExecutor: agentTriggerModule.default // Using default export
+    agentTriggerExecutor: agentTriggerModule.default, // Using default export
+    workflowTriggerExecutor: workflowTriggerModule.default // Using default export
   };
 }
 
@@ -63,6 +65,9 @@ export async function registerAllEnhancedExecutors(): Promise<void> {
   
   // Register agent trigger node executor
   registerEnhancedNodeExecutor('agent_trigger', executors.agentTriggerExecutor);
+  
+  // Register workflow trigger node executor
+  registerEnhancedNodeExecutor('workflow_trigger', executors.workflowTriggerExecutor);
   
   console.log('All enhanced node executors registered');
 }
