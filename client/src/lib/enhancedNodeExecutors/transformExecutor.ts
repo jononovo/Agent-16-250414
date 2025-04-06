@@ -41,10 +41,10 @@ export const transformExecutor: EnhancedNodeExecutor = {
             const transformFunction = new Function('data', `
               try {
                 ${transformScript}
-                return data;
+                // The script should return its own value
               } catch (e) {
                 console.error('Transform script error:', e);
-                return { error: e.message };
+                return { error: e.message, routePath: "help" };
               }
             `);
             
