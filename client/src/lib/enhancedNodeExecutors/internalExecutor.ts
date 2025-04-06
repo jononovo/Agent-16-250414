@@ -25,16 +25,34 @@ const rawInternalExecutor: InternalNodeExecutor = async (
       const name = inputData.name || inputData.json?.name || '';
       const description = inputData.description || inputData.json?.description || '';
       
-      return {
-        status: 'success',
-        output: createExecutionDataFromValue({
-          trigger_type: nodeType,
-          timestamp: new Date().toISOString(),
-          name,
-          description,
-          ...context.inputData // Pass any additional input data to the next node
-        }, 'internal_trigger')
-      };
+      // Log what's happening for debugging
+      console.log(`Internal trigger node - ID: ${nodeData.id}, Type: ${nodeType}, Input: ${JSON.stringify(inputData, null, 2)}`);
+      
+      // Only respond to one trigger node within a workflow to avoid circular references
+      // If this is an internal_new_agent, prioritize it, otherwise check nodeId for specifics
+      if (nodeType === 'internal_new_agent' || nodeData.id === 'internal_new_agent-1') {
+        console.log(`Activating trigger node ${nodeData.id}`);
+        return {
+          status: 'success',
+          output: createExecutionDataFromValue({
+            trigger_type: nodeType,
+            timestamp: new Date().toISOString(),
+            name,
+            description,
+            ...inputData // Pass any additional input data to the next node
+          }, 'internal_trigger')
+        };
+      } else {
+        // Not the primary trigger for this workflow
+        console.log(`Skipping trigger node ${nodeData.id} (not primary)`);
+        return {
+          status: 'skipped',
+          output: createExecutionDataFromValue({
+            _skipped: true,
+            _info: 'Multiple trigger nodes detected, this secondary trigger was skipped'
+          }, 'internal_trigger_skipped')
+        };
+      }
     }
     
     // Action nodes that perform actual operations
