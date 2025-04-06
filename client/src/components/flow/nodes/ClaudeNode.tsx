@@ -162,16 +162,13 @@ const ClaudeNode = ({ data, selected, id }: NodeProps<NodeData>) => {
   const openSettings = (e: React.MouseEvent) => {
     e.stopPropagation();
     if (reactFlowInstance && id) {
-      const node = reactFlowInstance.getNode(id);
-      if (node) {
-        // Simulate a click event on the node to trigger onNodeClick
-        const nodeElement = document.querySelector(`[data-id="${id}"]`);
-        if (nodeElement) {
-          nodeElement.dispatchEvent(
-            new MouseEvent('click', { bubbles: true, cancelable: true })
-          );
-        }
-      }
+      // Access the flow context to trigger the settings drawer
+      // This directly calls the onNodeSettingsOpen callback without triggering node selection
+      // Dispatch a custom event that FlowEditor listens for
+      const event = new CustomEvent('node-settings-open', { 
+        detail: { nodeId: id }
+      });
+      window.dispatchEvent(event);
     }
   };
   
@@ -239,6 +236,10 @@ const ClaudeNode = ({ data, selected, id }: NodeProps<NodeData>) => {
         
         {/* Input text display */}
         <div className="bg-white border border-indigo-200 rounded-md p-2 min-h-[60px] text-xs mb-2">
+          <div className="font-medium text-xs text-indigo-700 mb-1 flex items-center">
+            <Lucide.ArrowDownToLine className="h-3 w-3 mr-1" />
+            Input Prompt:
+          </div>
           {data.inputText ? (
             <p className="text-slate-700">
               {typeof data.inputText === 'object' 
@@ -247,7 +248,7 @@ const ClaudeNode = ({ data, selected, id }: NodeProps<NodeData>) => {
             </p>
           ) : (
             <div className="text-slate-400 text-xs flex items-center justify-center h-full">
-              No input provided
+              Waiting for input from previous node...
             </div>
           )}
         </div>
@@ -286,22 +287,30 @@ const ClaudeNode = ({ data, selected, id }: NodeProps<NodeData>) => {
         </div>
         
         {/* Output display */}
-        {(displayResult || data._hasError) && (
-          <div className={`bg-white border rounded-md p-2 min-h-[80px] text-xs ${
-            data._hasError ? 'border-red-300 bg-red-50' : 'border-indigo-200'
-          }`}>
-            {data._hasError ? (
-              <div className="text-red-600 whitespace-pre-line">
-                <Lucide.AlertTriangle className="h-3 w-3 inline mr-1" />
-                {data._errorMessage || 'An error occurred during generation'}
-              </div>
-            ) : (
-              <p className="text-slate-700 whitespace-pre-line">
-                {displayResult}
-              </p>
-            )}
+        <div className={`bg-white border rounded-md p-2 min-h-[80px] text-xs ${
+          data._hasError ? 'border-red-300 bg-red-50' : 'border-indigo-200'
+        }`}>
+          <div className="font-medium text-xs text-indigo-700 mb-1 flex items-center">
+            <Lucide.ArrowUpFromLine className="h-3 w-3 mr-1" />
+            Generated Output:
           </div>
-        )}
+          
+          {data._hasError ? (
+            <div className="text-red-600 whitespace-pre-line">
+              <Lucide.AlertTriangle className="h-3 w-3 inline mr-1" />
+              {data._errorMessage || 'An error occurred during generation'}
+            </div>
+          ) : displayResult ? (
+            <p className="text-slate-700 whitespace-pre-line">
+              {displayResult}
+            </p>
+          ) : (
+            <div className="text-slate-400 text-xs flex items-center justify-center h-[60px]">
+              <Lucide.Info className="h-3 w-3 mr-1" />
+              No response received yet. Click Generate to run this node.
+            </div>
+          )}
+        </div>
         
         {/* System prompt indicator if present */}
         {systemPrompt && (

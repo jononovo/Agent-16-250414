@@ -354,19 +354,36 @@ const FlowEditor = ({ workflow, isNew = false }: FlowEditorProps) => {
     });
   };
   
-  const handleNodeClick = (event: React.MouseEvent, node: Node) => {
-    // Don't open settings for every node type, only those that have settings
-    // Get list of node types that should open settings drawer when clicked
-    if (node.type && 
-        (['perplexity', 'claude', 'http_request'].includes(node.type) || 
-         node.type.startsWith('internal_'))) {
-      
-      // For internal nodes, just log the click but don't trigger the action
-      if (node.type.startsWith('internal_')) {
-        console.log('Internal node clicked:', node.type, node.data);
+  // Custom handler for node settings open via button clicks inside nodes
+  useEffect(() => {
+    const handleNodeSettingsOpen = (event: CustomEvent) => {
+      if (event.detail && event.detail.nodeId) {
+        const nodeId = event.detail.nodeId;
+        const node = nodes.find(n => n.id === nodeId);
+        if (node) {
+          console.log('Opening settings for node:', node.id);
+          setSelectedNode(node);
+          setSettingsDrawerOpen(true);
+        }
       }
+    };
+
+    // Add event listener for custom node-settings-open event
+    window.addEventListener('node-settings-open', handleNodeSettingsOpen as EventListener);
+    
+    // Cleanup function to remove event listener
+    return () => {
+      window.removeEventListener('node-settings-open', handleNodeSettingsOpen as EventListener);
+    };
+  }, [nodes, setSelectedNode, setSettingsDrawerOpen]);
+  
+  const handleNodeClick = (event: React.MouseEvent, node: Node) => {
+    // Don't automatically open settings for any node type
+    // Only internal nodes should open settings when their main body is clicked
+    if (node.type && node.type.startsWith('internal_')) {
+      console.log('Internal node clicked:', node.type, node.data);
       
-      // Open settings drawer for the node
+      // Open settings drawer for internal nodes only
       setSelectedNode(node);
       setSettingsDrawerOpen(true);
     }
