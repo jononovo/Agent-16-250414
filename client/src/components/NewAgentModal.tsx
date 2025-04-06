@@ -34,7 +34,18 @@ export function NewAgentModal({ isOpen, onClose, onAgentCreated }: NewAgentModal
     try {
       setIsLoading(true);
       
-      // Call the workflow execution API to trigger the agent creation workflow
+      // Direct API call to create the agent
+      const agentResponse = await apiPost('/api/agents', {
+        name,
+        description: description.trim() || `A new agent created on ${new Date().toLocaleDateString()}`,
+        type: 'custom',
+        icon: 'brain',
+        status: 'active'
+      });
+      
+      const agentData = await agentResponse.json();
+      
+      // Also make the workflow call for logging/tracking purposes
       const response = await apiPost('/api/workflows/run', {
         workflowId: 16, // ID of "Build New Agent Structure v1" workflow
         source: 'ui_form',
@@ -49,13 +60,17 @@ export function NewAgentModal({ isOpen, onClose, onAgentCreated }: NewAgentModal
       
       const data = await response.json();
       
+      // Use agent data for response
+      data.agent = agentData;
+      
       toast({
-        title: "Agent Creation Started",
-        description: "The new agent is being created.",
+        title: "Agent Created Successfully",
+        description: `The agent "${name}" has been created.`,
       });
       
-      if (onAgentCreated && data.success) {
-        onAgentCreated(data);
+      if (onAgentCreated) {
+        // Use the agent data directly from the creation response
+        onAgentCreated(agentData);
       }
       
       // Reset form and close modal
