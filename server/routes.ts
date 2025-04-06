@@ -39,7 +39,7 @@ async function runWorkflow(
     // Create new workflow based on input data
     try {
       // Parse the input data
-      let inputData = {};
+      let inputData: Record<string, any> = {};
       try {
         if (typeof prompt === 'string') {
           // Try to parse as JSON first
@@ -50,7 +50,7 @@ async function runWorkflow(
             inputData = { name: prompt };
           }
         } else {
-          inputData = prompt;
+          inputData = prompt as Record<string, any>;
         }
       } catch (error) {
         console.error('Error parsing input data:', error);
@@ -58,9 +58,9 @@ async function runWorkflow(
       }
       
       // Extract workflow data
-      const name = inputData.name || metadata.name || 'New Workflow';
-      const description = inputData.description || metadata.description || 'Created by Workflow Creator Flow';
-      const type = inputData.type || metadata.type || 'custom';
+      const name = inputData.name || (metadata as Record<string, any>).name || 'New Workflow';
+      const description = inputData.description || (metadata as Record<string, any>).description || 'Created by Workflow Creator Flow';
+      const type = inputData.type || (metadata as Record<string, any>).type || 'custom';
       
       // Create the workflow
       const insertData = {
@@ -122,7 +122,7 @@ async function runWorkflow(
     
     try {
       // Parse the input data
-      let inputData = {};
+      let inputData: Record<string, any> = {};
       try {
         if (typeof prompt === 'string') {
           // Try to parse as JSON first
@@ -139,7 +139,7 @@ async function runWorkflow(
             }
           }
         } else {
-          inputData = prompt;
+          inputData = prompt as Record<string, any>;
         }
       } catch (error) {
         console.error('Error parsing input data:', error);
@@ -151,8 +151,8 @@ async function runWorkflow(
       }
       
       // Get IDs from input or metadata
-      const agentId = inputData.agentId || metadata.agentId;
-      const workflowId = inputData.workflowId || metadata.workflowId;
+      const agentId = inputData.agentId || (metadata as Record<string, any>).agentId;
+      const workflowId = inputData.workflowId || (metadata as Record<string, any>).workflowId;
       
       if (!agentId) {
         return {

@@ -540,7 +540,12 @@ const NodeSettingsDrawer: React.FC<NodeSettingsDrawerProps> = ({
 
   // When Sheet close button is clicked, call onClose
   const handleOpenChange = (open: boolean) => {
-    if (!open) onClose();
+    if (!open) {
+      // Use setTimeout to avoid potential race conditions
+      setTimeout(() => {
+        onClose();
+      }, 0);
+    }
   };
 
   return (
