@@ -345,6 +345,39 @@ const TransformNode = ({ id, data, isConnectable = true, selected }: TransformNo
         isConnectable={isConnectable}
       />
       
+      {/* Route-specific output handles for action_router */}
+      {data.label === 'Action Router' && (
+        <>
+          <Handle
+            type="source"
+            position={Position.Right}
+            id="generation"
+            className="w-3 h-3 right-[-6px] bg-green-500 border-2 border-background"
+            style={{ top: "120px" }}
+            data-label="Generation"
+            isConnectable={isConnectable}
+          />
+          <Handle
+            type="source"
+            position={Position.Right}
+            id="execution"
+            className="w-3 h-3 right-[-6px] bg-amber-500 border-2 border-background"
+            style={{ top: "160px" }}
+            data-label="Execution"
+            isConnectable={isConnectable}
+          />
+          <Handle
+            type="source"
+            position={Position.Right}
+            id="help"
+            className="w-3 h-3 right-[-6px] bg-purple-500 border-2 border-background"
+            style={{ top: "200px" }}
+            data-label="Help"
+            isConnectable={isConnectable}
+          />
+        </>
+      )}
+      
       {/* Dynamic output handles - positioned along the right side */}
       {outputs.map((output, index) => (
         <Handle
@@ -354,7 +387,7 @@ const TransformNode = ({ id, data, isConnectable = true, selected }: TransformNo
           id={output.id}
           className="w-3 h-3 right-[-6px] bg-purple-500 border-2 border-background"
           style={{
-            top: `${Math.max(100, 100 + (index * 30))}px`,
+            top: `${Math.max(240, 240 + (index * 30))}px`,
           }}
           data-label={output.name}
           isConnectable={isConnectable}
