@@ -15,6 +15,142 @@ const createAgentFromInternal = z.object({
   input_data: z.object({}).passthrough()
 });
 
+/**
+ * Utility function to execute a workflow
+ * This is outside registerRoutes to avoid strict mode issues
+ */
+async function runWorkflow(workflow: any, workflowName: string, prompt: string, executeWorkflow: any) {
+  console.log(`Executing workflow ${workflowName}...`);
+  
+  // Create a log entry for this execution
+  const workflowLog = await storage.createLog({
+    agentId: workflow.agentId || 0,
+    workflowId: workflow.id,
+    status: "running",
+    input: { prompt },
+  });
+  
+  try {
+    // Check for valid workflow data
+    if (!workflow.flowData) {
+      await storage.updateLog(workflowLog.id, {
+        status: "error",
+        error: `${workflowName} has no flow data`,
+        completedAt: new Date()
+      });
+      return { 
+        success: false, 
+        error: `${workflowName} has no flow data`,
+        logId: workflowLog.id
+      };
+    }
+    
+    // Parse the flow data
+    const flowData = typeof workflow.flowData === 'string' 
+      ? JSON.parse(workflow.flowData) 
+      : workflow.flowData;
+    
+    const nodes = flowData.nodes || [];
+    const edges = flowData.edges || [];
+    
+    console.log(`${workflowName}: ${nodes.length} nodes and ${edges.length} edges`);
+    
+    // Inject the prompt into the first text_input node
+    const startNode = nodes.find((node: { type: string }) => node.type === 'text_input');
+    if (startNode) {
+      if (!startNode.data) startNode.data = {};
+      startNode.data.inputText = prompt;
+    } else if (nodes.length > 0) {
+      // If no start node found, add the prompt as input to the first node
+      if (!nodes[0].data) nodes[0].data = {};
+      nodes[0].data.inputText = prompt;
+    }
+    
+    // Initialize node states tracking
+    const nodeStates: Record<string, any> = {};
+    
+    // Execute the workflow
+    const result = await executeWorkflow(
+      nodes,
+      edges,
+      (nodeId: string, state: any) => {
+        // Store node states as they change
+        nodeStates[nodeId] = state;
+        console.log(`[${workflowName}] Node ${nodeId} state: ${state.state}`);
+      },
+      (finalState: any) => {
+        console.log(`[${workflowName}] Execution completed with status: ${finalState.status}`);
+      }
+    );
+    
+    // Find the output nodes
+    const outputNodes = nodes.filter((node: { id: string }) => {
+      // Nodes with no outgoing edges are considered output nodes
+      return !edges.some((edge: { source: string }) => edge.source === node.id);
+    });
+    
+    // Collect output from the final nodes
+    const outputs: Record<string, any> = {};
+    outputNodes.forEach((node: { id: string }) => {
+      if (result.nodeStates[node.id]) {
+        outputs[node.id] = result.nodeStates[node.id].data;
+      }
+    });
+    
+    // Update log with results
+    await storage.updateLog(workflowLog.id, {
+      status: result.status === 'error' ? 'error' : 'success',
+      output: outputs,
+      error: result.error,
+      executionPath: { 
+        nodes: Object.keys(result.nodeStates),
+        completed: result.status === 'complete',
+        error: result.error
+      },
+      completedAt: new Date()
+    });
+    
+    if (result.status !== 'complete') {
+      return { 
+        success: false, 
+        error: `${workflowName} execution failed: ${result.error || 'Unknown error'}`,
+        status: result.status,
+        outputs,
+        logId: workflowLog.id
+      };
+    }
+    
+    // Extract the primary output (first output node, or node named 'output')
+    let primaryOutput = '';
+    const outputNodeId = outputNodes[0]?.id || 'output';
+    if (result.nodeStates[outputNodeId] && result.nodeStates[outputNodeId].data) {
+      primaryOutput = result.nodeStates[outputNodeId].data;
+    }
+    
+    return {
+      success: true,
+      status: result.status,
+      output: primaryOutput,
+      logId: workflowLog.id
+    };
+    
+  } catch (executionError) {
+    console.error(`Error executing ${workflowName}:`, executionError);
+    // Update log with error
+    await storage.updateLog(workflowLog.id, {
+      status: 'error',
+      error: executionError instanceof Error ? executionError.message : String(executionError),
+      completedAt: new Date()
+    });
+    
+    return { 
+      success: false, 
+      error: `${workflowName} execution error: ${executionError instanceof Error ? executionError.message : String(executionError)}`,
+      logId: workflowLog.id
+    };
+  }
+}
+
 export async function registerRoutes(app: Express): Promise<Server> {
   // Agents API
   app.get("/api/agents", async (req, res) => {
@@ -846,6 +982,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Execute workflow from the chat UI
+
   app.post("/api/execute-agent-chain", async (req, res) => {
     try {
       const { prompt } = req.body;
@@ -853,154 +990,48 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "Prompt is required" });
       }
       
-      console.log(`Executing workflow with prompt: ${prompt}`);
+      console.log(`Starting intelligent chain execution with prompt: ${prompt}`);
       
-      // Try to get workflow 13 (our simple chat workflow)
-      const requestedWorkflow = await storage.getWorkflow(13);
+      // Get the simple chat workflow (ID 13) and coordinator workflow (ID 7)
+      const simpleChatWorkflow = await storage.getWorkflow(13);
+      const coordinatorWorkflow = await storage.getWorkflow(7);
       
-      if (!requestedWorkflow) {
-        console.log("Workflow 13 not found.");
+      if (!simpleChatWorkflow) {
+        console.log("Simple chat workflow (ID 13) not found.");
         return res.status(404).json({ message: "Simple chat workflow not found" });
       }
       
-      console.log('Executing workflow 13...');
+      // Import and register workflow engine and executors
+      const { executeWorkflow } = await import('../client/src/lib/workflowEngine');
+      const { registerAllNodeExecutors } = await import('../client/src/lib/nodeExecutors');
+      registerAllNodeExecutors();
       
-      // Create a log entry for this execution
-      const workflowLog = await storage.createLog({
-        agentId: requestedWorkflow.agentId || 0,
-        workflowId: 13,
-        status: "running",
-        input: { prompt },
-      });
+      // Execute the simple chat workflow first (this is for immediate response)
+      const simpleChatResult = await runWorkflow(simpleChatWorkflow, "Simple Chat Workflow", prompt, executeWorkflow);
       
-      try {
-        // Make sure workflow has flowData
-        if (!requestedWorkflow.flowData) {
-          await storage.updateLog(workflowLog.id, {
-            status: "error",
-            error: "Workflow has no flow data",
-            completedAt: new Date()
-          });
-          return res.status(400).json({ message: "Workflow has no flow data" });
-        }
-        
-        // Import and register workflow engine and executors
-        const { executeWorkflow } = await import('../client/src/lib/workflowEngine');
-        const { registerAllNodeExecutors } = await import('../client/src/lib/nodeExecutors');
-        registerAllNodeExecutors();
-        
-        // Parse the flow data
-        const flowData = typeof requestedWorkflow.flowData === 'string' 
-          ? JSON.parse(requestedWorkflow.flowData) 
-          : requestedWorkflow.flowData;
-        
-        const nodes = flowData.nodes || [];
-        const edges = flowData.edges || [];
-        
-        console.log(`Executing workflow with ${nodes.length} nodes and ${edges.length} edges`);
-        
-        // Inject the prompt into the first text_input node
-        const startNode = nodes.find((node: { type: string }) => node.type === 'text_input');
-        if (startNode) {
-          if (!startNode.data) startNode.data = {};
-          startNode.data.inputText = prompt;
-        } else if (nodes.length > 0) {
-          // If no start node found, add the prompt as input to the first node
-          if (!nodes[0].data) nodes[0].data = {};
-          nodes[0].data.inputText = prompt;
-        }
-        
-        // Initialize node states tracking
-        const nodeStates: Record<string, any> = {};
-        
-        // Execute the workflow
-        const result = await executeWorkflow(
-          nodes,
-          edges,
-          (nodeId, state) => {
-            // Store node states as they change
-            nodeStates[nodeId] = state;
-            console.log(`Node ${nodeId} state: ${state.state}`);
-          },
-          (finalState) => {
-            console.log(`Workflow execution completed with status: ${finalState.status}`);
-          }
-        );
-        
-        // Find the output nodes
-        const outputNodes = nodes.filter((node: { id: string }) => {
-          // Nodes with no outgoing edges are considered output nodes
-          return !edges.some((edge: { source: string }) => edge.source === node.id);
-        });
-        
-        // Collect output from the final nodes
-        const outputs: Record<string, any> = {};
-        outputNodes.forEach((node: { id: string }) => {
-          if (result.nodeStates[node.id]) {
-            outputs[node.id] = result.nodeStates[node.id].data;
-          }
-        });
-        
-        // Update log with results
-        await storage.updateLog(workflowLog.id, {
-          status: result.status === 'error' ? 'error' : 'success',
-          output: outputs,
-          error: result.error,
-          executionPath: { 
-            nodes: Object.keys(result.nodeStates),
-            completed: result.status === 'complete',
-            error: result.error
-          },
-          completedAt: new Date()
-        });
-        
-        if (result.status !== 'complete') {
-          return res.status(500).json({ 
-            message: "Workflow execution failed",
-            status: result.status,
-            outputs,
-            error: result.error,
-            logId: workflowLog.id
-          });
-        }
-        
-        // Extract the primary output (first output node, or node named 'output')
-        let primaryOutput = '';
-        const outputNodeId = outputNodes[0]?.id || 'output';
-        if (result.nodeStates[outputNodeId] && result.nodeStates[outputNodeId].data) {
-          primaryOutput = result.nodeStates[outputNodeId].data;
-        }
-        
-        // For compatibility with the existing chat UI, format the response with both coordinator and generator
-        return res.json({
-          success: true,
-          coordinatorResult: {
-            status: result.status,
-            output: primaryOutput,
-            logId: workflowLog.id
-          },
-          // For backward compatibility with the chat UI that expects both outputs
-          generatorResult: {
-            status: result.status,
-            output: primaryOutput,
-            logId: workflowLog.id
-          }
-        });
-        
-      } catch (executionError) {
-        console.error('Error executing workflow:', executionError);
-        // Update log with error
-        await storage.updateLog(workflowLog.id, {
-          status: 'error',
-          error: executionError instanceof Error ? executionError.message : String(executionError),
-          completedAt: new Date()
-        });
-        
-        return res.status(500).json({ 
-          message: "Failed to execute workflow",
-          error: executionError instanceof Error ? executionError.message : String(executionError)
-        });
+      // Now execute the coordinator workflow if it exists
+      let coordinatorResult = null;
+      if (coordinatorWorkflow) {
+        console.log("Executing Coordinator Workflow...");
+        coordinatorResult = await runWorkflow(coordinatorWorkflow, "Coordinator Workflow", prompt, executeWorkflow);
       }
+      
+      // Return results in format expected by the chat UI
+      return res.json({
+        success: true,
+        // Simple chat result goes in generatorResult for immediate display
+        generatorResult: {
+          status: simpleChatResult.status,
+          output: simpleChatResult.output,
+          logId: simpleChatResult.logId
+        },
+        // Coordinator result (if available) provides the more sophisticated response
+        coordinatorResult: coordinatorResult ? {
+          status: coordinatorResult.status,
+          output: coordinatorResult.output,
+          logId: coordinatorResult.logId
+        } : null
+      });
     } catch (error) {
       console.error('Error in workflow execution:', error);
       res.status(500).json({ 

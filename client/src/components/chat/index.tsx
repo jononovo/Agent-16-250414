@@ -322,16 +322,27 @@ export function ChatSidebar({ className = '' }: ChatSidebarProps) {
       
       // Add the agent's response to the chat
       if (data.success) {
-        // Get the coordinator output
-        if (data.coordinatorResult && data.coordinatorResult.output) {
-          addMessage(data.coordinatorResult.output, 'agent');
+        // First, show the simple chat (generator) result immediately for a quick response
+        const generatorOutput = data.generatorResult?.output;
+        if (generatorOutput) {
+          addMessage(generatorOutput, 'agent');
         }
         
-        // If there's generator output, add it too
-        if (data.generatorResult && data.generatorResult.output) {
+        // Then show the coordinator result if it's available and different
+        const coordinatorOutput = data.coordinatorResult?.output;
+        if (coordinatorOutput && coordinatorOutput !== generatorOutput) {
+          // Add a typing indicator before showing the coordinator response
           setTimeout(() => {
-            addMessage(data.generatorResult.output, 'agent');
-          }, 1000);
+            addMessage(
+              "Based on your request, I have some additional insights or specialized capabilities to offer.",
+              'system'
+            );
+            
+            // Then show the actual coordinator response
+            setTimeout(() => {
+              addMessage(coordinatorOutput, 'agent');
+            }, 1000);
+          }, 2000);
         }
       } else {
         // If there's an error, add it to the chat
