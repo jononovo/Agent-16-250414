@@ -53,6 +53,7 @@ const NodeSettingsDrawer: React.FC<NodeSettingsDrawerProps> = ({
   const [settings, setSettings] = React.useState<Record<string, any>>({});
   const [nodeName, setNodeName] = React.useState('');
   const [nodeDescription, setNodeDescription] = React.useState('');
+  const [fieldOptions, setFieldOptions] = React.useState<SettingsField[]>([]);
 
   // Reset settings when node changes
   React.useEffect(() => {
@@ -61,10 +62,14 @@ const NodeSettingsDrawer: React.FC<NodeSettingsDrawerProps> = ({
       setSettings(node.data.settings || {});
       setNodeName(node.data.label || '');
       setNodeDescription(node.data.description || '');
+      
+      // Initialize field options based on node type
+      setFieldOptions(getFieldsForNodeType(node.type));
     } else {
       setSettings({});
       setNodeName('');
       setNodeDescription('');
+      setFieldOptions([]);
     }
   }, [node]);
   
@@ -100,13 +105,15 @@ const NodeSettingsDrawer: React.FC<NodeSettingsDrawerProps> = ({
         label: agent.name
       }));
       
-      // Find the fields array in the settings
+      // Get a fresh copy of the fields based on the node type
       const updatedFields = getFieldsForNodeType(node.type);
       
       // Find the agentId field and update its options
       const agentIdField = updatedFields.find(f => f.id === 'agentId');
       if (agentIdField) {
         agentIdField.options = agentOptions;
+        // Update the fieldOptions state to trigger a re-render with the new options
+        setFieldOptions([...updatedFields]);
       }
     }
   }, [agents, node]);
@@ -120,24 +127,28 @@ const NodeSettingsDrawer: React.FC<NodeSettingsDrawerProps> = ({
       }));
       
       if (node?.type === 'workflow_trigger') {
-        // Find the fields array in the settings
+        // Get a fresh copy of the fields based on the node type
         const updatedFields = getFieldsForNodeType(node.type);
         
         // Find the workflowId field and update its options
         const workflowIdField = updatedFields.find(f => f.id === 'workflowId');
         if (workflowIdField) {
           workflowIdField.options = workflowOptions;
+          // Update the fieldOptions state to trigger a re-render with the new options
+          setFieldOptions([...updatedFields]);
         }
       }
       
       if (node?.type === 'agent_trigger') {
-        // Find the fields array in the settings
+        // Get a fresh copy of the fields based on the node type
         const updatedFields = getFieldsForNodeType(node.type);
         
         // Find the workflowId field and update its options
         const workflowIdField = updatedFields.find(f => f.id === 'workflowId');
         if (workflowIdField) {
           workflowIdField.options = workflowOptions;
+          // Update the fieldOptions state to trigger a re-render with the new options
+          setFieldOptions([...updatedFields]);
         }
       }
     }
@@ -474,8 +485,6 @@ const NodeSettingsDrawer: React.FC<NodeSettingsDrawerProps> = ({
 
   if (!node) return null;
 
-  const fields = getFieldsForNodeType(node.type);
-
   const handleSettingChange = (fieldId: string, value: any) => {
     const updatedSettings = { ...settings, [fieldId]: value };
     setSettings(updatedSettings);
@@ -729,9 +738,9 @@ const NodeSettingsDrawer: React.FC<NodeSettingsDrawerProps> = ({
                 </div>
               )}
               
-              {fields.length > 0 ? (
+              {fieldOptions.length > 0 ? (
                 <div className="space-y-4 pb-6">
-                  {fields.map((field) => {
+                  {fieldOptions.map((field) => {
                     // Check if this field should be shown based on the showWhen condition
                     if (field.showWhen && !field.showWhen(settings)) {
                       return null;
