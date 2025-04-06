@@ -25,13 +25,42 @@ const rawInternalExecutor: InternalNodeExecutor = async (
       const name = inputData.name || inputData.json?.name || '';
       const description = inputData.description || inputData.json?.description || '';
       
-      // Log what's happening for debugging
-      console.log(`Internal trigger node - ID: ${nodeData.id}, Type: ${nodeType}, Input: ${JSON.stringify(inputData, null, 2)}`);
+      // Check for special flags from the routes.ts workflow trigger system
+      const isPreferredTrigger = inputData?._preferredTrigger || false;
+      const isIgnoredTrigger = inputData?._ignoreTrigger || false;
       
+      // Log what's happening for debugging
+      console.log(`Internal trigger node - ID: ${nodeData.id}, Type: ${nodeType}, Preferred: ${isPreferredTrigger}, Ignored: ${isIgnoredTrigger}`);
+      console.log(`Input data for ${nodeData.id}:`, JSON.stringify(inputData, null, 2));
+      
+      // Special handling based on flags from the API
+      if (isPreferredTrigger) {
+        console.log(`Activating preferred trigger node ${nodeData.id}`);
+        return {
+          status: 'success',
+          output: createExecutionDataFromValue({
+            trigger_type: nodeType,
+            timestamp: new Date().toISOString(),
+            name,
+            description,
+            ...inputData, // Pass any additional input data to the next node
+          }, 'internal_trigger')
+        };
+      } else if (isIgnoredTrigger) {
+        console.log(`Ignoring secondary trigger node ${nodeData.id} as flagged by API`);
+        return {
+          status: 'skipped',
+          output: createExecutionDataFromValue({
+            _skipped: true,
+            _info: 'This trigger was flagged to be ignored by the API'
+          }, 'internal_trigger_skipped')
+        };
+      }
+      // Default handling as a fallback
       // Only respond to one trigger node within a workflow to avoid circular references
       // If this is an internal_new_agent, prioritize it, otherwise check nodeId for specifics
-      if (nodeType === 'internal_new_agent' || nodeData.id === 'internal_new_agent-1') {
-        console.log(`Activating trigger node ${nodeData.id}`);
+      else if (nodeType === 'internal_new_agent' || nodeData.id === 'internal_new_agent-1') {
+        console.log(`Activating trigger node ${nodeData.id} (default priority rule)`);
         return {
           status: 'success',
           output: createExecutionDataFromValue({
@@ -63,20 +92,69 @@ const rawInternalExecutor: InternalNodeExecutor = async (
     // Handle different action types
     switch (actionType) {
       case 'create_agent': {
-        // Get agent data from the input - support both direct and nested json format
+        // Get agent data from the input - support various data formats
         const inputData = context.inputData || {};
+        console.log('Create Agent Action - Raw Input:', JSON.stringify(inputData, null, 2));
         
-        // First try to get data directly from the context
-        let name = inputData.name || '';
-        let description = inputData.description || '';
+        // Try to extract data from all possible locations
+        // Sometimes the Claude node gives data in a nested structure that needs parsing
+        let name = '';
+        let description = '';
+        let type = 'custom';
+        let icon = 'user-plus';
         
-        // If not found, try to get from json property
-        if (!name && inputData.json?.name) {
-          name = inputData.json.name;
+        // Attempt direct access to properties
+        if (inputData.name) name = inputData.name;
+        if (inputData.description) description = inputData.description;
+        if (inputData.type) type = inputData.type;
+        if (inputData.icon) icon = inputData.icon;
+        
+        // Try nested json property
+        if (inputData.json) {
+          if (inputData.json.name && !name) name = inputData.json.name;
+          if (inputData.json.description && !description) description = inputData.json.description;
+          if (inputData.json.type && !type) type = inputData.json.type;
+          if (inputData.json.icon && !icon) type = inputData.json.icon;
         }
         
-        if (!description && inputData.json?.description) {
-          description = inputData.json.description;
+        // Try content property (Claude often outputs this)
+        if (inputData.content) {
+          try {
+            // Try to parse as JSON
+            const contentObj = JSON.parse(inputData.content);
+            if (contentObj.name && !name) name = contentObj.name;
+            if (contentObj.description && !description) description = contentObj.description;
+            if (contentObj.type && !type) type = contentObj.type;
+            if (contentObj.icon && !icon) icon = contentObj.icon;
+          } catch (e) {
+            // Content isn't JSON, might be a descriptive string
+            // Extract name and description using regex if possible
+            const nameMatch = inputData.content.match(/name[:\s]+"([^"]+)"/i) || 
+                            inputData.content.match(/name[:\s]+(.+)[\n\r]/i);
+            if (nameMatch && nameMatch[1] && !name) {
+              name = nameMatch[1].trim();
+            }
+            
+            const descMatch = inputData.content.match(/description[:\s]+"([^"]+)"/i) || 
+                            inputData.content.match(/description[:\s]+(.+)[\n\r]/i);
+            if (descMatch && descMatch[1] && !description) {
+              description = descMatch[1].trim();
+            }
+          }
+        }
+        
+        // Look for claude-specific output format
+        if (inputData.json?.content) {
+          try {
+            // Sometimes claude gives JSON inside json.content 
+            const claudeObj = JSON.parse(inputData.json.content);
+            if (claudeObj.name && !name) name = claudeObj.name;
+            if (claudeObj.description && !description) description = claudeObj.description;
+            if (claudeObj.type && !type) type = claudeObj.type;
+            if (claudeObj.icon && !icon) icon = claudeObj.icon;
+          } catch (e) {
+            // Not parseable JSON
+          }
         }
         
         // If still no name, use default
@@ -89,31 +167,37 @@ const rawInternalExecutor: InternalNodeExecutor = async (
           description = 'A new agent created by workflow';
         }
         
+        // Construct the final agent data
         const agentData = {
           name,
           description,
-          type: inputData.type || inputData.json?.type || 'custom',
-          icon: inputData.icon || inputData.json?.icon || 'user-plus'
+          type,
+          icon
         };
+        
+        console.log('Create Agent Action - Extracted Agent Data:', JSON.stringify(agentData, null, 2));
         
         // Create the agent via API
         try {
           const response = await apiPost('/api/agents', agentData);
           const responseData = await response.json();
+          console.log('Create Agent Action - API Response:', JSON.stringify(responseData, null, 2));
           
           return {
             status: 'success',
             output: createExecutionDataFromValue({
               action: 'create_agent',
               result: 'success',
-              agent: responseData
+              agent: responseData,
+              agentData // Include the original extracted data for debugging
             }, 'internal_action')
           };
         } catch (error) {
           console.error('Error creating agent:', error);
           return {
             status: 'error',
-            error: `Failed to create agent: ${error instanceof Error ? error.message : 'Unknown error'}`
+            error: `Failed to create agent: ${error instanceof Error ? error.message : 'Unknown error'}`,
+            agentData // Include the data we tried to use for debugging
           };
         }
       }

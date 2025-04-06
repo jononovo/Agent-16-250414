@@ -1228,19 +1228,56 @@ export async function registerRoutes(app: Express): Promise<Server> {
           ? JSON.parse(workflow.flowData) 
           : workflow.flowData;
       
+      // For workflow 15 (Build New Agent Structure), we need to indicate the preferred trigger node
+      let preferredTriggerId = '';
+      if (workflowId === 15) {
+        // Always use internal_new_agent-1 as the preferred trigger for workflow 15
+        preferredTriggerId = 'internal_new_agent-1';
+        console.log(`Setting preferred trigger node ID for workflow 15 to: ${preferredTriggerId}`);
+      }
+      
       // Clone the workflow and add the call stack to each node to prevent circular dependencies
       const enhancedWorkflow = {
         ...workflow,
         flowData: {
           ...flowData,
-          nodes: (flowData.nodes || []).map((node: any) => ({
-            ...node,
-            data: {
-              ...(node.data || {}),
-              _callStack: context._callStack,
-              _workflowInput: { prompt: typeof prompt === 'string' ? prompt : JSON.stringify(prompt) }
+          nodes: (flowData.nodes || []).map((node: any) => {
+            // Split the node ID to get the base type (without the -number suffix)
+            const nodeIdParts = (node.id || '').split('-');
+            const nodeBaseType = nodeIdParts.length > 0 ? nodeIdParts[0] : '';
+            
+            // Special handling for internal_new_agent vs internal_ai_chat_agent triggers
+            let isPreferredTrigger = false;
+            let isIgnoredTrigger = false;
+            
+            // For workflow 15 specifically
+            if (workflowId === 15) {
+              // This is the preferred trigger node
+              if (node.id === preferredTriggerId) {
+                isPreferredTrigger = true;
+                console.log(`Found preferred trigger node: ${node.id}`);
+              }
+              // This is a trigger node we should ignore
+              else if (nodeBaseType.includes('trigger') || 
+                       nodeBaseType.includes('new_agent') || 
+                       nodeBaseType.includes('chat_agent') || 
+                       nodeBaseType.includes('ai_chat')) {
+                isIgnoredTrigger = true;
+                console.log(`Found trigger node to ignore: ${node.id}`);
+              }
             }
-          }))
+            
+            return {
+              ...node,
+              data: {
+                ...(node.data || {}),
+                _callStack: context._callStack,
+                _workflowInput: { prompt: typeof prompt === 'string' ? prompt : JSON.stringify(prompt) },
+                _preferredTrigger: isPreferredTrigger,
+                _ignoreTrigger: isIgnoredTrigger
+              }
+            };
+          })
         }
       };
       
