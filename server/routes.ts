@@ -72,6 +72,16 @@ async function runWorkflow(
       nodes[0].data.inputText = prompt;
     }
     
+    // Pass the call stack to all workflow/agent trigger nodes
+    if (context._callStack) {
+      for (const node of nodes) {
+        if (node.type === 'workflow_trigger' || node.type === 'agent_trigger') {
+          if (!node.data) node.data = {};
+          node.data._callStack = context._callStack;
+        }
+      }
+    }
+    
     // Initialize node states tracking
     const nodeStates: Record<string, any> = {};
     
@@ -1107,7 +1117,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             data: {
               ...(node.data || {}),
               _callStack: updatedCallStack,
-              _workflowInput: { prompt }
+              _workflowInput: { prompt: typeof prompt === 'string' ? prompt : JSON.stringify(prompt) }
             }
           }))
         }
@@ -1203,7 +1213,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             data: {
               ...(node.data || {}),
               _callStack: context._callStack,
-              _workflowInput: { prompt }
+              _workflowInput: { prompt: typeof prompt === 'string' ? prompt : JSON.stringify(prompt) }
             }
           }))
         }
@@ -1243,14 +1253,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post("/api/execute-agent-chain", async (req, res) => {
     try {
-      const { prompt, agentId } = req.body;
+      const { prompt, agentId, _callStack = [] } = req.body;
       if (!prompt) {
         return res.status(400).json({ message: "Prompt is required" });
       }
       
       // If specific agent ID is provided, execute that agent's workflow
       if (agentId) {
-        console.log(`Executing specific agent chain (agentId: ${agentId}) with prompt: ${prompt}`);
+        const promptStr = typeof prompt === 'string' ? prompt : JSON.stringify(prompt);
+        console.log(`Executing specific agent chain (agentId: ${agentId}) with prompt: ${promptStr}`);
         
         // Import and register workflow engine and executors
         const { executeWorkflow } = await import('../client/src/lib/workflowEngine');
@@ -1264,6 +1275,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
             return res.status(404).json({ message: `Agent with ID ${agentId} not found` });
           }
           
+          // Check for circular dependency
+          const agentKey = `agent-${agentId}`;
+          if (_callStack.includes(agentKey)) {
+            const error = `Circular agent dependency detected: ${_callStack.join(' -> ')} -> ${agentKey}`;
+            console.error(error);
+            return res.json({
+              success: true,
+              status: "error",
+              error,
+              circularDependency: true,
+              agent: {
+                id: agent.id,
+                name: agent.name
+              }
+            });
+          }
+          
           // Get the agent's workflows
           const workflows = await storage.getWorkflowsByAgentId(agentId);
           if (!workflows || workflows.length === 0) {
@@ -1273,9 +1301,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
           // Use the first workflow
           const agentWorkflow = workflows[0];
           
+          // Add the agent to the call stack
+          const updatedCallStack = [..._callStack, agentKey];
+          
           // Execute the agent's workflow
           console.log(`Executing ${agent.name}'s workflow (${agentWorkflow.name})...`);
-          const result = await runWorkflow(agentWorkflow, agentWorkflow.name, prompt, executeWorkflow);
+          const result = await runWorkflow(
+            agentWorkflow, 
+            agentWorkflow.name, 
+            promptStr, 
+            executeWorkflow, 
+            { _callStack: updatedCallStack }
+          );
           
           // Return results in format expected by the agent trigger node
           return res.json({
@@ -1295,7 +1332,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         } catch (error) {
           console.error(`Error executing agent ${agentId}:`, error);
           return res.status(500).json({ 
-            success: false,
+            success: true,
+            status: "error",
             message: "Failed to execute agent workflow",
             error: error instanceof Error ? error.message : String(error)
           });
@@ -1326,6 +1364,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       let coordinatorResult = null;
       if (coordinatorWorkflow) {
         console.log("Executing Coordinator Workflow...");
+        // Pass the original prompt string as is
         coordinatorResult = await runWorkflow(coordinatorWorkflow, "Coordinator Workflow", prompt, executeWorkflow);
       }
       
