@@ -742,85 +742,86 @@ const NodeSettingsDrawer: React.FC<NodeSettingsDrawerProps> = ({
                         <Label htmlFor={field.id}>{field.label}</Label>
                         
                         {field.type === 'password' ? (
-                        <Input
-                          id={field.id}
-                          type="password"
-                          placeholder={field.placeholder}
-                          value={settings[field.id] || ''}
-                          onChange={(e) => handleSettingChange(field.id, e.target.value)}
-                        />
-                      ) : field.type === 'select' && field.options ? (
-                        <Select 
-                          value={settings[field.id] || ''} 
-                          onValueChange={(value) => handleSettingChange(field.id, value)}
-                        >
-                          <SelectTrigger>
-                            <SelectValue placeholder="Select an option" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {field.options.map((option) => (
-                              <SelectItem key={option.value} value={option.value}>
-                                {option.label}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      ) : field.type === 'radio' && field.options ? (
-                        <RadioGroup
-                          value={settings[field.id] || field.defaultValue || ''}
-                          onValueChange={(value) => handleSettingChange(field.id, value)}
-                          className="flex flex-col space-y-1"
-                        >
-                          {field.options.map((option) => (
-                            <div key={option.value} className="flex items-center space-x-2">
-                              <RadioGroupItem value={option.value} id={`${field.id}-${option.value}`} />
-                              <Label htmlFor={`${field.id}-${option.value}`}>{option.label}</Label>
-                            </div>
-                          ))}
-                        </RadioGroup>
-                      ) : field.type === 'textarea' ? (
-                        <Textarea
-                          id={field.id}
-                          placeholder={field.placeholder}
-                          value={settings[field.id] || ''}
-                          onChange={(e) => handleSettingChange(field.id, e.target.value)}
-                          className="min-h-[100px]"
-                        />
-                      ) : (
-                        <div>
                           <Input
                             id={field.id}
-                            type="text"
+                            type="password"
                             placeholder={field.placeholder}
                             value={settings[field.id] || ''}
                             onChange={(e) => handleSettingChange(field.id, e.target.value)}
                           />
-                          {field.id === 'model' && node.type === 'perplexity' && (
-                            <p className="text-xs text-muted-foreground mt-1">
-                              Common models: sonar, sonar-small-online, sonar-medium-online, mistral-7b-instruct
-                            </p>
-                          )}
-                          {field.id === 'model' && (node.type === 'claude') && (
-                            <p className="text-xs text-muted-foreground mt-1">
-                              Claude models: claude-3-sonnet-20240229, claude-3-opus-20240229, claude-3-haiku-20240307
-                            </p>
-                          )}
-                          {field.id === 'model' && (node.type === 'generate_text' || node.type === 'generateText') && (
-                            <p className="text-xs text-muted-foreground mt-1">
-                              Claude models: claude-3.5-sonnet, claude-3-opus, claude-3-sonnet, claude-3-haiku
-                            </p>
-                          )}
-                        </div>
-                      )}
-                      
-                      {/* Show description if available */}
-                      {field.description && (
-                        <p className="text-xs text-muted-foreground">
-                          {field.description}
-                        </p>
-                      )}
-                    </div>
-                  ))}
+                        ) : field.type === 'select' && field.options ? (
+                          <Select 
+                            value={settings[field.id] || ''} 
+                            onValueChange={(value) => handleSettingChange(field.id, value)}
+                          >
+                            <SelectTrigger>
+                              <SelectValue placeholder={field.placeholder || "Select an option"} />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {field.options.map((option) => (
+                                <SelectItem key={option.value} value={option.value}>
+                                  {option.label}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        ) : field.type === 'radio' && field.options ? (
+                          <RadioGroup
+                            value={settings[field.id] || field.defaultValue || ''}
+                            onValueChange={(value) => handleSettingChange(field.id, value)}
+                            className="flex flex-col space-y-1"
+                          >
+                            {field.options.map((option) => (
+                              <div key={option.value} className="flex items-center space-x-2">
+                                <RadioGroupItem value={option.value} id={`${field.id}-${option.value}`} />
+                                <Label htmlFor={`${field.id}-${option.value}`}>{option.label}</Label>
+                              </div>
+                            ))}
+                          </RadioGroup>
+                        ) : field.type === 'textarea' ? (
+                          <Textarea
+                            id={field.id}
+                            placeholder={field.placeholder}
+                            value={settings[field.id] || ''}
+                            onChange={(e) => handleSettingChange(field.id, e.target.value)}
+                            className="min-h-[100px]"
+                          />
+                        ) : (
+                          <div>
+                            <Input
+                              id={field.id}
+                              type="text"
+                              placeholder={field.placeholder}
+                              value={settings[field.id] || ''}
+                              onChange={(e) => handleSettingChange(field.id, e.target.value)}
+                            />
+                            {field.id === 'model' && node.type === 'perplexity' && (
+                              <p className="text-xs text-muted-foreground mt-1">
+                                Common models: sonar, sonar-small-online, sonar-medium-online, mistral-7b-instruct
+                              </p>
+                            )}
+                            {field.id === 'model' && (node.type === 'claude') && (
+                              <p className="text-xs text-muted-foreground mt-1">
+                                Claude models: claude-3-sonnet-20240229, claude-3-opus-20240229, claude-3-haiku-20240307
+                              </p>
+                            )}
+                            {field.id === 'model' && (node.type === 'generate_text' || node.type === 'generateText') && (
+                              <p className="text-xs text-muted-foreground mt-1">
+                                Claude models: claude-3.5-sonnet, claude-3-opus, claude-3-sonnet, claude-3-haiku
+                              </p>
+                            )}
+                          </div>
+                        )}
+                        
+                        {/* Show description if available */}
+                        {field.description && (
+                          <p className="text-xs text-muted-foreground">
+                            {field.description}
+                          </p>
+                        )}
+                      </div>
+                    );
+                  })}
                 </div>
               ) : (
                 <div className="text-center py-8 text-muted-foreground">
