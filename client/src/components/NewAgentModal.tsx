@@ -35,7 +35,7 @@ export function NewAgentModal({ isOpen, onClose, onAgentCreated }: NewAgentModal
       setIsLoading(true);
       
       // Create the agent directly via API
-      const agentResponse = await apiPost('/api/agents', {
+      const agentData = await apiPost('/api/agents', {
         name,
         description: description.trim() || `A new agent created on ${new Date().toLocaleDateString()}`,
         type: 'custom',
@@ -45,12 +45,8 @@ export function NewAgentModal({ isOpen, onClose, onAgentCreated }: NewAgentModal
         userId: 1
       });
       
-      // Parse the response JSON
-      const agentData = await agentResponse.json();
-      
-      if (!agentResponse.ok) {
-        throw new Error(agentData.message || 'Server error creating agent');
-      }
+      // No need to parse the response as apiPost already returns the parsed JSON data
+      // Axios throws an error automatically if the response is not successful
       
       // Also make the workflow call for triggering/tracking purposes
       await apiPost('/api/workflows/run', {
