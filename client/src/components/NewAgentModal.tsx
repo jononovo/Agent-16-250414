@@ -40,10 +40,17 @@ export function NewAgentModal({ isOpen, onClose, onAgentCreated }: NewAgentModal
         description: description.trim() || `A new agent created on ${new Date().toLocaleDateString()}`,
         type: 'custom',
         icon: 'brain',
-        status: 'active'
+        status: 'active',
+        configuration: {}, // Add empty configuration object
+        userId: 1 // Add default user ID
       });
       
+      // Parse the response JSON only once
       const agentData = await agentResponse.json();
+      
+      if (!agentResponse.ok) {
+        throw new Error(agentData.message || 'Server error creating agent');
+      }
       
       // Also make the workflow call for logging/tracking purposes
       const response = await apiPost('/api/workflows/run', {
@@ -79,9 +86,18 @@ export function NewAgentModal({ isOpen, onClose, onAgentCreated }: NewAgentModal
       onClose();
     } catch (error) {
       console.error('Error creating agent:', error);
+      let errorMessage = "Failed to create agent. Please try again.";
+      
+      // Try to extract a more specific error message if possible
+      if (error instanceof Error) {
+        errorMessage += ` (${error.message})`;
+      } else if (typeof error === 'object' && error !== null) {
+        errorMessage += ` (${JSON.stringify(error)})`;
+      }
+      
       toast({
         title: "Error",
-        description: "Failed to create agent. Please try again.",
+        description: errorMessage,
         variant: "destructive"
       });
     } finally {

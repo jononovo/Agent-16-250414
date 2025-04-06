@@ -47,16 +47,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post("/api/agents", async (req, res) => {
     try {
+      console.log("Creating agent with data:", JSON.stringify(req.body));
+      
       const result = insertAgentSchema.safeParse(req.body);
       if (!result.success) {
         const validationError = fromZodError(result.error);
+        console.error("Agent validation error:", validationError.message);
         return res.status(400).json({ message: validationError.message });
       }
       
       const agent = await storage.createAgent(result.data);
+      console.log("Agent created successfully:", JSON.stringify(agent));
       res.status(201).json(agent);
     } catch (error) {
-      res.status(500).json({ message: "Failed to create agent" });
+      console.error("Failed to create agent:", error);
+      res.status(500).json({ 
+        message: "Failed to create agent", 
+        details: error instanceof Error ? error.message : String(error)
+      });
     }
   });
 
