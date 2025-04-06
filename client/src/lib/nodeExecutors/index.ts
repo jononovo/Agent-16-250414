@@ -6,6 +6,7 @@ import { visualizeTextExecutor } from './visualizeTextExecutor';
 import { generateTextExecutor } from './generateTextExecutor';
 import { transformExecutor } from './transformExecutor';
 import { outputExecutor } from './outputExecutor';
+import { webhookNodeExecutor } from './webhookNodeExecutor';
 
 // Register all node executors
 export function registerAllNodeExecutors() {
@@ -29,4 +30,8 @@ export function registerAllNodeExecutors() {
   registerNodeExecutor('visualize_text', visualizeTextExecutor);
   registerNodeExecutor('visualizeText', visualizeTextExecutor);
   registerNodeExecutor('output', outputExecutor);
+  
+  // Action/API nodes
+  registerNodeExecutor('webhook', webhookNodeExecutor);
+  registerNodeExecutor('api', webhookNodeExecutor); // Map 'api' type to webhookNodeExecutor
 }
