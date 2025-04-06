@@ -93,6 +93,7 @@ const TabContent = () => {
 
   // Filter workflows by type
   const customWorkflows = workflows.filter(workflow => workflow.type === 'custom');
+  const internalWorkflows = workflows.filter(workflow => workflow.type === 'internal' || workflow.type === 'system');
   const templateWorkflows = [
     {
       id: 101,
@@ -300,6 +301,38 @@ const TabContent = () => {
                   onClick={() => window.location.href = '/workflow-editor/new'}
                 />
               </>
+            )}
+          </div>
+        </div>
+        
+        {/* Internal Workflows */}
+        <div className="mb-8">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-lg font-medium text-slate-900">Internal Workflows</h2>
+            <div className="text-xs px-3 py-1 bg-slate-100 text-slate-600 rounded-full">System Use</div>
+          </div>
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {isLoadingWorkflows ? (
+              // Loading state
+              Array(2).fill(0).map((_, i) => (
+                <div key={i} className="bg-white rounded-lg border border-slate-200 p-4 h-[194px] animate-pulse">
+                  <div className="flex items-center mb-3">
+                    <div className="w-8 h-8 rounded-full bg-slate-200"></div>
+                    <div className="ml-2 w-24 h-4 bg-slate-200 rounded"></div>
+                  </div>
+                  <div className="w-full h-12 bg-slate-200 rounded mb-3"></div>
+                  <div className="flex items-center">
+                    <div className="w-20 h-3 bg-slate-200 rounded"></div>
+                    <div className="mx-2">•</div>
+                    <div className="w-20 h-3 bg-slate-200 rounded"></div>
+                  </div>
+                </div>
+              ))
+            ) : (
+              internalWorkflows.map(workflow => (
+                <WorkflowCard key={workflow.id} workflow={workflow} />
+              ))
             )}
           </div>
         </div>
