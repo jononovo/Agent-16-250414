@@ -29,11 +29,39 @@ const rawInternalExecutor: InternalNodeExecutor = async (
       const isPreferredTrigger = inputData?._preferredTrigger || false;
       const isIgnoredTrigger = inputData?._ignoreTrigger || false;
       
+      // Check for metadata to determine if we should use the ai_chat trigger
+      const metadata = inputData?.metadata || {};
+      const source = metadata.source || '';
+      const isAiChatSource = source === 'ai_chat';
+      
+      // Get workflow input if available
+      const workflowInput = inputData?._workflowInput || {};
+      const prompt = workflowInput.prompt || '';
+      
       // Log what's happening for debugging
-      console.log(`Internal trigger node - ID: ${nodeData.id}, Type: ${nodeType}, Preferred: ${isPreferredTrigger}, Ignored: ${isIgnoredTrigger}`);
+      console.log(`Internal trigger node - ID: ${nodeData.id}, Type: ${nodeType}, Preferred: ${isPreferredTrigger}, Ignored: ${isIgnoredTrigger}, Source: ${source}`);
       console.log(`Input data for ${nodeData.id}:`, JSON.stringify(inputData, null, 2));
       
-      // Special handling based on flags from the API
+      // For trigger nodes in the same workflow, we need to propagate the data even if they're "ignored"
+      // This allows the workflow to continue with other nodes
+      if (isIgnoredTrigger) {
+        console.log(`Ignored node ${nodeData.id} - passing data through for workflow continuity`);
+        return {
+          status: 'success',
+          output: createExecutionDataFromValue({
+            trigger_type: nodeType,
+            timestamp: new Date().toISOString(),
+            name,
+            description,
+            source,
+            prompt,
+            _isSecondaryTrigger: true, // Mark this as a secondary trigger
+            ...inputData  // Pass along all the input data to ensure nodes have what they need
+          }, 'internal_trigger')
+        };
+      }
+      
+      // If this node is explicitly preferred, activate it
       if (isPreferredTrigger) {
         console.log(`Activating preferred trigger node ${nodeData.id}`);
         return {
@@ -43,45 +71,81 @@ const rawInternalExecutor: InternalNodeExecutor = async (
             timestamp: new Date().toISOString(),
             name,
             description,
+            source,
+            prompt,
             ...inputData, // Pass any additional input data to the next node
           }, 'internal_trigger')
         };
-      } else if (isIgnoredTrigger) {
-        console.log(`Ignoring secondary trigger node ${nodeData.id} as flagged by API`);
-        return {
-          status: 'skipped',
-          output: createExecutionDataFromValue({
-            _skipped: true,
-            _info: 'This trigger was flagged to be ignored by the API'
-          }, 'internal_trigger_skipped')
-        };
       }
-      // Default handling as a fallback
-      // Only respond to one trigger node within a workflow to avoid circular references
-      // If this is an internal_new_agent, prioritize it, otherwise check nodeId for specifics
-      else if (nodeType === 'internal_new_agent' || nodeData.id === 'internal_new_agent-1') {
-        console.log(`Activating trigger node ${nodeData.id} (default priority rule)`);
-        return {
-          status: 'success',
-          output: createExecutionDataFromValue({
-            trigger_type: nodeType,
-            timestamp: new Date().toISOString(),
-            name,
-            description,
-            ...inputData // Pass any additional input data to the next node
-          }, 'internal_trigger')
-        };
-      } else {
-        // Not the primary trigger for this workflow
-        console.log(`Skipping trigger node ${nodeData.id} (not primary)`);
-        return {
-          status: 'skipped',
-          output: createExecutionDataFromValue({
-            _skipped: true,
-            _info: 'Multiple trigger nodes detected, this secondary trigger was skipped'
-          }, 'internal_trigger_skipped')
-        };
+      
+      // If source is ai_chat, activate internal_ai_chat_agent node types only
+      if (isAiChatSource) {
+        if (nodeData.type === 'internal_ai_chat_agent' || nodeData.id === 'internal_ai_chat_agent-1') {
+          console.log(`Activating AI chat agent trigger node ${nodeData.id} for source: ${source}`);
+          return {
+            status: 'success',
+            output: createExecutionDataFromValue({
+              trigger_type: nodeType,
+              timestamp: new Date().toISOString(),
+              name,
+              description,
+              source,
+              prompt,
+              ...inputData // Pass any additional input data to the next node
+            }, 'internal_trigger')
+          };
+        } else {
+          // Not the right node type for AI chat source
+          console.log(`Skipping trigger node ${nodeData.id} for AI chat source (not matching type)`);
+          return {
+            status: 'success', // Changed from 'skipped' to 'success' to prevent workflow engine errors 
+            output: createExecutionDataFromValue({
+              _skipped: true,
+              _info: 'AI chat source requires internal_ai_chat_agent node type'
+            }, 'internal_trigger_skipped')
+          };
+        }
       }
+      
+      // For UI-triggered new agent creation, use internal_new_agent node types
+      if (!isAiChatSource) {
+        if (nodeData.type === 'internal_new_agent' || nodeData.id === 'internal_new_agent-1') {
+          console.log(`Activating new agent UI trigger node ${nodeData.id}`);
+          return {
+            status: 'success',
+            output: createExecutionDataFromValue({
+              trigger_type: nodeType,
+              timestamp: new Date().toISOString(),
+              name,
+              description,
+              source: 'ui_button', // Explicitly set source for UI trigger
+              prompt,
+              ...inputData // Pass any additional input data to the next node
+            }, 'internal_trigger')
+          };
+        } else {
+          // Not the right node type for UI source
+          console.log(`Skipping trigger node ${nodeData.id} for UI source (not matching type)`);
+          return {
+            status: 'success', // Changed from 'skipped' to 'success' to prevent workflow engine errors
+            output: createExecutionDataFromValue({
+              _skipped: true,
+              _info: 'UI source requires internal_new_agent node type'
+            }, 'internal_trigger_skipped')
+          };
+        }
+      }
+      
+      // Default case - if we get here, it means no specific rule matched
+      // We'll succeed with a skipped marker to prevent workflow engine errors
+      console.log(`No specific rule matched for trigger node ${nodeData.id}, marking as skipped`);
+      return {
+        status: 'success', // To prevent workflow engine errors
+        output: createExecutionDataFromValue({
+          _skipped: true,
+          _info: 'No matching trigger rule'
+        }, 'internal_trigger_skipped')
+      };
     }
     
     // Action nodes that perform actual operations
@@ -194,10 +258,10 @@ const rawInternalExecutor: InternalNodeExecutor = async (
           };
         } catch (error) {
           console.error('Error creating agent:', error);
+          console.error('Failed agent data:', agentData);
           return {
             status: 'error',
-            error: `Failed to create agent: ${error instanceof Error ? error.message : 'Unknown error'}`,
-            agentData // Include the data we tried to use for debugging
+            error: `Failed to create agent: ${error instanceof Error ? error.message : 'Unknown error'}`
           };
         }
       }

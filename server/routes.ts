@@ -1231,9 +1231,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // For workflow 15 (Build New Agent Structure), we need to indicate the preferred trigger node
       let preferredTriggerId = '';
       if (workflowId === 15) {
-        // Always use internal_new_agent-1 as the preferred trigger for workflow 15
-        preferredTriggerId = 'internal_new_agent-1';
-        console.log(`Setting preferred trigger node ID for workflow 15 to: ${preferredTriggerId}`);
+        // Check if the source in metadata is from AI chat
+        if (metadata && metadata.source === 'ai_chat') {
+          preferredTriggerId = 'internal_ai_chat_agent-1';
+        } else {
+          preferredTriggerId = 'internal_new_agent-1';
+        }
+        console.log(`Setting preferred trigger node ID for workflow 15 to: ${preferredTriggerId} (Source: ${metadata?.source || 'ui'})`);
       }
       
       // Clone the workflow and add the call stack to each node to prevent circular dependencies
@@ -1274,7 +1278,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 _callStack: context._callStack,
                 _workflowInput: { prompt: typeof prompt === 'string' ? prompt : JSON.stringify(prompt) },
                 _preferredTrigger: isPreferredTrigger,
-                _ignoreTrigger: isIgnoredTrigger
+                _ignoreTrigger: isIgnoredTrigger,
+                metadata: metadata // Pass the metadata to all nodes to ensure it's available
               }
             };
           })

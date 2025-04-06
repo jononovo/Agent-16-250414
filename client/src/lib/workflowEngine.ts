@@ -47,6 +47,44 @@ function getNodeInputs(node: Node, nodeStates: Record<string, NodeExecutionState
   // Find all incoming edges to this node
   const incomingEdges = edges.filter(edge => edge.target === node.id);
   
+  // Special case for claude-1 node in workflow 15 (Build New Agent Structure)
+  // Claude node needs to accept input from either trigger node
+  if (node.id === 'claude-1' && node.type === 'claude') {
+    // Check if we have any completed internal nodes as sources
+    for (const edge of incomingEdges) {
+      const sourceNodeId = edge.source;
+      const sourceNode = nodeStates[sourceNodeId];
+      
+      if (sourceNode && (sourceNode.state === 'complete' || sourceNode.state === 'running')) {
+        console.log(`Claude node receiving input from ${sourceNodeId}:`, sourceNode.data);
+        inputs[edge.sourceHandle || 'default'] = sourceNode.data;
+        
+        // Once we have one valid input for claude, we can break as only one input is needed
+        break;
+      }
+    }
+    
+    // If we don't have any valid inputs yet, we need to check for any node data with workflow input
+    if (Object.keys(inputs).length === 0) {
+      for (const nodeId in nodeStates) {
+        const nodeState = nodeStates[nodeId];
+        if (nodeState && nodeState.data && nodeState.data._workflowInput) {
+          console.log(`Claude node using workflow input from node ${nodeId}`);
+          inputs['default'] = { 
+            inputText: nodeState.data._workflowInput.prompt,
+            prompt: nodeState.data._workflowInput.prompt
+          };
+          break;
+        }
+      }
+    }
+    
+    // Log the inputs for debugging
+    console.log(`Claude node inputs:`, JSON.stringify(inputs));
+    return inputs;
+  }
+  
+  // Standard case for all other nodes
   for (const edge of incomingEdges) {
     // Get source node state
     const sourceNodeState = nodeStates[edge.source];
@@ -71,7 +109,41 @@ function areNodeDependenciesSatisfied(node: Node, nodeStates: Record<string, Nod
     return true;
   }
   
-  // Check if all source nodes are complete
+  // Special case for claude-1 node in workflows with multiple possible trigger nodes
+  if (node.id === 'claude-1' && node.type === 'claude') {
+    // For claude node, we only need ONE of its dependencies to be satisfied
+    // This allows it to work with multiple trigger nodes where only one will be active
+    let hasCompletedSource = false;
+    
+    for (const edge of incomingEdges) {
+      const sourceNodeState = nodeStates[edge.source];
+      // Either the source is complete OR it's been marked with our special flag to be skipped
+      if (sourceNodeState && 
+          (sourceNodeState.state === 'complete' || 
+           (sourceNodeState.data && sourceNodeState.data._skipped === true))) {
+        hasCompletedSource = true;
+        break;
+      }
+    }
+    
+    // If at least one source is complete, or we have a direct workflow input, we can proceed
+    if (hasCompletedSource) {
+      return true;
+    }
+    
+    // If no completed sources, check if there's a workflow input we can use directly
+    // This fallback ensures claude can run even if no trigger nodes are complete
+    for (const nodeId in nodeStates) {
+      const nodeState = nodeStates[nodeId];
+      if (nodeState && nodeState.data && nodeState.data._workflowInput) {
+        return true;
+      }
+    }
+    
+    return false;
+  }
+  
+  // Standard case - all source nodes must be complete
   for (const edge of incomingEdges) {
     const sourceNodeState = nodeStates[edge.source];
     if (!sourceNodeState || sourceNodeState.state !== 'complete') {
@@ -86,6 +158,35 @@ function areNodeDependenciesSatisfied(node: Node, nodeStates: Record<string, Nod
  * Find the next nodes to execute
  */
 function findNextNodes(nodes: Node[], nodeStates: Record<string, NodeExecutionState>, edges: Edge[]): Node[] {
+  // First, check for trigger nodes that need priority handling
+  // In workflows with multiple potential trigger nodes (like workflow 15),
+  // we need to make sure both trigger nodes are processed before moving on
+  
+  // Step 1: Find all available trigger nodes
+  const availableTriggerNodes = nodes.filter(node => {
+    // Only consider internal node types that act as triggers
+    const isTriggerNode = node.type?.includes('internal_') && 
+                          (node.id === 'internal_new_agent-1' || 
+                           node.id === 'internal_ai_chat_agent-1');
+                           
+    if (!isTriggerNode) return false;
+    
+    // Skip nodes that are already running, completed, or in error state
+    const nodeState = nodeStates[node.id];
+    if (nodeState && (nodeState.state === 'running' || nodeState.state === 'complete' || nodeState.state === 'error')) {
+      return false;
+    }
+    
+    return true;
+  });
+  
+  // If we have available trigger nodes, prioritize processing them first
+  if (availableTriggerNodes.length > 0) {
+    console.log(`Prioritizing processing of trigger nodes: ${availableTriggerNodes.map(n => n.id).join(', ')}`);
+    return availableTriggerNodes;
+  }
+  
+  // Standard case: filter nodes ready for execution
   return nodes.filter(node => {
     // Skip nodes that are already running, completed, or in error state
     const nodeState = nodeStates[node.id];
@@ -129,16 +230,38 @@ export async function executeWorkflow(
       
       // If no more nodes to execute, we're done
       if (nextNodes.length === 0) {
-        // Check if all nodes are complete or error
+        // Check if all nodes are complete, error, or can be considered "processed"
         const allNodesProcessed = nodes.every(node => {
-          const state = executionState.nodeStates[node.id].state;
-          return state === 'complete' || state === 'error';
+          const nodeState = executionState.nodeStates[node.id];
+          const state = nodeState.state;
+          
+          // Check for special case where a node is meant to be skipped
+          // This is used by internal nodes that should be ignored in certain contexts
+          const isSkippedNode = nodeState.data && 
+                              (nodeState.data._skipped === true || 
+                               nodeState.data.status === 'skipped');
+          
+          return state === 'complete' || state === 'error' || isSkippedNode;
         });
         
         if (allNodesProcessed) {
           executionComplete = true;
           executionState.status = 'complete';
         } else {
+          // Log the unprocessed nodes for debugging
+          const unprocessedNodes = nodes
+            .filter(node => {
+              const nodeState = executionState.nodeStates[node.id];
+              const state = nodeState.state;
+              const isSkippedNode = nodeState.data && 
+                                 (nodeState.data._skipped === true || 
+                                  nodeState.data.status === 'skipped');
+              return state !== 'complete' && state !== 'error' && !isSkippedNode;
+            })
+            .map(node => node.id);
+            
+          console.error(`Workflow execution stalled. Unprocessed nodes: ${unprocessedNodes.join(', ')}`);
+          
           // We have a deadlock or circular dependency
           throw new Error('Workflow execution stalled. Possible circular dependency detected.');
         }
