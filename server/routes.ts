@@ -280,16 +280,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post("/api/workflows", async (req, res) => {
     try {
+      console.log("Creating workflow with data:", JSON.stringify(req.body));
+      
       const result = insertWorkflowSchema.safeParse(req.body);
       if (!result.success) {
         const validationError = fromZodError(result.error);
+        console.error("Workflow validation error:", validationError.message);
         return res.status(400).json({ message: validationError.message });
       }
       
+      console.log("Validation passed, creating workflow with:", JSON.stringify(result.data));
       const workflow = await storage.createWorkflow(result.data);
+      console.log("Workflow created successfully:", JSON.stringify(workflow));
       res.status(201).json(workflow);
     } catch (error) {
-      res.status(500).json({ message: "Failed to create workflow" });
+      console.error("Failed to create workflow:", error);
+      res.status(500).json({ 
+        message: "Failed to create workflow", 
+        details: error instanceof Error ? error.message : String(error)
+      });
     }
   });
 
