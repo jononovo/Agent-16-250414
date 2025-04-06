@@ -31,7 +31,203 @@ async function runWorkflow(
   // Extract metadata if present
   const { metadata = {}, _callStack = [] } = context;
   
-  // Create a log entry for this execution
+  // Special handling for empty workflow IDs 5 and 6 (temporary solution)
+  if (workflow.id === 5) {
+    // This is the Workflow Creator Flow
+    console.log(`Special handling for Workflow Creator Flow (ID: 5)`);
+    
+    // Create new workflow based on input data
+    try {
+      // Parse the input data
+      let inputData = {};
+      try {
+        if (typeof prompt === 'string') {
+          // Try to parse as JSON first
+          try {
+            inputData = JSON.parse(prompt);
+          } catch {
+            // If not JSON, use as-is
+            inputData = { name: prompt };
+          }
+        } else {
+          inputData = prompt;
+        }
+      } catch (error) {
+        console.error('Error parsing input data:', error);
+        inputData = { name: 'New Workflow' };
+      }
+      
+      // Extract workflow data
+      const name = inputData.name || metadata.name || 'New Workflow';
+      const description = inputData.description || metadata.description || 'Created by Workflow Creator Flow';
+      const type = inputData.type || metadata.type || 'custom';
+      
+      // Create the workflow
+      const insertData = {
+        name,
+        description,
+        type,
+        status: 'active',
+        icon: inputData.icon || 'git-branch',
+        flowData: JSON.stringify({ nodes: [], edges: [] }) // Empty workflow structure
+      };
+      
+      console.log('Creating new workflow:', insertData);
+      const newWorkflow = await storage.createWorkflow(insertData);
+      
+      // Create a log entry for this execution
+      const workflowLog = await storage.createLog({
+        agentId: workflow.agentId || 0,
+        workflowId: workflow.id,
+        status: "success",
+        input: { prompt, ...context },
+        output: newWorkflow,
+        completedAt: new Date()
+      });
+      
+      // Return the created workflow
+      return {
+        success: true,
+        output: newWorkflow,
+        status: "complete",
+        logId: workflowLog.id,
+        workflow: {
+          id: workflow.id,
+          name: workflow.name
+        }
+      };
+    } catch (error) {
+      console.error('Error in Workflow Creator Flow:', error);
+      
+      // Create error log
+      const workflowLog = await storage.createLog({
+        agentId: workflow.agentId || 0,
+        workflowId: workflow.id,
+        status: "error",
+        input: { prompt, ...context },
+        error: error instanceof Error ? error.message : 'Unknown error in Workflow Creator',
+        completedAt: new Date()
+      });
+      
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Unknown error in Workflow Creator',
+        status: "error",
+        logId: workflowLog.id
+      };
+    }
+  } else if (workflow.id === 6) {
+    // This is the Link Workflow to Agent Flow
+    console.log(`Special handling for Link Workflow to Agent Flow (ID: 6)`);
+    
+    try {
+      // Parse the input data
+      let inputData = {};
+      try {
+        if (typeof prompt === 'string') {
+          // Try to parse as JSON first
+          try {
+            inputData = JSON.parse(prompt);
+          } catch {
+            // If not JSON, try to extract IDs from the string
+            const parts = prompt.split(',');
+            if (parts.length >= 2) {
+              inputData = {
+                agentId: parseInt(parts[0].trim()),
+                workflowId: parseInt(parts[1].trim())
+              };
+            }
+          }
+        } else {
+          inputData = prompt;
+        }
+      } catch (error) {
+        console.error('Error parsing input data:', error);
+        return {
+          success: false,
+          error: 'Invalid input data for linking workflow to agent',
+          status: "error"
+        };
+      }
+      
+      // Get IDs from input or metadata
+      const agentId = inputData.agentId || metadata.agentId;
+      const workflowId = inputData.workflowId || metadata.workflowId;
+      
+      if (!agentId) {
+        return {
+          success: false,
+          error: 'No agent ID provided for linking',
+          status: "error"
+        };
+      }
+      
+      if (!workflowId) {
+        return {
+          success: false,
+          error: 'No workflow ID provided for linking',
+          status: "error"
+        };
+      }
+      
+      // Fetch the workflow
+      const targetWorkflow = await storage.getWorkflow(workflowId);
+      if (!targetWorkflow) {
+        return {
+          success: false,
+          error: `Workflow with ID ${workflowId} not found`,
+          status: "error"
+        };
+      }
+      
+      // Update the workflow with the agent ID
+      console.log(`Linking workflow ${workflowId} to agent ${agentId}`);
+      const updatedWorkflow = await storage.updateWorkflow(workflowId, { agentId });
+      
+      // Create a log entry for this execution
+      const workflowLog = await storage.createLog({
+        agentId: workflow.agentId || 0,
+        workflowId: workflow.id,
+        status: "success",
+        input: { prompt, ...context },
+        output: updatedWorkflow,
+        completedAt: new Date()
+      });
+      
+      // Return success
+      return {
+        success: true,
+        output: updatedWorkflow,
+        status: "complete",
+        logId: workflowLog.id,
+        workflow: {
+          id: workflow.id,
+          name: workflow.name
+        }
+      };
+    } catch (error) {
+      console.error('Error in Link Workflow to Agent Flow:', error);
+      
+      // Create error log
+      const workflowLog = await storage.createLog({
+        agentId: workflow.agentId || 0,
+        workflowId: workflow.id,
+        status: "error",
+        input: { prompt, ...context },
+        error: error instanceof Error ? error.message : 'Unknown error in Link Workflow to Agent',
+        completedAt: new Date()
+      });
+      
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Unknown error in Link Workflow to Agent',
+        status: "error",
+        logId: workflowLog.id
+      };
+    }
+  }
+  
+  // Create a log entry for standard workflow execution
   const workflowLog = await storage.createLog({
     agentId: workflow.agentId || 0,
     workflowId: workflow.id,

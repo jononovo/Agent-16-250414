@@ -126,28 +126,11 @@ const NodeSettingsDrawer: React.FC<NodeSettingsDrawerProps> = ({
         label: `${workflow.name} (ID: ${workflow.id})`
       }));
       
-      if (node?.type === 'workflow_trigger') {
-        // Get a fresh copy of the fields based on the node type
-        const updatedFields = getFieldsForNodeType(node.type);
+      // Handle both workflow_trigger and any node with workflowId in its data
+      if (node && (node.type === 'workflow_trigger' || 
+                   node.type === 'agent_trigger' || 
+                   node.data?.workflowId !== undefined)) {
         
-        // Find the workflowId field and update its options
-        const workflowIdField = updatedFields.find(f => f.id === 'workflowId');
-        if (workflowIdField) {
-          workflowIdField.options = workflowOptions;
-          // Update the fieldOptions state to trigger a re-render with the new options
-          setFieldOptions([...updatedFields]);
-        }
-        
-        // Set the current value in the settings if it exists in node.data
-        if (node.data?.workflowId && !settings.workflowId) {
-          setSettings(prev => ({
-            ...prev,
-            workflowId: node.data.workflowId.toString()
-          }));
-        }
-      }
-      
-      if (node?.type === 'agent_trigger') {
         // Get a fresh copy of the fields based on the node type
         const updatedFields = getFieldsForNodeType(node.type);
         
