@@ -44,7 +44,12 @@ export const webhookNodeExecutor: NodeExecutor = {
       }
       
       // Determine if we need to use relative or absolute URL
-      const requestUrl = url.startsWith('http') ? url : `${window.location.origin}${url}`;
+      // Use a server-safe approach without relying on window object
+      const requestUrl = url.startsWith('http') 
+        ? url 
+        : (typeof window !== 'undefined' 
+            ? `${window.location.origin}${url}` 
+            : `http://localhost:5000${url}`);
       
       console.log(`Making ${method} request to ${requestUrl}`);
       

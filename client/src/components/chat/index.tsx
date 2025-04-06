@@ -146,7 +146,9 @@ export function ChatMessage({ message }: ChatMessageProps) {
                 : 'bg-card border border-border'
             }
           `}>
-            {message.content}
+            {typeof message.content === 'object' 
+              ? JSON.stringify(message.content, null, 2) 
+              : message.content}
           </div>
           
           {/* Timestamp */}
