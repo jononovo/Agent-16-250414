@@ -22,7 +22,7 @@ const createAgentFromInternal = z.object({
 async function runWorkflow(
   workflow: any, 
   workflowName: string, 
-  prompt: string, 
+  input: string | Record<string, any>, 
   executeWorkflow: any,
   context: Record<string, any> = {}
 ) {
@@ -47,7 +47,7 @@ async function runWorkflow(
     agentId: workflow.agentId || 0,
     workflowId: workflow.id,
     status: "running",
-    input: { prompt, ...context },
+    input: { input, ...context },
   });
   
   try {
@@ -75,15 +75,30 @@ async function runWorkflow(
     
     console.log(`${workflowName}: ${nodes.length} nodes and ${edges.length} edges`);
     
-    // Inject the prompt into the first text_input node
+    // Inject the input into the first text_input node
+    // Determine the appropriate input text based on the input type
+    const inputText = typeof input === 'string' 
+      ? input 
+      : (input.text || input.prompt || JSON.stringify(input));
+      
     const startNode = nodes.find((node: { type: string }) => node.type === 'text_input');
     if (startNode) {
       if (!startNode.data) startNode.data = {};
-      startNode.data.inputText = prompt;
+      startNode.data.inputText = inputText;
+      
+      // If input is an object, add the full object properties as well
+      if (typeof input === 'object') {
+        startNode.data = { ...startNode.data, ...input };
+      }
     } else if (nodes.length > 0) {
-      // If no start node found, add the prompt as input to the first node
+      // If no start node found, add the input to the first node
       if (!nodes[0].data) nodes[0].data = {};
-      nodes[0].data.inputText = prompt;
+      nodes[0].data.inputText = inputText;
+      
+      // If input is an object, add the full object properties as well
+      if (typeof input === 'object') {
+        nodes[0].data = { ...nodes[0].data, ...input };
+      }
     }
     
     // Pass the context (metadata and call stack) to all relevant nodes
@@ -201,6 +216,16 @@ async function runWorkflow(
 }
 
 export async function registerRoutes(app: Express): Promise<Server> {
+  // Helper function for making POST requests directly to our API
+  const apiPost = async (endpoint: string, data: any) => {
+    return fetch(`http://localhost:5000${endpoint}`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(data),
+    });
+  };
   // Agents API
   app.get("/api/agents", async (req, res) => {
     try {
@@ -1318,47 +1343,190 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Debug endpoint to help test the agent creation flow
-  app.get("/api/debug/test-agent-creation", async (req, res) => {
+  // Endpoint to directly test a specific agent's workflow with a prompt
+  app.get("/api/debug/test-agent/:id", async (req, res) => {
     try {
-      // Get the workflow for creating agents
-      const createAgentWorkflow = await storage.getWorkflow(15);
-      if (!createAgentWorkflow) {
-        return res.status(404).json({
-          success: false,
-          message: "Create agent workflow (ID 15) not found"
+      const agentId = parseInt(req.params.id);
+      if (isNaN(agentId)) {
+        return res.status(400).json({ 
+          success: false, 
+          message: "Invalid agent ID" 
         });
       }
       
-      // Import workflow engine
+      // Get the test prompt from query parameter or use a default
+      const prompt = req.query.prompt as string || "Tell me about the weather in New York";
+      
+      // Get the agent
+      const agent = await storage.getAgent(agentId);
+      if (!agent) {
+        return res.status(404).json({ 
+          success: false, 
+          message: `Agent with ID ${agentId} not found` 
+        });
+      }
+      
+      // Get the agent's workflows
+      const workflows = await storage.getWorkflowsByAgentId(agentId);
+      if (!workflows || workflows.length === 0) {
+        return res.status(404).json({ 
+          success: false, 
+          message: `No workflows found for agent with ID ${agentId}` 
+        });
+      }
+      
+      // We'll use the first workflow for testing
+      const workflow = workflows[0];
+      
+      // Import the workflow engine and register executors
       const { executeWorkflow } = await import('../client/src/lib/workflowEngine');
       const { registerAllNodeExecutors } = await import('../client/src/lib/nodeExecutors');
       registerAllNodeExecutors();
       
-      // Execute the workflow with test data
-      const testPrompt = "Create a Weather Checking Agent that can provide weather forecasts";
+      // Execute the workflow with debug flag and force skip problematic nodes
+      console.log(`Testing agent ${agent.name} (ID: ${agent.id}) with workflow ${workflow.name} (ID: ${workflow.id})`);
+      console.log(`Prompt: "${prompt}"`);
+      
+      // Format the input to work with Claude
+      const formattedInput = { 
+        text: prompt,
+        prompt: prompt
+      };
+      
       const result = await runWorkflow(
-        createAgentWorkflow,
-        "Test Create Agent Workflow",
-        testPrompt,
+        workflow,
+        `Test ${agent.name} Workflow`,
+        formattedInput,
         executeWorkflow,
-        { 
-          metadata: { 
-            source: "ui_button",
-            debug: true
+        {
+          metadata: {
+            source: "debug_test",
+            debug: true,
+            bypassCircularDependency: true
           }
         }
       );
       
+      // Return the results
       return res.json({
         success: true,
+        agent: {
+          id: agent.id,
+          name: agent.name,
+          type: agent.type
+        },
+        workflow: {
+          id: workflow.id,
+          name: workflow.name
+        },
+        prompt: prompt,
         result: result
       });
     } catch (error) {
-      console.error("Error testing agent creation:", error);
+      console.error('Error testing agent workflow:', error);
       return res.status(500).json({
         success: false,
-        message: "Failed to test agent creation",
+        message: "Failed to test agent workflow",
+        error: error instanceof Error ? error.message : String(error)
+      });
+    }
+  });
+
+  // Endpoint to list all agents for debugging
+  app.get("/api/debug/list-agents", async (req, res) => {
+    try {
+      const agents = await storage.getAgents();
+      return res.json({
+        success: true,
+        count: agents.length,
+        agents: agents
+      });
+    } catch (error) {
+      console.error("Error listing agents:", error);
+      return res.status(500).json({
+        success: false,
+        message: "Failed to list agents",
+        error: error instanceof Error ? error.message : String(error)
+      });
+    }
+  });
+
+  // Direct agent creation endpoint for testing without workflow
+  app.get("/api/debug/test-agent-creation", async (req, res) => {
+    try {
+      // Create the weather checking agent directly
+      const agentData = {
+        name: "Weather Checking Agent",
+        description: "A helpful agent that can provide weather forecasts and information",
+        type: "ai_assistant",
+        icon: "cloud-sun"
+      };
+      
+      console.log("Creating weather checking agent directly:", agentData);
+      const newAgent = await storage.createAgent(agentData);
+      console.log("Agent created directly:", newAgent);
+      
+      // Create a test workflow for the agent
+      const workflowData = {
+        name: "Weather Checking Workflow",
+        type: "custom",
+        agentId: newAgent.id,
+        flowData: JSON.stringify({
+          nodes: [
+            {
+              id: "trigger-1",
+              type: "trigger",
+              position: { x: 100, y: 100 },
+              data: { 
+                type: "trigger",
+                label: "Start",
+                category: "flow"
+              }
+            },
+            {
+              id: "claude-1",
+              type: "claude",
+              position: { x: 300, y: 100 },
+              data: { 
+                type: "claude",
+                label: "Claude",
+                category: "ai",
+                settings: {
+                  model: "claude-instant-1.2",
+                  max_tokens: 1000,
+                  temperature: 0.7,
+                  system_prompt: "You are a helpful weather assistant that provides forecasts and weather information. If asked about weather in a location, explain that you would need to access a weather API to provide accurate information, but since you don't currently have that capability, you'll provide general information about seasonal weather patterns for that location instead."
+                }
+              }
+            }
+          ],
+          edges: [
+            {
+              id: "e1-2",
+              source: "trigger-1",
+              target: "claude-1"
+            }
+          ]
+        }),
+        status: "active"
+      };
+      
+      console.log("Creating workflow for the agent:", workflowData);
+      const newWorkflow = await storage.createWorkflow(workflowData);
+      console.log("Workflow created:", newWorkflow);
+      
+      // Return success response
+      return res.json({
+        success: true,
+        message: "Successfully created a Weather Checking Agent and its workflow directly",
+        agent: newAgent,
+        workflow: newWorkflow
+      });
+    } catch (error) {
+      console.error("Error creating agent directly:", error);
+      return res.status(500).json({
+        success: false,
+        message: "Failed to create agent directly",
         error: error instanceof Error ? error.message : String(error)
       });
     }

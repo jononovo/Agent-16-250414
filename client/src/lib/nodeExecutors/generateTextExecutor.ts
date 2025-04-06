@@ -45,6 +45,24 @@ export const generateTextExecutor: NodeExecutor = {
       }
     });
     
+    // Support for direct object input passed from workflow engine
+    if (nodeData.inputText) {
+      console.log('Using input text from nodeData:', typeof nodeData.inputText);
+      if (typeof nodeData.inputText === 'object') {
+        // If it's an object with prompt or text field, use that
+        if (nodeData.inputText.prompt) {
+          userPrompt = nodeData.inputText.prompt;
+        } else if (nodeData.inputText.text) {
+          userPrompt = nodeData.inputText.text;
+        } else {
+          // Otherwise stringify the object
+          userPrompt = JSON.stringify(nodeData.inputText);
+        }
+      } else if (typeof nodeData.inputText === 'string') {
+        userPrompt = nodeData.inputText;
+      }
+    }
+    
     if (!userPrompt) {
       throw new Error('No user prompt provided for text generation');
     }
@@ -203,12 +221,17 @@ This is not a problem with your implementation but with the API provider.`;
 /**
  * Generate a simulated response for Text Generation when no API key is available
  */
-function simulateTextGeneration(model: string, systemPrompt: string, userPrompt: string): string {
+function simulateTextGeneration(model: string, systemPrompt: string, userPrompt: any): string {
+  // Make sure we have a string for userPrompt
+  const promptString = typeof userPrompt === 'string' 
+    ? userPrompt 
+    : (userPrompt?.text || userPrompt?.prompt || JSON.stringify(userPrompt));
+  
   // Generate a basic simulation based on inputs
   const response = [
     `[Simulated ${model} response]`,
     '',
-    `Based on the prompt: "${userPrompt.substring(0, 50)}${userPrompt.length > 50 ? '...' : ''}"`,
+    `Based on the prompt: "${promptString.substring(0, 50)}${promptString.length > 50 ? '...' : ''}"`,
     ''
   ];
   
