@@ -34,8 +34,26 @@ export function NewAgentModal({ isOpen, onClose, onAgentCreated }: NewAgentModal
     try {
       setIsLoading(true);
       
-      // Execute the workflow to create the agent
-      const response = await apiPost('/api/workflows/run', {
+      // Create the agent directly via API
+      const agentResponse = await apiPost('/api/agents', {
+        name,
+        description: description.trim() || `A new agent created on ${new Date().toLocaleDateString()}`,
+        type: 'custom',
+        icon: 'brain',
+        status: 'active',
+        configuration: {}, 
+        userId: 1
+      });
+      
+      // Parse the response JSON
+      const agentData = await agentResponse.json();
+      
+      if (!agentResponse.ok) {
+        throw new Error(agentData.message || 'Server error creating agent');
+      }
+      
+      // Also make the workflow call for triggering/tracking purposes
+      await apiPost('/api/workflows/run', {
         workflowId: 16, // ID of "Build New Agent Structure v1" workflow
         source: 'ui_form',
         triggerType: 'internal_new_agent',
@@ -45,32 +63,16 @@ export function NewAgentModal({ isOpen, onClose, onAgentCreated }: NewAgentModal
           name,
           description: description.trim() || `A new agent created on ${new Date().toLocaleDateString()}`
         }
+      }).catch(err => {
+        // Just log the error but don't fail the whole operation
+        console.warn('Warning: Workflow execution failed but agent was created:', err);
       });
-      
-      const data = await response.json();
-      
-      if (!response.ok) {
-        throw new Error(data.error || 'Error executing workflow');
-      }
-      
-      // Get the created agent data from the workflow result
-      let agentData = null;
-      
-      if (data.result && data.result.agent) {
-        // New format - agent data is in result.agent
-        agentData = data.result.agent;
-      } else if (data.agent) {
-        // Old format - agent data is directly in the response
-        agentData = data.agent;
-      } else {
-        throw new Error('No agent data returned from workflow');
-      }
       
       console.log("New agent created:", agentData);
       
       toast({
         title: "Agent Created Successfully",
-        description: `The agent "${agentData.name}" has been created.`,
+        description: `The agent "${name}" has been created.`,
       });
       
       if (onAgentCreated) {
