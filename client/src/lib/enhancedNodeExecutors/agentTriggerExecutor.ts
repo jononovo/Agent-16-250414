@@ -155,12 +155,23 @@ export const agentTriggerExecutor: EnhancedNodeExecutor = {
           // Add the agent to the call stack
           const updatedCallStack = [...callStack, `agent-${agentId}`];
           
+          // Extract metadata from input if available
+          let metadata = {};
+          if (inputs.input?.items?.[0]?.json?.metadata) {
+            metadata = inputs.input.items[0].json.metadata;
+          } else if (nodeData.metadata) {
+            metadata = nodeData.metadata;
+          }
+          
+          console.log(`Agent Trigger - Passing metadata:`, metadata);
+          
           responsePromise = apiRequest(
             `/api/agents/${agentId}/trigger`,
             'POST',
             {
               prompt: promptData,
-              _callStack: updatedCallStack // Pass the call stack to prevent circular dependencies
+              _callStack: updatedCallStack, // Pass the call stack to prevent circular dependencies
+              metadata: metadata // Pass metadata to the agent
             }
           );
           
@@ -196,12 +207,23 @@ export const agentTriggerExecutor: EnhancedNodeExecutor = {
           // Add the workflow to the call stack
           const updatedCallStack = [...callStack, `workflow-${workflowId}`];
           
+          // Extract metadata from input if available
+          let metadata = {};
+          if (inputs.input?.items?.[0]?.json?.metadata) {
+            metadata = inputs.input.items[0].json.metadata;
+          } else if (nodeData.metadata) {
+            metadata = nodeData.metadata;
+          }
+          
+          console.log(`Workflow Trigger - Passing metadata:`, metadata);
+          
           responsePromise = apiRequest(
             `/api/workflows/${workflowId}/trigger`,
             'POST',
             {
               prompt: promptData,
-              _callStack: updatedCallStack // Pass the call stack to prevent circular dependencies
+              _callStack: updatedCallStack, // Pass the call stack to prevent circular dependencies
+              metadata: metadata // Pass metadata to the workflow
             }
           );
           

@@ -28,6 +28,9 @@ async function runWorkflow(
 ) {
   console.log(`Executing workflow ${workflowName}...`);
   
+  // Extract metadata if present
+  const { metadata = {}, _callStack = [] } = context;
+  
   // Create a log entry for this execution
   const workflowLog = await storage.createLog({
     agentId: workflow.agentId || 0,
@@ -72,13 +75,19 @@ async function runWorkflow(
       nodes[0].data.inputText = prompt;
     }
     
-    // Pass the call stack to all workflow/agent trigger nodes
-    if (context._callStack) {
-      for (const node of nodes) {
-        if (node.type === 'workflow_trigger' || node.type === 'agent_trigger') {
-          if (!node.data) node.data = {};
-          node.data._callStack = context._callStack;
-        }
+    // Pass the context (metadata and call stack) to all relevant nodes
+    for (const node of nodes) {
+      if (!node.data) node.data = {};
+      
+      // Pass metadata to all nodes that might need it
+      if (Object.keys(metadata).length > 0) {
+        node.data.metadata = { ...metadata };
+        console.log(`Passing metadata to node ${node.id}:`, metadata);
+      }
+      
+      // Pass call stack specifically to workflow/agent trigger nodes
+      if (_callStack.length > 0 && (node.type === 'workflow_trigger' || node.type === 'agent_trigger')) {
+        node.data._callStack = _callStack;
       }
     }
     
@@ -1163,10 +1172,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "Invalid workflow ID format" });
       }
 
-      const { prompt, _callStack = [] } = req.body;
+      const { prompt, metadata = {}, _callStack = [] } = req.body;
       if (!prompt) {
         return res.status(400).json({ message: "Prompt is required" });
       }
+      
+      console.log(`Triggering workflow ${workflowId} with metadata:`, metadata);
 
       // Check for circular workflow triggering
       if (_callStack.includes(workflowId)) {
@@ -1195,8 +1206,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.log(`Triggering workflow ${workflow.name} (ID: ${workflowId}) with prompt: ${prompt.substring(0, 100)}...`);
       console.log(`Call stack: ${_callStack.join(' -> ')}`);
       
-      // Extract the context with call stack for the workflow executor
-      const context = { _callStack: [..._callStack, workflowId] }; // Add this workflow ID to the call stack
+      // Extract the context with call stack and metadata for the workflow executor
+      const context = { 
+        _callStack: [..._callStack, workflowId], // Add this workflow ID to the call stack
+        metadata: metadata // Include any metadata that was passed
+      };
       
       // We need to modify the nodes data to include the call stack context in the initial node
       const flowData = typeof workflow.flowData === 'string' 
@@ -1253,7 +1267,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post("/api/execute-agent-chain", async (req, res) => {
     try {
-      const { prompt, agentId, _callStack = [] } = req.body;
+      const { prompt, agentId, metadata = {}, _callStack = [] } = req.body;
       if (!prompt) {
         return res.status(400).json({ message: "Prompt is required" });
       }
@@ -1311,7 +1325,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             agentWorkflow.name, 
             promptStr, 
             executeWorkflow, 
-            { _callStack: updatedCallStack }
+            { _callStack: updatedCallStack, metadata: metadata }
           );
           
           // Return results in format expected by the agent trigger node

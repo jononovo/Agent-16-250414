@@ -17,18 +17,64 @@ export function registerAllNodeExecutors() {
   registerNodeExecutor('textPrompt', textPromptExecutor);
   registerNodeExecutor('trigger', { 
     execute: async (nodeData, inputs) => {
+      console.log('Trigger node executor - input:', nodeData._workflowInput);
+      
       // Extract the prompt directly from the workflow execution input
       let prompt = '';
-      if (nodeData._workflowInput && nodeData._workflowInput.prompt) {
-        prompt = nodeData._workflowInput.prompt;
-      } else if (inputs.input && inputs.input.items && inputs.input.items.length > 0) {
-        // Fallback to input if available
-        prompt = inputs.input.items[0].text || JSON.stringify(inputs.input.items[0]);
+      let metadata = {};
+      
+      // First check for direct workflow input
+      if (nodeData._workflowInput) {
+        if (nodeData._workflowInput.prompt) {
+          prompt = nodeData._workflowInput.prompt;
+        }
+        if (nodeData._workflowInput.metadata) {
+          metadata = nodeData._workflowInput.metadata;
+        }
+      } 
+      // Then check for inputs from connected nodes
+      else if (inputs.input && inputs.input.items && inputs.input.items.length > 0) {
+        const item = inputs.input.items[0];
+        
+        // Try to extract text content
+        if (item.text) {
+          prompt = item.text;
+        }
+        
+        // Try to extract metadata and other JSON fields
+        if (item.json) {
+          if (item.json.metadata) {
+            metadata = item.json.metadata;
+          }
+          if (item.json.prompt && !prompt) {
+            prompt = item.json.prompt;
+          }
+          if (item.json.originalPrompt && !prompt) {
+            prompt = item.json.originalPrompt;
+          }
+        }
       }
       
-      // Return the input as-is to pass to the next node
+      // Also check for input text directly on the node data (from manual testing)
+      if (!prompt && nodeData.inputText) {
+        prompt = nodeData.inputText;
+      }
+      
+      console.log('Trigger node using prompt:', prompt);
+      if (Object.keys(metadata).length > 0) {
+        console.log('Trigger node using metadata:', metadata);
+      }
+      
+      // Return the processed data
       return {
-        output: [{ text: prompt, json: { prompt } }]
+        output: [{ 
+          text: prompt, 
+          json: { 
+            prompt,
+            metadata,
+            execute: true 
+          } 
+        }]
       };
     }
   }); // Custom trigger node executor
@@ -54,47 +100,50 @@ export function registerAllNodeExecutors() {
   // Import enhanced workflow node executors for backward compatibility
   registerNodeExecutor('workflow_trigger', {
     execute: async (nodeData, inputs) => {
-      console.log('Basic workflow_trigger node executor - passing through input', nodeData);
+      console.log('Basic workflow_trigger node executor - executing workflow', nodeData);
       
-      // Check for direct input from workflow execution first
-      let input = '';
+      // For orchestration workflows, we don't need to pass the entire prompt through
+      // We just need to signal the workflow to execute with minimal required information
       
-      // Check if we have a prompt in the nodeData (from the workflow execution)
-      if (nodeData._workflowInput && nodeData._workflowInput.prompt) {
-        input = nodeData._workflowInput.prompt;
-        console.log('Found prompt in _workflowInput:', input);
-      }
-      // Then try to extract from the incoming items
-      else if (inputs.input && inputs.input.items && inputs.input.items.length > 0) {
-        const item = inputs.input.items[0];
-        
-        // Try different possible input formats
-        if (item.text) {
-          input = item.text;
-        } else if (item.json) {
-          if (typeof item.json === 'string') {
-            input = item.json;
-          } else if (item.json.prompt) {
-            input = item.json.prompt;
-          } else if (item.json.content) {
-            input = item.json.content;
-          } else if (item.json.input) {
-            input = item.json.input;
-          } else {
-            // Fallback to full JSON if we can't find a specific field
-            input = JSON.stringify(item.json);
-          }
-        }
-      }
-      // Fallback if all else fails
-      else if (nodeData.inputText) {
-        input = nodeData.inputText;
+      // Extract metadata if available (name, description for new agent/workflow)
+      let metadata = {};
+      
+      // Check various input sources for metadata
+      if (inputs.input?.items?.[0]?.json?.metadata) {
+        metadata = inputs.input.items[0].json.metadata;
+      } else if (nodeData.metadata) {
+        metadata = nodeData.metadata;
       }
       
-      console.log('Workflow trigger using input:', input);
+      // Get the original prompt if available (for debugging or context)
+      let originalPrompt = '';
+      if (nodeData._workflowInput?.prompt) {
+        originalPrompt = nodeData._workflowInput.prompt;
+      } else if (inputs.input?.items?.[0]?.text) {
+        originalPrompt = inputs.input.items[0].text;
+      } else if (inputs.input?.items?.[0]?.json?.prompt) {
+        originalPrompt = inputs.input.items[0].json.prompt;
+      } else if (nodeData.inputText) {
+        originalPrompt = nodeData.inputText;
+      }
       
+      console.log('Workflow trigger with metadata:', metadata);
+      if (originalPrompt) {
+        console.log('Original prompt (context only):', originalPrompt.substring(0, 100));
+      }
+      
+      // For orchestration workflows, we just need to return a valid execution signal
+      // with minimal metadata - no need to pass the entire prompt
       return {
-        output: [{ text: input, json: { prompt: input, workflowId: nodeData.workflowId } }]
+        output: [{ 
+          text: 'execute', 
+          json: { 
+            execute: true,
+            metadata,
+            originalPrompt,
+            workflowId: nodeData.workflowId
+          } 
+        }]
       };
     }
   });
