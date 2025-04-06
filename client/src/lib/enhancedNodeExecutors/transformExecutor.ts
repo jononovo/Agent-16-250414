@@ -37,11 +37,14 @@ export const transformExecutor: EnhancedNodeExecutor = {
       switch (transformType) {
         case 'json':
           try {
-            // Safe evaluation of JSON transform
+            // Create a safe sandbox function that explicitly executes the transform script
+            // and captures its return value
             const transformFunction = new Function('data', `
               try {
-                ${transformScript}
-                // The script should return its own value
+                // Execute the script directly and return its result
+                return (function(data) {
+                  ${transformScript}
+                })(data);
               } catch (e) {
                 console.error('Transform script error:', e);
                 return { error: e.message, routePath: "help" };
@@ -49,6 +52,7 @@ export const transformExecutor: EnhancedNodeExecutor = {
             `);
             
             outputData = transformFunction(JSON.parse(JSON.stringify(inputData)));
+            console.log('Transform output data:', outputData);
           } catch (e) {
             throw new Error(`JSON transform error: ${e.message}`);
           }
