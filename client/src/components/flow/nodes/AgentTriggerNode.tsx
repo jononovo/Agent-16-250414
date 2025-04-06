@@ -57,13 +57,21 @@ const AgentTriggerNode = ({ id, data, selected }: AgentTriggerNodeProps) => {
     }
   }, [settings.agentId]);
 
-  const handleLocalAgentSelect = (id: string) => {
-    const agentId = parseInt(id, 10);
+  const handleLocalAgentSelect = (agentIdStr: string) => {
+    // Parse the agent ID from the dropdown selection
+    const agentId = parseInt(agentIdStr, 10);
     setSelectedAgentId(agentId);
     
-    // Trigger custom event to update the node settings
-    const event = new CustomEvent('node-settings-open', { 
-      detail: { nodeId: id }
+    // Don't trigger the drawer here - that would conflict with the dropdown
+    // Instead, update local state and let the parent know via a custom event
+    const event = new CustomEvent('agent-trigger-update', { 
+      detail: { 
+        nodeId: id, 
+        settings: {
+          ...settings,
+          agentId
+        }
+      }
     });
     window.dispatchEvent(event);
   };

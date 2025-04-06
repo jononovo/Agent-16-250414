@@ -372,12 +372,40 @@ const FlowEditor = ({ workflow, isNew = false }: FlowEditorProps) => {
       }
     };
 
-    // Add event listener for custom node-settings-open event
+    const handleAgentTriggerUpdate = (event: CustomEvent) => {
+      if (event.detail && event.detail.nodeId && event.detail.settings) {
+        const { nodeId, settings } = event.detail;
+        
+        // Update the node with the new settings
+        setNodes(nds => {
+          return nds.map(node => {
+            if (node.id === nodeId) {
+              // Update node with new settings
+              return {
+                ...node,
+                data: {
+                  ...node.data,
+                  settings: {
+                    ...node.data.settings,
+                    ...settings
+                  }
+                }
+              };
+            }
+            return node;
+          });
+        });
+      }
+    };
+
+    // Add event listeners for custom events
     window.addEventListener('node-settings-open', handleNodeSettingsOpen as EventListener);
+    window.addEventListener('agent-trigger-update', handleAgentTriggerUpdate as EventListener);
     
-    // Cleanup function to remove event listener
+    // Cleanup function to remove event listeners
     return () => {
       window.removeEventListener('node-settings-open', handleNodeSettingsOpen as EventListener);
+      window.removeEventListener('agent-trigger-update', handleAgentTriggerUpdate as EventListener);
     };
   }, [nodes, setSelectedNode, setSettingsDrawerOpen]);
   

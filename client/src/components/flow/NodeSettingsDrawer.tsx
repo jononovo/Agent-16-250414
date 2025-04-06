@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   Sheet,
   SheetContent,
@@ -19,6 +19,8 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { cn } from '@/lib/utils';
 import { Save, X } from 'lucide-react';
+import { useQuery } from '@tanstack/react-query';
+import { Agent } from '@shared/schema';
 
 interface NodeSettingsDrawerProps {
   isOpen: boolean;
@@ -62,6 +64,37 @@ const NodeSettingsDrawer: React.FC<NodeSettingsDrawerProps> = ({
       setNodeDescription('');
     }
   }, [node]);
+  
+  // Fetch available agents for agent_trigger node
+  const { data: agents } = useQuery<Agent[]>({
+    queryKey: ['/api/agents'],
+    queryFn: async () => {
+      const res = await fetch('/api/agents');
+      if (!res.ok) throw new Error('Failed to fetch agents');
+      return res.json() as Promise<Agent[]>;
+    },
+    // Only fetch when node is agent_trigger and drawer is open
+    enabled: isOpen && node?.type === 'agent_trigger'
+  });
+  
+  // Dynamically update the agent dropdown options when agents are loaded
+  useEffect(() => {
+    if (node?.type === 'agent_trigger' && agents && agents.length > 0) {
+      const agentOptions = agents.map((agent: Agent) => ({
+        value: agent.id.toString(),
+        label: agent.name
+      }));
+      
+      // Find the fields array in the settings
+      const updatedFields = getFieldsForNodeType(node.type);
+      
+      // Find the agentId field and update its options
+      const agentIdField = updatedFields.find(f => f.id === 'agentId');
+      if (agentIdField) {
+        agentIdField.options = agentOptions;
+      }
+    }
+  }, [agents, node]);
 
   // Get fields configuration based on node type
   const getFieldsForNodeType = (type: string | undefined): SettingsField[] => {
@@ -276,6 +309,31 @@ const NodeSettingsDrawer: React.FC<NodeSettingsDrawerProps> = ({
               { value: 'standard', label: 'Standard' },
               { value: 'verbose', label: 'Verbose' }
             ]
+          }
+        ];
+      case 'agent_trigger':
+        return [
+          {
+            id: 'agentId',
+            label: 'Target Agent',
+            type: 'select',
+            placeholder: 'Select target agent',
+            description: 'The agent that will be triggered by this node.',
+            options: [] // Will be populated dynamically with available agents
+          },
+          {
+            id: 'promptField',
+            label: 'Prompt Field',
+            type: 'text',
+            placeholder: 'Enter prompt field name',
+            description: 'The field from input data to use as the prompt for the agent.'
+          },
+          {
+            id: 'timeout',
+            label: 'Timeout (ms)',
+            type: 'text',
+            placeholder: '30000',
+            description: 'Maximum time in milliseconds to wait for agent response. Default: 30000 (30 seconds)'
           }
         ];
       default:
@@ -524,6 +582,21 @@ const NodeSettingsDrawer: React.FC<NodeSettingsDrawerProps> = ({
                     <AlertDescription>
                       This node creates a new agent in the system with the specified properties.
                       Configure default settings and notification preferences for agent creation.
+                    </AlertDescription>
+                  </Alert>
+                </div>
+              )}
+              
+              {node.type === 'agent_trigger' && (
+                <div className="mb-4">
+                  <p className="text-sm text-muted-foreground">
+                    Configure settings for the Agent Trigger node.
+                  </p>
+                  
+                  <Alert className="mt-2">
+                    <AlertDescription>
+                      This node triggers another agent from within your workflow. Select the agent to call,
+                      specify which input field to use as the prompt, and set a timeout if needed.
                     </AlertDescription>
                   </Alert>
                 </div>
