@@ -4,7 +4,7 @@
  * Handles the execution of chat interface nodes, which provide conversational interactions.
  */
 
-import { EnhancedNodeExecutor } from '../types/workflow';
+import { EnhancedNodeExecutor, NodeExecutionData, createExecutionDataFromValue } from '../types/workflow';
 
 export interface ChatMessage {
   id: string;
@@ -16,7 +16,7 @@ export interface ChatMessage {
 export const chatInterfaceExecutor: EnhancedNodeExecutor = {
   nodeType: 'chat_interface',
   
-  execute: async (nodeData, inputs) => {
+  execute: async (nodeData, inputs): Promise<NodeExecutionData> => {
     try {
       // Get chat messages from node data or initialize if not present
       let messages: ChatMessage[] = nodeData.messages || [];
@@ -32,15 +32,44 @@ export const chatInterfaceExecutor: EnhancedNodeExecutor = {
         const firstInputKey = inputKeys[0];
         const firstInput = inputs[firstInputKey];
         
-        // Try to extract text from the input
-        if (typeof firstInput.text === 'string') {
-          aiResponse = firstInput.text;
-        } else if (typeof firstInput.output === 'string') {
-          aiResponse = firstInput.output;
-        } else if (typeof firstInput === 'string') {
-          aiResponse = firstInput;
-        } else if (firstInput && typeof firstInput === 'object') {
-          aiResponse = JSON.stringify(firstInput);
+        // Check for internal_action with formatted message
+        if (firstInput?.items?.[0]?.json?.action === 'create_agent' && 
+            firstInput?.items?.[0]?.json?.formatted === true && 
+            firstInput?.items?.[0]?.json?.message) {
+          // Use the already formatted message
+          aiResponse = firstInput.items[0].json.message;
+        }
+        // Check for notification message from API
+        else if (firstInput?.items?.[0]?.json?.notification?.message) {
+          aiResponse = firstInput.items[0].json.notification.message;
+        }
+        // Try to extract text from the input using various possible formats
+        else if (firstInput?.items?.[0]?.json?.text) {
+          aiResponse = firstInput.items[0].json.text;
+        } else if (firstInput?.items?.[0]?.json?.message) {
+          aiResponse = firstInput.items[0].json.message;
+        } else if (firstInput?.items?.[0]?.json?.content) {
+          aiResponse = firstInput.items[0].json.content;
+        } else {
+          // Try more complex processing for nested structures
+          try {
+            const flattenedInput = JSON.stringify(firstInput);
+            const parsedInput = JSON.parse(flattenedInput);
+            
+            if (parsedInput.items?.[0]?.json?.message) {
+              aiResponse = parsedInput.items[0].json.message;
+            } else if (parsedInput.message) {
+              aiResponse = parsedInput.message;
+            } else if (parsedInput.content) {
+              aiResponse = parsedInput.content;
+            } else {
+              // Fallback to stringify but make it pretty
+              aiResponse = JSON.stringify(firstInput, null, 2);
+            }
+          } catch (e) {
+            // If JSON parsing fails, just stringify
+            aiResponse = JSON.stringify(firstInput);
+          }
         }
       }
       
@@ -67,23 +96,17 @@ export const chatInterfaceExecutor: EnhancedNodeExecutor = {
       // Update the messages in node data
       nodeData.messages = messages;
       
-      // Return the chat state
-      return {
-        success: true,
-        outputs: {
-          text: userInput,
-          output: userInput,
-          messages: messages,
-          latestMessage: messages[messages.length - 1]?.content || ''
-        }
-      };
+      // Return the chat state in proper NodeExecutionData format
+      return createExecutionDataFromValue({
+        userInput,
+        messages,
+        latestMessage: messages[messages.length - 1]?.content || ''
+      }, 'chat_interface');
     } catch (error: any) {
       console.error(`Error executing chat interface node:`, error);
-      return {
-        success: false,
-        error: error.message || 'Error processing chat interface',
-        outputs: {}
-      };
+      return createExecutionDataFromValue({
+        error: error.message || 'Error processing chat interface'
+      }, 'error');
     }
   }
 };

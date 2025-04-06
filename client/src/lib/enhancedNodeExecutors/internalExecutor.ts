@@ -243,19 +243,58 @@ const rawInternalExecutor: InternalNodeExecutor = async (
         
         // Create the agent via API
         try {
+          // First create the agent
           const response = await apiPost('/api/agents', agentData);
-          const responseData = await response.json();
-          console.log('Create Agent Action - API Response:', JSON.stringify(responseData, null, 2));
-          
-          return {
-            status: 'success',
-            output: createExecutionDataFromValue({
-              action: 'create_agent',
-              result: 'success',
-              agent: responseData,
-              agentData // Include the original extracted data for debugging
-            }, 'internal_action')
-          };
+          const agentResponse = await response.json();
+          console.log('Create Agent Action - API Response:', JSON.stringify(agentResponse, null, 2));
+            
+          // Now notify about the agent creation to get a properly formatted response
+          // Determine the source of the agent creation
+          let source = "ui_button";
+          if (context.inputData?.source === "ai_chat" || 
+              context.inputData?.metadata?.source === "ai_chat" ||
+              context.inputData?._workflowInput?.metadata?.source === "ai_chat") {
+            source = "ai_chat";
+          }
+            
+          try {
+            // Send a notification about the agent creation to get a properly formatted response
+            const notifyResponse = await apiPost('/api/notify-agent-creation', {
+              agentId: agentResponse.id,
+              source: source
+            });
+              
+            const notifyData = await notifyResponse.json();
+            console.log('Agent Creation Notification - Response:', JSON.stringify(notifyData, null, 2));
+              
+            // Return the notification response for better UX
+            return {
+              status: 'success',
+              output: createExecutionDataFromValue({
+                action: 'create_agent',
+                result: 'success',
+                agent: agentResponse,
+                agentData, // Include the original extracted data for debugging
+                message: notifyData.message,
+                formatted: true,
+                notification: notifyData
+              }, 'internal_action')
+            };
+          } catch (notifyError) {
+            console.error('Error notifying about agent creation:', notifyError);
+            // Even if notification fails, we created the agent successfully
+            return {
+              status: 'success',
+              output: createExecutionDataFromValue({
+                action: 'create_agent',
+                result: 'success',
+                agent: agentResponse,
+                agentData,
+                message: `Created new agent: ${agentData.name}`,
+                formatted: false
+              }, 'internal_action')
+            };
+          }
         } catch (error) {
           console.error('Error creating agent:', error);
           console.error('Failed agent data:', agentData);

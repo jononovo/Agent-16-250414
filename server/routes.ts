@@ -1318,6 +1318,104 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Debug endpoint to help test the agent creation flow
+  app.get("/api/debug/test-agent-creation", async (req, res) => {
+    try {
+      // Get the workflow for creating agents
+      const createAgentWorkflow = await storage.getWorkflow(15);
+      if (!createAgentWorkflow) {
+        return res.status(404).json({
+          success: false,
+          message: "Create agent workflow (ID 15) not found"
+        });
+      }
+      
+      // Import workflow engine
+      const { executeWorkflow } = await import('../client/src/lib/workflowEngine');
+      const { registerAllNodeExecutors } = await import('../client/src/lib/nodeExecutors');
+      registerAllNodeExecutors();
+      
+      // Execute the workflow with test data
+      const testPrompt = "Create a Weather Checking Agent that can provide weather forecasts";
+      const result = await runWorkflow(
+        createAgentWorkflow,
+        "Test Create Agent Workflow",
+        testPrompt,
+        executeWorkflow,
+        { 
+          metadata: { 
+            source: "ui_button",
+            debug: true
+          }
+        }
+      );
+      
+      return res.json({
+        success: true,
+        result: result
+      });
+    } catch (error) {
+      console.error("Error testing agent creation:", error);
+      return res.status(500).json({
+        success: false,
+        message: "Failed to test agent creation",
+        error: error instanceof Error ? error.message : String(error)
+      });
+    }
+  });
+
+  app.post("/api/notify-agent-creation", async (req, res) => {
+    try {
+      const { agentId, workflowId, source = "unknown" } = req.body;
+      
+      if (!agentId) {
+        return res.status(400).json({ 
+          success: false,
+          message: "Agent ID is required"
+        });
+      }
+
+      // Get the agent details
+      const agent = await storage.getAgent(agentId);
+      if (!agent) {
+        return res.status(404).json({ 
+          success: false,
+          message: `Agent with ID ${agentId} not found`
+        });
+      }
+
+      // Format a nice response message
+      let responseMessage = '';
+      
+      if (source === "ai_chat") {
+        responseMessage = `I've created a new agent named "${agent.name}". ${agent.description}`;
+      } else {
+        responseMessage = `🎉 Success! New agent "${agent.name}" has been created.`;
+      }
+
+      // Return a nicely formatted response
+      return res.json({
+        success: true,
+        agent: {
+          id: agent.id,
+          name: agent.name,
+          description: agent.description,
+          type: agent.type,
+          icon: agent.icon
+        },
+        message: responseMessage,
+        source
+      });
+    } catch (error) {
+      console.error('Error in agent creation notification:', error);
+      return res.status(500).json({ 
+        success: false,
+        message: "Failed to process agent creation notification",
+        error: error instanceof Error ? error.message : String(error)
+      });
+    }
+  });
+
   app.post("/api/execute-agent-chain", async (req, res) => {
     try {
       const { prompt, agentId, metadata = {}, _callStack = [] } = req.body;
