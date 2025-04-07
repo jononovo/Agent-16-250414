@@ -6,7 +6,7 @@ import { BuilderProvider } from "./contexts/BuilderContext";
 import { ChatProvider } from "@/components/chat";
 import Builder from "@/pages/builder";
 import WorkflowEditor from "@/pages/workflow-editor";
-import WorkflowTest from "@/pages/workflow-test";
+import WorkflowTestBench from "@/pages/workflow-test";
 import AgentPage from "@/pages/agent-page";
 import NotFound from "@/pages/not-found";
 
@@ -16,8 +16,8 @@ function Router() {
       <Route path="/" component={Builder} />
       <Route path="/workflow-editor/new" component={WorkflowEditor} />
       <Route path="/workflow-editor/:id" component={WorkflowEditor} />
-      <Route path="/workflow-test" component={WorkflowTest} />
-      <Route path="/workflow-test/:id" component={WorkflowTest} />
+      <Route path="/workflow-test" component={WorkflowTestBench} />
+      <Route path="/workflow-test/:id" component={WorkflowTestBench} />
       <Route path="/agent/:id" component={AgentPage} />
       <Route component={NotFound} />
     </Switch>

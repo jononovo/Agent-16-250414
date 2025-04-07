@@ -138,7 +138,7 @@ export interface NodeDefinition {
  */
 export interface NodeState {
   // Current execution status
-  status: 'pending' | 'running' | 'completed' | 'error';
+  status: 'pending' | 'running' | 'completed' | 'error' | 'success' | 'waiting';
   
   // When execution started
   startTime: Date;
@@ -150,7 +150,16 @@ export interface NodeState {
   error?: string;
   
   // Output data (if status is completed)
-  output?: NodeExecutionData;
+  output?: any;
+  
+  // Input data that was provided to the node
+  input?: any;
+  
+  // Name of the node for display
+  nodeName?: string;
+  
+  // Status or progress message
+  message?: string;
 }
 
 /**
