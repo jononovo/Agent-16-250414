@@ -39,9 +39,6 @@ async function runWorkflow(
     console.log(`Using Link Workflow to Agent Flow (ID: 6) - Consider migrating to link_workflow_to_agent node type`);
   }
   
-  // Execute standard workflow execution (our new node types will be used by the workflow engine)
-  // The special case handling has been moved to the respective node executors
-  
   // Create a log entry for standard workflow execution
   const workflowLog = await storage.createLog({
     agentId: workflow.agentId || 0,
@@ -50,26 +47,27 @@ async function runWorkflow(
     input: { input, ...context },
   });
   
-  // SPECIAL CASE FOR WORKFLOW 15: Build New Agent Structure v1
-  // This is needed because server-side node executors don't properly handle the OR-dependency pattern
+  // SIMPLIFIED HANDLING FOR WORKFLOW 15: Build New Agent Structure
+  // Direct agent creation without requiring Claude node processing
   if (workflow.id === 15) {
-    console.log('Special handling for Build New Agent Structure workflow (ID 15)');
+    console.log('Simplified handling for Build New Agent Structure workflow (ID 15)');
     
-    // Determine the source from metadata to support multiple trigger paths
+    // Log the source to aid debugging
     const source = metadata.source || 'ui_button';
-    console.log(`Source for workflow 15: ${source}`);
+    console.log(`Source for workflow 15: ${source}, input type: ${typeof input}`);
+    console.log('Input data:', JSON.stringify(input));
     
-    // For direct agent creation case
-    if (typeof input === 'object' && input.name) {
+    // For direct agent creation case - if name is provided, create directly
+    if (typeof input === 'object' && (input.name || (input.agent_data && input.agent_data.name))) {
       try {
-        // Create agent with the provided data
-        const agentData = {
-          name: input.name,
-          description: input.description || 'Agent created from workflow',
-          type: 'custom',
-          icon: 'brain',
-          status: 'active'
-        };
+        // Get agent data either from direct properties or from agent_data object
+        const name = input.name || input.agent_data?.name;
+        const description = input.description || input.agent_data?.description || 'Agent created from workflow';
+        const type = input.type || input.agent_data?.type || 'custom';
+        const icon = input.icon || input.agent_data?.icon || 'brain';
+        const status = input.status || input.agent_data?.status || 'active';
+        
+        const agentData = { name, description, type, icon, status };
         
         console.log('Creating agent directly with data:', JSON.stringify(agentData));
         const agent = await storage.createAgent(agentData);
@@ -102,6 +100,8 @@ async function runWorkflow(
         // If direct creation fails, log the error but continue with regular execution
         console.error('Direct agent creation failed, falling back to workflow execution:', error);
       }
+    } else {
+      console.log('No direct agent data provided, will use workflow processing');
     }
   }
   
