@@ -37,16 +37,51 @@ const PromptInput = () => {
       
       // Add the agent's response to the chat
       if (data.success) {
-        // Add coordinator output
+        // Add coordinator output if available
         if (data.coordinatorResult && data.coordinatorResult.output) {
-          addMessage(data.coordinatorResult.output, 'agent');
+          // Check if the output is a string or an object
+          if (typeof data.coordinatorResult.output === 'string') {
+            addMessage(data.coordinatorResult.output, 'agent');
+          } else if (typeof data.coordinatorResult.output === 'object') {
+            // For agent creation responses, extract and format the message
+            if (data.coordinatorResult.output.settings?.successMessage) {
+              addMessage(data.coordinatorResult.output.settings.successMessage, 'agent');
+            } else {
+              // Just use a generic message if we can't extract a specific one
+              addMessage("Operation completed successfully", 'agent');
+            }
+          }
         }
         
         // If there's generator output, add it too after a short delay
         if (data.generatorResult && data.generatorResult.output) {
           setTimeout(() => {
-            addMessage(data.generatorResult.output, 'agent');
+            // Handle generator output the same way
+            if (typeof data.generatorResult.output === 'string') {
+              addMessage(data.generatorResult.output, 'agent');
+            } else if (typeof data.generatorResult.output === 'object') {
+              // For structured responses, try to extract a meaningful message
+              const message = data.generatorResult.output.message || 
+                             data.generatorResult.output.text ||
+                             "Operation completed successfully";
+              addMessage(message, 'agent');
+            }
           }, 1000);
+        }
+        
+        // Handle direct result output (for agent-specific workflows)
+        if (data.result && !data.coordinatorResult && !data.generatorResult) {
+          if (typeof data.result === 'string') {
+            addMessage(data.result, 'agent');
+          } else if (typeof data.result === 'object') {
+            // For agent creation responses, extract and format the message
+            if (data.result.settings?.successMessage) {
+              addMessage(data.result.settings.successMessage, 'agent');
+            } else {
+              // Use a generic message
+              addMessage("Operation completed successfully", 'agent');
+            }
+          }
         }
       } else {
         // Handle error response

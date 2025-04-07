@@ -1913,6 +1913,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
             metadata
           }
         );
+        
+        // Process the coordinator result to handle special cases
+        if (coordinatorResult.output && typeof coordinatorResult.output === 'object') {
+          // For TypeScript safety, we need to check the shape of the object
+          const output = coordinatorResult.output as any;
+          
+          // If this is an agent creation response or other structured response, extract a user-friendly message
+          if (output.type === 'response_message' && output.settings?.successMessage) {
+            // Create a proper user-facing message
+            console.log("[user-chat-ui-main] Transforming structured response to user-friendly message");
+            
+            // Add a formatted message to the result object
+            (coordinatorResult as any).formattedMessage = output.settings.successMessage;
+          } else if (output.message) {
+            // If there's a direct message field, use that
+            (coordinatorResult as any).formattedMessage = output.message;
+          }
+        }
       }
       
       // Return results in format expected by the chat UI
@@ -1928,6 +1946,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         coordinatorResult: coordinatorResult ? {
           status: coordinatorResult.status,
           output: coordinatorResult.output,
+          formattedMessage: coordinatorResult.formattedMessage,
           logId: coordinatorResult.logId
         } : null,
         sessionId: sessionId || `session-${Date.now()}`
