@@ -43,8 +43,32 @@ export const transformExecutor: EnhancedNodeExecutor = {
         
         // Set the input data based on what's available in NodeExecutionData
         if (firstInput && firstInput.items && firstInput.items.length > 0) {
+          // Try to get JSON data with fallbacks
           inputData = firstInput.items[0].json || {};
+          
+          // Special handling for workflow trigger outputs
+          if (inputData && typeof inputData === 'object') {
+            // Check if this is a workflow output and extract content/output field
+            if (inputData.output) {
+              inputData = inputData.output;
+            } else if (inputData.content) {
+              inputData = inputData.content;
+            } else if (inputData.result) {
+              inputData = inputData.result;
+            }
+          }
         }
+      }
+      
+      // Provide default values if data is still undefined or null
+      if (inputData === null || inputData === undefined || 
+          (typeof inputData === 'object' && Object.keys(inputData).length === 0)) {
+        // Set safe defaults to avoid errors
+        inputData = {
+          success: false,
+          verificationStatus: 'Not Available',
+          data: null
+        };
       }
       
       // Get transform type and script from node configuration
