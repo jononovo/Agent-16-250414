@@ -2,7 +2,7 @@
  * Executor for the WorkflowTrigger node
  * This node allows triggering another workflow from within a workflow
  */
-import { apiRequest } from '../apiClient';
+import { apiClient } from '../apiClient';
 import { EnhancedNodeExecutor, NodeExecutionData } from '../types/workflow';
 
 export const workflowTriggerExecutor: EnhancedNodeExecutor = {
@@ -169,18 +169,14 @@ export const workflowTriggerExecutor: EnhancedNodeExecutor = {
         );
         
         // Call the workflow through the API with a timeout race and pass the call stack
-        const responsePromise = apiRequest(
-          `/api/workflows/${workflowId}/trigger`,
-          'POST',
-          requestPayload
-        );
+        const responsePromise = apiClient.post(`/api/workflows/${workflowId}/trigger`, requestPayload);
         
         // Race between the API call and the timeout
         const response = await Promise.race([responsePromise, timeoutPromise]) as any;
         
         console.log('Workflow Trigger Node - Response received', response);
         
-        const workflow = await apiRequest(`/api/workflows/${workflowId}`);
+        const workflow = await apiClient.get(`/api/workflows/${workflowId}`);
         
         // Extract critical fields from the response for easier consumption by downstream nodes
         const extractedResult = {
@@ -191,13 +187,21 @@ export const workflowTriggerExecutor: EnhancedNodeExecutor = {
           agent: response?.agent || 
                  (response?.result?.agent ? response.result.agent : null) || 
                  (response?.data ? response.data : null) ||
-                 (response?.result?.data ? response.result.data : null),
+                 (response?.result?.data ? response.result.data : null) ||
+                 (response?.output?.agent ? response.output.agent : null),
           workflow: response?.workflow || (response?.result?.workflow ? response.result.workflow : null),
           output: response?.output || response?.result || response,
           status: response?.status || 'complete',
           fullResponse: response,
           _callStack: updatedCallStack // Include call stack in the output
         };
+
+        // Add agent to the top level for easy access by response message node
+        if (extractedResult.agent) {
+          console.log('Workflow Trigger Node - Found agent data, adding to top level:', extractedResult.agent);
+        } else {
+          console.log('Workflow Trigger Node - No agent data found in response');
+        }
         
         // Log more information about the agent data for debugging
         console.log('Workflow Trigger Node - Agent data:', {

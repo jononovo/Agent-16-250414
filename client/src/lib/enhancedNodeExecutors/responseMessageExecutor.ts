@@ -74,10 +74,33 @@ function getValueByPath(obj: any, path: string): any {
       return obj.data.id;
     }
     
+    // Look in result.agent
+    if (obj.result && obj.result.agent && obj.result.agent.id) {
+      return obj.result.agent.id;
+    }
+    
+    // Look in output.agent
+    if (obj.output && obj.output.agent && obj.output.agent.id) {
+      return obj.output.agent.id;
+    }
+    
+    // Check in fullResponse if it exists
+    if (obj.fullResponse) {
+      if (obj.fullResponse.agent && obj.fullResponse.agent.id) {
+        return obj.fullResponse.agent.id;
+      }
+      if (obj.fullResponse.data && obj.fullResponse.data.id) {
+        return obj.fullResponse.data.id;
+      }
+    }
+    
     // Try to find the 'id' field directly
     if (obj.id) {
       return obj.id;
     }
+    
+    // Log the issue for debugging
+    console.log('Agent ID not found in:', JSON.stringify(obj));
   }
   
   return undefined;
