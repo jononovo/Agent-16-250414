@@ -99,8 +99,17 @@ const PromptInput = () => {
           }
         }
         
-        // If there's generator output, add it too after a short delay
-        if (data.generatorResult && data.generatorResult.output) {
+        // Only show generator output if no agent-related coordinatorResult was shown
+        // Check if we just processed an agent creation coordinatorResult
+        const isAgentCreationRequest = userText.toLowerCase().includes('create') && 
+                                      userText.toLowerCase().includes('agent');
+        const hasCoordinatorResult = !!data.coordinatorResult && 
+                                   (!!data.coordinatorResult.output || 
+                                    !!data.coordinatorResult.formattedMessage);
+                                    
+        // Only show generator output if we don't have an agent creation coordinatorResult
+        if (data.generatorResult && data.generatorResult.output && 
+            (!isAgentCreationRequest || !hasCoordinatorResult)) {
           setTimeout(() => {
             // Handle generator output the same way
             if (typeof data.generatorResult.output === 'string') {
