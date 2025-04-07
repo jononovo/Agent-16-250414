@@ -661,7 +661,7 @@ const NodeSettingsDrawer: React.FC<NodeSettingsDrawerProps> = ({
           </button>
         </div>
         
-        <ScrollArea className="px-6 h-[calc(100vh-220px)]">
+        <ScrollArea className="px-6 h-[calc(100vh-280px)]">
           {/* Properties Tab */}
           {activeTab === 'properties' && (
             <div className="space-y-4">
@@ -747,6 +747,22 @@ const NodeSettingsDrawer: React.FC<NodeSettingsDrawerProps> = ({
                     <AlertDescription>
                       Configure your Claude API settings below. An API key is required for actual AI text generation.
                       Without an API key, the node will use simulated responses for testing purposes.
+                    </AlertDescription>
+                  </Alert>
+                </div>
+              )}
+              
+              {node.type === 'api_response_message' && (
+                <div className="mb-4">
+                  <p className="text-sm text-muted-foreground">
+                    Configure settings for the API Response Message node.
+                  </p>
+                  
+                  <Alert className="mt-2">
+                    <AlertDescription>
+                      This node sends direct API messages to the chat UI. You can use template variables like
+                      <code className="px-1 mx-1 bg-muted rounded">{'{{agent.id}}'}</code> in your messages,
+                      which will be resolved with actual values when executed.
                     </AlertDescription>
                   </Alert>
                 </div>
