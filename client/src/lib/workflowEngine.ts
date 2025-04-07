@@ -47,103 +47,7 @@ function getNodeInputs(node: Node, nodeStates: Record<string, NodeExecutionState
   // Find all incoming edges to this node
   const incomingEdges = edges.filter(edge => edge.target === node.id);
   
-  // Special case for claude-1 node in workflow 15 (Build New Agent Structure)
-  // Claude node needs to accept input from either trigger node
-  if (node.id === 'claude-1' && node.type === 'claude') {
-    console.log(`Enhanced Claude node input processing for node: ${node.id}`);
-    
-    // IMPROVED HANDLING: For testing, manually provide the claude node with input
-    // if this is part of workflow 15 and we're in debug mode
-    // This bypasses the need for trigger nodes to be in 'complete' state
-    const hasDebugFlag = Object.values(nodeStates).some(nodeState => 
-      nodeState?.data?.metadata?.debug === true || 
-      nodeState?.data?.metadata?.bypassCircularDependency === true
-    );
-    
-    if (hasDebugFlag) {
-      console.log('Debug mode detected - providing direct input to Claude node');
-      const testPrompt = "Create a Weather Checking Agent that can provide weather forecasts";
-      
-      inputs['default'] = { 
-        inputText: testPrompt,
-        prompt: testPrompt
-      };
-      
-      console.log(`Claude node debug input:`, JSON.stringify(inputs['default']));
-      return inputs;
-    }
-    
-    // APPROACH 1: Check if we have any completed internal nodes as sources
-    let hasFoundInput = false;
-    for (const edge of incomingEdges) {
-      const sourceNodeId = edge.source;
-      const sourceNode = nodeStates[sourceNodeId];
-      
-      // Accept input from nodes in any state, as long as they have data
-      if (sourceNode && sourceNode.data) {
-        console.log(`Claude node receiving input from ${sourceNodeId} with state: ${sourceNode.state}`);
-        // Set this as the default input
-        inputs[edge.sourceHandle || 'default'] = sourceNode.data;
-        
-        // Extract text input if available
-        if (sourceNode.data.inputText || sourceNode.data.prompt) {
-          const inputText = sourceNode.data.inputText || sourceNode.data.prompt;
-          console.log(`Found input text from ${sourceNodeId}: ${inputText}`);
-          inputs['default'] = { 
-            ...inputs['default'],
-            inputText,
-            prompt: inputText
-          };
-        }
-        
-        hasFoundInput = true;
-        // Once we have one valid input for claude, we can break as only one input is needed
-        break;
-      }
-    }
-    
-    // APPROACH 2: If we don't have any valid inputs yet, check for workflow input
-    if (!hasFoundInput) {
-      for (const nodeId in nodeStates) {
-        const nodeState = nodeStates[nodeId];
-        if (nodeState?.data?._workflowInput?.prompt) {
-          const promptText = nodeState.data._workflowInput.prompt;
-          console.log(`Claude node using workflow input from node ${nodeId}: ${promptText}`);
-          inputs['default'] = { 
-            inputText: promptText,
-            prompt: promptText
-          };
-          hasFoundInput = true;
-          break;
-        }
-      }
-    }
-    
-    // APPROACH 3: Check node.data directly for any inputText
-    if (!hasFoundInput && node.data?.inputText) {
-      console.log(`Claude node using its own inputText: ${node.data.inputText}`);
-      inputs['default'] = { 
-        inputText: node.data.inputText,
-        prompt: node.data.inputText
-      };
-      hasFoundInput = true;
-    }
-    
-    // APPROACH 4: Last resort - use a default prompt for testing
-    if (!hasFoundInput) {
-      console.log('No inputs found for Claude node - providing default prompt');
-      inputs['default'] = { 
-        inputText: "Create a new AI assistant agent that can help users",
-        prompt: "Create a new AI assistant agent that can help users"
-      };
-    }
-    
-    // Log the final inputs for debugging
-    console.log(`Claude node final inputs:`, JSON.stringify(inputs));
-    return inputs;
-  }
-  
-  // Standard case for all other nodes
+  // Standard case for all nodes
   for (const edge of incomingEdges) {
     // Get source node state
     const sourceNodeState = nodeStates[edge.source];
@@ -168,58 +72,20 @@ function areNodeDependenciesSatisfied(node: Node, nodeStates: Record<string, Nod
     return true;
   }
   
-  // Special case for claude-1 node in workflows with multiple possible trigger nodes
-  if (node.id === 'claude-1' && node.type === 'claude') {
-    // IMPROVED DEPENDENCY CHECKING: Always allow claude node to execute in debug mode
-    // This bypasses the need for trigger nodes to be in 'complete' state
-    const hasDebugFlag = Object.values(nodeStates).some(nodeState => 
-      nodeState?.data?.metadata?.debug === true || 
-      nodeState?.data?.metadata?.bypassCircularDependency === true
-    );
-    
-    if (hasDebugFlag) {
-      console.log('Debug mode detected for claude node - bypassing dependency checks');
-      return true;
-    }
-    
-    // For claude node, we only need ONE of its dependencies to be satisfied
-    // This allows it to work with multiple trigger nodes where only one will be active
-    let hasUsableSource = false;
-    
-    // IMPROVED: Also check if any source is in error state with data
-    // This is important because our fixed internalExecutor.ts will return success,
-    // but the workflow engine might still mark the node as error
+  // Standard case - check for OR vs AND behavior based on node type
+  const nodeType = node.type || '';
+  // Some node types only need one of their dependencies to be satisfied
+  // This allows multiple potential trigger sources where only one is active
+  const isORDependencyNode = nodeType === 'claude';
+  
+  if (isORDependencyNode) {
+    // For OR-dependency nodes, we only need ONE of the dependencies to be satisfied
     for (const edge of incomingEdges) {
       const sourceNodeState = nodeStates[edge.source];
-      
-      // Accept ANY node state as long as it has some data
-      if (sourceNodeState && sourceNodeState.data) {
-        console.log(`Claude node can use source: ${edge.source} with state: ${sourceNodeState.state}`);
-        hasUsableSource = true;
-        break;
-      }
-    }
-    
-    // If at least one source is usable, we can proceed
-    if (hasUsableSource) {
-      return true;
-    }
-    
-    // If no usable sources, check if there's a workflow input we can use directly
-    // This fallback ensures claude can run even if no trigger nodes have any data
-    for (const nodeId in nodeStates) {
-      const nodeState = nodeStates[nodeId];
-      if (nodeState && nodeState.data && nodeState.data._workflowInput) {
+      if (sourceNodeState && sourceNodeState.state === 'complete') {
         return true;
       }
     }
-    
-    // In testing mode, allow claude to execute anyway
-    if (process.env.NODE_ENV === 'development') {
-      console.log('Development mode - allowing claude node to execute anyway');
-      return true;
-    }
-    
     return false;
   }
   
@@ -245,27 +111,13 @@ function findNextNodes(nodes: Node[], nodeStates: Record<string, NodeExecutionSt
   // Step 1: Find all available trigger nodes
   const availableTriggerNodes = nodes.filter(node => {
     // Only consider internal node types that act as triggers
-    const isTriggerNode = node.type?.includes('internal_') && 
-                          (node.id === 'internal_new_agent-1' || 
-                           node.id === 'internal_ai_chat_agent-1' ||
-                           node.type === 'internal_new_agent' || 
-                           node.type === 'internal_ai_chat_agent');
+    const isTriggerNode = node.type?.includes('internal_') && node.type?.includes('_agent');
                            
     if (!isTriggerNode) return false;
     
     // Skip nodes that are already running, completed, or in error state
     const nodeState = nodeStates[node.id];
-    if (nodeState && (nodeState.state === 'running' || nodeState.state === 'complete')) {
-      return false;
-    }
-    
-    // Special handling for Build New Agent workflow (ID 15)
-    // Allow trigger nodes that errored to be passed over, as their data will be used by Claude
-    const isErrorState = nodeState && nodeState.state === 'error';
-    const isWorkflow15Node = node.id === 'internal_new_agent-1' || node.id === 'internal_ai_chat_agent-1';
-    
-    // If it's an error state but it's one of the specific workflow 15 nodes, skip it
-    if (isErrorState && isWorkflow15Node) {
+    if (nodeState && (nodeState.state === 'running' || nodeState.state === 'complete' || nodeState.state === 'error')) {
       return false;
     }
     
