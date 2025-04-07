@@ -75,8 +75,37 @@ export const responseMessageExecutor: EnhancedNodeExecutor = {
       const isSuccess = fieldValue !== undefined && fieldValue !== null && 
         fieldValue.toString() === successValue.toString();
       
-      // Prepare response message
-      const message = isSuccess ? successMessage : errorMessage;
+      // Replace template variables in message
+      let message = isSuccess ? successMessage : errorMessage;
+      
+      // Replace template variables with values from input
+      if (message && message.includes('{{')) {
+        // Find all template variables in format {{variableName}}
+        const templateVars = message.match(/\{\{([^}]+)\}\}/g) || [];
+        
+        for (const template of templateVars) {
+          const varName = template.slice(2, -2).trim(); // Remove {{ and }}
+          let replacement = '';
+          
+          // Try to find the value in input
+          if (input[varName] !== undefined) {
+            replacement = input[varName];
+          } else if (varName.includes('.')) {
+            // Handle nested properties
+            const parts = varName.split('.');
+            let current = input;
+            for (const part of parts) {
+              if (current === null || current === undefined) break;
+              current = current[part];
+            }
+            replacement = current !== undefined ? current : '';
+          }
+          
+          // Replace the template with the value
+          message = message.replace(template, replacement);
+        }
+      }
+      
       const result = {
         isSuccess,
         message,

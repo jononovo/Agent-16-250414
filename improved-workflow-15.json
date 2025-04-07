@@ -18,10 +18,15 @@
     {
       "id": "e4",
       "source": "api_call",
-      "target": "response_formatter"
+      "target": "api_verify"
     },
     {
       "id": "e5",
+      "source": "api_verify",
+      "target": "response_formatter"
+    },
+    {
+      "id": "e6",
       "source": "response_formatter",
       "target": "output"
     }
@@ -64,7 +69,7 @@
         "label": "Process Input Data",
         "category": "processing",
         "settings": {
-          "transform": "// Validate and extract agent data from input\nconst processInput = (input) => {\n  console.log('Processing input:', JSON.stringify(input));\n  \n  // Extract agent data based on input structure\n  let name, description, type, icon;\n  \n  if (input.agent_data) {\n    // Data passed in agent_data object\n    ({ name, description, type, icon } = input.agent_data);\n  } else if (input.name) {\n    // Data passed in root object\n    ({ name, description, type, icon } = input);\n  } else if (typeof input === 'string') {\n    // Try to parse string input as JSON\n    try {\n      const parsed = JSON.parse(input);\n      if (parsed.name) {\n        ({ name, description, type, icon } = parsed);\n      } else if (parsed.agent_data && parsed.agent_data.name) {\n        ({ name, description, type, icon } = parsed.agent_data);\n      }\n    } catch (e) {\n      // If not JSON, use as name with default values\n      name = input.trim();\n    }\n  }\n  \n  // Set defaults for missing values\n  return {\n    name: name || 'New Agent',\n    description: description || 'Agent created from workflow',\n    type: type || 'custom',\n    icon: icon || 'brain',\n    status: 'active',\n    source: input.metadata?.source || 'workflow'\n  };\n};\n\nreturn processInput(input);"
+          "transform": "// Validate and extract agent data from input\nconst processInput = (input) => {\n  console.log('Processing input:', JSON.stringify(input));\n  \n  // Extract agent data based on input structure\n  let name, description, type, icon;\n  \n  if (input.agent_data) {\n    // Data passed in agent_data object\n    ({ name, description, type, icon } = input.agent_data);\n  } else if (input.name) {\n    // Data passed in root object\n    ({ name, description, type, icon } = input);\n  } else if (typeof input === 'string') {\n    // Try to parse string input as JSON\n    try {\n      const parsed = JSON.parse(input);\n      if (parsed.name) {\n        ({ name, description, type, icon } = parsed);\n      } else if (parsed.agent_data && parsed.agent_data.name) {\n        ({ name, description, type, icon } = parsed.agent_data);\n      }\n    } catch (e) {\n      // If not JSON, process the text input \n      const trimmedInput = input.trim();\n      \n      // Handle 'create an agent' or similar text\n      if (trimmedInput.toLowerCase().includes('create') && \n          trimmedInput.toLowerCase().includes('agent')) {\n        // Generate a unique name with timestamp\n        const timestamp = new Date().toISOString();\n        name = `Test Agent API Verification ${timestamp}`;\n        description = 'Agent created for testing API verification';\n        type = 'test';\n        icon = 'beaker';\n      } else {\n        // Otherwise use the input text as a name\n        name = trimmedInput;\n      }\n    }\n  } else if (input.prompt && typeof input.prompt === 'string') {\n    // Handle case where input is wrapped in a prompt field\n    const trimmedPrompt = input.prompt.trim();\n    \n    // Process prompt field similar to string input\n    if (trimmedPrompt.toLowerCase().includes('create') && \n        trimmedPrompt.toLowerCase().includes('agent')) {\n      // Generate a unique name with timestamp\n      const timestamp = new Date().toISOString();\n      name = `Test Agent API Verification ${timestamp}`;\n      description = 'Agent created for testing API verification';\n      type = 'test';\n      icon = 'beaker';\n    } else {\n      name = trimmedPrompt;\n    }\n  }\n  \n  // Set defaults for missing values\n  return {\n    name: name || 'New Agent',\n    description: description || 'Agent created from workflow',\n    type: type || 'custom',\n    icon: icon || 'brain',\n    status: 'active',\n    source: input.metadata?.source || 'workflow'\n  };\n};\n\nreturn processInput(input);"
         },
         "description": "Validates and formats the agent data from multiple sources"
       },
@@ -97,15 +102,35 @@
       }
     },
     {
+      "id": "api_verify",
+      "data": {
+        "type": "api_verify",
+        "label": "Verify Agent Creation",
+        "category": "integration",
+        "settings": {
+          "resourceType": "agents",
+          "idField": "id",
+          "maxRetries": 3,
+          "retryDelay": 1000
+        },
+        "description": "Verifies that the agent was actually created by checking the API"
+      },
+      "type": "api_verify",
+      "position": {
+        "x": 850,
+        "y": 275
+      }
+    },
+    {
       "id": "response_formatter",
       "data": {
         "type": "transform",
         "label": "Format Response",
         "category": "processing",
         "settings": {
-          "transform": "// Format the API response for display\nconst formatResponse = (apiResponse) => {\n  console.log('Formatting API response:', JSON.stringify(apiResponse));\n  \n  // Handle API error\n  if (apiResponse.error || apiResponse.message) {\n    return {\n      success: false,\n      message: `Failed to create agent: ${apiResponse.message || apiResponse.error || 'Unknown error'}`,\n      data: null\n    };\n  }\n  \n  // Handle successful response\n  return {\n    success: true,\n    message: `Successfully created agent: ${apiResponse.name}`,\n    data: apiResponse\n  };\n};\n\nreturn formatResponse(input);"
+          "transform": "// Format the API response with verification status\nconst formatResponse = (apiResponse) => {\n  console.log('Formatting API response with verification:', JSON.stringify(apiResponse));\n  \n  // Check if response contains verification status\n  const verified = apiResponse.verified !== undefined ? apiResponse.verified : false;\n  const responseData = apiResponse.data || apiResponse;\n  \n  // Create a clear verificationStatus text for template replacement\n  const verificationStatus = verified ? 'Verified' : 'Not Verified';\n  \n  // Handle API error\n  if (responseData.error || responseData.message) {\n    return {\n      success: false,\n      message: `Failed to create agent: ${responseData.message || responseData.error || 'Unknown error'}`,\n      data: null,\n      verified: false,\n      verificationStatus: 'Failed'\n    };\n  }\n  \n  // Handle successful response\n  return {\n    success: true,\n    message: `Successfully created agent: ${responseData.name}`,\n    data: responseData,\n    verified: verified,\n    verificationStatus: verificationStatus\n  };\n};\n\nreturn formatResponse(input);"
         },
-        "description": "Formats the API response into a standardized message"
+        "description": "Formats the API response into a standardized message with verification status"
       },
       "type": "transform",
       "position": {

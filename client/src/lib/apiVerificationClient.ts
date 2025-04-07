@@ -229,26 +229,30 @@ export const apiVerificationClient = {
         verificationResponse: getResponse,
         error: 'Resource still exists after deletion',
       };
-    } catch (error) {
+    } catch (error: unknown) {
+      // Check if error has a response property with status
+      const errorObj = error as { response?: { status?: number } };
+      
       // If we get a 404, that's what we want - it's been deleted
-      if (error.response && error.response.status === 404) {
+      if (errorObj.response && errorObj.response.status === 404) {
         return {
           verified: true,
           originalResponse: dummyResponse,
-          verificationResponse: error.response,
+          verificationResponse: errorObj.response,
           metadata: {
             deleted: true,
-            status: error.response.status,
+            status: errorObj.response.status,
           },
         };
       }
       
       // Any other error is unexpected
+      const errorMessage = error instanceof Error ? error.message : String(error);
       return {
         verified: false,
         originalResponse: dummyResponse,
-        verificationResponse: error.response,
-        error: `Unexpected error verifying deletion: ${error.message}`,
+        verificationResponse: errorObj.response,
+        error: `Unexpected error verifying deletion: ${errorMessage}`,
       };
     }
   },
@@ -268,12 +272,13 @@ export const apiVerificationClient = {
         originalResponse: response,
         verificationResponse: { custom: true },
       };
-    } catch (error) {
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : String(error);
       return {
         verified: false,
         originalResponse: response,
         verificationResponse: null,
-        error: `Custom verification failed: ${error.message}`,
+        error: `Custom verification failed: ${errorMessage}`,
       };
     }
   }

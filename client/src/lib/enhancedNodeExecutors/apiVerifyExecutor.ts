@@ -10,153 +10,84 @@
 
 import { apiClient } from '../apiClient';
 import { ApiVerifyNodeSettings } from '../types/apiVerification';
+import { apiVerificationClient } from '../apiVerificationClient';
 
 /**
  * Execute an API Verify node with the given settings and input
  * 
  * @param nodeData - The node configuration data
  * @param input - The input data to the node (typically the API response)
- * @returns Verification result: {success, verified, original, verification}
+ * @returns Verification result: {success, verified, original, verification, data}
  */
 export async function executeApiVerifyNode(nodeData: any, input: any): Promise<any> {
   console.log('Executing API Verify node with input:', JSON.stringify(input));
   
   // Extract settings from node data with defaults
-  const settings: ApiVerifyNodeSettings = {
-    verificationMethod: nodeData.verificationMethod || 'get_check',
-    verificationEndpoint: nodeData.verificationEndpoint || '',
-    verificationProperty: nodeData.verificationProperty || 'id',
-    verificationValue: nodeData.verificationValue || '',
-    verificationValueFrom: nodeData.verificationValueFrom || 'id',
-    verificationFunction: nodeData.verificationFunction || '',
-    failOnVerificationFailure: nodeData.failOnVerificationFailure || false,
-    verificationDelay: nodeData.verificationDelay || 0
-  };
-
+  const settings = nodeData?.settings || {};
+  const resourceType = settings.resourceType || 'agents';
+  const idField = settings.idField || 'id';
+  const maxRetries = settings.maxRetries || 3;
+  const retryDelay = settings.retryDelay || 1000;
+  
   // Prepare result with original input
   const result: {
     success: boolean;
     verified: boolean;
-    original: any;
+    data: any;
     verification: any;
     error: string | null;
   } = {
     success: true, // Overall operation success
     verified: false, // Whether the API action was verified
-    original: input, // Original API response 
+    data: input, // Original API response data
     verification: null, // Verification data
     error: null // Error message if any
   };
   
   try {
-    // Apply verification delay if specified
-    if (settings.verificationDelay && settings.verificationDelay > 0) {
-      await new Promise(resolve => setTimeout(resolve, settings.verificationDelay));
+    // Extract the ID to verify from the input
+    let idToVerify: string | number | null = null;
+    
+    if (input && typeof input === 'object') {
+      idToVerify = input[idField];
     }
     
-    // Execute verification based on the method
-    if (settings.verificationMethod === 'get_check') {
-      // Extract the verification value from the original input
-      let valueToCheck = settings.verificationValue;
-      
-      if (settings.verificationValueFrom) {
-        // Get the property value from the input
-        valueToCheck = input[settings.verificationValueFrom];
-        
-        // Handle nested properties
-        if (settings.verificationValueFrom.includes('.')) {
-          const parts = settings.verificationValueFrom.split('.');
-          let current = input;
-          for (const part of parts) {
-            if (current && typeof current === 'object') {
-              current = current[part];
-            } else {
-              current = undefined;
-              break;
-            }
-          }
-          valueToCheck = current;
-        }
-      }
-      
-      if (!valueToCheck) {
-        throw new Error(`Verification value not found in input using key: ${settings.verificationValueFrom}`);
-      }
-      
-      // Make verification request
-      const verificationResponse = await apiClient.get(settings.verificationEndpoint);
-      
-      // Set the verification data
-      result.verification = verificationResponse;
-      
-      // Check for the value in the results
-      if (Array.isArray(verificationResponse)) {
-        // Search in array of results
-        const found = verificationResponse.find(item => {
-          // Check if the property exists and matches
-          return item && item[settings.verificationProperty] === valueToCheck;
-        });
-        
-        // Set verified based on whether the item was found
-        result.verified = !!found;
-        
-        // If found, include the specific item
-        if (found) {
-          result.verification = found;
-        }
-      } else if (typeof verificationResponse === 'object') {
-        // Check single object
-        result.verified = 
-          verificationResponse && 
-          verificationResponse[settings.verificationProperty] === valueToCheck;
-      }
-    } else if (settings.verificationMethod === 'custom_function') {
-      // Execute custom verification function
-      if (!settings.verificationFunction) {
-        throw new Error('Custom verification function not provided');
-      }
-      
-      // Create a function from the string
-      const verifyFn = new Function('input', 'apiClient', settings.verificationFunction);
-      
-      // Execute the function with the input and API client
-      const verificationResult = await verifyFn(input, apiClient);
-      
-      // Set the verification data
-      result.verification = verificationResult;
-      
-      // Determine if verified based on the function result
-      if (typeof verificationResult === 'boolean') {
-        result.verified = verificationResult;
-      } else if (verificationResult && typeof verificationResult === 'object') {
-        // If an object is returned, check for verified property
-        result.verified = !!verificationResult.verified;
-      } else {
-        // Any other result is considered unverified
-        result.verified = false;
-      }
+    if (!idToVerify) {
+      throw new Error(`Verification ID not found in input using field: ${idField}`);
     }
     
-    // Handle failure if specified
-    if (!result.verified && settings.failOnVerificationFailure) {
-      throw new Error('API action verification failed');
+    // Verify the resource creation
+    const verificationResult = await apiVerificationClient.verifyCreation(
+      input,
+      resourceType,
+      idField
+    );
+    
+    // Update the result with verification information
+    result.verified = verificationResult.verified;
+    result.verification = verificationResult;
+    
+    if (!verificationResult.verified) {
+      result.error = 'Resource verification failed';
     }
     
     return result;
-  } catch (error) {
+  } catch (error: unknown) {
     console.error('API verification error:', error);
     
     // Update result with error information
     result.success = false;
     result.verified = false;
-    result.error = error instanceof Error ? error.message : 'Unknown verification error';
     
-    // If fail on verification failure is true, throw the error
-    if (settings.failOnVerificationFailure) {
-      throw error;
+    if (error instanceof Error) {
+      result.error = error.message;
+    } else if (typeof error === 'string') {
+      result.error = error;
+    } else {
+      result.error = 'Unknown verification error';
     }
     
-    // Otherwise, return the result with error information
+    // Return the result with error information
     return result;
   }
 }
