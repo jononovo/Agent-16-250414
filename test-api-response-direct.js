@@ -1,168 +1,128 @@
 /**
- * Direct test for the API Response Message node
+ * Test Api Response Message Node Directly
  * 
- * This script tests the API Response Message node functionality by
- * directly simulating its execution with proper inputs.
+ * This script tests the API Response Message node functionality directly,
+ * specifically focusing on template variable replacement.
  */
 
-// Helper functions - copied from apiResponseMessageExecutor.ts
 function getValueByPath(obj, path) {
-  if (!obj || !path) return undefined;
+  if (!path) return obj;
   
   const parts = path.split('.');
-  let current = obj;
+  let value = obj;
   
   for (const part of parts) {
-    if (current === null || current === undefined) return undefined;
-    current = current[part];
+    if (value === null || value === undefined) return undefined;
+    value = value[part];
   }
   
-  return current;
+  return value;
 }
 
 function replaceTemplateVariables(template, data) {
-  if (!template || !template.includes('{{')) return template;
+  if (!template) return '';
   
-  // Find all template variables in format {{variableName}}
-  const templateVars = template.match(/\{\{([^}]+)\}\}/g) || [];
-  let result = template;
+  // Match {{variable.path}} pattern
+  const regex = /\{\{([^}]+)\}\}/g;
   
-  for (const varTemplate of templateVars) {
-    const varName = varTemplate.slice(2, -2).trim(); // Remove {{ and }}
-    let replacement = '';
-    
-    // Try to find the value using our helper function
-    const value = getValueByPath(data, varName);
-    
-    // Convert the value to a string if it exists
-    if (value !== undefined && value !== null) {
-      replacement = typeof value === 'object' 
-        ? JSON.stringify(value) 
-        : String(value);
-    }
-    
-    // Replace the template variable with its value
-    result = result.replace(varTemplate, replacement);
-  }
-  
-  return result;
+  return template.replace(regex, (match, path) => {
+    const value = getValueByPath(data, path);
+    return value !== undefined ? value : match;
+  });
 }
 
 function formatForChatUI(message, isSuccess) {
   return {
     message,
-    type: isSuccess ? 'success' : 'error',
-    origin: 'workflow'
+    type: isSuccess ? 'success' : 'error'
   };
 }
 
 async function executeApiResponseMessage(nodeData, inputs) {
-  try {
-    console.log('Starting API response message test...');
-    
-    // Log input data
-    console.log('Input data:', JSON.stringify(inputs, null, 2));
-    
-    // Extract settings
-    const settings = nodeData?.data?.settings || {};
-    const conditionField = settings.conditionField || 'result';
-    const successValue = settings.successValue || 'success';
-    const successMessage = settings.successMessage || 'Operation completed successfully!';
-    const errorMessage = settings.errorMessage || 'Operation failed. Please try again.';
-    const formatOutput = settings.formatOutput !== false; // Default to true
-    
-    console.log('Settings:', {
-      conditionField,
-      successValue,
-      successMessage,
-      errorMessage,
-      formatOutput
-    });
-    
-    // Get the input data from the first item
-    const input = inputs?.default?.items?.[0]?.json || {};
-    console.log('Processed input:', JSON.stringify(input, null, 2));
-    
-    // Get the condition value
-    const fieldValue = getValueByPath(input, conditionField);
-    console.log('Field value:', fieldValue);
-    
-    // Determine success or error
-    let isSuccess = false;
-    if (successValue === 'true' && (fieldValue === true || fieldValue === 'true')) {
-      isSuccess = true;
-    } else if (successValue === 'false' && (fieldValue === false || fieldValue === 'false')) {
-      isSuccess = false;
-    } else {
-      isSuccess = fieldValue !== undefined && fieldValue !== null && 
-        String(fieldValue) === String(successValue);
-    }
-    
-    if (conditionField === 'true' && successValue === 'true') {
-      isSuccess = true;
-    }
-    
-    console.log('Is success?', isSuccess);
-    
-    // Select the message template
-    const messageTemplate = isSuccess ? successMessage : errorMessage;
-    console.log('Message template:', messageTemplate);
-    
+  console.log('Executing API Response Message with inputs:', JSON.stringify(inputs, null, 2));
+  
+  const settings = nodeData.settings || {};
+  const conditionField = settings.conditionField || 'success';
+  const successValue = settings.successValue || 'true';
+  const successMessage = settings.successMessage || 'Operation completed successfully';
+  const errorMessage = settings.errorMessage || 'Operation failed';
+  const formatOutput = settings.formatOutput || false;
+  
+  // Extract condition value
+  const conditionValue = getValueByPath(inputs, conditionField);
+  
+  // Check condition
+  const isSuccess = String(conditionValue) === String(successValue);
+  console.log(`Condition check: ${conditionField}=${conditionValue}, successValue=${successValue}, isSuccess=${isSuccess}`);
+  
+  // Select appropriate message
+  const templateMessage = isSuccess ? successMessage : errorMessage;
+  
+  let outputMessage;
+  if (formatOutput) {
     // Replace template variables
-    const message = replaceTemplateVariables(messageTemplate, input);
-    console.log('Final message:', message);
-    
-    // Format for chat UI if needed
-    const payload = formatOutput 
-      ? formatForChatUI(message, isSuccess)
-      : { message, status: isSuccess ? 'success' : 'error' };
-    
-    console.log('Final payload:', JSON.stringify(payload, null, 2));
-    
-    return payload;
-  } catch (error) {
-    console.error('Error in API response message test:', error);
-    throw error;
+    console.log('Replacing template variables in:', templateMessage);
+    console.log('With data:', JSON.stringify(inputs, null, 2));
+    outputMessage = replaceTemplateVariables(templateMessage, inputs);
+    console.log('After replacement:', outputMessage);
+  } else {
+    outputMessage = templateMessage;
+    console.log('Format output disabled, using raw template:', outputMessage);
   }
+  
+  // Format for chat UI
+  const formattedOutput = formatForChatUI(outputMessage, isSuccess);
+  console.log('Final formatted output:', JSON.stringify(formattedOutput, null, 2));
+  
+  return formattedOutput;
 }
 
 async function testApiResponseMessageDirect() {
-  // Create test node data
+  console.log('=== Testing API Response Message Node Directly ===');
+  
+  // Mock node data similar to the one in workflow 18
   const nodeData = {
+    type: 'api_response_message',
+    settings: {
+      errorMessage: 'There was an error creating your agent. Please check the logs and try again.',
+      successValue: 'true',
+      conditionField: 'success',
+      successMessage: 'Your agent has been created successfully with ID: {{data.agent.id}}! You can now use it for your tasks.',
+      formatOutput: true
+    }
+  };
+  
+  // Test case 1: Successful agent creation with ID
+  const testInput1 = {
+    success: true,
+    agent: {
+      id: 42,
+      name: 'Test Agent',
+      type: 'ai_assistant'
+    }
+  };
+  
+  // Test case 2: Input with nested data (similar to workflow execution result)
+  const testInput2 = {
+    success: true,
     data: {
-      settings: {
-        errorMessage: "There was an error creating your agent.",
-        formatOutput: true,
-        successValue: "true",
-        conditionField: "true",
-        successMessage: "Your agent has been created successfully with ID: {{agent.id}}!",
-        targetEndpoint: "/api/chat"
+      agent: {
+        id: 43,
+        name: 'Nested Test Agent',
+        type: 'ai_assistant'
       }
     }
   };
   
-  // Create test inputs with agent data
-  const inputs = {
-    default: {
-      items: [
-        {
-          json: {
-            agent: {
-              id: 123,
-              name: "Test Agent"
-            }
-          }
-        }
-      ]
-    }
-  };
+  console.log('\n--- Test Case 1: Direct agent object ---');
+  const result1 = await executeApiResponseMessage(nodeData, testInput1);
   
-  // Execute the test
-  const result = await executeApiResponseMessage(nodeData, inputs);
-  console.log('\nTest result:', JSON.stringify(result, null, 2));
+  console.log('\n--- Test Case 2: Nested agent object ---');
+  const result2 = await executeApiResponseMessage(nodeData, testInput2);
+  
+  console.log('\n=== API Response Message Test Results ===');
+  console.log('Test Case 1 result:', JSON.stringify(result1, null, 2));
+  console.log('Test Case 2 result:', JSON.stringify(result2, null, 2));
 }
 
-// Run the test
-testApiResponseMessageDirect()
-  .then(() => console.log('Test completed successfully'))
-  .catch(error => console.error('Test failed:', error));
+testApiResponseMessageDirect();

@@ -602,6 +602,46 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
     }
   });
+  
+  // Direct execution endpoint for testing
+  app.post("/api/execute-workflow/:id", async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      if (isNaN(id)) {
+        return res.status(400).json({ message: "Invalid workflow ID" });
+      }
+      
+      const workflow = await storage.getWorkflow(id);
+      if (!workflow) {
+        return res.status(404).json({ message: "Workflow not found" });
+      }
+      
+      // Extract input from request
+      const input = req.body.input || {};
+      
+      // Log
+      console.log(`Direct execution of workflow ${id} with input:`, JSON.stringify(input));
+      
+      // Import the workflow execution function
+      const { executeWorkflow } = await import('../client/src/lib/workflowEngine');
+      
+      // Run the workflow with the given input
+      const result = await runWorkflow(workflow, workflow.name, input, executeWorkflow, {
+        metadata: { debug: true, source: 'direct_test' }
+      });
+      
+      // Log the result
+      console.log(`Workflow ${id} execution result:`, JSON.stringify(result));
+      
+      res.json(result);
+    } catch (error) {
+      console.error("Failed to execute workflow:", error);
+      res.status(500).json({ 
+        message: "Failed to execute workflow",
+        details: error instanceof Error ? error.message : String(error)
+      });
+    }
+  });
 
   // Nodes API
   app.get("/api/nodes", async (req, res) => {

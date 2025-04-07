@@ -4,7 +4,25 @@
  * This script helps debug the agent creation process by triggering
  * the workflow and adding additional logging.
  */
-import { apiClient } from './client/src/lib/apiClient.js';
+import fetch from 'node-fetch';
+
+// Simple API client for testing
+const apiClient = {
+  async get(url) {
+    const response = await fetch(`http://localhost:5000${url}`);
+    return response.json();
+  },
+  async post(url, data) {
+    const response = await fetch(`http://localhost:5000${url}`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(data)
+    });
+    return response.json();
+  }
+};
 
 async function debugAgentCreation() {
   try {

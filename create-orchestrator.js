@@ -5,66 +5,111 @@
  * to create an agent and link a workflow to it.
  */
 
-import { executeWorkflow, createAgent, linkWorkflowToAgent } from './client/src/lib/workflowClient.js';
+import fetch from 'node-fetch';
+
+// Simple API client for testing
+const apiClient = {
+  async get(url) {
+    const response = await fetch(`http://localhost:5000${url}`);
+    return response.json();
+  },
+  async post(url, data) {
+    const response = await fetch(`http://localhost:5000${url}`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(data)
+    });
+    return response.json();
+  }
+};
 
 async function createAgentWithWorkflow() {
   try {
-    console.log('Creating New Agent Builder agent using the workflowClient API...');
+    console.log('Starting agent creation with orchestrator workflow...');
     
-    // Create agent using Workflow 15
-    const agentResult = await createAgent({
-      name: "New Agent Builder",
-      description: "Agent that orchestrates the creation of new agents and workflows",
-      type: "system",
-      status: "active",
-      icon: "wand-sparkles"
-    }, {
-      onNodeStateChange: (nodeId, state) => {
-        console.log(`Node ${nodeId} state changed to ${state.status}`);
-      },
-      onWorkflowComplete: (state) => {
-        console.log(`Agent creation workflow completed with status: ${state.status}`);
-      }
+    // Step 1: Prepare test data for agent creation
+    const timestamp = new Date().toISOString().replace(/[-:]/g, '').split('.')[0];
+    const testAgentData = {
+      name: `Debug Agent ${timestamp}`,
+      description: "Test agent created from orchestrator script",
+      type: "ai_assistant",
+      icon: "brain",
+      status: "active"
+    };
+    
+    // Step 2: Execute the workflow 15 directly (Build New Agent Structure)
+    console.log('\nExecuting workflow 15 (Build New Agent) with test data...');
+    const result15 = await apiClient.post('/api/execute-workflow/15', {
+      input: testAgentData
     });
     
-    if (!agentResult || !agentResult.success) {
-      console.error('Error creating agent:', agentResult?.error || 'Unknown error');
-      return;
-    }
+    console.log('\n===== WORKFLOW 15 RESULT =====');
+    console.log(JSON.stringify(result15, null, 2));
     
-    const agentId = agentResult.data.id;
-    console.log(`Successfully created New Agent Builder agent with id ${agentId}`);
-    
-    // Now, link the orchestrator workflow to the agent
-    const workflowId = 18; // ID of the "New Agent Orchestrator v1" workflow
-    
-    console.log(`Linking workflow ${workflowId} to agent ${agentId}...`);
-    
-    const linkResult = await linkWorkflowToAgent(agentId, workflowId, {
-      onNodeStateChange: (nodeId, state) => {
-        console.log(`Node ${nodeId} state changed to ${state.status}`);
-      },
-      onWorkflowComplete: (state) => {
-        console.log(`Link workflow completed with status: ${state.status}`);
+    if (result15.output && result15.output.agent) {
+      // Step 3: Use the output from workflow 15 as input for workflow 18
+      console.log('\nPreparing input for workflow 18 (Agent Orchestrator)...');
+      
+      const workflow18Input = {
+        success: true,
+        data: {
+          agent: result15.output.agent
+        }
+      };
+      
+      console.log('Input for workflow 18:', JSON.stringify(workflow18Input, null, 2));
+      
+      // Step 4: Execute workflow 18 with the data from workflow 15
+      console.log('\nExecuting workflow 18 with agent data...');
+      const result18 = await apiClient.post('/api/execute-workflow/18', {
+        input: workflow18Input
+      });
+      
+      console.log('\n===== WORKFLOW 18 RESULT =====');
+      console.log(JSON.stringify(result18, null, 2));
+      
+      // Step 5: Get logs for the execution
+      if (result18.logId) {
+        const log18 = await apiClient.get(`/api/logs/${result18.logId}`);
+        console.log('\n===== WORKFLOW 18 LOG =====');
+        console.log(JSON.stringify(log18, null, 2));
       }
-    });
-    
-    if (!linkResult || !linkResult.success) {
-      console.error('Error linking workflow to agent:', linkResult?.error || 'Unknown error');
-      return;
+      
+      // Step 6: Verify the agent was created
+      const agent = await apiClient.get(`/api/agents/${result15.output.agent.id}`);
+      console.log('\n===== CREATED AGENT =====');
+      console.log(JSON.stringify(agent, null, 2));
+      
+      return {
+        success: true,
+        agent: agent,
+        workflow15Result: result15,
+        workflow18Result: result18
+      };
+    } else {
+      throw new Error('Workflow 15 did not return an agent in its output!');
     }
-    
-    console.log(`Successfully linked workflow ${workflowId} to agent ${agentId}`);
-    
-    console.log('Setup complete!');
-    console.log(`New Agent Builder agent (ID: ${agentId}) is now linked to the New Agent Orchestrator workflow (ID: ${workflowId})`);
-    console.log('This orchestrator will chain together:');
-    console.log('1. Build New Agent Structure v1 (ID: 15)');
-    console.log('2. Workflow Creator Flow v1 (ID: 16)');
-    console.log('3. Link Workflow to Agent v1 (ID: 6)');
   } catch (error) {
-    console.error('Error:', error);
+    console.error('Error creating agent with orchestrator:', error);
+    return {
+      success: false,
+      error: error.message
+    };
   }
 }
 
-createAgentWithWorkflow();
+// Run the test
+createAgentWithWorkflow()
+  .then(result => {
+    console.log('\nWorkflow orchestration test completed.');
+    console.log(`Success: ${result.success}`);
+    if (result.agent) {
+      console.log(`Agent ID: ${result.agent.id}`);
+      console.log(`Agent Name: ${result.agent.name}`);
+    }
+  })
+  .catch(error => {
+    console.error('Workflow orchestration test failed:', error);
+  });

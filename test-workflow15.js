@@ -3,57 +3,86 @@
  * This demonstrates how to use the workflowClient directly instead of making API calls
  */
 
-import { createAgent } from './client/src/lib/workflowClient.js';
+import fetch from 'node-fetch';
+
+// Simple API client for testing
+const apiClient = {
+  async get(url) {
+    const response = await fetch(`http://localhost:5000${url}`);
+    return response.json();
+  },
+  async post(url, data) {
+    const response = await fetch(`http://localhost:5000${url}`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(data)
+    });
+    return response.json();
+  }
+};
 
 async function testWorkflow15() {
   try {
-    console.log('Testing workflow 15 execution with UI Button source...');
+    console.log('Starting workflow 15 test...');
     
-    // Test with UI Button Source using client-side workflow execution
-    const uiButtonResult = await createAgent({
-      name: 'Test Agent from UI Button',
-      description: 'Agent created from UI button test',
-      type: 'test',
-      icon: 'beaker'
-    }, {
-      source: 'ui_form',
-      onNodeStateChange: (nodeId, state) => {
-        console.log(`Node ${nodeId} state: ${state.status}`);
-      },
-      onWorkflowComplete: (state) => {
-        console.log(`Workflow completed with status: ${state.status}`);
-      }
+    // Test data for agent creation
+    const testAgentData = {
+      name: "Test Agent " + new Date().toISOString().slice(0, 19).replace('T', ' '),
+      description: "Test agent created for debugging template variables",
+      type: "ai_assistant",
+      status: "active",
+      metadata: { debug: true }
+    };
+    
+    // Step 1: Direct execution of workflow 15 (Build New Agent)
+    console.log('Executing workflow 15 directly with test data...');
+    const result15 = await apiClient.post('/api/execute-workflow/15', {
+      input: testAgentData
     });
     
-    console.log('UI Button Execution Result:', JSON.stringify(uiButtonResult, null, 2));
-    console.log();
+    console.log('\n===== WORKFLOW 15 RESULT =====');
+    console.log(JSON.stringify(result15, null, 2));
     
-    console.log('Testing workflow 15 execution with AI Chat source...');
+    if (result15.output && result15.output.agent) {
+      // Step 2: Manually build the input for workflow 18 (Agent Orchestrator)
+      console.log('\nPreparing input for workflow 18...');
+      
+      const workflow18Input = {
+        success: true,
+        data: {
+          agent: result15.output.agent
+        }
+      };
+      
+      console.log('Workflow 18 would receive:', JSON.stringify(workflow18Input, null, 2));
+      
+      // Step 3: Execute workflow 18 with the data from workflow 15
+      console.log('\nExecuting workflow 18 with data from workflow 15...');
+      const result18 = await apiClient.post('/api/execute-workflow/18', {
+        input: workflow18Input
+      });
+      
+      console.log('\n===== WORKFLOW 18 RESULT =====');
+      console.log(JSON.stringify(result18, null, 2));
+    } else {
+      console.log('No agent data found in workflow 15 result. This is the issue!');
+    }
     
-    // Test with AI Chat Source using client-side workflow execution
-    const aiChatResult = await createAgent({
-      name: 'Test Agent from AI Chat',
-      description: 'Agent created from AI chat test',
-      type: 'test',
-      icon: 'message-circle'
-    }, {
-      source: 'ai_chat',
-      onNodeStateChange: (nodeId, state) => {
-        console.log(`Node ${nodeId} state: ${state.status}`);
-      },
-      onWorkflowComplete: (state) => {
-        console.log(`Workflow completed with status: ${state.status}`);
-      }
-    });
-    
-    console.log('AI Chat Execution Result:', JSON.stringify(aiChatResult, null, 2));
-    console.log();
-    
-    console.log('Tests completed!');
-    
+    return { workflow15Result: result15 };
   } catch (error) {
-    console.error('Error during test:', error);
+    console.error('Error testing workflow:', error);
+    return { error: error.message };
   }
 }
 
-testWorkflow15();
+// Run the test
+testWorkflow15()
+  .then(result => {
+    console.log('\nTest completed. Final result:');
+    console.log(JSON.stringify(result, null, 2));
+  })
+  .catch(error => {
+    console.error('Test error:', error);
+  });
