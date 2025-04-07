@@ -411,6 +411,56 @@ const NodeSettingsDrawer: React.FC<NodeSettingsDrawerProps> = ({
             description: 'The value that indicates success in the condition field.'
           }
         ];
+      
+      case 'api_response_message':
+        return [
+          {
+            id: 'successMessage',
+            label: 'Success Message',
+            type: 'textarea',
+            placeholder: 'Enter success message',
+            description: 'Message to display when the condition is met (success case). Supports template variables like {{agent.id}}.'
+          },
+          {
+            id: 'errorMessage',
+            label: 'Error Message',
+            type: 'textarea',
+            placeholder: 'Enter error message',
+            description: 'Message to display when the condition is not met (error case). Supports template variables like {{agent.id}}.'
+          },
+          {
+            id: 'conditionField',
+            label: 'Condition Field',
+            type: 'text',
+            placeholder: 'e.g., status, success, true',
+            description: 'Field in the input data to check for success/failure. Use "true" for always success.'
+          },
+          {
+            id: 'successValue',
+            label: 'Success Value',
+            type: 'text',
+            placeholder: 'e.g., success, true, 1',
+            description: 'The value that indicates success in the condition field. Use "true" for always success.'
+          },
+          {
+            id: 'targetEndpoint',
+            label: 'Target Endpoint',
+            type: 'text',
+            placeholder: '/api/chat',
+            description: 'API endpoint to send the message to. Default is /api/chat for the chat UI.'
+          },
+          {
+            id: 'formatOutput',
+            label: 'Format for Chat UI',
+            type: 'radio',
+            description: 'Format the output specifically for the chat UI.',
+            options: [
+              { value: 'true', label: 'Yes' },
+              { value: 'false', label: 'No' }
+            ],
+            defaultValue: 'true'
+          }
+        ];
       case 'agent_trigger':
         return [
           {

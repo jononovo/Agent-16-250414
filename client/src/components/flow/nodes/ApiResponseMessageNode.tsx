@@ -1,66 +1,114 @@
 import React, { useState } from 'react';
 import { Handle, Position, NodeProps } from 'reactflow';
-import { ArrowRight, MessageCircle, Check, AlertTriangle } from 'lucide-react';
+import { MessageCircle, Check, AlertTriangle, Settings } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { NodeResizer } from '@reactflow/node-resizer';
 import '@reactflow/node-resizer/dist/style.css';
 
 // Node component for API Response Message
 const ApiResponseMessageNode: React.FC<NodeProps> = ({ data, selected, id }) => {
-  const [expanded, setExpanded] = useState(false);
-  
   // Get settings with defaults
   const settings = data.settings || {};
   const successMessage = settings.successMessage || 'Operation completed successfully!';
   const errorMessage = settings.errorMessage || 'Operation failed. Please try again.';
+  const conditionField = settings.conditionField || 'status';
+  const successValue = settings.successValue || 'success';
   const targetEndpoint = settings.targetEndpoint || '/api/chat';
+  
+  const openSettingsDrawer = () => {
+    // Trigger settings drawer via custom event
+    const event = new CustomEvent('node-settings-open', {
+      detail: { nodeId: id }
+    });
+    window.dispatchEvent(event);
+  };
   
   return (
     <>
       <NodeResizer 
-        minWidth={200}
-        minHeight={100}
+        minWidth={280}
+        minHeight={200}
         isVisible={selected}
         lineClassName="border-primary"
         handleClassName="bg-primary border-primary"
       />
       
-      <Card className={`w-full min-w-[280px] max-w-[400px] overflow-hidden ${expanded ? 'h-auto' : 'h-[120px]'} transition-all duration-200`}>
-        <CardHeader className="p-3 pb-1 flex flex-row items-center justify-between">
-          <div className="flex gap-2 items-center">
-            <MessageCircle size={16} className="text-primary" />
-            <CardTitle className="text-sm font-medium">
+      <Card className="w-64 min-h-[200px] transition-all duration-200" 
+          style={{ background: '#111', color: '#fff', borderColor: '#333' }}>
+        <CardHeader className="p-3 pb-2 flex flex-row items-center justify-between">
+          <div className="flex items-center gap-2">
+            <div className="w-6 h-6 rounded-md bg-zinc-800 flex items-center justify-center text-zinc-300">
+              <MessageCircle className="h-4 w-4" />
+            </div>
+            <span className="font-medium text-sm truncate">
               {data.label || 'API Response Message'}
-            </CardTitle>
+            </span>
           </div>
-          
-          <Badge variant="outline" className="ml-2 text-xs">
-            {data.type === 'api_response_message' ? 'API' : 'Message'}
-          </Badge>
+          <Badge variant="outline" className="bg-zinc-800 text-zinc-300 text-[10px] font-normal border-zinc-700">Message</Badge>
         </CardHeader>
         
-        <CardContent className="p-3 pt-0">
-          <CardDescription className="text-xs mb-1 line-clamp-1">
+        <CardContent className="p-3 pt-0 text-xs text-zinc-400">
+          <p className="mb-2">
             {data.description || 'Sends a direct message to the chat UI.'}
-          </CardDescription>
+          </p>
           
-          <div className="mt-3 text-xs">
-            <div className="flex items-center gap-1 mb-1">
-              <Check size={14} className="text-emerald-500" />
-              <span className="line-clamp-1">{successMessage}</span>
-            </div>
+          <Accordion type="single" collapsible defaultValue="paths" className="mb-2">
+            <AccordionItem value="paths" className="border-zinc-800">
+              <AccordionTrigger className="py-1 text-xs text-zinc-400 hover:text-zinc-200 hover:no-underline">
+                Response Paths
+              </AccordionTrigger>
+              <AccordionContent>
+                <div className="flex items-center gap-1 mb-2 bg-green-950 p-2 rounded">
+                  <Check size={14} className="text-green-400" />
+                  <span className="line-clamp-2 text-green-300">{successMessage}</span>
+                </div>
+                
+                <div className="flex items-center gap-1 bg-red-950 p-2 rounded">
+                  <AlertTriangle size={14} className="text-red-400" />
+                  <span className="line-clamp-2 text-red-300">{errorMessage}</span>
+                </div>
+              </AccordionContent>
+            </AccordionItem>
             
-            <div className="flex items-center gap-1">
-              <AlertTriangle size={14} className="text-amber-500" />
-              <span className="line-clamp-1">{errorMessage}</span>
-            </div>
-            
-            {expanded && (
-              <div className="mt-2 border-t border-border pt-2">
-                <p className="text-xs opacity-70">Target: {targetEndpoint}</p>
-              </div>
-            )}
+            <AccordionItem value="condition" className="border-zinc-800">
+              <AccordionTrigger className="py-1 text-xs text-zinc-400 hover:text-zinc-200 hover:no-underline">
+                Condition Logic
+              </AccordionTrigger>
+              <AccordionContent>
+                <div className="flex flex-col gap-1 bg-zinc-800 p-2 rounded text-[10px]">
+                  <div className="flex items-center gap-1">
+                    <span className="text-zinc-300">IF</span>
+                    <Badge className="bg-blue-900 text-blue-300 text-[10px] border-none">{conditionField}</Badge>
+                    <span className="text-zinc-300">==</span>
+                    <Badge className="bg-green-900 text-green-300 text-[10px] border-none">{successValue}</Badge>
+                  </div>
+                  <div className="flex items-center gap-1">
+                    <span className="text-zinc-300 ml-2">THEN</span>
+                    <Badge className="bg-green-900 text-green-300 text-[10px] border-none">Success Path</Badge>
+                  </div>
+                  <div className="flex items-center gap-1">
+                    <span className="text-zinc-300">ELSE</span>
+                    <Badge className="bg-red-900 text-red-300 text-[10px] border-none">Error Path</Badge>
+                  </div>
+                </div>
+              </AccordionContent>
+            </AccordionItem>
+          </Accordion>
+          
+          <div className="flex items-center justify-between mt-2">
+            <Badge className="bg-blue-900 text-blue-300 text-[10px] border-none">Input</Badge>
+            <Button 
+              variant="outline" 
+              size="sm" 
+              className="h-6 text-xs bg-zinc-800 text-zinc-300 border-zinc-700"
+              onClick={openSettingsDrawer}
+            >
+              <Settings className="h-3 w-3 mr-1" />
+              Configure
+            </Button>
           </div>
         </CardContent>
       </Card>
@@ -68,22 +116,22 @@ const ApiResponseMessageNode: React.FC<NodeProps> = ({ data, selected, id }) => 
       {/* Input handle */}
       <Handle
         type="target"
-        position={Position.Left}
-        className="w-2 h-6 rounded-sm bg-primary border-primary"
+        position={Position.Top}
+        className="!w-3 !h-3 !border-2 !border-zinc-500 !bg-zinc-900"
       />
       
       {/* Output handles */}
       <Handle
-        type="source"
-        position={Position.Right}
         id="success"
-        className="w-2 h-3 rounded-sm bg-emerald-500 border-emerald-600 -translate-y-3"
+        type="source"
+        position={Position.Bottom}
+        className="!w-3 !h-3 !border-2 !border-green-500 !bg-green-900 !-translate-x-10"
       />
       <Handle
-        type="source"
-        position={Position.Right}
         id="error"
-        className="w-2 h-3 rounded-sm bg-amber-500 border-amber-600 translate-y-3"
+        type="source"
+        position={Position.Bottom}
+        className="!w-3 !h-3 !border-2 !border-red-500 !bg-red-900 !translate-x-10"
       />
     </>
   );
