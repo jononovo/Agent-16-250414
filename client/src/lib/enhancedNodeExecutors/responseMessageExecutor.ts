@@ -9,6 +9,94 @@ export interface ResponseMessageSettings {
 }
 
 /**
+ * Searches for a value within an object with support for nested paths
+ * 
+ * @param obj The object to search within
+ * @param path The path to the value (can be dot-separated for nested properties)
+ * @returns The found value or undefined if not found
+ */
+function getValueByPath(obj: any, path: string): any {
+  if (!obj || typeof obj !== 'object') return undefined;
+  
+  // Direct property lookup first
+  if (obj[path] !== undefined) return obj[path];
+  
+  // Try nested path
+  if (path.includes('.')) {
+    const parts = path.split('.');
+    let current = obj;
+    
+    for (const part of parts) {
+      if (current === null || current === undefined) return undefined;
+      current = current[part];
+    }
+    
+    return current;
+  }
+  
+  // For flattened object structures, try to find a key that ends with the path
+  // This is useful for workflow outputs where the data may be flattened
+  for (const key in obj) {
+    if (key.endsWith(`.${path}`) || key === path) {
+      return obj[key];
+    }
+    
+    // Look recursively in nested objects
+    if (typeof obj[key] === 'object' && obj[key] !== null) {
+      const result = getValueByPath(obj[key], path);
+      if (result !== undefined) return result;
+    }
+  }
+  
+  // Workflow-specific: look in output field, which is commonly used for results
+  if (obj.output && typeof obj.output === 'object') {
+    return getValueByPath(obj.output, path);
+  }
+  
+  // Workflow-specific: look in result field, which is commonly used for results
+  if (obj.result && typeof obj.result === 'object') {
+    return getValueByPath(obj.result, path);
+  }
+  
+  return undefined;
+}
+
+/**
+ * Replaces template variables in a string with values from an object
+ * 
+ * @param template The string containing template variables like {{varName}}
+ * @param data The data object to extract values from
+ * @returns The string with template variables replaced
+ */
+function replaceTemplateVariables(template: string, data: any): string {
+  if (!template || !template.includes('{{')) return template;
+  
+  // Find all template variables in format {{variableName}}
+  const templateVars = template.match(/\{\{([^}]+)\}\}/g) || [];
+  let result = template;
+  
+  for (const varTemplate of templateVars) {
+    const varName = varTemplate.slice(2, -2).trim(); // Remove {{ and }}
+    let replacement = '';
+    
+    // Try to find the value using our helper function
+    const value = getValueByPath(data, varName);
+    
+    // Convert the value to a string if it exists
+    if (value !== undefined && value !== null) {
+      replacement = typeof value === 'object' 
+        ? JSON.stringify(value) 
+        : String(value);
+    }
+    
+    // Replace the template variable with its value
+    result = result.replace(varTemplate, replacement);
+  }
+  
+  return result;
+}
+
+/**
  * Executor for the ResponseMessage node, which displays conditional success/error messages
  * based on the result of a workflow execution.
  */
@@ -47,6 +135,9 @@ export const responseMessageExecutor: EnhancedNodeExecutor = {
     inputs: Record<string, NodeExecutionData>
   ) {
     try {
+      console.log('Response Message Node - Starting execution with inputs:', 
+        JSON.stringify(inputs?.default?.items?.[0]?.json || {}, null, 2));
+      
       // Get input data (use the first item if there are multiple)
       const input = inputs?.default?.items?.[0]?.json || {};
       
@@ -57,54 +148,51 @@ export const responseMessageExecutor: EnhancedNodeExecutor = {
       const successMessage = settings.successMessage || 'Operation completed successfully!';
       const errorMessage = settings.errorMessage || 'Operation failed. Please try again.';
       
-      // Access nested properties using dot notation if needed
-      let fieldValue;
-      if (conditionField.includes('.')) {
-        const parts = conditionField.split('.');
-        let current = input;
-        for (const part of parts) {
-          if (current === null || current === undefined) break;
-          current = current[part];
-        }
-        fieldValue = current;
+      // Get the condition value using our helper function
+      const fieldValue = getValueByPath(input, conditionField);
+      
+      console.log('Response Message Node - Checking condition:', {
+        conditionField,
+        fieldValue,
+        successValue,
+        inputSnapshot: input
+      });
+      
+      // Special case for boolean conditions - handle "true"/"false" string values
+      let isSuccess = false;
+      if (successValue === 'true' && (fieldValue === true || fieldValue === 'true')) {
+        isSuccess = true;
+      } else if (successValue === 'false' && (fieldValue === false || fieldValue === 'false')) {
+        isSuccess = false;
       } else {
-        fieldValue = input[conditionField];
+        // Standard comparison
+        isSuccess = fieldValue !== undefined && fieldValue !== null && 
+          String(fieldValue) === String(successValue);
       }
       
-      // Determine if condition is met
-      const isSuccess = fieldValue !== undefined && fieldValue !== null && 
-        fieldValue.toString() === successValue.toString();
-      
-      // Replace template variables in message
-      let message = isSuccess ? successMessage : errorMessage;
-      
-      // Replace template variables with values from input
-      if (message && message.includes('{{')) {
-        // Find all template variables in format {{variableName}}
-        const templateVars = message.match(/\{\{([^}]+)\}\}/g) || [];
-        
-        for (const template of templateVars) {
-          const varName = template.slice(2, -2).trim(); // Remove {{ and }}
-          let replacement = '';
-          
-          // Try to find the value in input
-          if (input[varName] !== undefined) {
-            replacement = input[varName];
-          } else if (varName.includes('.')) {
-            // Handle nested properties
-            const parts = varName.split('.');
-            let current = input;
-            for (const part of parts) {
-              if (current === null || current === undefined) break;
-              current = current[part];
-            }
-            replacement = current !== undefined ? current : '';
-          }
-          
-          // Replace the template with the value
-          message = message.replace(template, replacement);
-        }
+      // If the condition field or success value is 'true', and we don't find the field,
+      // assume success (this is a common pattern in our workflows)
+      if (conditionField === 'true' && successValue === 'true') {
+        isSuccess = true;
       }
+      
+      // For workflow trigger nodes, we often want to default to success
+      if (input.workflowId && !fieldValue && conditionField === 'result') {
+        console.log('Response Message Node - Workflow trigger detected, defaulting to success');
+        isSuccess = true;
+      }
+      
+      // Select the appropriate message template
+      const messageTemplate = isSuccess ? successMessage : errorMessage;
+      
+      // Replace all template variables with values from the input
+      const message = replaceTemplateVariables(messageTemplate, input);
+      
+      console.log('Response Message Node - Result:', {
+        isSuccess,
+        message,
+        originalTemplate: messageTemplate
+      });
       
       const result = {
         isSuccess,

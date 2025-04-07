@@ -49,12 +49,13 @@ export const transformExecutor: EnhancedNodeExecutor = {
           // Special handling for workflow trigger outputs
           if (inputData && typeof inputData === 'object') {
             // Check if this is a workflow output and extract content/output field
-            if (inputData.output) {
-              inputData = inputData.output;
-            } else if (inputData.content) {
-              inputData = inputData.content;
-            } else if (inputData.result) {
-              inputData = inputData.result;
+            const objectData = inputData as Record<string, any>;
+            if (objectData.output !== undefined) {
+              inputData = objectData.output;
+            } else if (objectData.content !== undefined) {
+              inputData = objectData.content;
+            } else if (objectData.result !== undefined) {
+              inputData = objectData.result;
             }
           }
         }
