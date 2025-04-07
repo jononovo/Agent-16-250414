@@ -24,6 +24,7 @@ export async function getAllEnhancedNodeExecutors(): Promise<Record<string, Enha
   const responseMessageModule = await import('./responseMessageExecutor');
   const createWorkflowModule = await import('./createWorkflowExecutor');
   const linkWorkflowToAgentModule = await import('./linkWorkflowToAgentExecutor');
+  const databaseOperationModule = await import('./databaseOperationExecutor');
   const apiModule = await import('./apiExecutor');
   
   return {
@@ -41,7 +42,58 @@ export async function getAllEnhancedNodeExecutors(): Promise<Record<string, Enha
     responseMessageExecutor: responseMessageModule.responseMessageExecutor,
     createWorkflowExecutor: createWorkflowModule.default, // Using default export
     linkWorkflowToAgentExecutor: linkWorkflowToAgentModule.default, // Using default export
-    apiExecutor: apiModule.default // Using default export
+    databaseOperationExecutor: {
+      definition: {
+        type: 'database_operation',
+        displayName: 'Database Operation',
+        description: 'Perform operations on the database',
+        icon: 'database',
+        category: 'Data',
+        version: '1.0.0',
+        inputs: {
+          default: {
+            type: 'any',
+            displayName: 'Input',
+            description: 'Input data for the operation',
+            required: false
+          }
+        },
+        outputs: {
+          default: {
+            type: 'any',
+            displayName: 'Output',
+            description: 'Result of the database operation'
+          }
+        }
+      },
+      execute: databaseOperationModule.default
+    },
+    apiExecutor: {
+      definition: {
+        type: 'api',
+        displayName: 'API Request',
+        description: 'Make API requests to internal or external endpoints',
+        icon: 'globe',
+        category: 'Data',
+        version: '1.0.0',
+        inputs: {
+          default: {
+            type: 'any',
+            displayName: 'Input',
+            description: 'Input data for the API request',
+            required: false
+          }
+        },
+        outputs: {
+          default: {
+            type: 'any',
+            displayName: 'Response',
+            description: 'API response data'
+          }
+        }
+      },
+      execute: apiModule.default
+    }
   };
 }
 
@@ -87,6 +139,9 @@ export async function registerAllEnhancedExecutors(): Promise<void> {
   
   // Register API node executor
   registerEnhancedNodeExecutor('api', executors.apiExecutor);
+  
+  // Register database operation node executor
+  registerEnhancedNodeExecutor('database_operation', executors.databaseOperationExecutor);
   
   console.log('All enhanced node executors registered');
 }

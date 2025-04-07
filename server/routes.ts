@@ -704,6 +704,81 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // API Proxy to securely make external API requests
+  // This prevents exposing API keys to the client and avoids CORS issues
+  app.post("/api/proxy", async (req, res) => {
+    try {
+      const { url, method = 'GET', data, headers = {} } = req.body;
+      
+      // Validate required fields
+      if (!url) {
+        return res.status(400).json({ message: "URL is required" });
+      }
+      
+      // Validate method
+      if (!['GET', 'POST', 'PUT', 'PATCH', 'DELETE'].includes(method)) {
+        return res.status(400).json({ message: "Invalid HTTP method" });
+      }
+      
+      // Prevent requests to our own API to avoid security issues
+      if (url.includes('localhost') || url.includes('127.0.0.1')) {
+        return res.status(403).json({ message: "Proxy cannot be used for local requests" });
+      }
+      
+      // Log the proxy request (for debugging/auditing)
+      console.log(`API Proxy: ${method} ${url}`);
+      
+      // Add any API keys or authentication from environment variables
+      // This part would be customized based on the service being accessed
+      const enrichedHeaders: Record<string, string> = { ...headers };
+      
+      // Example: Add Claude API key if requesting Anthropic API
+      if (url.includes('anthropic.com') && process.env.CLAUDE_API_KEY) {
+        enrichedHeaders['x-api-key'] = process.env.CLAUDE_API_KEY;
+        enrichedHeaders['anthropic-version'] = '2023-06-01';
+      }
+      
+      // Example: Add OpenAI API key if requesting OpenAI API
+      if (url.includes('openai.com') && process.env.OPENAI_API_KEY) {
+        enrichedHeaders['Authorization'] = `Bearer ${process.env.OPENAI_API_KEY}`;
+      }
+      
+      // Make the request with timeout
+      const { fetchWithTimeout } = await import('./utils/fetch');
+      
+      const fetchOptions: RequestInit = {
+        method,
+        headers: enrichedHeaders,
+      };
+      
+      // Add body for non-GET requests
+      if (method !== 'GET' && data) {
+        fetchOptions.body = JSON.stringify(data);
+      }
+      
+      const response = await fetchWithTimeout(url, fetchOptions, 60000);
+      
+      // Extract response data
+      let responseData;
+      const contentType = response.headers.get('content-type');
+      
+      if (contentType && contentType.includes('application/json')) {
+        responseData = await response.json();
+      } else {
+        responseData = await response.text();
+      }
+      
+      // Return response with original status code
+      res.status(response.status).json(responseData);
+    } catch (error) {
+      console.error('API Proxy error:', error);
+      res.status(500).json({ 
+        message: "API Proxy error", 
+        error: error instanceof Error ? error.message : String(error) 
+      });
+    }
+  });
+
   app.put("/api/logs/:id", async (req, res) => {
     try {
       const id = parseInt(req.params.id);

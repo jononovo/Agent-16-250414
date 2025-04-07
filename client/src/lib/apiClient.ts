@@ -1,65 +1,131 @@
 /**
- * Simple API client for making requests to the backend
+ * API Client
+ * 
+ * A standardized utility for making API requests to the backend.
+ * This centralizes API communication and provides consistent error handling.
  */
-import axios from 'axios';
 
-// Create an axios instance with defaults appropriate for our API
-export const apiClient = axios.create({
-  baseURL: '/',
-  headers: {
-    'Content-Type': 'application/json',
-  },
-  withCredentials: true, // Needed for cookies/session
-});
+const API_BASE_URL = ''; // Empty string for same-domain requests
 
-// Response interceptor for API errors
-apiClient.interceptors.response.use(
-  (response) => response,
-  (error) => {
-    // Log API errors but don't expose internals to the user
-    console.error('API request error:', error);
+/**
+ * Handles API response checking
+ */
+async function handleResponse(response: Response) {
+  if (!response.ok) {
+    const errorText = await response.text();
+    let errorMessage = `API request failed (${response.status})`;
     
-    return Promise.reject(error);
+    try {
+      const errorData = JSON.parse(errorText);
+      if (errorData.message) {
+        errorMessage = `${errorMessage}: ${errorData.message}`;
+      }
+    } catch (e) {
+      // If the error response isn't JSON, use the text directly
+      if (errorText) {
+        errorMessage = `${errorMessage}: ${errorText}`;
+      }
+    }
+    
+    console.error(errorMessage);
+    throw new Error(errorMessage);
   }
-);
+  
+  // For empty responses, return an empty object
+  if (response.status === 204) {
+    return {};
+  }
+  
+  return response.json();
+}
 
-// Simple wrapper for making API requests
-export const apiRequest = async (endpoint: string, method: string = 'GET', data?: any) => {
-  try {
-    const config = {
+/**
+ * Makes a GET request to the API
+ */
+export async function apiGet(endpoint: string) {
+  const response = await fetch(`${API_BASE_URL}${endpoint}`, {
+    method: 'GET',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+  });
+  
+  return handleResponse(response);
+}
+
+/**
+ * Makes a POST request to the API
+ */
+export async function apiPost(endpoint: string, data: any) {
+  console.log(`Making POST request to ${window.location.origin}${endpoint}`);
+  console.log(`Request body:`, JSON.stringify(data));
+  
+  const response = await fetch(`${API_BASE_URL}${endpoint}`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(data),
+  });
+  
+  return handleResponse(response);
+}
+
+/**
+ * Makes a PATCH request to the API
+ */
+export async function apiPatch(endpoint: string, data: any) {
+  const response = await fetch(`${API_BASE_URL}${endpoint}`, {
+    method: 'PATCH',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(data),
+  });
+  
+  return handleResponse(response);
+}
+
+/**
+ * Makes a DELETE request to the API
+ */
+export async function apiDelete(endpoint: string) {
+  const response = await fetch(`${API_BASE_URL}${endpoint}`, {
+    method: 'DELETE',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+  });
+  
+  return handleResponse(response);
+}
+
+/**
+ * Makes a request to an external API
+ * 
+ * This uses the server as a proxy to avoid CORS issues and to protect API keys
+ */
+export async function externalApiRequest(
+  url: string,
+  method: string = 'GET',
+  data?: any,
+  headers?: Record<string, string>
+) {
+  // Use the server as a proxy
+  const proxyEndpoint = '/api/proxy';
+  
+  const response = await fetch(proxyEndpoint, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      url,
       method,
-      url: endpoint,
-      data: method !== 'GET' ? data : undefined,
-      params: method === 'GET' ? data : undefined,
-    };
-    
-    const response = await apiClient(config);
-    return response.data;
-  } catch (error) {
-    console.error(`Error making ${method} request to ${endpoint}:`, error);
-    throw error;
-  }
-};
-
-// Helper methods for common HTTP methods
-export const apiGet = async (endpoint: string, params?: any) => {
-  return apiRequest(endpoint, 'GET', params);
-};
-
-export const apiPost = async (endpoint: string, data?: any) => {
-  return apiRequest(endpoint, 'POST', data);
-};
-
-export const apiPatch = async (endpoint: string, data?: any) => {
-  return apiRequest(endpoint, 'PATCH', data);
-};
-
-export const apiPut = async (endpoint: string, data?: any) => {
-  return apiRequest(endpoint, 'PUT', data);
-};
-
-export const apiDelete = async (endpoint: string, data?: any) => {
-  return apiRequest(endpoint, 'DELETE', data);
-};
-
-export default apiClient;
+      data,
+      headers,
+    }),
+  });
+  
+  return handleResponse(response);
+}
