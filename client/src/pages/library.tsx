@@ -146,8 +146,8 @@ export default function Library() {
   const isMobile = useIsMobile();
   const [activeTab, setActiveTab] = useState('workflows');
   const [searchQuery, setSearchQuery] = useState('');
-  const [typeFilter, setTypeFilter] = useState<string>('');
-  const [statusFilter, setStatusFilter] = useState<string>('');
+  const [typeFilter, setTypeFilter] = useState<string>('_all');
+  const [statusFilter, setStatusFilter] = useState<string>('_all');
 
   // Fetch agents data
   const {
@@ -195,8 +195,8 @@ export default function Library() {
         workflow.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
         (workflow.description?.toLowerCase() || '').includes(searchQuery.toLowerCase());
       
-      const matchesType = typeFilter === '' || workflow.type.toLowerCase() === typeFilter.toLowerCase();
-      const matchesStatus = statusFilter === '' || workflow.status.toLowerCase() === statusFilter.toLowerCase();
+      const matchesType = typeFilter === '_all' || typeFilter === '' || workflow.type.toLowerCase() === typeFilter.toLowerCase();
+      const matchesStatus = statusFilter === '_all' || statusFilter === '' || workflow.status.toLowerCase() === statusFilter.toLowerCase();
       
       return matchesSearch && matchesType && matchesStatus;
     });
@@ -208,8 +208,8 @@ export default function Library() {
         agent.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
         (agent.description?.toLowerCase() || '').includes(searchQuery.toLowerCase());
       
-      const matchesType = typeFilter === '' || agent.type.toLowerCase() === typeFilter.toLowerCase();
-      const matchesStatus = statusFilter === '' || agent.status.toLowerCase() === statusFilter.toLowerCase();
+      const matchesType = typeFilter === '_all' || typeFilter === '' || agent.type.toLowerCase() === typeFilter.toLowerCase();
+      const matchesStatus = statusFilter === '_all' || statusFilter === '' || agent.status.toLowerCase() === statusFilter.toLowerCase();
       
       return matchesSearch && matchesType && matchesStatus;
     });
@@ -221,8 +221,8 @@ export default function Library() {
         node.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
         (node.description?.toLowerCase() || '').includes(searchQuery.toLowerCase());
       
-      const matchesType = typeFilter === '' || node.type.toLowerCase() === typeFilter.toLowerCase();
-      const matchesCategory = statusFilter === '' || node.category.toLowerCase() === statusFilter.toLowerCase();
+      const matchesType = typeFilter === '_all' || typeFilter === '' || node.type.toLowerCase() === typeFilter.toLowerCase();
+      const matchesCategory = statusFilter === '_all' || statusFilter === '' || node.category.toLowerCase() === statusFilter.toLowerCase();
       
       return matchesSearch && matchesType && matchesCategory;
     });
@@ -280,8 +280,8 @@ export default function Library() {
   // Reset filters when changing tabs
   const handleTabChange = (tab: string) => {
     setActiveTab(tab);
-    setTypeFilter('');
-    setStatusFilter('');
+    setTypeFilter('_all');
+    setStatusFilter('_all');
   };
   
   return (
@@ -365,10 +365,10 @@ export default function Library() {
                           <SelectValue placeholder="Type" />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="">All Types</SelectItem>
+                          <SelectItem value="_all">All Types</SelectItem>
                           {filterOptions.types.map(type => (
-                            <SelectItem key={type} value={type}>
-                              {type}
+                            <SelectItem key={type} value={type || "_none"}>
+                              {type || "Unspecified"}
                             </SelectItem>
                           ))}
                         </SelectContent>
@@ -379,10 +379,10 @@ export default function Library() {
                           <SelectValue placeholder={filterOptions.statusLabel} />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="">All {filterOptions.statusLabel}es</SelectItem>
+                          <SelectItem value="_all">All {filterOptions.statusLabel}es</SelectItem>
                           {filterOptions.statuses.map(status => (
-                            <SelectItem key={status} value={status}>
-                              {status}
+                            <SelectItem key={status} value={status || "_none"}>
+                              {status || "Unspecified"}
                             </SelectItem>
                           ))}
                         </SelectContent>
