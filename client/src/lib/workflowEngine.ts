@@ -76,7 +76,11 @@ function areNodeDependenciesSatisfied(node: Node, nodeStates: Record<string, Nod
   const nodeType = node.type || '';
   // Some node types only need one of their dependencies to be satisfied
   // This allows multiple potential trigger sources where only one is active
-  const isORDependencyNode = nodeType === 'claude';
+  // The primary examples are AI nodes like Claude which can accept inputs from multiple sources
+  const isORDependencyNode = nodeType === 'claude' || 
+                           nodeType === 'generate_text' || 
+                           nodeType === 'perplexity' || 
+                           nodeType === 'transform';
   
   if (isORDependencyNode) {
     // For OR-dependency nodes, we only need ONE of the dependencies to be satisfied
@@ -108,6 +112,19 @@ function findNextNodes(nodes: Node[], nodeStates: Record<string, NodeExecutionSt
   // In workflows with multiple potential trigger nodes (like workflow 15),
   // we need to make sure both trigger nodes are processed before moving on
   
+  // Extract the metadata from input to determine which trigger should be preferred
+  const inputMetadata: Record<string, any> = nodes.reduce((meta: Record<string, any>, node) => {
+    const data = nodeStates[node.id]?.data || {};
+    // Check for metadata in the node data
+    if (data.metadata && typeof data.metadata === 'object') {
+      return { ...meta, ...data.metadata };
+    }
+    return meta;
+  }, {} as Record<string, any>);
+  
+  const source = inputMetadata?.source || '';
+  const isAiChatSource = source === 'ai_chat';
+  
   // Step 1: Find all available trigger nodes
   const availableTriggerNodes = nodes.filter(node => {
     // Only consider internal node types that act as triggers
@@ -123,6 +140,23 @@ function findNextNodes(nodes: Node[], nodeStates: Record<string, NodeExecutionSt
     
     return true;
   });
+  
+  // Sort trigger nodes to process them in the right order
+  // This ensures the right one gets the _isPrimaryTrigger flag in the node executor
+  if (availableTriggerNodes.length > 1) {
+    availableTriggerNodes.sort((a, b) => {
+      const aIsAiChat = a.type === 'internal_ai_chat_agent';
+      const bIsAiChat = b.type === 'internal_ai_chat_agent';
+      
+      // If the source is from AI chat, prioritize the AI chat trigger node
+      if (isAiChatSource) {
+        return aIsAiChat ? -1 : bIsAiChat ? 1 : 0;
+      } else {
+        // Otherwise prioritize the regular UI trigger node
+        return !aIsAiChat ? -1 : !bIsAiChat ? 1 : 0;
+      }
+    });
+  }
   
   // If we have available trigger nodes, prioritize processing them first
   if (availableTriggerNodes.length > 0) {

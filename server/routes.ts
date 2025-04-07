@@ -467,6 +467,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Extract input from request
       const input = req.body.input || '';
       
+      // For workflow 15 (Build New Agent Structure v1), we should always include the debug flag
+      // to bypass circular dependency issues until we can fix the server-side node executors
+      if (id === 15) {
+        console.log('Using debug mode for Build New Agent Structure workflow (ID 15)');
+        if (typeof input === 'object') {
+          if (!input.metadata) {
+            input.metadata = {};
+          }
+          input.metadata.debug = true;
+          input.metadata.bypassCircularDependency = true;
+        }
+      }
+      
       // Import the workflow execution function
       const { executeWorkflow } = await import('../client/src/lib/workflowEngine');
       
