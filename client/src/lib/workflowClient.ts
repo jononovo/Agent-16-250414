@@ -129,44 +129,37 @@ export async function executeWorkflow(
           if (typeof input === 'string') {
             node.data.inputText = input;
             node.data.text = input;
-            node.data.prompt = input;
           } else {
-            // Merge input object with node data
-            node.data = { ...node.data, ...enhancedInput };
+            // Inject all input properties
+            for (const [key, value] of Object.entries(enhancedInput)) {
+              if (key !== 'metadata') {
+                node.data[key] = value;
+              }
+            }
+            
+            // Set the text property as JSON string if it doesn't exist
+            if (!node.data.inputText && !node.data.text) {
+              node.data.inputText = JSON.stringify(enhancedInput, null, 2);
+              node.data.text = node.data.inputText;
+            }
           }
           
           injectedInput = true;
-          console.log(`Injected input into ${node.type} node (${node.id})`);
-        } else {
-          // Mark other potential entry nodes as ignored but provide the same data
-          // This ensures consistent data throughout the workflow
-          node.data._ignoreTrigger = true;
-          
-          // Still provide the data to ensure downstream nodes work correctly
-          if (typeof input === 'string') {
-            node.data.inputText = input;
-            node.data.text = input;
-            node.data.prompt = input;
-          } else {
-            // Merge input object with node data
-            node.data = { ...node.data, ...enhancedInput };
-          }
+          break;
         }
       }
     }
     
+    // If no compatible entry node found, inject into the first node as fallback
     if (!injectedInput && nodes.length > 0) {
-      // If no entry nodes found, inject into the first node
       const firstNode = nodes[0];
       if (!firstNode.data) firstNode.data = {};
       
       if (typeof input === 'string') {
         firstNode.data.inputText = input;
         firstNode.data.text = input;
-        firstNode.data.prompt = input;
       } else {
-        // Merge input object with node data
-        firstNode.data = { ...firstNode.data, ...enhancedInput };
+        Object.assign(firstNode.data, enhancedInput);
       }
       
       console.log(`Injected input into first node (${firstNode.id}) as fallback`);
@@ -176,8 +169,10 @@ export async function executeWorkflow(
     let logId = null;
     if (logToServer) {
       try {
+        // Make sure we include all required fields for log creation
         const logResponse = await apiPost('/api/logs', {
           workflowId: typeof workflowIdOrData === 'number' ? workflowIdOrData : workflowData.id,
+          agentId: 0, // Use a default agent ID since this is required
           status: 'running',
           input: enhancedInput
         });
@@ -186,6 +181,7 @@ export async function executeWorkflow(
         console.log(`Created server execution log: ${logId}`);
       } catch (error) {
         console.warn('Failed to create execution log on server:', error);
+        // Continue execution even if logging fails
       }
     }
     
@@ -197,7 +193,7 @@ export async function executeWorkflow(
         // Update log on server when workflow completes
         if (logToServer && logId) {
           try {
-            await apiPost(`/api/logs/${logId}`, {
+            await apiPatch(`/api/logs/${logId}`, {
               status: finalState.status,
               output: finalState.output,
               error: finalState.error,
@@ -205,6 +201,7 @@ export async function executeWorkflow(
             });
           } catch (error) {
             console.warn('Failed to update execution log on server:', error);
+            // Continue execution even if log update fails
           }
         }
         
@@ -212,6 +209,10 @@ export async function executeWorkflow(
         if (onWorkflowComplete) {
           onWorkflowComplete(finalState);
         }
+      },
+      {
+        debugMode: metadata?.debug_mode || false,
+        metadata
       }
     );
     

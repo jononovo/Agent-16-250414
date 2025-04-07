@@ -170,9 +170,18 @@ function getInputMapping(workflowData: WorkflowData): Record<string, Record<stri
 export async function executeEnhancedWorkflow(
   workflowData: WorkflowData,
   onNodeStateChange?: (nodeId: string, state: NodeState) => void,
-  onWorkflowComplete?: (state: WorkflowExecutionState) => void
+  onWorkflowComplete?: (state: WorkflowExecutionState) => void,
+  options: {
+    debugMode?: boolean;
+    metadata?: Record<string, any>;
+  } = {}
 ): Promise<WorkflowExecutionState> {
+  const { debugMode = false } = options;
+  
   console.log('Executing enhanced workflow with', workflowData.nodes.length, 'nodes');
+  if (debugMode) {
+    console.log('Debug mode enabled for workflow execution');
+  }
   
   // Create initial execution state
   const executionState: WorkflowExecutionState = {
@@ -276,7 +285,22 @@ export async function executeEnhancedWorkflow(
         
         // Execute the node
         console.log(`Executing node ${nodeId} (${nodeType})`);
+        
+        // In debug mode, log detailed node execution information
+        if (debugMode) {
+          console.log(`Node ${nodeId} (${nodeType}) execution details:`, {
+            nodeData,
+            inputs,
+            inputMapping: nodeInputMapping
+          });
+        }
+        
         const output = await executor.execute(nodeData, inputs);
+        
+        // In debug mode, log the output of the node
+        if (debugMode) {
+          console.log(`Node ${nodeId} (${nodeType}) output:`, output);
+        }
         
         // Store output
         executionState.nodeOutputs[nodeId] = output;

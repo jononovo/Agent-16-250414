@@ -12,6 +12,7 @@ import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Label } from '@/components/ui/label';
+import { Checkbox } from '@/components/ui/checkbox';
 import { executeWorkflow, loadWorkflow } from '@/lib/workflowClient';
 import { Textarea } from '@/components/ui/textarea';
 import { Alert, AlertDescription } from '@/components/ui/alert';
@@ -24,7 +25,7 @@ import { registerAllEnhancedNodeExecutors } from '@/lib/enhancedWorkflowEngine';
 export default function WorkflowTestPage() {
   const [workflowId, setWorkflowId] = useState<string>('15'); // Default to workflow 15
   const [inputData, setInputData] = useState<string>(''); 
-  const [jsonInput, setJsonInput] = useState<string>('{\n  "name": "Test Agent",\n  "description": "A test agent created from the workflow tester",\n  "source": "ui_form"\n}');
+  const [jsonInput, setJsonInput] = useState<string>('{\n  "name": "Test Agent",\n  "description": "A test agent created from the workflow tester",\n  "type": "custom",\n  "icon": "sparkles",\n  "source": "ui_form"\n}');
   const [workflowData, setWorkflowData] = useState<any>(null);
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [isExecuting, setIsExecuting] = useState<boolean>(false);
@@ -33,6 +34,8 @@ export default function WorkflowTestPage() {
   const [error, setError] = useState<string | null>(null);
   const [executionLogs, setExecutionLogs] = useState<string[]>([]);
   const [inputTab, setInputTab] = useState<string>('json');
+  const [skipLogging, setSkipLogging] = useState<boolean>(false);
+  const [debugMode, setDebugMode] = useState<boolean>(false);
 
   // Initialize workflow engine when component mounts
   useEffect(() => {
@@ -133,8 +136,10 @@ export default function WorkflowTestPage() {
           },
           metadata: {
             source: parsedInput.source || 'ui_form',
-            test_execution: true
-          }
+            test_execution: true,
+            debug_mode: debugMode
+          },
+          logToServer: !skipLogging
         }
       );
       
@@ -234,6 +239,48 @@ export default function WorkflowTestPage() {
                   </div>
                 </TabsContent>
               </Tabs>
+              
+              <div className="pt-2">
+                <Label className="text-sm mb-2 block">Common Test Templates</Label>
+                <div className="grid grid-cols-2 gap-2">
+                  <Button 
+                    variant="outline" 
+                    size="sm"
+                    onClick={() => setJsonInput('{\n  "name": "Test Agent",\n  "description": "A test agent created from the workflow tester",\n  "type": "custom",\n  "icon": "sparkles",\n  "source": "ui_form"\n}')}
+                  >
+                    New Agent
+                  </Button>
+                  <Button 
+                    variant="outline" 
+                    size="sm"
+                    onClick={() => setJsonInput('{\n  "name": "Weather Agent",\n  "description": "Checks weather forecasts",\n  "type": "weather",\n  "icon": "cloud",\n  "source": "ai_chat"\n}')}
+                  >
+                    Weather Agent
+                  </Button>
+                </div>
+              </div>
+              
+              <div className="pt-2">
+                <Label className="text-sm mb-2 block">Execution Options</Label>
+                <div className="space-y-3">
+                  <div className="flex items-center space-x-2">
+                    <Checkbox 
+                      id="skipLogging" 
+                      checked={skipLogging}
+                      onCheckedChange={(checked) => setSkipLogging(checked as boolean)}
+                    />
+                    <Label htmlFor="skipLogging" className="text-sm font-normal">Skip server logging</Label>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <Checkbox 
+                      id="debugMode" 
+                      checked={debugMode}
+                      onCheckedChange={(checked) => setDebugMode(checked as boolean)}
+                    />
+                    <Label htmlFor="debugMode" className="text-sm font-normal">Enable debug mode</Label>
+                  </div>
+                </div>
+              </div>
             </CardContent>
             <CardFooter>
               <Button 
