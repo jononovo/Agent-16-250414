@@ -51,8 +51,32 @@ const PromptInput = () => {
               if (data.coordinatorResult.output.trim().startsWith('<!DOCTYPE html>') || 
                   data.coordinatorResult.output.trim().startsWith('<html')) {
                 addMessage("I received a response but it was in the wrong format. Please try a different query.", 'system');
+              } 
+              // Check if it's a JSON string with agent creation info
+              else if (data.coordinatorResult.output.trim().startsWith('{') && 
+                  data.coordinatorResult.output.trim().endsWith('}')) {
+                try {
+                  // Parse the JSON string into an object
+                  const jsonData = JSON.parse(data.coordinatorResult.output);
+                  
+                  // Check for agent creation success message patterns in structured data
+                  if (jsonData.result?.settings?.successMessage) {
+                    addMessage(jsonData.result.settings.successMessage, 'agent');
+                  } else if (jsonData.settings?.successMessage) {
+                    addMessage(jsonData.settings.successMessage, 'agent');
+                  } else if (jsonData.message && (jsonData.message.includes("created") || jsonData.message.includes("agent"))) {
+                    addMessage(jsonData.message, 'agent');
+                  } else {
+                    // If not an agent creation response, show the raw JSON
+                    addMessage(data.coordinatorResult.output, 'agent');
+                  }
+                } catch (error) {
+                  // If parsing fails, just display the string
+                  console.error("Error parsing JSON response:", error);
+                  addMessage(data.coordinatorResult.output, 'agent');
+                }
               } else {
-                // Display all other content, including JSON strings
+                // It's a regular string, so display it
                 addMessage(data.coordinatorResult.output, 'agent');
               }
             } 
@@ -84,8 +108,32 @@ const PromptInput = () => {
               if (data.generatorResult.output.trim().startsWith('<!DOCTYPE html>') || 
                   data.generatorResult.output.trim().startsWith('<html')) {
                 // Don't show anything - the coordinator will handle it
+              } 
+              // Check if it's a JSON string with agent creation info
+              else if (data.generatorResult.output.trim().startsWith('{') && 
+                  data.generatorResult.output.trim().endsWith('}')) {
+                try {
+                  // Parse the JSON string into an object
+                  const jsonData = JSON.parse(data.generatorResult.output);
+                  
+                  // Check for agent creation success message patterns in structured data
+                  if (jsonData.result?.settings?.successMessage) {
+                    addMessage(jsonData.result.settings.successMessage, 'agent');
+                  } else if (jsonData.settings?.successMessage) {
+                    addMessage(jsonData.settings.successMessage, 'agent');
+                  } else if (jsonData.message && (jsonData.message.includes("created") || jsonData.message.includes("agent"))) {
+                    addMessage(jsonData.message, 'agent');
+                  } else {
+                    // If not an agent creation response, show the raw JSON
+                    addMessage(data.generatorResult.output, 'agent');
+                  }
+                } catch (error) {
+                  // If parsing fails, just display the string
+                  console.error("Error parsing JSON response:", error);
+                  addMessage(data.generatorResult.output, 'agent');
+                }
               } else {
-                // Display all other content, including JSON strings
+                // It's a regular string, so display it
                 addMessage(data.generatorResult.output, 'agent');
               }
             } else if (typeof data.generatorResult.output === 'object') {
