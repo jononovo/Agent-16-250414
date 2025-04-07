@@ -15,11 +15,12 @@ const rawInternalExecutor: InternalNodeExecutor = async (
   try {
     console.log(`Executing internal node: ${nodeData.id}, type: ${nodeData.type}`);
     
-    // Check if this is a trigger or action node
-    const nodeType = nodeData.id.split('-')[0];
+    // Check if this is a trigger or action node based on the node type
+    const nodeType = nodeData.type || '';
+    const isInternalTriggerNode = nodeType.includes('internal_') && nodeType.includes('_agent');
     
-    // For internal trigger nodes (just pass through data in test mode)
-    if (nodeType.includes('trigger') || nodeType.includes('new_agent') || nodeType.includes('chat_agent') || nodeType.includes('ai_chat')) {
+    // For internal trigger nodes (pass through data in a clean way)
+    if (isInternalTriggerNode || nodeType.includes('trigger')) {
       // Process the input data - extract the name and description if they were provided directly
       const inputData = context.inputData || {};
       const name = inputData.name || inputData.json?.name || '';
@@ -29,7 +30,7 @@ const rawInternalExecutor: InternalNodeExecutor = async (
       const isPreferredTrigger = inputData?._preferredTrigger || false;
       const isIgnoredTrigger = inputData?._ignoreTrigger || false;
       
-      // Check for metadata to determine if we should use the ai_chat trigger
+      // Check for metadata to determine the source of the trigger
       const metadata = inputData?.metadata || {};
       const source = metadata.source || '';
       const isAiChatSource = source === 'ai_chat';
@@ -78,16 +79,19 @@ const rawInternalExecutor: InternalNodeExecutor = async (
         };
       }
       
-      // FIXED TRIGGER HANDLING
-      // Always return success for both trigger types in Build New Agent workflow (ID 15)
-      // This helps avoid circular dependencies and ensures claude node gets input
-      console.log(`Improved trigger handling for workflow 15 - For node: ${nodeData.id}`);
+      // Determine the appropriate trigger role
+      // Each trigger node needs to identify if it's the best match for the source
+      // This is used by downstream nodes like claude that now use OR-dependency pattern
+      let isPrimaryTrigger = false;
       
-      // Determine if it's the best node for this source, but always succeed
-      const isPrimaryTrigger = 
-        (isAiChatSource && (nodeData.type === 'internal_ai_chat_agent' || nodeData.id === 'internal_ai_chat_agent-1')) ||
-        (!isAiChatSource && (nodeData.type === 'internal_new_agent' || nodeData.id === 'internal_new_agent-1'));
+      // Improved source matching without hardcoding node IDs
+      if (nodeType === 'internal_ai_chat_agent' && isAiChatSource) {
+        isPrimaryTrigger = true;
+      } else if (nodeType === 'internal_new_agent' && !isAiChatSource) {
+        isPrimaryTrigger = true;
+      }
       
+      // Create the return data with all necessary properties
       const returnData = {
         trigger_type: nodeType,
         timestamp: new Date().toISOString(),
@@ -98,6 +102,7 @@ const rawInternalExecutor: InternalNodeExecutor = async (
         ...inputData // Pass any additional input data to the next node
       };
       
+      // Add role flags based on the source matching
       if (isPrimaryTrigger) {
         console.log(`Activating primary trigger node ${nodeData.id} for source: ${source}`);
         returnData._isPrimaryTrigger = true;
@@ -106,6 +111,8 @@ const rawInternalExecutor: InternalNodeExecutor = async (
         returnData._isSecondaryTrigger = true;
       }
       
+      // Always return successful execution for trigger nodes
+      // This works with our OR-dependency pattern in the workflow engine
       return {
         status: 'success',
         output: createExecutionDataFromValue(returnData, 'internal_trigger')

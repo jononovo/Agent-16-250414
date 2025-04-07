@@ -94,31 +94,79 @@ export const claudeExecutor: EnhancedNodeExecutor = {
   execute: async (nodeData, inputs) => {
     try {
       console.log('Executing Claude node with data:', nodeData.label || 'Unnamed Claude Node');
+      console.log('Claude node inputs:', Object.keys(inputs));
       
-      // Get the input from the connected node
+      // Get the input from the connected nodes
       const inputKeys = Object.keys(inputs);
       let prompt = '';
+      let primaryInputFound = false;
       
+      // First check if we have a primary trigger input
+      // This handles the OR-dependency pattern with multiple trigger nodes
       if (inputKeys.length > 0) {
-        const firstInputKey = inputKeys[0];
-        const firstInput = inputs[firstInputKey];
+        // First pass: Look for a primary trigger to prioritize
+        for (const key of inputKeys) {
+          const input = inputs[key];
+          
+          if (input.items && input.items.length > 0) {
+            const item = input.items[0];
+            
+            // Check if this is a primary trigger input (from internal executor)
+            if (item.json && item.json._isPrimaryTrigger) {
+              console.log(`Found primary trigger input from ${key}`);
+              primaryInputFound = true;
+              
+              // Extract the prompt from the primary input
+              if (typeof item.json === 'string') {
+                prompt = item.json;
+              } else if (typeof item.json === 'object') {
+                // Try to extract the prompt from various possible properties
+                if (item.json.prompt) {
+                  prompt = item.json.prompt;
+                } else if (item.json.text) {
+                  prompt = item.json.text;
+                } else if (item.json.content) {
+                  prompt = item.json.content;
+                } else if (item.json.message) {
+                  prompt = item.json.message;
+                } else {
+                  // Just use the whole object except internal flags
+                  const { _isPrimaryTrigger, _isSecondaryTrigger, ...rest } = item.json;
+                  prompt = JSON.stringify(rest);
+                }
+              }
+              
+              // We found our primary input, no need to check others
+              break;
+            }
+          }
+        }
         
-        // Extract text from the first item of the input
-        if (firstInput.items && firstInput.items.length > 0) {
-          const firstItem = firstInput.items[0];
-          if (typeof firstItem.json === 'string') {
-            prompt = firstItem.json;
-          } else if (typeof firstItem.json === 'object') {
-            // Try to find text in the JSON object
-            if (firstItem.json.text) {
-              prompt = firstItem.json.text;
-            } else if (firstItem.json.content) {
-              prompt = firstItem.json.content;
-            } else if (firstItem.json.message) {
-              prompt = firstItem.json.message;
-            } else {
-              // Convert the entire object to a string
-              prompt = JSON.stringify(firstItem.json);
+        // If no primary input was found, fall back to the first input
+        if (!primaryInputFound && inputKeys.length > 0) {
+          console.log('No primary trigger found, using first available input');
+          const firstInputKey = inputKeys[0];
+          const firstInput = inputs[firstInputKey];
+          
+          // Extract text from the first item of the input
+          if (firstInput.items && firstInput.items.length > 0) {
+            const firstItem = firstInput.items[0];
+            if (typeof firstItem.json === 'string') {
+              prompt = firstItem.json;
+            } else if (typeof firstItem.json === 'object') {
+              // Try to find text in the JSON object
+              if (firstItem.json.prompt) {
+                prompt = firstItem.json.prompt;
+              } else if (firstItem.json.text) {
+                prompt = firstItem.json.text;
+              } else if (firstItem.json.content) {
+                prompt = firstItem.json.content;
+              } else if (firstItem.json.message) {
+                prompt = firstItem.json.message;
+              } else {
+                // Convert the entire object to a string
+                prompt = JSON.stringify(firstItem.json);
+              }
             }
           }
         }
