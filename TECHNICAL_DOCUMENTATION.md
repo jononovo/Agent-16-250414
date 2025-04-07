@@ -226,15 +226,35 @@ Key components:
 
 ### Execution Process
 
-1. A workflow is loaded from the server with its flowData
-2. The client resolves the execution order based on node dependencies
-3. Nodes are executed one by one:
+#### Server-Side Workflow Execution
+1. A workflow is loaded from the server with its flowData via `/api/workflows/:id/execute`
+2. The server resolves the execution order based on node dependencies
+3. Nodes are executed one by one using the proper node executors:
    - For API nodes, requests are made through the API client
-   - For database nodes, operations are performed via API endpoints
+   - For database nodes, operations are performed via database interfaces
    - For other nodes, specialized executors handle the logic
 4. Node outputs are passed to downstream nodes as inputs
-5. Execution results are logged to the server
+5. Execution results are logged to the server via the logs table
 6. The workflow completes and returns the final result
+
+#### Client-Side Workflow Execution
+1. A workflow is loaded from the server via `/api/workflows/:id/trigger` endpoint
+2. The workflow is passed to the client-side execution engine
+3. The client identifies entry nodes and injects input data:
+   - Entry node types include: `text_input`, `internal_new_agent`, `internal_ai_chat_agent`, `workflow_trigger`, `agent_trigger`
+   - The workflow engine tags preferred entry points based on input metadata
+4. The client resolves the execution order based on node dependencies
+5. Nodes are executed using their appropriate registered executors
+6. Execution progress is tracked and can be visualized in the UI
+7. Results are optionally logged back to the server
+8. The workflow completes and returns the result to the caller
+
+#### Entry Point Selection
+The workflow engine intelligently selects appropriate entry points based on:
+- Source of the trigger (UI, chat, API, etc.)
+- Type of input data
+- Special flags in node configuration
+- Node types (certain types are preferred as entry points)
 
 ---
 
@@ -388,6 +408,7 @@ The API proxy endpoint (`/api/proxy`) securely makes external API requests:
 - Protects API keys from exposure to the client
 - Avoids CORS issues with external APIs
 - Provides consistent error handling
+- Automatically injects API keys for known services
 
 Example usage within a node:
 ```javascript
@@ -396,6 +417,56 @@ if (settings.apiType === 'external') {
   endpoint = `/api/proxy?url=${encodeURIComponent(endpoint)}`;
 }
 ```
+
+### API Registry
+
+The platform includes a comprehensive API registry (`apiRegistry.ts`) that documents all available API endpoints, their parameters, and expected responses:
+
+```typescript
+const apiEndpoints = [
+  {
+    path: '/api/workflows',
+    method: 'GET',
+    description: 'Get a list of all workflows',
+    category: 'workflows',
+    responseFormat: '[{ id: number, name: string, description: string, ... }]',
+    queryParams: [
+      {
+        name: 'type',
+        description: 'Filter workflows by type',
+        type: 'string',
+        required: false
+      }
+    ]
+  },
+  // Other endpoints...
+]
+```
+
+This registry serves multiple purposes:
+- Documentation for developers
+- Runtime validation of API requests
+- Generation of client-side API interfaces
+- Self-documentation of the platform's capabilities
+
+### Workflow API Endpoints
+
+The platform provides several specialized endpoints for workflow execution:
+
+1. **`/api/workflows/:id/execute`**: Server-side workflow execution
+   - Executes the workflow entirely on the server
+   - Returns final execution results
+   - Creates log entries automatically
+
+2. **`/api/workflows/:id/trigger`**: Client-side workflow execution
+   - Loads the workflow and executes it in the client's browser
+   - Supports more interactive workflow execution
+   - Identifies and injects input into appropriate entry nodes
+   - Prevents circular workflow dependencies via call stack tracking
+
+3. **`/api/workflows/run`**: Direct workflow execution with provided flow data
+   - Used for testing and development
+   - Executes workflow without requiring it to be stored in the database
 
 ### Database Operation Node
 
