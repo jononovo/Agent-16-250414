@@ -97,13 +97,10 @@ export function registerAllNodeExecutors() {
   registerNodeExecutor('webhook', webhookNodeExecutor);
   registerNodeExecutor('api', webhookNodeExecutor); // Map 'api' type to webhookNodeExecutor
   
-  // Import enhanced workflow node executors for backward compatibility
+  // Modern workflow trigger implementation
   registerNodeExecutor('workflow_trigger', {
     execute: async (nodeData, inputs) => {
-      console.log('Basic workflow_trigger node executor - executing workflow', nodeData);
-      
-      // For orchestration workflows, we don't need to pass the entire prompt through
-      // We just need to signal the workflow to execute with minimal required information
+      console.log('Workflow trigger node executor - executing workflow', nodeData);
       
       // Extract metadata if available (name, description for new agent/workflow)
       let metadata = {};
@@ -132,8 +129,7 @@ export function registerAllNodeExecutors() {
         console.log('Original prompt (context only):', originalPrompt.substring(0, 100));
       }
       
-      // For orchestration workflows, we just need to return a valid execution signal
-      // with minimal metadata - no need to pass the entire prompt
+      // Return a valid execution signal with metadata
       return {
         output: [{ 
           text: 'execute', 

@@ -128,8 +128,6 @@ export const apiClient = {
   }
 };
 
-// Backward compatibility function removed
-
 /**
  * Generic API request function for use with React Query mutations
  * 

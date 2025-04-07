@@ -7,6 +7,7 @@ import { Card } from '@/components/ui/card';
 import { Avatar } from '@/components/ui/avatar';
 import { MessageSquare, Send, X, Minimize2, Maximize2 } from 'lucide-react';
 import { format } from 'date-fns';
+import { apiClient } from '@/lib/apiClient';
 
 /**************************************
  * 1. CHAT CONTEXT - STATE MANAGEMENT
@@ -307,20 +308,8 @@ export function ChatSidebar({ className = '' }: ChatSidebarProps) {
     setIsLoading(true);
     
     try {
-      // Send the message to the agent chain API
-      const response = await fetch('/api/execute-agent-chain', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ prompt: content }),
-      });
-      
-      if (!response.ok) {
-        throw new Error(`API error ${response.status}: ${response.statusText}`);
-      }
-      
-      const data = await response.json();
+      // Send the message to the agent chain API using apiClient
+      const data = await apiClient.post('/api/execute-agent-chain', { prompt: content });
       
       // Add the agent's response to the chat
       if (data.success) {

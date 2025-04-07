@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useChat } from '@/components/chat';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
+import { apiClient } from '@/lib/apiClient';
 
 const PromptInput = () => {
   const [prompt, setPrompt] = useState('');
@@ -31,20 +32,8 @@ const PromptInput = () => {
     setIsLoading(true);
     
     try {
-      // Send request to agent chain API
-      const response = await fetch('/api/execute-agent-chain', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ prompt: userText }),
-      });
-      
-      if (!response.ok) {
-        throw new Error(`API error ${response.status}: ${response.statusText}`);
-      }
-      
-      const data = await response.json();
+      // Send request to agent chain API using apiClient
+      const data = await apiClient.post('/api/execute-agent-chain', { prompt: userText });
       
       // Add the agent's response to the chat
       if (data.success) {

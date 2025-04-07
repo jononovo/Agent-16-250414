@@ -4,7 +4,8 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { apiClient } from '@/lib/apiClient';
+import { apiRequest } from '@/lib/apiClient';
+import { createAgent } from '@/lib/workflowClient'; 
 import { useToast } from '@/hooks/use-toast';
 
 interface NewAgentModalProps {
@@ -34,46 +35,58 @@ export function NewAgentModal({ isOpen, onClose, onAgentCreated }: NewAgentModal
     try {
       setIsLoading(true);
       
-      // Create the agent directly via API
-      const agentData = await apiClient.post('/api/agents', {
+      const agentDescription = description.trim() || `A new agent created on ${new Date().toLocaleDateString()}`;
+      
+      // Create the agent using workflowClient's createAgent function
+      // which internally uses the workflow engine
+      const result = await createAgent({
         name,
-        description: description.trim() || `A new agent created on ${new Date().toLocaleDateString()}`,
+        description: agentDescription,
         type: 'custom',
         icon: 'brain',
-        status: 'active',
-        configuration: {}, 
-        userId: 1
-      });
-      
-      // No need to parse the response as apiClient already returns the parsed JSON data
-      // Axios throws an error automatically if the response is not successful
-      
-      // Also make the workflow call for triggering/tracking purposes
-      await apiClient.post('/api/workflows/run', {
-        workflowId: 15, // ID of "Build New Agent Structure v1" workflow
+        status: 'active'
+      }, {
         source: 'ui_form',
-        triggerType: 'internal_new_agent',
-        input: {
-          request_type: 'new_agent',
-          source: 'ui_form',
-          name,
-          description: description.trim() || `A new agent created on ${new Date().toLocaleDateString()}`
+        onNodeStateChange: (nodeId, state) => {
+          console.log(`Node ${nodeId} state changed to ${state.status}`);
         }
-      }).catch((err: unknown) => {
-        // Just log the error but don't fail the whole operation
-        console.warn('Warning: Workflow execution failed but agent was created:', err);
       });
       
-      console.log("New agent created:", agentData);
+      // Get the agent data from the result
+      const agentData = result.output?.items?.[0]?.json?.agent || 
+                        result.nodeStates?.[Object.keys(result.nodeStates)[0]]?.output?.items?.[0]?.json?.agent;
+      
+      if (!agentData) {
+        // Fallback to direct API call if the workflow doesn't return agent data
+        const response = await apiRequest({
+          method: 'POST',
+          url: '/api/agents',
+          data: {
+            name,
+            description: agentDescription,
+            type: 'custom',
+            icon: 'brain',
+            status: 'active'
+          }
+        });
+        
+        console.log("Agent created via direct API call:", response);
+        
+        if (onAgentCreated) {
+          onAgentCreated(response);
+        }
+      } else {
+        console.log("Agent created via workflow:", agentData);
+        
+        if (onAgentCreated) {
+          onAgentCreated(agentData);
+        }
+      }
       
       toast({
         title: "Agent Created Successfully",
         description: `The agent "${name}" has been created.`,
       });
-      
-      if (onAgentCreated) {
-        onAgentCreated(agentData);
-      }
       
       // Reset form and close modal
       setName('');
