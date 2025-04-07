@@ -50,7 +50,7 @@ export function NewAgentModal({ isOpen, onClose, onAgentCreated }: NewAgentModal
       
       // Also make the workflow call for triggering/tracking purposes
       await apiPost('/api/workflows/run', {
-        workflowId: 16, // ID of "Build New Agent Structure v1" workflow
+        workflowId: 15, // ID of "Build New Agent Structure v1" workflow
         source: 'ui_form',
         triggerType: 'internal_new_agent',
         input: {
