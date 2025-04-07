@@ -9,6 +9,7 @@
 import { executeApiNode } from './apiExecutor';
 import { executeApiVerifyNode } from './apiVerifyExecutor';
 import { executeDatabaseOperationNode } from './databaseOperationExecutor';
+import { apiResponseMessageExecutor } from './apiResponseMessageExecutor';
 
 // Registry of node executors
 const nodeExecutors: Record<string, (nodeData: any, input: any) => Promise<any>> = {};
@@ -78,6 +79,9 @@ export function registerAllNodeExecutors(): void {
   
   // Register database operation executor
   registerNodeExecutor('database_operation', executeDatabaseOperationNode);
+  
+  // Register the API Response Message executor
+  registerNodeExecutor('api_response_message', apiResponseMessageExecutor.execute);
   
   // Additional executors can be registered here
   

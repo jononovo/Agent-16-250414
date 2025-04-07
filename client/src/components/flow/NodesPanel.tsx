@@ -184,6 +184,13 @@ const NODE_TYPES = [
     category: 'actions',
     icon: AlertCircle
   },
+  { 
+    id: 'api_response_message', 
+    name: 'API Response Message', 
+    description: 'Send direct API messages to the chat UI',
+    category: 'actions',
+    icon: Send
+  },
   
   // Data Nodes
   {

@@ -49,6 +49,7 @@ import InternalNode from '../flow/nodes/InternalNode';
 import AgentTriggerNode from '../flow/nodes/AgentTriggerNode';
 import WorkflowTriggerNode from '../flow/nodes/WorkflowTriggerNode';
 import ResponseMessageNode from '../flow/nodes/ResponseMessageNode';
+import ApiResponseMessageNode from '../flow/nodes/ApiResponseMessageNode';
 
 // Register node types according to the documentation
 const nodeTypes: NodeTypes = {
@@ -71,6 +72,7 @@ const nodeTypes: NodeTypes = {
   agent_trigger: AgentTriggerNode,
   workflow_trigger: WorkflowTriggerNode,
   response_message: ResponseMessageNode,
+  api_response_message: ApiResponseMessageNode,
   
   // Internal system node types
   internal_new_agent: InternalNode,
@@ -323,7 +325,7 @@ const FlowEditor = ({ workflow, isNew = false }: FlowEditorProps) => {
       const nodeDataWithHandlers = {
         ...nodeData,
         // Add settings click handler for node types that need configuration
-        ...((type === 'generate_text' || type === 'agent_trigger' || type === 'workflow_trigger' || type === 'response_message') ? {
+        ...((type === 'generate_text' || type === 'agent_trigger' || type === 'workflow_trigger' || type === 'response_message' || type === 'api_response_message') ? {
           onSettingsClick: () => {
             // We need to find the node by ID later because this is a closure
             const node = reactFlowInstance.getNode(`${type}-${Date.now()}`);
