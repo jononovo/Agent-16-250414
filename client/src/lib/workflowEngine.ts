@@ -247,13 +247,25 @@ function findNextNodes(nodes: Node[], nodeStates: Record<string, NodeExecutionSt
     // Only consider internal node types that act as triggers
     const isTriggerNode = node.type?.includes('internal_') && 
                           (node.id === 'internal_new_agent-1' || 
-                           node.id === 'internal_ai_chat_agent-1');
+                           node.id === 'internal_ai_chat_agent-1' ||
+                           node.type === 'internal_new_agent' || 
+                           node.type === 'internal_ai_chat_agent');
                            
     if (!isTriggerNode) return false;
     
     // Skip nodes that are already running, completed, or in error state
     const nodeState = nodeStates[node.id];
-    if (nodeState && (nodeState.state === 'running' || nodeState.state === 'complete' || nodeState.state === 'error')) {
+    if (nodeState && (nodeState.state === 'running' || nodeState.state === 'complete')) {
+      return false;
+    }
+    
+    // Special handling for Build New Agent workflow (ID 15)
+    // Allow trigger nodes that errored to be passed over, as their data will be used by Claude
+    const isErrorState = nodeState && nodeState.state === 'error';
+    const isWorkflow15Node = node.id === 'internal_new_agent-1' || node.id === 'internal_ai_chat_agent-1';
+    
+    // If it's an error state but it's one of the specific workflow 15 nodes, skip it
+    if (isErrorState && isWorkflow15Node) {
       return false;
     }
     
