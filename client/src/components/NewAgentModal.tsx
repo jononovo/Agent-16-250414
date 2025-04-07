@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { apiPost } from '@/lib/apiClient';
+import { apiClient } from '@/lib/apiClient';
 import { useToast } from '@/hooks/use-toast';
 
 interface NewAgentModalProps {
@@ -35,7 +35,7 @@ export function NewAgentModal({ isOpen, onClose, onAgentCreated }: NewAgentModal
       setIsLoading(true);
       
       // Create the agent directly via API
-      const agentData = await apiPost('/api/agents', {
+      const agentData = await apiClient.post('/api/agents', {
         name,
         description: description.trim() || `A new agent created on ${new Date().toLocaleDateString()}`,
         type: 'custom',
@@ -45,11 +45,11 @@ export function NewAgentModal({ isOpen, onClose, onAgentCreated }: NewAgentModal
         userId: 1
       });
       
-      // No need to parse the response as apiPost already returns the parsed JSON data
+      // No need to parse the response as apiClient already returns the parsed JSON data
       // Axios throws an error automatically if the response is not successful
       
       // Also make the workflow call for triggering/tracking purposes
-      await apiPost('/api/workflows/run', {
+      await apiClient.post('/api/workflows/run', {
         workflowId: 15, // ID of "Build New Agent Structure v1" workflow
         source: 'ui_form',
         triggerType: 'internal_new_agent',
@@ -59,7 +59,7 @@ export function NewAgentModal({ isOpen, onClose, onAgentCreated }: NewAgentModal
           name,
           description: description.trim() || `A new agent created on ${new Date().toLocaleDateString()}`
         }
-      }).catch(err => {
+      }).catch((err: unknown) => {
         // Just log the error but don't fail the whole operation
         console.warn('Warning: Workflow execution failed but agent was created:', err);
       });

@@ -128,18 +128,7 @@ export const apiClient = {
   }
 };
 
-/**
- * Shorthand function for making POST requests to the API
- * This is for compatibility with existing code
- * 
- * @param url - The URL to request
- * @param data - The data to send
- * @param config - Additional request configuration
- * @returns The response data
- */
-export const apiPost = <T = any>(url: string, data?: any, config?: AxiosRequestConfig): Promise<T> => {
-  return apiClient.post<T>(url, data, config);
-};
+// Backward compatibility function removed
 
 /**
  * Generic API request function for use with React Query mutations
