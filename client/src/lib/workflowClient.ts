@@ -1,0 +1,295 @@
+/**
+ * Workflow Client
+ * 
+ * This module provides a client interface for working with workflows
+ * that emphasizes client-side execution with minimal server dependencies.
+ */
+
+import { apiGet, apiPost, apiPatch } from './apiClient';
+import { executeEnhancedWorkflow } from './enhancedWorkflowEngine';
+import { WorkflowExecutionState, NodeState } from './types/workflow';
+
+// Extended WorkflowData interface to include additional properties from the API
+interface WorkflowData {
+  id: number;
+  name: string;
+  description: string;
+  type: string;
+  agentId?: number;
+  flowData: any;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+/**
+ * Loads a workflow by ID from the server
+ */
+export async function loadWorkflow(id: number): Promise<WorkflowData> {
+  try {
+    const workflow = await apiGet(`/api/workflows/${id}`);
+    
+    // Parse the flow data if it's a string
+    if (workflow.flowData && typeof workflow.flowData === 'string') {
+      workflow.flowData = JSON.parse(workflow.flowData);
+    }
+    
+    return workflow;
+  } catch (error) {
+    console.error(`Error loading workflow ${id}:`, error);
+    throw error;
+  }
+}
+
+/**
+ * Executes a workflow in the client-side engine
+ * 
+ * @param workflowIdOrData Either a workflow ID to fetch from server or a complete workflow data object
+ * @param input Input data for the workflow
+ * @param options Execution options
+ * @returns Promise resolving to execution state
+ */
+export async function executeWorkflow(
+  workflowIdOrData: number | WorkflowData,
+  input: any = {},
+  options: {
+    onNodeStateChange?: (nodeId: string, state: NodeState) => void;
+    onWorkflowComplete?: (state: WorkflowExecutionState) => void;
+    logToServer?: boolean;
+    metadata?: Record<string, any>;
+  } = {}
+): Promise<WorkflowExecutionState> {
+  try {
+    // Default options
+    const { 
+      onNodeStateChange, 
+      onWorkflowComplete, 
+      logToServer = true,
+      metadata = {}
+    } = options;
+    
+    // Load workflow if ID is provided
+    let workflowData: WorkflowData;
+    if (typeof workflowIdOrData === 'number') {
+      workflowData = await loadWorkflow(workflowIdOrData);
+    } else {
+      workflowData = workflowIdOrData;
+    }
+    
+    // Validate workflow data
+    if (!workflowData || !workflowData.flowData) {
+      throw new Error('Invalid workflow data');
+    }
+    
+    // Extract flow data if it's a string
+    const flowData = typeof workflowData.flowData === 'string' 
+      ? JSON.parse(workflowData.flowData) 
+      : workflowData.flowData;
+    
+    // Inject input data
+    // Find trigger nodes or text_input nodes to inject data
+    const { nodes = [] } = flowData;
+    
+    // Determine entry points based on the input data and metadata
+    const entryNodeTypes = [
+      'text_input', 
+      'internal_new_agent',
+      'internal_ai_chat_agent',
+      'workflow_trigger',
+      'agent_trigger'
+    ];
+    
+    // Enhance input with metadata
+    const enhancedInput = {
+      ...input,
+      metadata: {
+        ...metadata,
+        clientExecuted: true
+      }
+    };
+    
+    // Find appropriate entry nodes and inject input
+    let injectedInput = false;
+    for (const node of nodes) {
+      if (entryNodeTypes.includes(node.type)) {
+        if (!node.data) node.data = {};
+        
+        // Check if this node is appropriate for the input source
+        const isSourceCompatible = 
+          (node.type === 'internal_ai_chat_agent' && metadata.source === 'ai_chat') ||
+          (node.type === 'internal_new_agent' && metadata.source !== 'ai_chat') ||
+          node.type === 'text_input' || 
+          node.type === 'workflow_trigger' ||
+          node.type === 'agent_trigger';
+        
+        if (isSourceCompatible) {
+          // Add a special flag to indicate this is the preferred entry point
+          node.data._preferredTrigger = true;
+          
+          // Add input data
+          if (typeof input === 'string') {
+            node.data.inputText = input;
+            node.data.text = input;
+            node.data.prompt = input;
+          } else {
+            // Merge input object with node data
+            node.data = { ...node.data, ...enhancedInput };
+          }
+          
+          injectedInput = true;
+          console.log(`Injected input into ${node.type} node (${node.id})`);
+        } else {
+          // Mark other potential entry nodes as ignored but provide the same data
+          // This ensures consistent data throughout the workflow
+          node.data._ignoreTrigger = true;
+          
+          // Still provide the data to ensure downstream nodes work correctly
+          if (typeof input === 'string') {
+            node.data.inputText = input;
+            node.data.text = input;
+            node.data.prompt = input;
+          } else {
+            // Merge input object with node data
+            node.data = { ...node.data, ...enhancedInput };
+          }
+        }
+      }
+    }
+    
+    if (!injectedInput && nodes.length > 0) {
+      // If no entry nodes found, inject into the first node
+      const firstNode = nodes[0];
+      if (!firstNode.data) firstNode.data = {};
+      
+      if (typeof input === 'string') {
+        firstNode.data.inputText = input;
+        firstNode.data.text = input;
+        firstNode.data.prompt = input;
+      } else {
+        // Merge input object with node data
+        firstNode.data = { ...firstNode.data, ...enhancedInput };
+      }
+      
+      console.log(`Injected input into first node (${firstNode.id}) as fallback`);
+    }
+    
+    // Log execution start to server if requested
+    let logId = null;
+    if (logToServer) {
+      try {
+        const logResponse = await apiPost('/api/logs', {
+          workflowId: typeof workflowIdOrData === 'number' ? workflowIdOrData : workflowData.id,
+          status: 'running',
+          input: enhancedInput
+        });
+        
+        logId = logResponse.id;
+        console.log(`Created server execution log: ${logId}`);
+      } catch (error) {
+        console.warn('Failed to create execution log on server:', error);
+      }
+    }
+    
+    // Execute workflow using client-side engine
+    const executionState = await executeEnhancedWorkflow(
+      flowData,
+      onNodeStateChange,
+      async (finalState) => {
+        // Update log on server when workflow completes
+        if (logToServer && logId) {
+          try {
+            await apiPost(`/api/logs/${logId}`, {
+              status: finalState.status,
+              output: finalState.output,
+              error: finalState.error,
+              completedAt: new Date()
+            });
+          } catch (error) {
+            console.warn('Failed to update execution log on server:', error);
+          }
+        }
+        
+        // Call provided callback
+        if (onWorkflowComplete) {
+          onWorkflowComplete(finalState);
+        }
+      }
+    );
+    
+    return executionState;
+  } catch (error) {
+    console.error('Error executing workflow:', error);
+    throw error;
+  }
+}
+
+/**
+ * Creates a new agent using workflow 15 (Build New Agent Structure)
+ * This is a convenience method for the most common workflow operation
+ */
+export async function createAgent(
+  agentData: {
+    name: string;
+    description?: string;
+    type?: string;
+    icon?: string;
+    status?: 'active' | 'inactive';
+  },
+  options: {
+    source?: 'ui_button' | 'ui_form' | 'ai_chat';
+    onNodeStateChange?: (nodeId: string, state: NodeState) => void;
+    onWorkflowComplete?: (state: WorkflowExecutionState) => void;
+  } = {}
+): Promise<WorkflowExecutionState> {
+  const { source = 'ui_form', ...executionOptions } = options;
+  
+  // Prepare input data for workflow 15
+  const input = {
+    request_type: 'new_agent',
+    source,
+    ...agentData
+  };
+  
+  // Execute workflow 15 (Build New Agent Structure)
+  return executeWorkflow(15, input, {
+    ...executionOptions,
+    metadata: { source },
+    logToServer: true
+  });
+}
+
+/**
+ * Creates a new workflow for an agent
+ */
+export async function createWorkflow(
+  workflowData: {
+    name: string;
+    description?: string;
+    type?: string;
+    flowData?: any;
+    agentId?: number;
+  },
+  options: {
+    onNodeStateChange?: (nodeId: string, state: NodeState) => void;
+    onWorkflowComplete?: (state: WorkflowExecutionState) => void;
+  } = {}
+): Promise<any> {
+  // Direct API call for now - could be replaced with workflow execution later
+  return apiPost('/api/workflows', workflowData);
+}
+
+/**
+ * Links a workflow to an agent
+ */
+export async function linkWorkflowToAgent(
+  workflowId: number,
+  agentId: number,
+  options: {
+    onNodeStateChange?: (nodeId: string, state: NodeState) => void;
+    onWorkflowComplete?: (state: WorkflowExecutionState) => void;
+  } = {}
+): Promise<any> {
+  // Direct API call for now - could be replaced with workflow execution later
+  return apiPatch(`/api/workflows/${workflowId}`, {
+    agentId
+  });
+}

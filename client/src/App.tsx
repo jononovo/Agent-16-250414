@@ -16,6 +16,7 @@ function Router() {
       <Route path="/" component={Builder} />
       <Route path="/workflow-editor/new" component={WorkflowEditor} />
       <Route path="/workflow-editor/:id" component={WorkflowEditor} />
+      <Route path="/workflow-test" component={WorkflowTest} />
       <Route path="/workflow-test/:id" component={WorkflowTest} />
       <Route path="/agent/:id" component={AgentPage} />
       <Route component={NotFound} />

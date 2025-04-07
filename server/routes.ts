@@ -5,6 +5,8 @@ import { insertAgentSchema, insertWorkflowSchema, insertNodeSchema, insertLogSch
 import { z } from "zod";
 import { fromZodError } from "zod-validation-error";
 
+// Simplified API-oriented flow for our client-side workflow architecture
+
 // Definition of the internal API request schema
 const createAgentFromInternal = z.object({
   source: z.enum(['ui_button', 'ai_chat']),
