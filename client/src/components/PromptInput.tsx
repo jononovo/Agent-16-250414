@@ -38,17 +38,32 @@ const PromptInput = () => {
       // Add the agent's response to the chat
       if (data.success) {
         // Add coordinator output if available
-        if (data.coordinatorResult && data.coordinatorResult.output) {
-          // Check if the output is a string or an object
-          if (typeof data.coordinatorResult.output === 'string') {
-            addMessage(data.coordinatorResult.output, 'agent');
-          } else if (typeof data.coordinatorResult.output === 'object') {
-            // For agent creation responses, extract and format the message
-            if (data.coordinatorResult.output.settings?.successMessage) {
-              addMessage(data.coordinatorResult.output.settings.successMessage, 'agent');
-            } else {
-              // Just use a generic message if we can't extract a specific one
-              addMessage("Operation completed successfully", 'agent');
+        if (data.coordinatorResult) {
+          // Check if we have a formatted message from the server
+          if (data.coordinatorResult.formattedMessage) {
+            addMessage(data.coordinatorResult.formattedMessage, 'agent');
+          } 
+          // Otherwise check the output
+          else if (data.coordinatorResult.output) {
+            // Check if the output is a string or an object
+            if (typeof data.coordinatorResult.output === 'string') {
+              // Check if it looks like HTML (this is the bug we're fixing)
+              if (data.coordinatorResult.output.trim().startsWith('<!DOCTYPE html>') || 
+                  data.coordinatorResult.output.trim().startsWith('<html')) {
+                addMessage("I received a response but it was in the wrong format. Please try a different query.", 'system');
+              } else {
+                addMessage(data.coordinatorResult.output, 'agent');
+              }
+            } else if (typeof data.coordinatorResult.output === 'object') {
+              // For agent creation responses, extract and format the message
+              if (data.coordinatorResult.output.settings?.successMessage) {
+                addMessage(data.coordinatorResult.output.settings.successMessage, 'agent');
+              } else if (data.coordinatorResult.output.message) {
+                addMessage(data.coordinatorResult.output.message, 'agent');
+              } else {
+                // Just use a generic message if we can't extract a specific one
+                addMessage("Operation completed successfully", 'agent');
+              }
             }
           }
         }
@@ -58,7 +73,13 @@ const PromptInput = () => {
           setTimeout(() => {
             // Handle generator output the same way
             if (typeof data.generatorResult.output === 'string') {
-              addMessage(data.generatorResult.output, 'agent');
+              // Check if it looks like HTML (this is the bug we're fixing)
+              if (data.generatorResult.output.trim().startsWith('<!DOCTYPE html>') || 
+                  data.generatorResult.output.trim().startsWith('<html')) {
+                // Don't show anything - the coordinator will handle it
+              } else {
+                addMessage(data.generatorResult.output, 'agent');
+              }
             } else if (typeof data.generatorResult.output === 'object') {
               // For structured responses, try to extract a meaningful message
               const message = data.generatorResult.output.message || 

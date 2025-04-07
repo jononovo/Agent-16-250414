@@ -314,14 +314,30 @@ export function ChatSidebar({ className = '' }: ChatSidebarProps) {
       // Add the agent's response to the chat
       if (data.success) {
         // First, show the simple chat (generator) result immediately for a quick response
-        const generatorOutput = data.generatorResult?.output;
-        if (generatorOutput) {
-          addMessage(generatorOutput, 'agent');
+        if (data.generatorResult?.output) {
+          const generatorOutput = data.generatorResult.output;
+          
+          // Make sure it's not HTML content
+          if (typeof generatorOutput === 'string' && 
+             !generatorOutput.trim().startsWith('<!DOCTYPE html>') && 
+             !generatorOutput.trim().startsWith('<html')) {
+            addMessage(generatorOutput, 'agent');
+          } else if (typeof generatorOutput === 'object') {
+            const message = generatorOutput.message || generatorOutput.text || "Operation completed successfully";
+            addMessage(message, 'agent');
+          }
         }
         
-        // Then show the coordinator result if it's available and different
+        // Then show the coordinator result if it's available
         const coordinatorOutput = data.coordinatorResult?.output;
-        if (coordinatorOutput && coordinatorOutput !== generatorOutput) {
+        const formattedMessage = data.coordinatorResult?.formattedMessage;
+        
+        // Check if we have coordinator content to display that's not HTML
+        if ((coordinatorOutput || formattedMessage) && 
+            (typeof coordinatorOutput !== 'string' || 
+             (!coordinatorOutput.includes('<!DOCTYPE html>') && 
+              !coordinatorOutput.trim().startsWith('<html')))) {
+          
           // Add a typing indicator before showing the coordinator response
           setTimeout(() => {
             addMessage(
@@ -329,9 +345,18 @@ export function ChatSidebar({ className = '' }: ChatSidebarProps) {
               'system'
             );
             
-            // Then show the actual coordinator response
+            // Then show the actual coordinator response - prioritize formatted message if available
             setTimeout(() => {
-              addMessage(coordinatorOutput, 'agent');
+              if (formattedMessage) {
+                addMessage(formattedMessage, 'agent');
+              } else if (typeof coordinatorOutput === 'string') {
+                addMessage(coordinatorOutput, 'agent');
+              } else if (coordinatorOutput && typeof coordinatorOutput === 'object') {
+                const message = coordinatorOutput.message || 
+                               coordinatorOutput.text || 
+                               "Operation completed successfully";
+                addMessage(message, 'agent');
+              }
             }, 1000);
           }, 2000);
         }
