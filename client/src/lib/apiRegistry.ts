@@ -477,12 +477,20 @@ export const apiEndpoints: ApiEndpoint[] = [
     responseFormat: '{ success: boolean, message: string }'
   },
   {
-    path: '/api/execute-agent-chain',
+    path: '/api/agent-interaction',
     method: 'POST',
-    description: 'Execute the agent chain for processing user prompts',
-    category: 'internal',
-    requestFormat: '{ prompt: string }',
-    responseFormat: '{ success: boolean, generatorResult: object, coordinatorResult: object, ... }'
+    description: 'Facilitate interactive communication between users and agents through the platform',
+    category: 'agents',
+    requestFormat: '{ agentId: number, message: string, sessionId?: string, context?: object, options?: { streamResponse?: boolean, returnIntermediateSteps?: boolean, timeout?: number } }',
+    responseFormat: '{ success: boolean, response: string, sessionId: string, completed: boolean, requiresFollowup: boolean, intermediateSteps?: object[], metadata?: object }',
+    queryParams: [
+      {
+        name: 'stream',
+        description: 'Whether to stream the response as SSE (Server-Sent Events)',
+        type: 'boolean',
+        required: false
+      }
+    ]
   },
 
   // Debug endpoints
