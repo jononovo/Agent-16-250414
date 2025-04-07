@@ -308,8 +308,8 @@ export function ChatSidebar({ className = '' }: ChatSidebarProps) {
     setIsLoading(true);
     
     try {
-      // Send the message to the agent chain API using apiClient
-      const data = await apiClient.post('/api/execute-agent-chain', { prompt: content });
+      // Send the message to the updated chat UI endpoint using apiClient
+      const data = await apiClient.post('/api/user-chat-ui-main', { prompt: content });
       
       // Add the agent's response to the chat
       if (data.success) {

@@ -1933,6 +1933,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       }
       
+      // Define the response interface with proper typing
+      interface CoordinatorResponseData {
+        status: string;
+        output: any;
+        formattedMessage?: string;
+        logId?: number;
+      }
+      
       // Return results in format expected by the chat UI
       return res.json({
         success: true,
@@ -1946,9 +1954,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
         coordinatorResult: coordinatorResult ? {
           status: coordinatorResult.status,
           output: coordinatorResult.output,
-          formattedMessage: coordinatorResult.formattedMessage,
+          // Use type assertion to access the formattedMessage if it exists
+          ...(('formattedMessage' in (coordinatorResult as any)) ? 
+            { formattedMessage: (coordinatorResult as any).formattedMessage } : {}),
           logId: coordinatorResult.logId
-        } : null,
+        } as CoordinatorResponseData : null,
         sessionId: sessionId || `session-${Date.now()}`
       });
     } catch (error) {
@@ -1961,13 +1971,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Legacy endpoint - maintain for backward compatibility, will be deprecated
-  app.post("/api/execute-agent-chain", async (req, res) => {
-    console.log("WARNING: Using deprecated endpoint /api/execute-agent-chain. Please update to /api/user-chat-ui-main");
-    // Forward to the new endpoint
-    req.url = "/api/user-chat-ui-main";
-    app._router.handle(req, res);
-  });
+  // Legacy endpoints have been removed in favor of more descriptive endpoint names
 
   const httpServer = createServer(app);
   return httpServer;
