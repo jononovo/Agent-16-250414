@@ -25,6 +25,55 @@ const apiClient = {
   }
 };
 
+async function createCoordinatorAgent() {
+  try {
+    console.log('Creating new Coordinator Agent...');
+    
+    // Step 1: Prepare data for coordinator agent creation
+    const coordinatorAgentData = {
+      name: "Tool Orchestrator Agent",
+      description: "Analyzes user intent and routes requests to appropriate specialized tools",
+      type: "orchestrator",
+      icon: "git-branch",
+      status: "active",
+      configuration: {
+        capabilities: [
+          "Intent detection",
+          "Request routing",
+          "Tool management",
+          "Response formatting"
+        ],
+        tools: [
+          {
+            id: "product_data",
+            name: "Product Data Tool",
+            description: "Retrieves and manages product information",
+            workflowId: null  // Will be populated after workflow creation
+          },
+          {
+            id: "inventory_check",
+            name: "Inventory Tool",
+            description: "Checks stock levels and inventory status",
+            workflowId: null  // Will be populated after workflow creation
+          }
+        ]
+      }
+    };
+    
+    // Step 2: Create the coordinator agent
+    console.log('\nCreating Coordinator Agent...');
+    const coordinatorAgent = await apiClient.post('/api/agents', coordinatorAgentData);
+    
+    console.log('\n===== CREATED COORDINATOR AGENT =====');
+    console.log(JSON.stringify(coordinatorAgent, null, 2));
+    
+    return coordinatorAgent;
+  } catch (error) {
+    console.error('Error creating coordinator agent:', error);
+    throw error;
+  }
+}
+
 async function createAgentWithWorkflow() {
   try {
     console.log('Starting agent creation with orchestrator workflow...');
@@ -285,24 +334,332 @@ async function createProductDataWorkflow(agentId) {
   }
 }
 
-// Run the agent creation and then create a workflow
-createAgentWithWorkflow()
-  .then(async (result) => {
-    console.log('\nWorkflow orchestration test completed.');
-    console.log(`Success: ${result.success}`);
-    if (result.agent) {
-      console.log(`Agent ID: ${result.agent.id}`);
-      console.log(`Agent Name: ${result.agent.name}`);
-      
-      // Create a workflow for the new agent
-      const workflowResult = await createProductDataWorkflow(result.agent.id);
-      
-      if (workflowResult) {
-        console.log(`\nCreated workflow: ${workflowResult.name} (ID: ${workflowResult.id})`);
-        console.log(`Linked to agent: ${result.agent.name} (ID: ${result.agent.id})`);
+// Create a workflow for the coordinator agent with tool-based orchestration
+async function createCoordinatorWorkflow(agentId, linkedAgentId, linkedWorkflowId) {
+  try {
+    console.log(`\nCreating workflow for Tool Orchestrator Agent (ID: ${agentId})...`);
+    
+    // Create a new workflow with Generate Text Node structure
+    const workflow = await apiClient.post('/api/workflows', {
+      name: "Tool Orchestration Workflow",
+      description: "Analyzes user intent and routes to appropriate specialized tools",
+      type: "orchestrator",
+      icon: "git-branch",
+      status: "active",
+      agentId: agentId,
+      flowData: {
+        nodes: [
+          {
+            id: "1",
+            type: "trigger",
+            position: { x: 100, y: 200 },
+            data: {
+              type: "trigger",
+              label: "User Request Trigger",
+              inputText: ""
+            }
+          },
+          {
+            id: "2",
+            type: "data_transform",
+            position: { x: 350, y: 200 },
+            data: {
+              type: "data_transform",
+              label: "Extract User Intent",
+              transformFunction: `
+                function transform(input) {
+                  // Get user message
+                  const message = input.message || '';
+                  
+                  // Determine intent based on keywords
+                  let intent = 'unknown';
+                  let confidence = 0.5;
+                  
+                  // Product data intent detection
+                  if (message.toLowerCase().includes('product') || 
+                      message.toLowerCase().includes('item') ||
+                      message.toLowerCase().includes('price') ||
+                      message.toLowerCase().includes('information')) {
+                    intent = 'product_data';
+                    confidence = 0.8;
+                  }
+                  
+                  // Inventory intent detection
+                  if (message.toLowerCase().includes('inventory') || 
+                      message.toLowerCase().includes('stock') ||
+                      message.toLowerCase().includes('available')) {
+                    intent = 'inventory_check';
+                    confidence = 0.9;
+                  }
+                  
+                  return {
+                    success: true,
+                    message: message,
+                    intent: intent,
+                    confidence: confidence,
+                    originalInput: input
+                  };
+                }
+              `
+            }
+          },
+          {
+            id: "3",
+            type: "conditional",
+            position: { x: 600, y: 200 },
+            data: {
+              type: "conditional",
+              label: "Route by Intent",
+              settings: {
+                condition: "{{intent}}",
+                cases: [
+                  { value: "product_data", label: "Product Data" },
+                  { value: "inventory_check", label: "Inventory Check" },
+                  { value: "unknown", label: "Unknown Intent" }
+                ]
+              }
+            }
+          },
+          {
+            id: "4",
+            type: "workflow_trigger",
+            position: { x: 850, y: 100 },
+            data: {
+              type: "workflow_trigger",
+              label: "Product Data Workflow",
+              workflowId: linkedWorkflowId,
+              executeMode: "parallel",
+              triggerType: "workflow"
+            }
+          },
+          {
+            id: "5",
+            type: "workflow_trigger",
+            position: { x: 850, y: 200 },
+            data: {
+              type: "workflow_trigger",
+              label: "Inventory Check Workflow",
+              workflowId: linkedWorkflowId,  // Using same workflow for demo
+              executeMode: "parallel",
+              triggerType: "workflow"
+            }
+          },
+          {
+            id: "6",
+            type: "api_response_message",
+            position: { x: 850, y: 300 },
+            data: {
+              type: "api_response_message",
+              label: "Unknown Intent Response",
+              icon: "HelpCircle",
+              settings: {
+                successMessage: "I'm not sure how to help with that request. Could you try asking about products or inventory?",
+                errorMessage: "I'm having trouble understanding your request. Please try again.",
+                formatOutput: true,
+                conditionField: "success",
+                successValue: "true",
+                targetEndpoint: "/api/chat"
+              }
+            }
+          },
+          {
+            id: "7",
+            type: "api_response_message",
+            position: { x: 1100, y: 200 },
+            data: {
+              type: "api_response_message",
+              label: "Final Response",
+              icon: "MessageCircle",
+              settings: {
+                successMessage: "{{formattedData}}",
+                errorMessage: "I encountered an issue processing your request. Please try again.",
+                formatOutput: true,
+                conditionField: "success",
+                successValue: "true",
+                targetEndpoint: "/api/chat"
+              }
+            }
+          }
+        ],
+        edges: [
+          {
+            id: "e1-2",
+            source: "1",
+            target: "2"
+          },
+          {
+            id: "e2-3",
+            source: "2",
+            target: "3"
+          },
+          {
+            id: "e3-4",
+            source: "3",
+            target: "4",
+            data: {
+              label: "product_data"
+            }
+          },
+          {
+            id: "e3-5",
+            source: "3",
+            target: "5",
+            data: {
+              label: "inventory_check"
+            }
+          },
+          {
+            id: "e3-6",
+            source: "3",
+            target: "6",
+            data: {
+              label: "unknown"
+            }
+          },
+          {
+            id: "e4-7",
+            source: "4",
+            target: "7"
+          },
+          {
+            id: "e5-7",
+            source: "5",
+            target: "7"
+          }
+        ]
       }
+    });
+    
+    console.log("\n===== CREATED COORDINATOR WORKFLOW =====");
+    console.log(JSON.stringify(workflow, null, 2));
+    
+    return workflow;
+  } catch (error) {
+    console.error('Error creating coordinator workflow:', error);
+    return null;
+  }
+}
+
+// Create a complete orchestration system with coordinator and specialized agents
+async function createOrchestrationSystem() {
+  try {
+    // Step 1: Create the Product Data Agent first
+    const productResult = await createAgentWithWorkflow();
+    
+    if (!productResult.success || !productResult.agent) {
+      throw new Error('Failed to create Product Data Agent');
+    }
+    
+    const productAgent = productResult.agent;
+    console.log(`\nCreated Product Data Agent: ${productAgent.name} (ID: ${productAgent.id})`);
+    
+    // Step 2: Create a workflow for Product Data Agent
+    const productWorkflow = await createProductDataWorkflow(productAgent.id);
+    
+    if (!productWorkflow) {
+      throw new Error('Failed to create Product Data Workflow');
+    }
+    
+    console.log(`\nCreated Product Data Workflow: ${productWorkflow.name} (ID: ${productWorkflow.id})`);
+    
+    // Step 3: Create the Tool Orchestrator Agent
+    const coordinatorAgent = await createCoordinatorAgent();
+    
+    if (!coordinatorAgent) {
+      throw new Error('Failed to create Tool Orchestrator Agent');
+    }
+    
+    console.log(`\nCreated Tool Orchestrator Agent: ${coordinatorAgent.name} (ID: ${coordinatorAgent.id})`);
+    
+    // Step 4: Create a workflow for the Tool Orchestrator Agent
+    const coordinatorWorkflow = await createCoordinatorWorkflow(
+      coordinatorAgent.id, 
+      productAgent.id,
+      productWorkflow.id
+    );
+    
+    if (!coordinatorWorkflow) {
+      throw new Error('Failed to create Tool Orchestration Workflow');
+    }
+    
+    console.log(`\nCreated Tool Orchestration Workflow: ${coordinatorWorkflow.name} (ID: ${coordinatorWorkflow.id})`);
+    
+    // Step 5: Update the coordinator agent configuration to link to product agent's workflow
+    const updatedCoordinatorAgent = await apiClient.post(`/api/agents/${coordinatorAgent.id}`, {
+      configuration: {
+        capabilities: [
+          "Intent detection",
+          "Request routing",
+          "Tool management",
+          "Response formatting"
+        ],
+        tools: [
+          {
+            id: "product_data",
+            name: "Product Data Tool",
+            description: "Retrieves and manages product information",
+            workflowId: productWorkflow.id
+          },
+          {
+            id: "inventory_check",
+            name: "Inventory Tool",
+            description: "Checks stock levels and inventory status",
+            workflowId: productWorkflow.id  // Using same workflow for now
+          }
+        ]
+      }
+    });
+    
+    // Also update the coordinator workflow to properly link to the product workflow
+    await apiClient.post(`/api/workflows/${coordinatorWorkflow.id}`, {
+      flowData: {
+        ...coordinatorWorkflow.flowData,
+        nodes: coordinatorWorkflow.flowData.nodes.map(node => {
+          if (node.id === "4" || node.id === "5") {
+            return {
+              ...node,
+              data: {
+                ...node.data,
+                workflowId: productWorkflow.id
+              }
+            };
+          }
+          return node;
+        })
+      }
+    });
+    
+    console.log("\n===== ORCHESTRATION SYSTEM CREATED =====");
+    console.log(`Orchestrator Agent: ${coordinatorAgent.name} (ID: ${coordinatorAgent.id})`);
+    console.log(`Orchestrator Workflow: ${coordinatorWorkflow.name} (ID: ${coordinatorWorkflow.id})`);
+    console.log(`Product Data Agent: ${productAgent.name} (ID: ${productAgent.id})`);
+    console.log(`Product Data Workflow: ${productWorkflow.name} (ID: ${productWorkflow.id})`);
+    
+    return {
+      success: true,
+      coordinatorAgent,
+      coordinatorWorkflow,
+      productAgent,
+      productWorkflow
+    };
+  } catch (error) {
+    console.error('Error creating orchestration system:', error);
+    return {
+      success: false,
+      error: error.message
+    };
+  }
+}
+
+// Run the orchestration system creation
+createOrchestrationSystem()
+  .then(result => {
+    console.log('\nOrchestration system creation completed!');
+    console.log(`Success: ${result.success}`);
+    if (!result.success) {
+      console.error(`Error: ${result.error}`);
     }
   })
   .catch(error => {
-    console.error('Workflow orchestration test failed:', error);
+    console.error('Orchestration system creation failed:', error);
   });
