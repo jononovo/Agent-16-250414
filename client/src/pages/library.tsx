@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Link } from 'wouter';
 import { apiClient } from '@/lib/apiClient';
@@ -148,6 +148,11 @@ export default function Library() {
   const [searchQuery, setSearchQuery] = useState('');
   const [typeFilter, setTypeFilter] = useState<string>('_all');
   const [statusFilter, setStatusFilter] = useState<string>('_all');
+  
+  // Pagination state
+  const [page, setPage] = useState(1);
+  const [itemsPerPage] = useState(10);
+  const [totalPages, setTotalPages] = useState(1);
 
   // Fetch agents data
   const {
@@ -282,6 +287,69 @@ export default function Library() {
     setActiveTab(tab);
     setTypeFilter('_all');
     setStatusFilter('_all');
+    setPage(1); // Reset to first page when tab changes
+  };
+  
+  // Calculate total pages and handle pagination
+  const getPaginatedData = (data: any[]) => {
+    const startIndex = (page - 1) * itemsPerPage;
+    return data.slice(startIndex, startIndex + itemsPerPage);
+  };
+  
+  // Update totalPages whenever filtered data changes
+  useEffect(() => {
+    let filteredData: any[] = [];
+    
+    switch(activeTab) {
+      case 'workflows':
+        filteredData = filterWorkflows(workflows);
+        break;
+      case 'agents':
+        filteredData = filterAgents(agents);
+        break;
+      case 'nodes':
+        filteredData = filterNodes(nodes);
+        break;
+    }
+    
+    const calculatedTotalPages = Math.ceil(filteredData.length / itemsPerPage);
+    setTotalPages(calculatedTotalPages > 0 ? calculatedTotalPages : 1);
+    
+    // If current page is now greater than total pages, reset to page 1
+    if (page > calculatedTotalPages && calculatedTotalPages > 0) {
+      setPage(1);
+    }
+  }, [activeTab, searchQuery, typeFilter, statusFilter, workflows, agents, nodes, itemsPerPage, page]);
+  
+  // Pagination controls
+  const PaginationControls = ({ itemsCount }: { itemsCount: number }) => {
+    if (itemsCount === 0) return null;
+    
+    return (
+      <div className="mt-4 flex justify-center">
+        <div className="flex items-center gap-2">
+          <Button 
+            variant="outline" 
+            size="sm"
+            onClick={() => setPage((p) => Math.max(p - 1, 1))}
+            disabled={page === 1}
+          >
+            Previous
+          </Button>
+          <span className="text-sm">
+            Page {page} of {totalPages}
+          </span>
+          <Button 
+            variant="outline" 
+            size="sm"
+            onClick={() => setPage((p) => Math.min(p + 1, totalPages))}
+            disabled={page === totalPages}
+          >
+            Next
+          </Button>
+        </div>
+      </div>
+    );
   };
   
   return (
@@ -391,278 +459,291 @@ export default function Library() {
                   </div>
                 </div>
               </CardHeader>
+              
               <CardContent>
+                {/* Workflows Tab */}
                 <TabsContent value="workflows" className="mt-0">
                   {workflowsLoading ? (
                     <div className="text-center py-4">Loading workflows...</div>
                   ) : workflowsError ? (
                     <div className="text-center py-4 text-red-500">Error loading workflows</div>
                   ) : (
-                    <Table>
-                      <TableHeader>
-                        <TableRow>
-                          <TableHead>Name</TableHead>
-                          <TableHead>Type</TableHead>
-                          <TableHead>Status</TableHead>
-                          <TableHead>Agent</TableHead>
-                          <TableHead>Created</TableHead>
-                          <TableHead>Actions</TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {filterWorkflows(workflows).length === 0 ? (
+                    <>
+                      <Table>
+                        <TableHeader>
                           <TableRow>
-                            <TableCell colSpan={6} className="text-center py-4">
-                              No workflows found
-                            </TableCell>
+                            <TableHead>Name</TableHead>
+                            <TableHead>Type</TableHead>
+                            <TableHead>Status</TableHead>
+                            <TableHead>Agent</TableHead>
+                            <TableHead>Created</TableHead>
+                            <TableHead>Actions</TableHead>
                           </TableRow>
-                        ) : (
-                          filterWorkflows(workflows).map((workflow) => (
-                            <TableRow key={workflow.id}>
-                              <TableCell className="font-medium">
-                                <div className="flex flex-col">
-                                  <Link href={`/workflow-editor/${workflow.id}`}>
-                                    <span className="hover:underline cursor-pointer">{workflow.name}</span>
-                                  </Link>
-                                  {workflow.description && (
-                                    <span className="text-xs text-gray-500 truncate max-w-[300px]">
-                                      {workflow.description}
-                                    </span>
-                                  )}
-                                </div>
-                              </TableCell>
-                              <TableCell>
-                                <TypeBadge type={workflow.type} />
-                              </TableCell>
-                              <TableCell>
-                                <StatusBadge status={workflow.status} />
-                              </TableCell>
-                              <TableCell>
-                                {workflow.agentId ? (
-                                  <Link href={`/agent/${workflow.agentId}`}>
-                                    <span className="text-blue-600 hover:underline cursor-pointer">
-                                      Agent #{workflow.agentId}
-                                    </span>
-                                  </Link>
-                                ) : (
-                                  <span className="text-gray-500">-</span>
-                                )}
-                              </TableCell>
-                              <TableCell>{formatDate(workflow.createdAt)}</TableCell>
-                              <TableCell>
-                                <div className="flex items-center space-x-1">
-                                  <Link href={`/workflow-editor/${workflow.id}`}>
-                                    <Button size="icon" variant="ghost" title="Edit">
-                                      <Pencil className="h-4 w-4" />
-                                    </Button>
-                                  </Link>
-                                  <Link href={`/workflow-test/${workflow.id}`}>
-                                    <Button size="icon" variant="ghost" title="Test">
-                                      <Play className="h-4 w-4" />
-                                    </Button>
-                                  </Link>
-                                  <DropdownMenu>
-                                    <DropdownMenuTrigger asChild>
-                                      <Button size="icon" variant="ghost">
-                                        <MoreVertical className="h-4 w-4" />
-                                      </Button>
-                                    </DropdownMenuTrigger>
-                                    <DropdownMenuContent align="end">
-                                      <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                                      <DropdownMenuSeparator />
-                                      <DropdownMenuItem className="flex items-center">
-                                        <Copy className="h-4 w-4 mr-2" />
-                                        Duplicate
-                                      </DropdownMenuItem>
-                                      <DropdownMenuItem className="flex items-center text-red-600">
-                                        <Trash2 className="h-4 w-4 mr-2" />
-                                        Delete
-                                      </DropdownMenuItem>
-                                    </DropdownMenuContent>
-                                  </DropdownMenu>
-                                </div>
+                        </TableHeader>
+                        <TableBody>
+                          {filterWorkflows(workflows).length === 0 ? (
+                            <TableRow>
+                              <TableCell colSpan={6} className="text-center py-4">
+                                No workflows found
                               </TableCell>
                             </TableRow>
-                          ))
-                        )}
-                      </TableBody>
-                    </Table>
+                          ) : (
+                            getPaginatedData(filterWorkflows(workflows)).map((workflow) => (
+                              <TableRow key={workflow.id}>
+                                <TableCell className="font-medium">
+                                  <div className="flex flex-col">
+                                    <Link href={`/workflow-editor/${workflow.id}`}>
+                                      <span className="hover:underline cursor-pointer">{workflow.name}</span>
+                                    </Link>
+                                    {workflow.description && (
+                                      <span className="text-xs text-gray-500 truncate max-w-[300px]">
+                                        {workflow.description}
+                                      </span>
+                                    )}
+                                  </div>
+                                </TableCell>
+                                <TableCell>
+                                  <TypeBadge type={workflow.type} />
+                                </TableCell>
+                                <TableCell>
+                                  <StatusBadge status={workflow.status} />
+                                </TableCell>
+                                <TableCell>
+                                  {workflow.agentId ? (
+                                    <Link href={`/agent/${workflow.agentId}`}>
+                                      <span className="text-blue-600 hover:underline cursor-pointer">
+                                        Agent #{workflow.agentId}
+                                      </span>
+                                    </Link>
+                                  ) : (
+                                    <span className="text-gray-500">-</span>
+                                  )}
+                                </TableCell>
+                                <TableCell>{formatDate(workflow.createdAt)}</TableCell>
+                                <TableCell>
+                                  <div className="flex items-center space-x-1">
+                                    <Link href={`/workflow-editor/${workflow.id}`}>
+                                      <Button size="icon" variant="ghost" title="Edit">
+                                        <Pencil className="h-4 w-4" />
+                                      </Button>
+                                    </Link>
+                                    <Link href={`/workflow-test/${workflow.id}`}>
+                                      <Button size="icon" variant="ghost" title="Test">
+                                        <Play className="h-4 w-4" />
+                                      </Button>
+                                    </Link>
+                                    <DropdownMenu>
+                                      <DropdownMenuTrigger asChild>
+                                        <Button size="icon" variant="ghost">
+                                          <MoreVertical className="h-4 w-4" />
+                                        </Button>
+                                      </DropdownMenuTrigger>
+                                      <DropdownMenuContent align="end">
+                                        <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                                        <DropdownMenuSeparator />
+                                        <DropdownMenuItem className="flex items-center">
+                                          <Copy className="h-4 w-4 mr-2" />
+                                          Duplicate
+                                        </DropdownMenuItem>
+                                        <DropdownMenuItem className="flex items-center text-red-600">
+                                          <Trash2 className="h-4 w-4 mr-2" />
+                                          Delete
+                                        </DropdownMenuItem>
+                                      </DropdownMenuContent>
+                                    </DropdownMenu>
+                                  </div>
+                                </TableCell>
+                              </TableRow>
+                            ))
+                          )}
+                        </TableBody>
+                      </Table>
+                      <PaginationControls itemsCount={filterWorkflows(workflows).length} />
+                    </>
                   )}
                 </TabsContent>
 
+                {/* Agents Tab */}
                 <TabsContent value="agents" className="mt-0">
                   {agentsLoading ? (
                     <div className="text-center py-4">Loading agents...</div>
                   ) : agentsError ? (
                     <div className="text-center py-4 text-red-500">Error loading agents</div>
                   ) : (
-                    <Table>
-                      <TableHeader>
-                        <TableRow>
-                          <TableHead>Name</TableHead>
-                          <TableHead>Type</TableHead>
-                          <TableHead>Status</TableHead>
-                          <TableHead>Workflows</TableHead>
-                          <TableHead>Created</TableHead>
-                          <TableHead>Actions</TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {filterAgents(agents).length === 0 ? (
+                    <>
+                      <Table>
+                        <TableHeader>
                           <TableRow>
-                            <TableCell colSpan={6} className="text-center py-4">
-                              No agents found
-                            </TableCell>
+                            <TableHead>Name</TableHead>
+                            <TableHead>Type</TableHead>
+                            <TableHead>Status</TableHead>
+                            <TableHead>Workflows</TableHead>
+                            <TableHead>Created</TableHead>
+                            <TableHead>Actions</TableHead>
                           </TableRow>
-                        ) : (
-                          filterAgents(agents).map((agent) => (
-                            <TableRow key={agent.id}>
-                              <TableCell className="font-medium">
-                                <div className="flex flex-col">
-                                  <Link href={`/agent/${agent.id}`}>
-                                    <span className="hover:underline cursor-pointer">{agent.name}</span>
-                                  </Link>
-                                  {agent.description && (
-                                    <span className="text-xs text-gray-500 truncate max-w-[300px]">
-                                      {agent.description}
-                                    </span>
-                                  )}
-                                </div>
-                              </TableCell>
-                              <TableCell>
-                                <TypeBadge type={agent.type} />
-                              </TableCell>
-                              <TableCell>
-                                <StatusBadge status={agent.status} />
-                              </TableCell>
-                              <TableCell>
-                                <Button
-                                  size="sm"
-                                  variant="ghost"
-                                  className="text-blue-600 hover:underline"
-                                  asChild
-                                >
-                                  <Link href={`/agent/${agent.id}`}>
-                                    View Workflows
-                                  </Link>
-                                </Button>
-                              </TableCell>
-                              <TableCell>{formatDate(agent.createdAt)}</TableCell>
-                              <TableCell>
-                                <div className="flex items-center space-x-1">
-                                  <Link href={`/agent/${agent.id}`}>
-                                    <Button size="icon" variant="ghost" title="Edit">
-                                      <Pencil className="h-4 w-4" />
-                                    </Button>
-                                  </Link>
-                                  <Button size="icon" variant="ghost" title="Run">
-                                    <Play className="h-4 w-4" />
-                                  </Button>
-                                  <DropdownMenu>
-                                    <DropdownMenuTrigger asChild>
-                                      <Button size="icon" variant="ghost">
-                                        <MoreVertical className="h-4 w-4" />
-                                      </Button>
-                                    </DropdownMenuTrigger>
-                                    <DropdownMenuContent align="end">
-                                      <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                                      <DropdownMenuSeparator />
-                                      <DropdownMenuItem className="flex items-center">
-                                        <Copy className="h-4 w-4 mr-2" />
-                                        Duplicate
-                                      </DropdownMenuItem>
-                                      <DropdownMenuItem className="flex items-center text-red-600">
-                                        <Trash2 className="h-4 w-4 mr-2" />
-                                        Delete
-                                      </DropdownMenuItem>
-                                    </DropdownMenuContent>
-                                  </DropdownMenu>
-                                </div>
+                        </TableHeader>
+                        <TableBody>
+                          {filterAgents(agents).length === 0 ? (
+                            <TableRow>
+                              <TableCell colSpan={6} className="text-center py-4">
+                                No agents found
                               </TableCell>
                             </TableRow>
-                          ))
-                        )}
-                      </TableBody>
-                    </Table>
+                          ) : (
+                            getPaginatedData(filterAgents(agents)).map((agent) => (
+                              <TableRow key={agent.id}>
+                                <TableCell className="font-medium">
+                                  <div className="flex flex-col">
+                                    <Link href={`/agent/${agent.id}`}>
+                                      <span className="hover:underline cursor-pointer">{agent.name}</span>
+                                    </Link>
+                                    {agent.description && (
+                                      <span className="text-xs text-gray-500 truncate max-w-[300px]">
+                                        {agent.description}
+                                      </span>
+                                    )}
+                                  </div>
+                                </TableCell>
+                                <TableCell>
+                                  <TypeBadge type={agent.type} />
+                                </TableCell>
+                                <TableCell>
+                                  <StatusBadge status={agent.status} />
+                                </TableCell>
+                                <TableCell>
+                                  <Button
+                                    size="sm"
+                                    variant="ghost"
+                                    className="text-blue-600 hover:underline"
+                                    asChild
+                                  >
+                                    <Link href={`/agent/${agent.id}`}>
+                                      View Workflows
+                                    </Link>
+                                  </Button>
+                                </TableCell>
+                                <TableCell>{formatDate(agent.createdAt)}</TableCell>
+                                <TableCell>
+                                  <div className="flex items-center space-x-1">
+                                    <Link href={`/agent/${agent.id}`}>
+                                      <Button size="icon" variant="ghost" title="Edit">
+                                        <Pencil className="h-4 w-4" />
+                                      </Button>
+                                    </Link>
+                                    <Button size="icon" variant="ghost" title="Run">
+                                      <Play className="h-4 w-4" />
+                                    </Button>
+                                    <DropdownMenu>
+                                      <DropdownMenuTrigger asChild>
+                                        <Button size="icon" variant="ghost">
+                                          <MoreVertical className="h-4 w-4" />
+                                        </Button>
+                                      </DropdownMenuTrigger>
+                                      <DropdownMenuContent align="end">
+                                        <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                                        <DropdownMenuSeparator />
+                                        <DropdownMenuItem className="flex items-center">
+                                          <Copy className="h-4 w-4 mr-2" />
+                                          Duplicate
+                                        </DropdownMenuItem>
+                                        <DropdownMenuItem className="flex items-center text-red-600">
+                                          <Trash2 className="h-4 w-4 mr-2" />
+                                          Delete
+                                        </DropdownMenuItem>
+                                      </DropdownMenuContent>
+                                    </DropdownMenu>
+                                  </div>
+                                </TableCell>
+                              </TableRow>
+                            ))
+                          )}
+                        </TableBody>
+                      </Table>
+                      <PaginationControls itemsCount={filterAgents(agents).length} />
+                    </>
                   )}
                 </TabsContent>
 
+                {/* Nodes Tab */}
                 <TabsContent value="nodes" className="mt-0">
                   {nodesLoading ? (
                     <div className="text-center py-4">Loading nodes...</div>
                   ) : nodesError ? (
                     <div className="text-center py-4 text-red-500">Error loading nodes</div>
                   ) : (
-                    <Table>
-                      <TableHeader>
-                        <TableRow>
-                          <TableHead>Name</TableHead>
-                          <TableHead>Type</TableHead>
-                          <TableHead>Category</TableHead>
-                          <TableHead>Created</TableHead>
-                          <TableHead>Actions</TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {filterNodes(nodes).length === 0 ? (
+                    <>
+                      <Table>
+                        <TableHeader>
                           <TableRow>
-                            <TableCell colSpan={5} className="text-center py-4">
-                              No nodes found
-                            </TableCell>
+                            <TableHead>Name</TableHead>
+                            <TableHead>Type</TableHead>
+                            <TableHead>Category</TableHead>
+                            <TableHead>Created</TableHead>
+                            <TableHead>Actions</TableHead>
                           </TableRow>
-                        ) : (
-                          filterNodes(nodes).map((node) => (
-                            <TableRow key={node.id}>
-                              <TableCell className="font-medium">
-                                <div className="flex flex-col">
-                                  <span>{node.name}</span>
-                                  {node.description && (
-                                    <span className="text-xs text-gray-500 truncate max-w-[300px]">
-                                      {node.description}
-                                    </span>
-                                  )}
-                                </div>
-                              </TableCell>
-                              <TableCell>
-                                <TypeBadge type={node.type} />
-                              </TableCell>
-                              <TableCell>
-                                <Badge variant="outline" className="bg-slate-100">
-                                  {node.category || 'Uncategorized'}
-                                </Badge>
-                              </TableCell>
-                              <TableCell>{formatDate(node.createdAt)}</TableCell>
-                              <TableCell>
-                                <div className="flex items-center space-x-1">
-                                  <Button size="icon" variant="ghost" title="Edit">
-                                    <Pencil className="h-4 w-4" />
-                                  </Button>
-                                  <DropdownMenu>
-                                    <DropdownMenuTrigger asChild>
-                                      <Button size="icon" variant="ghost">
-                                        <MoreVertical className="h-4 w-4" />
-                                      </Button>
-                                    </DropdownMenuTrigger>
-                                    <DropdownMenuContent align="end">
-                                      <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                                      <DropdownMenuSeparator />
-                                      <DropdownMenuItem className="flex items-center">
-                                        <Copy className="h-4 w-4 mr-2" />
-                                        Duplicate
-                                      </DropdownMenuItem>
-                                      <DropdownMenuItem className="flex items-center text-red-600">
-                                        <Trash2 className="h-4 w-4 mr-2" />
-                                        Delete
-                                      </DropdownMenuItem>
-                                    </DropdownMenuContent>
-                                  </DropdownMenu>
-                                </div>
+                        </TableHeader>
+                        <TableBody>
+                          {filterNodes(nodes).length === 0 ? (
+                            <TableRow>
+                              <TableCell colSpan={5} className="text-center py-4">
+                                No nodes found
                               </TableCell>
                             </TableRow>
-                          ))
-                        )}
-                      </TableBody>
-                    </Table>
+                          ) : (
+                            getPaginatedData(filterNodes(nodes)).map((node) => (
+                              <TableRow key={node.id}>
+                                <TableCell className="font-medium">
+                                  <div className="flex flex-col">
+                                    <span>{node.name}</span>
+                                    {node.description && (
+                                      <span className="text-xs text-gray-500 truncate max-w-[300px]">
+                                        {node.description}
+                                      </span>
+                                    )}
+                                  </div>
+                                </TableCell>
+                                <TableCell>
+                                  <TypeBadge type={node.type} />
+                                </TableCell>
+                                <TableCell>
+                                  <Badge variant="outline" className="bg-slate-100">
+                                    {node.category || 'Uncategorized'}
+                                  </Badge>
+                                </TableCell>
+                                <TableCell>{formatDate(node.createdAt)}</TableCell>
+                                <TableCell>
+                                  <div className="flex items-center space-x-1">
+                                    <Button size="icon" variant="ghost" title="Edit">
+                                      <Pencil className="h-4 w-4" />
+                                    </Button>
+                                    <DropdownMenu>
+                                      <DropdownMenuTrigger asChild>
+                                        <Button size="icon" variant="ghost">
+                                          <MoreVertical className="h-4 w-4" />
+                                        </Button>
+                                      </DropdownMenuTrigger>
+                                      <DropdownMenuContent align="end">
+                                        <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                                        <DropdownMenuSeparator />
+                                        <DropdownMenuItem className="flex items-center">
+                                          <Copy className="h-4 w-4 mr-2" />
+                                          Duplicate
+                                        </DropdownMenuItem>
+                                        <DropdownMenuItem className="flex items-center text-red-600">
+                                          <Trash2 className="h-4 w-4 mr-2" />
+                                          Delete
+                                        </DropdownMenuItem>
+                                      </DropdownMenuContent>
+                                    </DropdownMenu>
+                                  </div>
+                                </TableCell>
+                              </TableRow>
+                            ))
+                          )}
+                        </TableBody>
+                      </Table>
+                      <PaginationControls itemsCount={filterNodes(nodes).length} />
+                    </>
                   )}
                 </TabsContent>
               </CardContent>
