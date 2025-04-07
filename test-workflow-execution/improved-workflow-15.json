@@ -1,0 +1,134 @@
+{
+  "edges": [
+    {
+      "id": "e1",
+      "source": "internal_new_agent",
+      "target": "input_processor"
+    },
+    {
+      "id": "e2",
+      "source": "internal_ai_chat_agent",
+      "target": "input_processor"
+    },
+    {
+      "id": "e3",
+      "source": "input_processor",
+      "target": "api_call"
+    },
+    {
+      "id": "e4",
+      "source": "api_call",
+      "target": "response_formatter"
+    },
+    {
+      "id": "e5",
+      "source": "response_formatter",
+      "target": "output"
+    }
+  ],
+  "nodes": [
+    {
+      "id": "internal_new_agent",
+      "data": {
+        "type": "internal_new_agent",
+        "label": "New Agent Trigger",
+        "category": "internal",
+        "settings": {},
+        "description": "Triggers when user clicks New Agent button"
+      },
+      "type": "internal_new_agent",
+      "position": {
+        "x": 100,
+        "y": 200
+      }
+    },
+    {
+      "id": "internal_ai_chat_agent",
+      "data": {
+        "type": "internal_ai_chat_agent",
+        "label": "AI Chat Agent Trigger",
+        "category": "internal",
+        "settings": {},
+        "description": "Triggers when chat agent instructs to create a new agent"
+      },
+      "type": "internal_ai_chat_agent",
+      "position": {
+        "x": 100,
+        "y": 350
+      }
+    },
+    {
+      "id": "input_processor",
+      "data": {
+        "type": "transform",
+        "label": "Process Input Data",
+        "category": "processing",
+        "settings": {
+          "transform": "// Validate and extract agent data from input\nconst processInput = (input) => {\n  console.log('Processing input:', JSON.stringify(input));\n  \n  // Extract agent data based on input structure\n  let name, description, type, icon;\n  \n  if (input.agent_data) {\n    // Data passed in agent_data object\n    ({ name, description, type, icon } = input.agent_data);\n  } else if (input.name) {\n    // Data passed in root object\n    ({ name, description, type, icon } = input);\n  } else if (typeof input === 'string') {\n    // Try to parse string input as JSON\n    try {\n      const parsed = JSON.parse(input);\n      if (parsed.name) {\n        ({ name, description, type, icon } = parsed);\n      } else if (parsed.agent_data && parsed.agent_data.name) {\n        ({ name, description, type, icon } = parsed.agent_data);\n      }\n    } catch (e) {\n      // If not JSON, use as name with default values\n      name = input.trim();\n    }\n  }\n  \n  // Set defaults for missing values\n  return {\n    name: name || 'New Agent',\n    description: description || 'Agent created from workflow',\n    type: type || 'custom',\n    icon: icon || 'brain',\n    status: 'active',\n    source: input.metadata?.source || 'workflow'\n  };\n};\n\nreturn processInput(input);"
+        },
+        "description": "Validates and formats the agent data from multiple sources"
+      },
+      "type": "transform",
+      "position": {
+        "x": 400,
+        "y": 275
+      }
+    },
+    {
+      "id": "api_call",
+      "data": {
+        "type": "api",
+        "label": "Create Agent API",
+        "category": "integration",
+        "settings": {
+          "url": "/api/agents",
+          "method": "POST",
+          "headers": {
+            "Content-Type": "application/json"
+          },
+          "body": "return JSON.stringify(input);"
+        },
+        "description": "Calls the internal API to create the agent"
+      },
+      "type": "api",
+      "position": {
+        "x": 700,
+        "y": 275
+      }
+    },
+    {
+      "id": "response_formatter",
+      "data": {
+        "type": "transform",
+        "label": "Format Response",
+        "category": "processing",
+        "settings": {
+          "transform": "// Format the API response for display\nconst formatResponse = (apiResponse) => {\n  console.log('Formatting API response:', JSON.stringify(apiResponse));\n  \n  // Handle API error\n  if (apiResponse.error || apiResponse.message) {\n    return {\n      success: false,\n      message: `Failed to create agent: ${apiResponse.message || apiResponse.error || 'Unknown error'}`,\n      data: null\n    };\n  }\n  \n  // Handle successful response\n  return {\n    success: true,\n    message: `Successfully created agent: ${apiResponse.name}`,\n    data: apiResponse\n  };\n};\n\nreturn formatResponse(input);"
+        },
+        "description": "Formats the API response into a standardized message"
+      },
+      "type": "transform",
+      "position": {
+        "x": 1000,
+        "y": 275
+      }
+    },
+    {
+      "id": "output",
+      "data": {
+        "type": "internal",
+        "label": "Output Response",
+        "category": "internal",
+        "settings": {
+          "action_type": "workflow_response"
+        },
+        "description": "Returns the response to the triggering system"
+      },
+      "type": "internal",
+      "position": {
+        "x": 1300,
+        "y": 275
+      }
+    }
+  ]
+}

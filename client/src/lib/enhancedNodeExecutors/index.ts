@@ -7,6 +7,7 @@
  */
 
 import { executeApiNode } from './apiExecutor';
+import { executeApiVerifyNode } from './apiVerifyExecutor';
 import { executeDatabaseOperationNode } from './databaseOperationExecutor';
 
 // Registry of node executors
@@ -71,6 +72,9 @@ export function getRegisteredNodeTypes(): string[] {
 export function registerAllNodeExecutors(): void {
   // Register API executor
   registerNodeExecutor('api', executeApiNode);
+  
+  // Register API verification executor
+  registerNodeExecutor('api_verify', executeApiVerifyNode);
   
   // Register database operation executor
   registerNodeExecutor('database_operation', executeDatabaseOperationNode);
