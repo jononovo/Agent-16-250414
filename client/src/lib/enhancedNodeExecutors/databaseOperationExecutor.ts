@@ -1,108 +1,137 @@
 /**
- * Database Operation Node Executor
+ * Database Operation Node Executor for Client-Centric Architecture
  * 
- * This executor handles database operations through API calls.
- * It provides a standardized way to interact with the database
- * from client-side workflows, while maintaining proper security.
+ * This executor handles database operations by proxying them through
+ * our server API endpoints. It abstracts away the complexity of
+ * working with the database directly.
  */
 
-import { NodeExecutionData, createExecutionDataFromValue } from "../types/workflow";
-import { apiGet, apiPost, apiPatch, apiDelete } from "../apiClient";
+import { apiClient } from '../apiClient';
 
-// Supported operation types
-type DatabaseOperation = 'get' | 'getAll' | 'create' | 'update' | 'delete';
-
-// Supported entity types
-type EntityType = 'agent' | 'workflow' | 'node' | 'log';
+interface DatabaseOperationSettings {
+  operation: 'get' | 'getAll' | 'create' | 'update' | 'delete';
+  entityType: 'agent' | 'workflow' | 'node' | 'log';
+  entityId?: number;
+  useInputAsId?: boolean;
+  useInputAsData?: boolean;
+  data?: Record<string, any>;
+}
 
 /**
  * Executes a database operation node
  * 
- * @param nodeData Node configuration
- * @param inputs Input data from previous nodes
- * @returns Execution data with operation results
+ * @param nodeData - The node configuration data
+ * @param input - The input data to the node
+ * @returns The result of the database operation
  */
-export default async function executeDatabaseOperationNode(
-  nodeData: Record<string, any>,
-  inputs: Record<string, NodeExecutionData>
-): Promise<NodeExecutionData> {
+export async function executeDatabaseOperationNode(nodeData: any, input: any): Promise<any> {
   try {
-    // Get inputs
-    const inputData = inputs.default || Object.values(inputs)[0];
-    if (!inputData) {
-      throw new Error('No input data provided');
-    }
-    
-    // Get operation configuration
-    const operation: DatabaseOperation = nodeData.operation || 'get';
-    const entityType: EntityType = nodeData.entityType || 'agent';
-    const useInputAsId = nodeData.useInputAsId || false;
-    
-    // Get ID from input data or node configuration
-    let id = nodeData.entityId;
-    if (useInputAsId && inputData.items && inputData.items[0]) {
-      const inputItem = inputData.items[0];
-      if (typeof inputItem.json === 'object' && inputItem.json.id) {
-        id = inputItem.json.id;
-      } else if (typeof inputItem.json === 'number' || typeof inputItem.json === 'string') {
-        id = inputItem.json;
+    // Extract settings from node data
+    const settings: DatabaseOperationSettings = {
+      operation: nodeData.operation || 'getAll',
+      entityType: nodeData.entityType || 'agent',
+      entityId: nodeData.entityId,
+      useInputAsId: nodeData.useInputAsId || false,
+      useInputAsData: nodeData.useInputAsData || false,
+      data: nodeData.data || {}
+    };
+
+    // Determine the entity ID from input if needed
+    let entityId = settings.entityId;
+    if (settings.useInputAsId) {
+      if (typeof input === 'number') {
+        entityId = input;
+      } else if (typeof input === 'object' && input !== null) {
+        // For the update operation, we need the ID from the input data
+        if (input.id !== undefined && !isNaN(Number(input.id))) {
+          entityId = Number(input.id);
+        } else if (input.workflowId !== undefined && !isNaN(Number(input.workflowId))) {
+          entityId = Number(input.workflowId);
+        } else if (input.agentId !== undefined && !isNaN(Number(input.agentId))) {
+          entityId = Number(input.agentId);
+        } else if (input.nodeId !== undefined && !isNaN(Number(input.nodeId))) {
+          entityId = Number(input.nodeId);
+        } else if (input.logId !== undefined && !isNaN(Number(input.logId))) {
+          entityId = Number(input.logId);
+        }
       }
     }
 
     // Prepare data for create/update operations
-    let data = nodeData.data || {};
-    if (nodeData.useInputAsData && inputData.items && inputData.items[0]) {
-      const inputItem = inputData.items[0];
-      if (typeof inputItem.json === 'object') {
-        data = { ...data, ...inputItem.json };
-      }
+    let data = settings.data;
+    if (settings.useInputAsData && typeof input === 'object' && input !== null) {
+      data = input;
     }
-    
-    console.log(`Executing database operation: ${operation} on ${entityType}${id ? ` with ID ${id}` : ''}`);
-    
-    // Construct API endpoint
-    const baseEndpoint = `/api/${entityType}s`;
+
+    // Build endpoint URL based on operation and entity type
+    const baseEndpoint = `/api/${settings.entityType}s`;
     let endpoint = baseEndpoint;
-    if (id && operation !== 'getAll') {
-      endpoint = `${baseEndpoint}/${id}`;
-    }
-    
-    // Execute operation
-    let result;
-    switch (operation) {
+    let method: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE';
+
+    // Configure the request based on the operation
+    switch (settings.operation) {
       case 'get':
-        result = await apiGet(endpoint);
+        if (entityId === undefined) {
+          throw new Error(`Entity ID is required for get operation on ${settings.entityType}`);
+        }
+        endpoint = `${baseEndpoint}/${entityId}`;
+        method = 'GET';
         break;
+
       case 'getAll':
-        result = await apiGet(endpoint);
+        method = 'GET';
         break;
+
       case 'create':
-        result = await apiPost(endpoint, data);
+        method = 'POST';
         break;
+
       case 'update':
-        result = await apiPatch(endpoint, data);
+        if (entityId === undefined) {
+          throw new Error(`Entity ID is required for update operation on ${settings.entityType}`);
+        }
+        endpoint = `${baseEndpoint}/${entityId}`;
+        method = 'PATCH';
         break;
+
       case 'delete':
-        result = await apiDelete(endpoint);
+        if (entityId === undefined) {
+          throw new Error(`Entity ID is required for delete operation on ${settings.entityType}`);
+        }
+        endpoint = `${baseEndpoint}/${entityId}`;
+        method = 'DELETE';
         break;
+
       default:
-        throw new Error(`Unsupported operation: ${operation}`);
+        throw new Error(`Unsupported database operation: ${settings.operation}`);
     }
-    
-    // Return result
-    return createExecutionDataFromValue({
-      success: true,
-      operation,
-      entityType,
-      data: result
-    }, 'database_operation');
+
+    // Execute the request
+    let response;
+    switch (method) {
+      case 'GET':
+        response = await apiClient.get(endpoint);
+        break;
+      case 'POST':
+        response = await apiClient.post(endpoint, data);
+        break;
+      case 'PATCH':
+        response = await apiClient.patch(endpoint, data);
+        break;
+      case 'DELETE':
+        response = await apiClient.delete(endpoint);
+        break;
+    }
+
+    return response;
   } catch (error) {
-    console.error('Error executing database operation node:', error);
+    console.error('Database operation error:', error);
     
-    // Return error information
-    return createExecutionDataFromValue({
-      success: false,
-      error: error instanceof Error ? error.message : String(error)
-    }, 'database_operation');
+    // Return a structured error response
+    return {
+      error: true,
+      message: error instanceof Error ? error.message : 'Unknown database operation error',
+      details: error
+    };
   }
 }

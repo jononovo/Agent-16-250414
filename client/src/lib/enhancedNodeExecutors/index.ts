@@ -1,147 +1,81 @@
 /**
- * Enhanced Node Executors Index
+ * Enhanced Node Executors Registry
  * 
- * This file exports all enhanced node executors to be registered with the workflow engine.
- * Using dynamic imports to avoid circular dependencies.
+ * This file registers and manages node type executors for the client-centric
+ * workflow architecture. Each node type has its own specialized executor
+ * for handling its unique functionality.
  */
 
-// Import types only
-import { EnhancedNodeExecutor, InternalNodeExecutor } from '../types/workflow';
+import { executeApiNode } from './apiExecutor';
+import { executeDatabaseOperationNode } from './databaseOperationExecutor';
 
-// Export collection getter method (async)
-export async function getAllEnhancedNodeExecutors(): Promise<Record<string, EnhancedNodeExecutor>> {
-  const textInputModule = await import('./textInputExecutor');
-  const outputModule = await import('./outputExecutor');
-  const visualizeTextModule = await import('./visualizeTextExecutor');
-  const transformModule = await import('./transformExecutor');
-  const chatInterfaceModule = await import('./chatInterfaceExecutor');
-  const claudeModule = await import('./claudeExecutor');
-  const textPromptModule = await import('./textPromptExecutor');
-  const generateTextModule = await import('./generateTextExecutor');
-  const internalModule = await import('./internalExecutor');
-  const agentTriggerModule = await import('./agentTriggerExecutor');
-  const workflowTriggerModule = await import('./workflowTriggerExecutor');
-  const responseMessageModule = await import('./responseMessageExecutor');
-  const createWorkflowModule = await import('./createWorkflowExecutor');
-  const linkWorkflowToAgentModule = await import('./linkWorkflowToAgentExecutor');
-  const databaseOperationModule = await import('./databaseOperationExecutor');
-  const apiModule = await import('./apiExecutor');
-  
-  return {
-    textInputExecutor: textInputModule.textInputExecutor,
-    outputExecutor: outputModule.outputExecutor,
-    visualizeTextExecutor: visualizeTextModule.visualizeTextExecutor,
-    transformExecutor: transformModule.transformExecutor,
-    chatInterfaceExecutor: chatInterfaceModule.chatInterfaceExecutor,
-    claudeExecutor: claudeModule.claudeExecutor,
-    textPromptExecutor: textPromptModule.textPromptExecutor,
-    generateTextExecutor: generateTextModule.generateTextExecutor,
-    internalExecutor: internalModule.default, // Using default export
-    agentTriggerExecutor: agentTriggerModule.default, // Using default export
-    workflowTriggerExecutor: workflowTriggerModule.default, // Using default export
-    responseMessageExecutor: responseMessageModule.responseMessageExecutor,
-    createWorkflowExecutor: createWorkflowModule.default, // Using default export
-    linkWorkflowToAgentExecutor: linkWorkflowToAgentModule.default, // Using default export
-    databaseOperationExecutor: {
-      definition: {
-        type: 'database_operation',
-        displayName: 'Database Operation',
-        description: 'Perform operations on the database',
-        icon: 'database',
-        category: 'Data',
-        version: '1.0.0',
-        inputs: {
-          default: {
-            type: 'any',
-            displayName: 'Input',
-            description: 'Input data for the operation',
-            required: false
-          }
-        },
-        outputs: {
-          default: {
-            type: 'any',
-            displayName: 'Output',
-            description: 'Result of the database operation'
-          }
-        }
-      },
-      execute: databaseOperationModule.default
-    },
-    apiExecutor: {
-      definition: {
-        type: 'api',
-        displayName: 'API Request',
-        description: 'Make API requests to internal or external endpoints',
-        icon: 'globe',
-        category: 'Data',
-        version: '1.0.0',
-        inputs: {
-          default: {
-            type: 'any',
-            displayName: 'Input',
-            description: 'Input data for the API request',
-            required: false
-          }
-        },
-        outputs: {
-          default: {
-            type: 'any',
-            displayName: 'Response',
-            description: 'API response data'
-          }
-        }
-      },
-      execute: apiModule.default
-    }
-  };
+// Registry of node executors
+const nodeExecutors: Record<string, (nodeData: any, input: any) => Promise<any>> = {};
+
+/**
+ * Register a node executor for a specific node type
+ * 
+ * @param nodeType - The type of node
+ * @param executor - The executor function for this node type
+ */
+export function registerNodeExecutor(
+  nodeType: string,
+  executor: (nodeData: any, input: any) => Promise<any>
+): void {
+  nodeExecutors[nodeType] = executor;
+  console.log(`Registered executor for node type: ${nodeType}`);
 }
 
-// Export registration method
-export async function registerAllEnhancedExecutors(): Promise<void> {
-  // Import the registration function
-  const { registerEnhancedNodeExecutor } = await import('../enhancedWorkflowEngine');
+/**
+ * Execute a node with the appropriate executor
+ * 
+ * @param nodeType - The type of node to execute
+ * @param nodeData - The node configuration data
+ * @param input - The input data to the node
+ * @returns The execution result
+ */
+export async function executeNode(
+  nodeType: string,
+  nodeData: any,
+  input: any
+): Promise<any> {
+  if (!nodeExecutors[nodeType]) {
+    throw new Error(`No executor registered for node type: ${nodeType}`);
+  }
+
+  return nodeExecutors[nodeType](nodeData, input);
+}
+
+/**
+ * Check if a node type has a registered executor
+ * 
+ * @param nodeType - The type of node to check
+ * @returns True if the node type has an executor
+ */
+export function hasExecutor(nodeType: string): boolean {
+  return !!nodeExecutors[nodeType];
+}
+
+/**
+ * Get a list of all registered node types
+ * 
+ * @returns Array of registered node types
+ */
+export function getRegisteredNodeTypes(): string[] {
+  return Object.keys(nodeExecutors);
+}
+
+/**
+ * Register all built-in node executors
+ */
+export function registerAllNodeExecutors(): void {
+  // Register API executor
+  registerNodeExecutor('api', executeApiNode);
   
-  // Get all executors
-  const executors = await getAllEnhancedNodeExecutors();
+  // Register database operation executor
+  registerNodeExecutor('database_operation', executeDatabaseOperationNode);
   
-  // Register each executor with its type
-  registerEnhancedNodeExecutor('text_input', executors.textInputExecutor);
-  registerEnhancedNodeExecutor('text_prompt', executors.textPromptExecutor);
-  registerEnhancedNodeExecutor('output', executors.outputExecutor);
-  registerEnhancedNodeExecutor('visualize_text', executors.visualizeTextExecutor);
-  registerEnhancedNodeExecutor('transform', executors.transformExecutor);
-  registerEnhancedNodeExecutor('chat_interface', executors.chatInterfaceExecutor);
-  registerEnhancedNodeExecutor('claude', executors.claudeExecutor);
-  registerEnhancedNodeExecutor('generate_text', executors.generateTextExecutor);
+  // Additional executors can be registered here
   
-  // Register aliases for backward compatibility
-  registerEnhancedNodeExecutor('perplexity', executors.claudeExecutor);
-  
-  // Register internal node executors
-  registerEnhancedNodeExecutor('internal_new_agent', executors.internalExecutor);
-  registerEnhancedNodeExecutor('internal_ai_chat_agent', executors.internalExecutor);
-  registerEnhancedNodeExecutor('internal', executors.internalExecutor);
-  
-  // Register agent trigger node executor
-  registerEnhancedNodeExecutor('agent_trigger', executors.agentTriggerExecutor);
-  
-  // Register workflow trigger node executor
-  registerEnhancedNodeExecutor('workflow_trigger', executors.workflowTriggerExecutor);
-  registerEnhancedNodeExecutor('workflowTriggerNode', executors.workflowTriggerExecutor);
-  
-  // Register response message node executor
-  registerEnhancedNodeExecutor('response_message', executors.responseMessageExecutor);
-  
-  // Register workflow creation and linking node executors
-  registerEnhancedNodeExecutor('create_workflow', executors.createWorkflowExecutor);
-  registerEnhancedNodeExecutor('link_workflow_to_agent', executors.linkWorkflowToAgentExecutor);
-  
-  // Register API node executor
-  registerEnhancedNodeExecutor('api', executors.apiExecutor);
-  
-  // Register database operation node executor
-  registerEnhancedNodeExecutor('database_operation', executors.databaseOperationExecutor);
-  
-  console.log('All enhanced node executors registered');
+  console.log('All node executors registered successfully');
 }

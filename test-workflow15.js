@@ -1,51 +1,59 @@
-// Test script for workflow 15 execution
-import fetch from 'node-fetch';
+/**
+ * Test script for workflow 15 execution using the client-centric approach
+ * This demonstrates how to use the workflowClient directly instead of making API calls
+ */
+
+import { createAgent } from './client/src/lib/workflowClient.js';
 
 async function testWorkflow15() {
   try {
-    // Test UI Button trigger source
     console.log('Testing workflow 15 execution with UI Button source...');
-    const uiButtonResponse = await fetch('http://localhost:5000/api/workflows/15/execute', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
+    
+    // Test with UI Button Source using client-side workflow execution
+    const uiButtonResult = await createAgent({
+      name: 'Test Agent from UI Button',
+      description: 'Agent created from UI button test',
+      type: 'test',
+      icon: 'beaker'
+    }, {
+      source: 'ui_form',
+      onNodeStateChange: (nodeId, state) => {
+        console.log(`Node ${nodeId} state: ${state.status}`);
       },
-      body: JSON.stringify({
-        name: 'Test Agent from UI Button',
-        description: 'Agent created from UI Button source test',
-        metadata: {
-          source: 'ui_button'
-        }
-      }),
+      onWorkflowComplete: (state) => {
+        console.log(`Workflow completed with status: ${state.status}`);
+      }
     });
-
-    const uiButtonResult = await uiButtonResponse.json();
+    
     console.log('UI Button Execution Result:', JSON.stringify(uiButtonResult, null, 2));
-
-    // Test AI Chat trigger source
-    console.log('\nTesting workflow 15 execution with AI Chat source...');
-    const aiChatResponse = await fetch('http://localhost:5000/api/workflows/15/execute', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
+    console.log();
+    
+    console.log('Testing workflow 15 execution with AI Chat source...');
+    
+    // Test with AI Chat Source using client-side workflow execution
+    const aiChatResult = await createAgent({
+      name: 'Test Agent from AI Chat',
+      description: 'Agent created from AI chat test',
+      type: 'test',
+      icon: 'message-circle'
+    }, {
+      source: 'ai_chat',
+      onNodeStateChange: (nodeId, state) => {
+        console.log(`Node ${nodeId} state: ${state.status}`);
       },
-      body: JSON.stringify({
-        name: 'Test Agent from AI Chat',
-        description: 'Agent created from AI Chat source test',
-        metadata: {
-          source: 'ai_chat'
-        }
-      }),
+      onWorkflowComplete: (state) => {
+        console.log(`Workflow completed with status: ${state.status}`);
+      }
     });
-
-    const aiChatResult = await aiChatResponse.json();
+    
     console.log('AI Chat Execution Result:', JSON.stringify(aiChatResult, null, 2));
-
-    console.log('\nTests completed!');
+    console.log();
+    
+    console.log('Tests completed!');
+    
   } catch (error) {
     console.error('Error during test:', error);
   }
 }
 
-// Run the tests
 testWorkflow15();

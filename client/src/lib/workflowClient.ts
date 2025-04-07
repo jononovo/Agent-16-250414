@@ -5,7 +5,7 @@
  * that emphasizes client-side execution with minimal server dependencies.
  */
 
-import { apiGet, apiPost, apiPatch } from './apiClient';
+import { apiClient } from './apiClient';
 import { executeEnhancedWorkflow } from './enhancedWorkflowEngine';
 import { WorkflowExecutionState, NodeState } from './types/workflow';
 
@@ -26,7 +26,7 @@ interface WorkflowData {
  */
 export async function loadWorkflow(id: number): Promise<WorkflowData> {
   try {
-    const workflow = await apiGet(`/api/workflows/${id}`);
+    const workflow = await apiClient.get(`/api/workflows/${id}`);
     
     // Parse the flow data if it's a string
     if (workflow.flowData && typeof workflow.flowData === 'string') {
@@ -170,7 +170,7 @@ export async function executeWorkflow(
     if (logToServer) {
       try {
         // Make sure we include all required fields for log creation
-        const logResponse = await apiPost('/api/logs', {
+        const logResponse = await apiClient.post('/api/logs', {
           workflowId: typeof workflowIdOrData === 'number' ? workflowIdOrData : workflowData.id,
           agentId: 0, // Use a default agent ID since this is required
           status: 'running',
@@ -193,7 +193,7 @@ export async function executeWorkflow(
         // Update log on server when workflow completes
         if (logToServer && logId) {
           try {
-            await apiPatch(`/api/logs/${logId}`, {
+            await apiClient.patch(`/api/logs/${logId}`, {
               status: finalState.status,
               output: finalState.output,
               error: finalState.error,
@@ -275,22 +275,30 @@ export async function createWorkflow(
   } = {}
 ): Promise<any> {
   // Direct API call for now - could be replaced with workflow execution later
-  return apiPost('/api/workflows', workflowData);
+  return apiClient.post('/api/workflows', workflowData);
 }
 
 /**
  * Links a workflow to an agent
  */
 export async function linkWorkflowToAgent(
-  workflowId: number,
   agentId: number,
+  workflowId: number,
   options: {
     onNodeStateChange?: (nodeId: string, state: NodeState) => void;
     onWorkflowComplete?: (state: WorkflowExecutionState) => void;
   } = {}
 ): Promise<any> {
-  // Direct API call for now - could be replaced with workflow execution later
-  return apiPatch(`/api/workflows/${workflowId}`, {
-    agentId
+  // Use Workflow 6 (Link Workflow to Agent) instead of direct API call
+  const input = {
+    agentId,
+    workflowId
+  };
+  
+  // Execute workflow 6 (Link Workflow to Agent)
+  return executeWorkflow(6, input, {
+    ...options,
+    metadata: { source: 'api_client' },
+    logToServer: true
   });
 }

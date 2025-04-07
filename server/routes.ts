@@ -283,6 +283,66 @@ export async function registerRoutes(app: Express): Promise<Server> {
       body: JSON.stringify(data),
     });
   };
+  
+  // API Proxy Route - secure way to make external API calls
+  app.all('/api/proxy', async (req, res) => {
+    try {
+      // Extract the target URL from query parameters
+      const targetUrl = req.query.url as string;
+      
+      if (!targetUrl) {
+        return res.status(400).json({ error: 'Missing target URL parameter' });
+      }
+      
+      // Prepare fetch options based on the request
+      const fetchOptions: RequestInit = {
+        method: req.method,
+        headers: {
+          // Forward content-type header
+          'Content-Type': req.headers['content-type'] || 'application/json'
+        }
+      };
+      
+      // Add body for non-GET requests if present
+      if (req.method !== 'GET' && req.method !== 'HEAD' && req.body) {
+        fetchOptions.body = JSON.stringify(req.body);
+      }
+      
+      // Add custom headers from the request, except content-type (already handled)
+      if (req.headers['x-api-key']) {
+        // Forward API key if provided
+        (fetchOptions.headers as Record<string, string>)['x-api-key'] = req.headers['x-api-key'] as string;
+      }
+      
+      if (req.headers.authorization) {
+        // Forward authorization header if provided
+        (fetchOptions.headers as Record<string, string>).authorization = req.headers.authorization as string;
+      }
+      
+      // Make the request to the target URL
+      console.log(`Proxying ${req.method} request to ${targetUrl}`);
+      const response = await fetch(targetUrl, fetchOptions);
+      
+      // Get the response data
+      let data;
+      const contentType = response.headers.get('content-type');
+      
+      if (contentType && contentType.includes('application/json')) {
+        data = await response.json();
+      } else {
+        data = await response.text();
+      }
+      
+      // Return the response with the same status code
+      res.status(response.status).json(data);
+    } catch (error) {
+      console.error('API proxy error:', error);
+      res.status(500).json({
+        error: true,
+        message: error instanceof Error ? error.message : 'Unknown proxy error'
+      });
+    }
+  });
   // Agents API
   app.get("/api/agents", async (req, res) => {
     try {

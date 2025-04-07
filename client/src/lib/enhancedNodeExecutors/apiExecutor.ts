@@ -1,107 +1,110 @@
 /**
- * API Node Executor
+ * API Node Executor for Client-Centric Architecture
  * 
- * This executor handles API requests from workflow nodes.
- * It supports both internal and external API calls.
+ * This executor handles API requests to both internal and external endpoints.
+ * For internal endpoints, it uses the apiClient directly.
+ * For external endpoints, it routes through the server proxy endpoint.
  */
 
-import { NodeExecutionData, createExecutionDataFromValue } from "../types/workflow";
-import { apiGet, apiPost, apiPatch, apiDelete, externalApiRequest } from "../apiClient";
+import { apiClient } from '../apiClient';
 
-type ApiMethod = 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE';
-type ApiType = 'internal' | 'external';
+// Type definition for API node settings
+export interface ApiNodeSettings {
+  apiType: 'internal' | 'external';
+  method: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE';
+  endpoint: string;
+  useInputAsEndpoint?: boolean;
+  useInputForData?: boolean;
+  useInputForParams?: boolean;
+  useInputForHeaders?: boolean;
+  data?: Record<string, any>;
+  headers?: Record<string, string>;
+  params?: Record<string, string>;
+}
 
 /**
- * Executes an API node
+ * Execute an API node with the given settings and input
  * 
- * @param nodeData Node configuration
- * @param inputs Input data from previous nodes
- * @returns Execution data with API response
+ * @param nodeData - The node configuration data
+ * @param input - The input data to the node
+ * @returns The result of the API request
  */
-export default async function executeApiNode(
-  nodeData: Record<string, any>,
-  inputs: Record<string, NodeExecutionData>
-): Promise<NodeExecutionData> {
+export async function executeApiNode(nodeData: any, input: any): Promise<any> {
+  // Extract settings from node data
+  const settings: ApiNodeSettings = {
+    apiType: nodeData.apiType || 'internal',
+    method: nodeData.method || 'GET',
+    endpoint: nodeData.endpoint || '',
+    useInputAsEndpoint: nodeData.useInputAsEndpoint || false,
+    useInputForData: nodeData.useInputForData || false,
+    useInputForParams: nodeData.useInputForParams || false,
+    useInputForHeaders: nodeData.useInputForHeaders || false,
+    data: nodeData.data || {},
+    headers: nodeData.headers || {},
+    params: nodeData.params || {}
+  };
+
+  // Build the endpoint URL
+  let endpoint = settings.endpoint;
+  if (settings.useInputAsEndpoint && typeof input === 'string') {
+    endpoint = input;
+  }
+
+  // For external APIs, use the proxy endpoint
+  if (settings.apiType === 'external') {
+    endpoint = `/api/proxy?url=${encodeURIComponent(endpoint)}`;
+  }
+
+  // Prepare request data
+  let requestData = settings.data;
+  if (settings.useInputForData) {
+    requestData = input;
+  }
+
+  // Prepare request headers
+  let headers = { ...settings.headers };
+  if (settings.useInputForHeaders && input && typeof input === 'object' && input.headers) {
+    headers = { ...headers, ...input.headers };
+  }
+
+  // Prepare request parameters
+  let params = { ...settings.params };
+  if (settings.useInputForParams && input && typeof input === 'object' && input.params) {
+    params = { ...params, ...input.params };
+  }
+
+  // Execute the API request based on the method
   try {
-    // Get inputs
-    const inputData = inputs.default || Object.values(inputs)[0];
-    
-    // Extract configuration from node data
-    const apiType: ApiType = nodeData.apiType || 'internal';
-    const method: ApiMethod = (nodeData.method as ApiMethod) || 'GET';
-    let endpoint = nodeData.endpoint || '';
-    let headers = nodeData.headers || {};
-    let requestData = nodeData.data || {};
-    
-    // Use input data if specified
-    if (nodeData.useInputForEndpoint && inputData) {
-      const inputItem = inputData.items?.[0];
-      if (inputItem?.json?.endpoint) {
-        endpoint = inputItem.json.endpoint;
-      }
-    }
-    
-    if (nodeData.useInputForData && inputData) {
-      const inputItem = inputData.items?.[0];
-      if (inputItem?.json) {
-        // Use input data as request body
-        if (typeof inputItem.json === 'object') {
-          requestData = { ...requestData, ...inputItem.json };
-        } else if (typeof inputItem.json === 'string') {
-          try {
-            const parsedJson = JSON.parse(inputItem.json);
-            requestData = { ...requestData, ...parsedJson };
-          } catch (e) {
-            // If not valid JSON, use as-is
-            requestData = inputItem.json;
-          }
-        }
-      }
-    }
-    
-    console.log(`Executing API node`, apiType);
-    
-    // Execute request based on API type
     let response;
-    if (apiType === 'internal') {
-      switch (method) {
-        case 'GET':
-          response = await apiGet(endpoint);
-          break;
-        case 'POST':
-          response = await apiPost(endpoint, requestData);
-          break;
-        case 'PATCH':
-          response = await apiPatch(endpoint, requestData);
-          break;
-        case 'DELETE':
-          response = await apiDelete(endpoint);
-          break;
-        default:
-          throw new Error(`Unsupported method: ${method}`);
-      }
-    } else {
-      // External API request using the proxy
-      response = await externalApiRequest(
-        endpoint,
-        method,
-        requestData,
-        headers
-      );
+    switch (settings.method) {
+      case 'GET':
+        response = await apiClient.get(endpoint, { headers, params });
+        break;
+      case 'POST':
+        response = await apiClient.post(endpoint, requestData, { headers, params });
+        break;
+      case 'PUT':
+        response = await apiClient.put(endpoint, requestData, { headers, params });
+        break;
+      case 'PATCH':
+        response = await apiClient.patch(endpoint, requestData, { headers, params });
+        break;
+      case 'DELETE':
+        response = await apiClient.delete(endpoint, { headers, params });
+        break;
+      default:
+        throw new Error(`Unsupported HTTP method: ${settings.method}`);
     }
-    
-    // Return response
-    return createExecutionDataFromValue({
-      success: true,
-      response
-    }, 'api');
+
+    return response;
   } catch (error) {
-    console.error('Error executing API node:', error);
+    console.error('API node execution error:', error);
     
-    // Return error information
-    return createExecutionDataFromValue({
-      success: false,
-      error: error instanceof Error ? error.message : String(error)
-    }, 'api');
+    // Return a structured error response
+    return {
+      error: true,
+      message: error instanceof Error ? error.message : 'Unknown API error',
+      details: error
+    };
   }
 }

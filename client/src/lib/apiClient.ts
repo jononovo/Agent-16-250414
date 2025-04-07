@@ -1,131 +1,175 @@
 /**
  * API Client
  * 
- * A standardized utility for making API requests to the backend.
- * This centralizes API communication and provides consistent error handling.
+ * Standardized API client for making requests from the client to our server API
+ * and, via a proxy, to external APIs.
  */
 
-const API_BASE_URL = ''; // Empty string for same-domain requests
+import axios, { AxiosInstance, AxiosRequestConfig, AxiosResponse } from 'axios';
 
-/**
- * Handles API response checking
- */
-async function handleResponse(response: Response) {
-  if (!response.ok) {
-    const errorText = await response.text();
-    let errorMessage = `API request failed (${response.status})`;
-    
-    try {
-      const errorData = JSON.parse(errorText);
-      if (errorData.message) {
-        errorMessage = `${errorMessage}: ${errorData.message}`;
-      }
-    } catch (e) {
-      // If the error response isn't JSON, use the text directly
-      if (errorText) {
-        errorMessage = `${errorMessage}: ${errorText}`;
-      }
+// Create a base axios instance with common configuration
+const axiosInstance: AxiosInstance = axios.create({
+  baseURL: '',  // Using relative URLs
+  timeout: 30000, // 30 second timeout
+  headers: {
+    'Content-Type': 'application/json',
+    'Accept': 'application/json'
+  }
+});
+
+// Apply interceptors for common behaviors
+axiosInstance.interceptors.request.use(
+  (config) => {
+    // Add any request processing here
+    return config;
+  },
+  (error) => {
+    return Promise.reject(error);
+  }
+);
+
+axiosInstance.interceptors.response.use(
+  (response) => {
+    // Extract and return just the data from successful responses
+    return response.data;
+  },
+  (error) => {
+    // Enhanced error handling
+    if (error.response) {
+      // Server responded with a status code outside of 2xx range
+      console.error('API Response Error:', error.response.status, error.response.data);
+      
+      // Convert server error responses to a standardized format
+      return Promise.reject({
+        status: error.response.status,
+        message: error.response.data.message || 'Unknown error occurred',
+        data: error.response.data
+      });
+    } else if (error.request) {
+      // Request was made but no response received
+      console.error('API Request Error (No Response):', error.request);
+      return Promise.reject({
+        status: 0,
+        message: 'No response received from server',
+        data: null
+      });
+    } else {
+      // Error in setting up the request
+      console.error('API Setup Error:', error.message);
+      return Promise.reject({
+        status: 0,
+        message: error.message || 'Error setting up the request',
+        data: null
+      });
     }
-    
-    console.error(errorMessage);
-    throw new Error(errorMessage);
   }
-  
-  // For empty responses, return an empty object
-  if (response.status === 204) {
-    return {};
+);
+
+/**
+ * API client for making HTTP requests
+ */
+export const apiClient = {
+  /**
+   * Make a GET request
+   * 
+   * @param url - The URL to request
+   * @param config - Additional request configuration
+   * @returns The response data
+   */
+  get: <T = any>(url: string, config?: AxiosRequestConfig): Promise<T> => {
+    return axiosInstance.get(url, config);
+  },
+
+  /**
+   * Make a POST request
+   * 
+   * @param url - The URL to request
+   * @param data - The data to send
+   * @param config - Additional request configuration
+   * @returns The response data
+   */
+  post: <T = any>(url: string, data?: any, config?: AxiosRequestConfig): Promise<T> => {
+    return axiosInstance.post(url, data, config);
+  },
+
+  /**
+   * Make a PUT request
+   * 
+   * @param url - The URL to request
+   * @param data - The data to send
+   * @param config - Additional request configuration
+   * @returns The response data
+   */
+  put: <T = any>(url: string, data?: any, config?: AxiosRequestConfig): Promise<T> => {
+    return axiosInstance.put(url, data, config);
+  },
+
+  /**
+   * Make a PATCH request
+   * 
+   * @param url - The URL to request
+   * @param data - The data to send
+   * @param config - Additional request configuration
+   * @returns The response data
+   */
+  patch: <T = any>(url: string, data?: any, config?: AxiosRequestConfig): Promise<T> => {
+    return axiosInstance.patch(url, data, config);
+  },
+
+  /**
+   * Make a DELETE request
+   * 
+   * @param url - The URL to request
+   * @param config - Additional request configuration
+   * @returns The response data
+   */
+  delete: <T = any>(url: string, config?: AxiosRequestConfig): Promise<T> => {
+    return axiosInstance.delete(url, config);
   }
-  
-  return response.json();
-}
+};
 
 /**
- * Makes a GET request to the API
- */
-export async function apiGet(endpoint: string) {
-  const response = await fetch(`${API_BASE_URL}${endpoint}`, {
-    method: 'GET',
-    headers: {
-      'Content-Type': 'application/json',
-    },
-  });
-  
-  return handleResponse(response);
-}
-
-/**
- * Makes a POST request to the API
- */
-export async function apiPost(endpoint: string, data: any) {
-  console.log(`Making POST request to ${window.location.origin}${endpoint}`);
-  console.log(`Request body:`, JSON.stringify(data));
-  
-  const response = await fetch(`${API_BASE_URL}${endpoint}`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify(data),
-  });
-  
-  return handleResponse(response);
-}
-
-/**
- * Makes a PATCH request to the API
- */
-export async function apiPatch(endpoint: string, data: any) {
-  const response = await fetch(`${API_BASE_URL}${endpoint}`, {
-    method: 'PATCH',
-    headers: {
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify(data),
-  });
-  
-  return handleResponse(response);
-}
-
-/**
- * Makes a DELETE request to the API
- */
-export async function apiDelete(endpoint: string) {
-  const response = await fetch(`${API_BASE_URL}${endpoint}`, {
-    method: 'DELETE',
-    headers: {
-      'Content-Type': 'application/json',
-    },
-  });
-  
-  return handleResponse(response);
-}
-
-/**
- * Makes a request to an external API
+ * Shorthand function for making POST requests to the API
+ * This is for compatibility with existing code
  * 
- * This uses the server as a proxy to avoid CORS issues and to protect API keys
+ * @param url - The URL to request
+ * @param data - The data to send
+ * @param config - Additional request configuration
+ * @returns The response data
  */
-export async function externalApiRequest(
-  url: string,
-  method: string = 'GET',
-  data?: any,
-  headers?: Record<string, string>
-) {
-  // Use the server as a proxy
-  const proxyEndpoint = '/api/proxy';
-  
-  const response = await fetch(proxyEndpoint, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({
-      url,
-      method,
-      data,
-      headers,
-    }),
-  });
-  
-  return handleResponse(response);
-}
+export const apiPost = <T = any>(url: string, data?: any, config?: AxiosRequestConfig): Promise<T> => {
+  return apiClient.post<T>(url, data, config);
+};
+
+/**
+ * Generic API request function for use with React Query mutations
+ * 
+ * @param method - The HTTP method to use
+ * @param url - The URL to request
+ * @param data - The data to send (for POST, PUT, PATCH)
+ * @returns The response data
+ */
+export const apiRequest = async ({ 
+  method, 
+  url, 
+  data 
+}: { 
+  method: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE'; 
+  url: string; 
+  data?: any;
+}): Promise<any> => {
+  switch (method) {
+    case 'GET':
+      return apiClient.get(url);
+    case 'POST':
+      return apiClient.post(url, data);
+    case 'PUT':
+      return apiClient.put(url, data);
+    case 'PATCH':
+      return apiClient.patch(url, data);
+    case 'DELETE':
+      return apiClient.delete(url);
+    default:
+      throw new Error(`Unsupported method: ${method}`);
+  }
+};

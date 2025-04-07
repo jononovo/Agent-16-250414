@@ -57,8 +57,8 @@ export function registerEnhancedNodeExecutor(nodeType: string, executor: Enhance
 export async function registerAllEnhancedNodeExecutors(): Promise<void> {
   try {
     // Import and call the registration function from the executors index
-    const { registerAllEnhancedExecutors } = await import('./enhancedNodeExecutors');
-    await registerAllEnhancedExecutors();
+    const { registerAllNodeExecutors } = await import('./enhancedNodeExecutors');
+    registerAllNodeExecutors();
     
     console.log('All enhanced node executors registered successfully');
   } catch (error) {
@@ -232,11 +232,67 @@ export async function executeEnhancedWorkflow(
       const nodeType = node.type;
       const nodeData = node.data || {};
       
-      // Get executor for node type
+      // Get executor for node type - from either the enhanced registry or the direct executors
       const executor = nodeRegistry[nodeType];
       
       if (!executor) {
-        throw new Error(`No executor registered for node type ${nodeType}`);
+        // Try to get direct executor from enhancedNodeExecutors
+        try {
+          const { executeNode, hasExecutor } = await import('./enhancedNodeExecutors');
+          
+          if (hasExecutor(nodeType)) {
+            // If we have a direct executor, execute using that
+            const executeDirectNode = async (
+              nodeData: Record<string, any>, 
+              inputs: Record<string, NodeExecutionData>
+            ): Promise<NodeExecutionData> => {
+              // Extract the primary input value if available
+              let primaryInput = undefined;
+              if (inputs.default) {
+                if (inputs.default.items && inputs.default.items.length > 0) {
+                  // Try to extract value from the first item
+                  const firstItem = inputs.default.items[0];
+                  // Extract the actual data from the workflow item
+                  primaryInput = firstItem.json;
+                } else {
+                  // If no items, use the whole input
+                  primaryInput = inputs.default;
+                }
+              }
+                
+              // Execute using the direct executor
+              const result = await executeNode(nodeType, nodeData, primaryInput);
+              
+              // Wrap result in a workflow item
+              return {
+                items: [createWorkflowItem(result, 'computed')],
+                meta: { startTime: new Date(), endTime: new Date() }
+              };
+            };
+            
+            // Create a temporary enhanced executor
+            const tempExecutor: EnhancedNodeExecutor = {
+              definition: {
+                type: nodeType,
+                displayName: nodeType,
+                description: `Direct executor for ${nodeType}`,
+                icon: 'bolt',
+                category: 'Custom',
+                version: '1.0.0',
+                inputs: { default: { type: 'any', displayName: 'Input', description: 'Input' } },
+                outputs: { default: { type: 'any', displayName: 'Output', description: 'Output' } }
+              },
+              execute: executeDirectNode
+            };
+            
+            // Use this temporary executor
+            nodeRegistry[nodeType] = tempExecutor;
+          } else {
+            throw new Error(`No executor registered for node type ${nodeType}`);
+          }
+        } catch (error) {
+          throw new Error(`No executor registered for node type ${nodeType}: ${error instanceof Error ? error.message : String(error)}`);
+        }
       }
       
       // Prepare node state in execution state
