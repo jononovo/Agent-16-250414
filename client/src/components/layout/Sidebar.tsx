@@ -1,5 +1,5 @@
 import { Link, useLocation } from "wouter";
-import { User, Settings, HelpCircle, Bot, Home, GitBranch, Puzzle, Link2, Braces } from "lucide-react";
+import { User, Settings, HelpCircle, Bot, Home, GitBranch, Puzzle, Link2, Braces, TestTube } from "lucide-react";
 
 export interface SidebarProps {
   collapsed?: boolean;
@@ -21,7 +21,9 @@ const Sidebar = ({ collapsed = false }: SidebarProps) => {
     { path: "/nodes", icon: <Puzzle className="h-4 w-4" />, label: "Nodes" }
   ];
   
-  const advancedItems = [];
+  const advancedItems = [
+    { path: "/workflow-test", icon: <TestTube className="h-4 w-4" />, label: "Test Bench" }
+  ];
 
   // Helper function to render navigation items
   const renderNavItems = (items: Array<{ path: string; icon: JSX.Element; label: string }>) => {
