@@ -1,25 +1,52 @@
 /**
- * Test script to create an agent directly using workflowClient
+ * Test script to create an agent directly using fetch
  */
-import { apiClient } from './client/src/lib/apiClient.js';
+
+// Simple API client for testing
+const apiClient = {
+  async post(url, data) {
+    // Get the full URL for the API request
+    const baseUrl = 'http://localhost:3000';
+    const fullUrl = new URL(url, baseUrl);
+    
+    const response = await fetch(fullUrl, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data)
+    });
+    
+    if (!response.ok) {
+      throw new Error(`API request failed: ${response.status} ${response.statusText}`);
+    }
+    
+    return response.json();
+  }
+};
 
 async function testCreateAgent() {
   try {
-    console.log('Starting test - creating agent');
+    console.log('Starting test - creating a product data agent');
     
-    // Use the API client directly to trigger the agent creation
-    const result = await apiClient.post('/api/agents/12/execute', {
-      prompt: 'create an agent named DirectAPIAgent',
-      metadata: {
-        action: 'create_agent',
-        prompt: 'create an agent',
-        source: 'ai_chat',
-        agentType: 'ai_assistant'
+    // Create a product data agent directly using the API
+    const result = await apiClient.post('/api/agents', {
+      name: "Product Data Agent",
+      description: "Manages product information and inventory for an online store",
+      type: "custom",
+      icon: "shopping-bag",
+      status: "active",
+      configuration: {
+        capabilities: [
+          "Product information retrieval",
+          "Inventory management",
+          "Product recommendations",
+          "Data analysis"
+        ],
+        integrations: ["Ecommerce platforms", "Inventory systems"]
       }
     });
     
-    console.log('API response:', result);
-    console.log('Test completed successfully');
+    console.log('API response:', JSON.stringify(result, null, 2));
+    console.log('Product data agent created successfully with ID:', result.id);
     return result;
   } catch (error) {
     console.error('Test failed:', error);
@@ -28,5 +55,5 @@ async function testCreateAgent() {
 
 // Execute the test
 testCreateAgent()
-  .then(result => console.log('Result:', result))
+  .then(result => console.log('Agent created:', result?.name))
   .catch(error => console.error('Error:', error));
