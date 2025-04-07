@@ -47,19 +47,52 @@ const PromptInput = () => {
           else if (data.coordinatorResult.output) {
             // Check if the output is a string or an object
             if (typeof data.coordinatorResult.output === 'string') {
-              // Check if it looks like HTML (this is the bug we're fixing)
+              // Check if it looks like HTML
               if (data.coordinatorResult.output.trim().startsWith('<!DOCTYPE html>') || 
                   data.coordinatorResult.output.trim().startsWith('<html')) {
                 addMessage("I received a response but it was in the wrong format. Please try a different query.", 'system');
+              } 
+              // Check if it's a JSON string
+              else if (data.coordinatorResult.output.trim().startsWith('{') && 
+                  data.coordinatorResult.output.trim().endsWith('}')) {
+                try {
+                  // Parse the JSON string into an object
+                  const jsonData = JSON.parse(data.coordinatorResult.output);
+                  
+                  // Check for success message patterns in structured data
+                  if (jsonData.result?.settings?.successMessage) {
+                    addMessage(jsonData.result.settings.successMessage, 'agent');
+                  } else if (jsonData.message) {
+                    addMessage(jsonData.message, 'agent');
+                  } else if (jsonData.text) {
+                    addMessage(jsonData.text, 'agent');
+                  } else if (jsonData.result?.message) {
+                    addMessage(jsonData.result.message, 'agent');
+                  } else {
+                    // Handle cases where we can't extract a specific message
+                    addMessage("Operation completed successfully", 'agent');
+                  }
+                } catch (error) {
+                  // If parsing fails, just display the string
+                  console.error("Error parsing JSON response:", error);
+                  addMessage(data.coordinatorResult.output, 'agent');
+                }
               } else {
+                // It's a regular string, so display it
                 addMessage(data.coordinatorResult.output, 'agent');
               }
-            } else if (typeof data.coordinatorResult.output === 'object') {
+            } 
+            // It's already an object
+            else if (typeof data.coordinatorResult.output === 'object') {
               // For agent creation responses, extract and format the message
-              if (data.coordinatorResult.output.settings?.successMessage) {
+              if (data.coordinatorResult.output.result?.settings?.successMessage) {
+                addMessage(data.coordinatorResult.output.result.settings.successMessage, 'agent');
+              } else if (data.coordinatorResult.output.settings?.successMessage) {
                 addMessage(data.coordinatorResult.output.settings.successMessage, 'agent');
               } else if (data.coordinatorResult.output.message) {
                 addMessage(data.coordinatorResult.output.message, 'agent');
+              } else if (data.coordinatorResult.output.text) {
+                addMessage(data.coordinatorResult.output.text, 'agent');
               } else {
                 // Just use a generic message if we can't extract a specific one
                 addMessage("Operation completed successfully", 'agent');
@@ -73,16 +106,44 @@ const PromptInput = () => {
           setTimeout(() => {
             // Handle generator output the same way
             if (typeof data.generatorResult.output === 'string') {
-              // Check if it looks like HTML (this is the bug we're fixing)
+              // Check if it looks like HTML
               if (data.generatorResult.output.trim().startsWith('<!DOCTYPE html>') || 
                   data.generatorResult.output.trim().startsWith('<html')) {
                 // Don't show anything - the coordinator will handle it
+              } 
+              // Check if it's a JSON string
+              else if (data.generatorResult.output.trim().startsWith('{') && 
+                  data.generatorResult.output.trim().endsWith('}')) {
+                try {
+                  // Parse the JSON string into an object
+                  const jsonData = JSON.parse(data.generatorResult.output);
+                  
+                  // Check for success message patterns in structured data
+                  if (jsonData.result?.settings?.successMessage) {
+                    addMessage(jsonData.result.settings.successMessage, 'agent');
+                  } else if (jsonData.message) {
+                    addMessage(jsonData.message, 'agent');
+                  } else if (jsonData.text) {
+                    addMessage(jsonData.text, 'agent');
+                  } else if (jsonData.result?.message) {
+                    addMessage(jsonData.result.message, 'agent');
+                  } else {
+                    // Do nothing if we can't extract a specific message - coordinator will handle it
+                  }
+                } catch (error) {
+                  // If parsing fails, just display the string
+                  console.error("Error parsing JSON response:", error);
+                  addMessage(data.generatorResult.output, 'agent');
+                }
               } else {
+                // It's a regular string, so display it
                 addMessage(data.generatorResult.output, 'agent');
               }
             } else if (typeof data.generatorResult.output === 'object') {
               // For structured responses, try to extract a meaningful message
-              const message = data.generatorResult.output.message || 
+              const message = data.generatorResult.output.result?.settings?.successMessage ||
+                             data.generatorResult.output.settings?.successMessage ||
+                             data.generatorResult.output.message || 
                              data.generatorResult.output.text ||
                              "Operation completed successfully";
               addMessage(message, 'agent');

@@ -317,13 +317,49 @@ export function ChatSidebar({ className = '' }: ChatSidebarProps) {
         if (data.generatorResult?.output) {
           const generatorOutput = data.generatorResult.output;
           
-          // Make sure it's not HTML content
-          if (typeof generatorOutput === 'string' && 
-             !generatorOutput.trim().startsWith('<!DOCTYPE html>') && 
-             !generatorOutput.trim().startsWith('<html')) {
-            addMessage(generatorOutput, 'agent');
+          // Handle the generator output based on its type
+          if (typeof generatorOutput === 'string') {
+            // Check if it's HTML content
+            if (generatorOutput.trim().startsWith('<!DOCTYPE html>') || 
+               generatorOutput.trim().startsWith('<html')) {
+              // Skip HTML content
+            } 
+            // Check if it's a JSON string
+            else if (generatorOutput.trim().startsWith('{') && 
+                generatorOutput.trim().endsWith('}')) {
+              try {
+                // Parse the JSON string into an object
+                const jsonData = JSON.parse(generatorOutput);
+                
+                // Check for success message patterns in structured data
+                if (jsonData.result?.settings?.successMessage) {
+                  addMessage(jsonData.result.settings.successMessage, 'agent');
+                } else if (jsonData.message) {
+                  addMessage(jsonData.message, 'agent');
+                } else if (jsonData.text) {
+                  addMessage(jsonData.text, 'agent');
+                } else if (jsonData.result?.message) {
+                  addMessage(jsonData.result.message, 'agent');
+                } else {
+                  // Regular content
+                  addMessage("Operation completed successfully", 'agent');
+                }
+              } catch (error) {
+                // If parsing fails, just display the string
+                console.error("Error parsing JSON response:", error);
+                addMessage(generatorOutput, 'agent');
+              }
+            } else {
+              // Regular string content
+              addMessage(generatorOutput, 'agent');
+            }
           } else if (typeof generatorOutput === 'object') {
-            const message = generatorOutput.message || generatorOutput.text || "Operation completed successfully";
+            // Extract structured content from the object
+            const message = generatorOutput.result?.settings?.successMessage ||
+                           generatorOutput.settings?.successMessage ||
+                           generatorOutput.message || 
+                           generatorOutput.text || 
+                           "Operation completed successfully";
             addMessage(message, 'agent');
           }
         }
@@ -350,9 +386,40 @@ export function ChatSidebar({ className = '' }: ChatSidebarProps) {
               if (formattedMessage) {
                 addMessage(formattedMessage, 'agent');
               } else if (typeof coordinatorOutput === 'string') {
-                addMessage(coordinatorOutput, 'agent');
+                // Check if it's a JSON string
+                if (coordinatorOutput.trim().startsWith('{') && 
+                    coordinatorOutput.trim().endsWith('}')) {
+                  try {
+                    // Parse the JSON string into an object
+                    const jsonData = JSON.parse(coordinatorOutput);
+                    
+                    // Check for success message patterns in structured data
+                    if (jsonData.result?.settings?.successMessage) {
+                      addMessage(jsonData.result.settings.successMessage, 'agent');
+                    } else if (jsonData.message) {
+                      addMessage(jsonData.message, 'agent');
+                    } else if (jsonData.text) {
+                      addMessage(jsonData.text, 'agent');
+                    } else if (jsonData.result?.message) {
+                      addMessage(jsonData.result.message, 'agent');
+                    } else {
+                      // Handle cases where we can't extract a specific message
+                      addMessage("Operation completed successfully", 'agent');
+                    }
+                  } catch (error) {
+                    // If parsing fails, just display the string
+                    console.error("Error parsing JSON response:", error);
+                    addMessage(coordinatorOutput, 'agent');
+                  }
+                } else {
+                  // It's a regular string, so display it
+                  addMessage(coordinatorOutput, 'agent');
+                }
               } else if (coordinatorOutput && typeof coordinatorOutput === 'object') {
-                const message = coordinatorOutput.message || 
+                // Extract the most appropriate message from the object
+                const message = coordinatorOutput.result?.settings?.successMessage ||
+                               coordinatorOutput.settings?.successMessage ||
+                               coordinatorOutput.message || 
                                coordinatorOutput.text || 
                                "Operation completed successfully";
                 addMessage(message, 'agent');
