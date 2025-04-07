@@ -188,13 +188,25 @@ export const workflowTriggerExecutor: EnhancedNodeExecutor = {
           workflowId,
           workflowName: workflow?.name || 'Unknown',
           // Extract nested response data to make it easier for downstream nodes to access
-          agent: response?.agent || (response?.result?.agent ? response.result.agent : null),
+          agent: response?.agent || 
+                 (response?.result?.agent ? response.result.agent : null) || 
+                 (response?.data ? response.data : null) ||
+                 (response?.result?.data ? response.result.data : null),
           workflow: response?.workflow || (response?.result?.workflow ? response.result.workflow : null),
           output: response?.output || response?.result || response,
           status: response?.status || 'complete',
           fullResponse: response,
           _callStack: updatedCallStack // Include call stack in the output
         };
+        
+        // Log more information about the agent data for debugging
+        console.log('Workflow Trigger Node - Agent data:', {
+          directAgent: response?.agent,
+          resultAgent: response?.result?.agent,
+          responseData: response?.data,
+          resultData: response?.result?.data,
+          finalAgent: extractedResult.agent
+        });
         
         console.log('Workflow Trigger Node - Extracted result:', JSON.stringify(extractedResult, null, 2));
         

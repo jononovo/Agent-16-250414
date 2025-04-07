@@ -53,9 +53,31 @@ function getValueByPath(obj: any, path: string): any {
     return getValueByPath(obj.output, path);
   }
   
+  // Workflow-specific: look in originalInput field for data that might have been passed in
+  if (obj.originalInput && typeof obj.originalInput === 'object') {
+    return getValueByPath(obj.originalInput, path);
+  }
+  
   // Workflow-specific: look in result field, which is commonly used for results
   if (obj.result && typeof obj.result === 'object') {
     return getValueByPath(obj.result, path);
+  }
+  
+  // Special case: check for agent ID in workflow or API responses
+  if (path === 'agent.id') {
+    // Look for agent information in various locations
+    if (obj.agent && obj.agent.id) {
+      return obj.agent.id;
+    }
+    
+    if (obj.data && obj.data.id) {
+      return obj.data.id;
+    }
+    
+    // Try to find the 'id' field directly
+    if (obj.id) {
+      return obj.id;
+    }
   }
   
   return undefined;
