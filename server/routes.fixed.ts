@@ -1,252 +1,619 @@
-// Fixed function for server/routes.ts
+import type { Express, Request, Response, NextFunction } from "express";
+import { createServer, type Server } from "http";
+import { storage } from "./storage";
+import { workflowService } from "./services/workflowService";
+import { insertAgentSchema, insertWorkflowSchema, insertNodeSchema, insertLogSchema } from "@shared/schema";
+import { z } from "zod";
+import { fromZodError } from "zod-validation-error";
+
+// Simplified API-oriented flow for our client-side workflow architecture
+// Definition of the internal API request schema
+const createAgentFromInternal = z.object({
+  source: z.enum(['ui_button', 'ai_chat']),
+  trigger_type: z.enum(['new_agent', 'chat_instruction']),
+  trigger_node_id: z.string().optional(),
+  agent_template_id: z.number().optional(),
+  workflow_template_id: z.number().optional(),
+  input_data: z.object({}).passthrough()
+});
 
 async function runWorkflow(
-  workflow: any, 
-  workflowName: string, 
-  input: string | Record<string, any>, 
-  executeWorkflow: any,
-  context: Record<string, any> = {}
-) {
-  console.log(`Executing workflow ${workflowName}...`);
-  
-  // Extract metadata if present
-  const { metadata = {}, _callStack = [] } = context;
-  
-  // Log for reference - later these workflows will be completely
-  // replaced by proper node-based implementations
-  if (workflow.id === 5) {
-    console.log(`Using Workflow Creator Flow (ID: 5) - Consider migrating to create_workflow node type`);
-  } else if (workflow.id === 6) {
-    console.log(`Using Link Workflow to Agent Flow (ID: 6) - Consider migrating to link_workflow_to_agent node type`);
-  }
-  
-  // Execute standard workflow execution (our new node types will be used by the workflow engine)
-  // The special case handling has been moved to the respective node executors
-  
-  // Create a log entry for standard workflow execution
-  const workflowLog = await storage.createLog({
-    agentId: workflow.agentId || 0,
-    workflowId: workflow.id,
-    status: "running",
-    input: { input, ...context },
+  workflowId: number,
+  input: Record<string, any>
+): Promise<{ success: boolean; data?: any; error?: string }> {
+  // This is a stub function that returns a success response
+  // In a real implementation, the client would execute the workflow
+  // and then tell the server about the result via the /api/logs endpoint
+  return {
+    success: true,
+    data: {
+      message: "Workflow execution delegated to client",
+      workflowId,
+      input
+    }
+  };
+}
+
+export async function registerRoutes(app: Express): Promise<Server> {
+  // API Proxy Route - secure way to make external API calls
+  app.all('/api/proxy', async (req, res) => {
+    try {
+      // Extract the target URL from query parameters
+      const targetUrl = req.query.url as string;
+      
+      if (!targetUrl) {
+        return res.status(400).json({ error: 'Missing target URL parameter' });
+      }
+      
+      // Prepare fetch options based on the request
+      const fetchOptions: RequestInit = {
+        method: req.method,
+        headers: {
+          // Forward content-type header
+          'Content-Type': req.headers['content-type'] || 'application/json'
+        }
+      };
+      
+      // Add body for non-GET requests if present
+      if (req.method !== 'GET' && req.method !== 'HEAD' && req.body) {
+        fetchOptions.body = JSON.stringify(req.body);
+      }
+      
+      // Add custom headers from the request, except content-type (already handled)
+      if (req.headers['x-api-key']) {
+        // Forward API key if provided
+        (fetchOptions.headers as Record<string, string>)['x-api-key'] = req.headers['x-api-key'] as string;
+      }
+      
+      if (req.headers.authorization) {
+        // Forward authorization header if provided
+        (fetchOptions.headers as Record<string, string>).authorization = req.headers.authorization as string;
+      }
+      
+      // Make the request to the target URL
+      console.log(`Proxying ${req.method} request to ${targetUrl}`);
+      const response = await fetch(targetUrl, fetchOptions);
+      
+      // Get the response data
+      let data;
+      const contentType = response.headers.get('content-type');
+      
+      if (contentType && contentType.includes('application/json')) {
+        data = await response.json();
+      } else {
+        data = await response.text();
+      }
+      
+      // Return the response with the same status code
+      res.status(response.status).json(data);
+    } catch (error) {
+      console.error('API proxy error:', error);
+      res.status(500).json({
+        error: true,
+        message: error instanceof Error ? error.message : 'Unknown proxy error'
+      });
+    }
   });
-  
-  // SPECIAL CASE FOR WORKFLOW 15: Build New Agent Structure v1
-  // This is needed because server-side node executors don't properly handle the OR-dependency pattern
-  if (workflow.id === 15) {
-    console.log('Special handling for Build New Agent Structure workflow (ID 15)');
-    
-    // Determine the source from metadata to support multiple trigger paths
-    const source = metadata.source || 'ui_button';
-    console.log(`Source for workflow 15: ${source}`);
-    
-    // For direct agent creation case
-    if (typeof input === 'object' && input.name) {
-      try {
-        // Create agent with the provided data
-        const agentData = {
-          name: input.name,
-          description: input.description || 'Agent created from workflow',
-          type: 'custom',
-          icon: 'brain',
-          status: 'active'
-        };
+
+  // Agents API
+  app.get("/api/agents", async (req, res) => {
+    try {
+      const type = req.query.type as string | undefined;
+      const agents = await storage.getAgents(type);
+      res.json(agents);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to fetch agents" });
+    }
+  });
+
+  app.get("/api/agents/:id", async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      if (isNaN(id)) {
+        return res.status(400).json({ message: "Invalid agent ID" });
+      }
+      
+      const agent = await storage.getAgent(id);
+      if (!agent) {
+        return res.status(404).json({ message: "Agent not found" });
+      }
+      
+      res.json(agent);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to fetch agent" });
+    }
+  });
+
+  app.post("/api/agents", async (req, res) => {
+    try {
+      console.log("Creating agent with data:", JSON.stringify(req.body));
+      
+      const result = insertAgentSchema.safeParse(req.body);
+      if (!result.success) {
+        const validationError = fromZodError(result.error);
+        console.error("Agent validation error:", validationError.message);
+        return res.status(400).json({ message: validationError.message });
+      }
+      
+      const agent = await storage.createAgent(result.data);
+      console.log("Agent created successfully:", JSON.stringify(agent));
+      res.status(201).json(agent);
+    } catch (error) {
+      console.error("Failed to create agent:", error);
+      res.status(500).json({ 
+        message: "Failed to create agent", 
+        details: error instanceof Error ? error.message : String(error)
+      });
+    }
+  });
+
+  app.put("/api/agents/:id", async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      if (isNaN(id)) {
+        return res.status(400).json({ message: "Invalid agent ID" });
+      }
+      
+      const agent = await storage.getAgent(id);
+      if (!agent) {
+        return res.status(404).json({ message: "Agent not found" });
+      }
+      
+      const updateSchema = insertAgentSchema.partial();
+      const result = updateSchema.safeParse(req.body);
+      if (!result.success) {
+        const validationError = fromZodError(result.error);
+        return res.status(400).json({ message: validationError.message });
+      }
+      
+      const updatedAgent = await storage.updateAgent(id, result.data);
+      res.json(updatedAgent);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to update agent" });
+    }
+  });
+
+  app.delete("/api/agents/:id", async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      if (isNaN(id)) {
+        return res.status(400).json({ message: "Invalid agent ID" });
+      }
+      
+      const agent = await storage.getAgent(id);
+      if (!agent) {
+        return res.status(404).json({ message: "Agent not found" });
+      }
+      
+      await storage.deleteAgent(id);
+      res.status(204).send();
+    } catch (error) {
+      res.status(500).json({ message: "Failed to delete agent" });
+    }
+  });
+
+  // Workflows API
+  app.get("/api/workflows", async (req, res) => {
+    try {
+      const type = req.query.type as string | undefined;
+      const workflows = await workflowService.getWorkflows(type);
+      res.json(workflows);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to fetch workflows" });
+    }
+  });
+
+  app.get("/api/workflows/:id", async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      if (isNaN(id)) {
+        return res.status(400).json({ message: "Invalid workflow ID" });
+      }
+      
+      const workflow = await workflowService.getWorkflow(id);
+      if (!workflow) {
+        return res.status(404).json({ message: "Workflow not found" });
+      }
+      
+      res.json(workflow);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to fetch workflow" });
+    }
+  });
+
+  app.post("/api/workflows", async (req, res) => {
+    try {
+      const result = insertWorkflowSchema.safeParse(req.body);
+      if (!result.success) {
+        const validationError = fromZodError(result.error);
+        return res.status(400).json({ message: validationError.message });
+      }
+      
+      const workflow = await workflowService.createWorkflow(result.data);
+      res.status(201).json(workflow);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to create workflow" });
+    }
+  });
+
+  app.put("/api/workflows/:id", async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      if (isNaN(id)) {
+        return res.status(400).json({ message: "Invalid workflow ID" });
+      }
+      
+      const workflow = await workflowService.getWorkflow(id);
+      if (!workflow) {
+        return res.status(404).json({ message: "Workflow not found" });
+      }
+      
+      const updateSchema = insertWorkflowSchema.partial();
+      const result = updateSchema.safeParse(req.body);
+      if (!result.success) {
+        const validationError = fromZodError(result.error);
+        return res.status(400).json({ message: validationError.message });
+      }
+      
+      const updatedWorkflow = await workflowService.updateWorkflow(id, result.data);
+      res.json(updatedWorkflow);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to update workflow" });
+    }
+  });
+
+  app.delete("/api/workflows/:id", async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      if (isNaN(id)) {
+        return res.status(400).json({ message: "Invalid workflow ID" });
+      }
+      
+      const workflow = await workflowService.getWorkflow(id);
+      if (!workflow) {
+        return res.status(404).json({ message: "Workflow not found" });
+      }
+      
+      await workflowService.deleteWorkflow(id);
+      res.status(204).send();
+    } catch (error) {
+      res.status(500).json({ message: "Failed to delete workflow" });
+    }
+  });
+
+  // Endpoint for client-side workflow execution
+  app.post("/api/workflows/:id/execute", async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      if (isNaN(id)) {
+        return res.status(400).json({ message: "Invalid workflow ID" });
+      }
+      
+      const workflow = await workflowService.getWorkflow(id);
+      if (!workflow) {
+        return res.status(404).json({ message: "Workflow not found" });
+      }
+      
+      // Create a log entry for the workflow execution
+      const log = await workflowService.createLog({
+        workflowId: id,
+        agentId: workflow.agentId || 0,
+        status: "running",
+        input: req.body,
+      });
+      
+      // Return a response with the log ID so the client can update it later
+      res.json({
+        success: true,
+        message: "Workflow execution initiated",
+        workflow: workflow,
+        logId: log.id
+      });
+    } catch (error) {
+      console.error("Error executing workflow:", error);
+      res.status(500).json({ 
+        success: false,
+        message: "Failed to execute workflow",
+        error: error instanceof Error ? error.message : String(error)
+      });
+    }
+  });
+
+  // Node API
+  app.get("/api/nodes", async (req, res) => {
+    try {
+      const type = req.query.type as string | undefined;
+      const nodes = await storage.getNodes(type);
+      res.json(nodes);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to fetch nodes" });
+    }
+  });
+
+  app.get("/api/nodes/:id", async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      if (isNaN(id)) {
+        return res.status(400).json({ message: "Invalid node ID" });
+      }
+      
+      const node = await storage.getNode(id);
+      if (!node) {
+        return res.status(404).json({ message: "Node not found" });
+      }
+      
+      res.json(node);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to fetch node" });
+    }
+  });
+
+  app.post("/api/nodes", async (req, res) => {
+    try {
+      const result = insertNodeSchema.safeParse(req.body);
+      if (!result.success) {
+        const validationError = fromZodError(result.error);
+        return res.status(400).json({ message: validationError.message });
+      }
+      
+      const node = await storage.createNode(result.data);
+      res.status(201).json(node);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to create node" });
+    }
+  });
+
+  app.put("/api/nodes/:id", async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      if (isNaN(id)) {
+        return res.status(400).json({ message: "Invalid node ID" });
+      }
+      
+      const node = await storage.getNode(id);
+      if (!node) {
+        return res.status(404).json({ message: "Node not found" });
+      }
+      
+      const updateSchema = insertNodeSchema.partial();
+      const result = updateSchema.safeParse(req.body);
+      if (!result.success) {
+        const validationError = fromZodError(result.error);
+        return res.status(400).json({ message: validationError.message });
+      }
+      
+      const updatedNode = await storage.updateNode(id, result.data);
+      res.json(updatedNode);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to update node" });
+    }
+  });
+
+  app.delete("/api/nodes/:id", async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      if (isNaN(id)) {
+        return res.status(400).json({ message: "Invalid node ID" });
+      }
+      
+      const node = await storage.getNode(id);
+      if (!node) {
+        return res.status(404).json({ message: "Node not found" });
+      }
+      
+      await storage.deleteNode(id);
+      res.status(204).send();
+    } catch (error) {
+      res.status(500).json({ message: "Failed to delete node" });
+    }
+  });
+
+  // Logs API
+  app.get("/api/logs", async (req, res) => {
+    try {
+      const agentId = req.query.agentId ? parseInt(req.query.agentId as string) : undefined;
+      const limit = req.query.limit ? parseInt(req.query.limit as string) : 20;
+      
+      const logs = await workflowService.getLogs(agentId, limit);
+      res.json(logs);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to fetch logs" });
+    }
+  });
+
+  app.get("/api/logs/:id", async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      if (isNaN(id)) {
+        return res.status(400).json({ message: "Invalid log ID" });
+      }
+      
+      const log = await workflowService.getLog(id);
+      if (!log) {
+        return res.status(404).json({ message: "Log not found" });
+      }
+      
+      res.json(log);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to fetch log" });
+    }
+  });
+
+  app.post("/api/logs", async (req, res) => {
+    try {
+      const result = insertLogSchema.safeParse(req.body);
+      if (!result.success) {
+        const validationError = fromZodError(result.error);
+        return res.status(400).json({ message: validationError.message });
+      }
+      
+      const log = await workflowService.createLog(result.data);
+      res.status(201).json(log);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to create log" });
+    }
+  });
+
+  app.put("/api/logs/:id", async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      if (isNaN(id)) {
+        return res.status(400).json({ message: "Invalid log ID" });
+      }
+      
+      const log = await workflowService.getLog(id);
+      if (!log) {
+        return res.status(404).json({ message: "Log not found" });
+      }
+      
+      const updateSchema = insertLogSchema.partial();
+      const result = updateSchema.safeParse(req.body);
+      if (!result.success) {
+        const validationError = fromZodError(result.error);
+        return res.status(400).json({ message: validationError.message });
+      }
+      
+      const updatedLog = await workflowService.updateLog(id, result.data);
+      res.json(updatedLog);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to update log" });
+    }
+  });
+
+  // Internal API for creating agents via simplified workflow
+  app.post("/api/internal/create-agent", async (req, res) => {
+    try {
+      // Parse and validate the request
+      const result = createAgentFromInternal.safeParse(req.body);
+      if (!result.success) {
+        const validationError = fromZodError(result.error);
+        return res.status(400).json({ 
+          success: false,
+          message: validationError.message 
+        });
+      }
+      
+      const { source, trigger_type, input_data } = result.data;
+      
+      // Extract agent data from the input
+      const agentData = {
+        name: input_data.name || "New Agent",
+        description: input_data.description || "Created via internal API",
+        type: input_data.type || "custom",
+        icon: input_data.icon || "brain",
+        status: "active"
+      };
+      
+      // Create the agent
+      const agent = await storage.createAgent(agentData);
+      
+      // Create a response
+      const response = {
+        success: true,
+        message: `Agent "${agentData.name}" created successfully`,
+        source,
+        trigger_type,
+        agent
+      };
+      
+      // If workflow template ID is provided, create a workflow based on that template
+      if (result.data.workflow_template_id) {
+        const templateId = result.data.workflow_template_id;
         
-        console.log('Creating agent directly with data:', JSON.stringify(agentData));
-        const agent = await storage.createAgent(agentData);
+        // Get the template workflow
+        const templateWorkflow = await workflowService.getWorkflow(templateId);
+        if (!templateWorkflow) {
+          return res.status(404).json({ 
+            success: false,
+            message: `Workflow template with ID ${templateId} not found` 
+          });
+        }
         
-        // Update the log
-        await storage.updateLog(workflowLog.id, {
-          status: 'success',
-          output: {
-            action: 'create_agent',
-            result: 'success',
-            agent,
-            message: `Created new agent: ${agentData.name}`,
-          },
-          completedAt: new Date()
+        // Create a new workflow based on the template
+        const newWorkflow = await workflowService.createWorkflow({
+          name: `${agentData.name} Workflow`,
+          type: templateWorkflow.type,
+          agentId: agent.id,
+          flowData: templateWorkflow.flowData,
         });
         
-        // Return success result
-        return {
-          success: true,
-          status: 'complete',
-          output: {
-            action: 'create_agent',
-            result: 'success',
-            agent,
-            message: `Created new agent: ${agentData.name}`,
-          },
-          logId: workflowLog.id
-        };
-      } catch (error) {
-        // If direct creation fails, log the error but continue with regular execution
-        console.error('Direct agent creation failed, falling back to workflow execution:', error);
+        // Add workflow to the response
+        Object.assign(response, { workflow: newWorkflow });
       }
-    }
-  }
-  
-  try {
-    // Check for valid workflow data
-    if (!workflow.flowData) {
-      await storage.updateLog(workflowLog.id, {
-        status: "error",
-        error: `${workflowName} has no flow data`,
-        completedAt: new Date()
+      
+      return res.json(response);
+    } catch (error) {
+      console.error('Error creating agent:', error);
+      res.status(500).json({
+        success: false,
+        message: "Failed to create agent",
+        error: error instanceof Error ? error.message : String(error)
       });
-      return { 
-        success: false, 
-        error: `${workflowName} has no flow data`,
-        logId: workflowLog.id
-      };
     }
-    
-    // Parse the flow data
-    const flowData = typeof workflow.flowData === 'string' 
-      ? JSON.parse(workflow.flowData) 
-      : workflow.flowData;
-    
-    const nodes = flowData.nodes || [];
-    const edges = flowData.edges || [];
-    
-    console.log(`${workflowName}: ${nodes.length} nodes and ${edges.length} edges`);
-    
-    // Inject the input into the first text_input node
-    // Determine the appropriate input text based on the input type
-    const inputText = typeof input === 'string' 
-      ? input 
-      : (input.text || input.prompt || JSON.stringify(input));
+  });
+
+  // Special endpoint for Chat UI to send messages to the coordinator
+  app.post("/api/user-chat-ui-main", async (req, res) => {
+    try {
+      const { message, prompt } = req.body;
       
-    const startNode = nodes.find((node: { type: string }) => node.type === 'text_input');
-    if (startNode) {
-      if (!startNode.data) startNode.data = {};
-      startNode.data.inputText = inputText;
-      
-      // If input is an object, add the full object properties as well
-      if (typeof input === 'object') {
-        startNode.data = { ...startNode.data, ...input };
-      }
-    } else if (nodes.length > 0) {
-      // If no start node found, add the input to the first node
-      if (!nodes[0].data) nodes[0].data = {};
-      nodes[0].data.inputText = inputText;
-      
-      // If input is an object, add the full object properties as well
-      if (typeof input === 'object') {
-        nodes[0].data = { ...nodes[0].data, ...input };
-      }
-    }
-    
-    // Pass the context (metadata and call stack) to all relevant nodes
-    for (const node of nodes) {
-      if (!node.data) node.data = {};
-      
-      // Pass metadata to all nodes that might need it
-      if (Object.keys(metadata).length > 0) {
-        node.data.metadata = { ...metadata };
-        console.log(`Passing metadata to node ${node.id}:`, metadata);
+      if (!message && !prompt) {
+        return res.status(400).json({
+          success: false,
+          message: "No message or prompt provided"
+        });
       }
       
-      // Pass call stack specifically to workflow/agent trigger nodes
-      if (_callStack.length > 0 && (node.type === 'workflow_trigger' || node.type === 'agent_trigger')) {
-        node.data._callStack = _callStack;
+      const userInput = message || prompt;
+      console.log("Chat UI input:", userInput);
+      
+      // Find the coordinator agent (ID 7)
+      const coordinatorId = 7;
+      const coordinator = await storage.getAgent(coordinatorId);
+      
+      if (!coordinator) {
+        return res.status(404).json({
+          success: false,
+          message: "Coordinator agent not found"
+        });
       }
+      
+      // Get coordinator workflows
+      const workflows = await workflowService.getWorkflowsByAgentId(coordinatorId);
+      if (!workflows || workflows.length === 0) {
+        return res.status(404).json({
+          success: false,
+          message: "No workflows found for coordinator agent"
+        });
+      }
+      
+      // Create a log for this request
+      const log = await workflowService.createLog({
+        agentId: coordinatorId,
+        workflowId: workflows[0].id,
+        status: "running",
+        input: { prompt: userInput }
+      });
+      
+      // Return a response that indicates client should handle this
+      return res.json({
+        success: true,
+        message: "Message received, client should execute coordinator workflow",
+        agent: coordinator,
+        workflow: workflows[0],
+        input: userInput,
+        logId: log.id
+      });
+    } catch (error) {
+      console.error("Chat UI error:", error);
+      return res.status(500).json({
+        success: false,
+        message: "Error processing chat message",
+        error: error instanceof Error ? error.message : String(error)
+      });
     }
-    
-    // Initialize node states tracking
-    const nodeStates: Record<string, any> = {};
-    
-    // Add debugging info for workflow and nodes
-    console.log('DEBUG - Workflow data:', workflowName, workflowLog.id);
-    console.log('DEBUG - Nodes:', JSON.stringify(nodes.map((n: any) => ({
-      id: n.id,
-      type: n.type,
-      data: { 
-        ...n.data,
-        label: n.data?.label, 
-        workflowId: n.data?.workflowId,
-        triggerType: n.data?.triggerType 
-      }
-    }))));
-    
-    // Execute the workflow
-    const result = await executeWorkflow(
-      nodes,
-      edges,
-      (nodeId: string, state: any) => {
-        // Store node states as they change
-        nodeStates[nodeId] = state;
-        console.log(`[${workflowName}] Node ${nodeId} state: ${state.state}`);
-      },
-      (finalState: any) => {
-        console.log(`[${workflowName}] Execution completed with status: ${finalState.status}`);
-      }
-    );
-    
-    // Find the output nodes
-    const outputNodes = nodes.filter((node: { id: string }) => {
-      // Nodes with no outgoing edges are considered output nodes
-      return !edges.some((edge: { source: string }) => edge.source === node.id);
-    });
-    
-    // Collect output from the final nodes
-    const outputs: Record<string, any> = {};
-    outputNodes.forEach((node: { id: string }) => {
-      if (result.nodeStates[node.id]) {
-        outputs[node.id] = result.nodeStates[node.id].data;
-      }
-    });
-    
-    // Update log with results
-    await storage.updateLog(workflowLog.id, {
-      status: result.status === 'error' ? 'error' : 'success',
-      output: outputs,
-      error: result.error,
-      executionPath: { 
-        nodes: Object.keys(result.nodeStates),
-        completed: result.status === 'complete',
-        error: result.error
-      },
-      completedAt: new Date()
-    });
-    
-    if (result.status !== 'complete') {
-      return { 
-        success: false, 
-        error: `${workflowName} execution failed: ${result.error || 'Unknown error'}`,
-        status: result.status,
-        outputs,
-        logId: workflowLog.id
-      };
-    }
-    
-    // Extract the primary output (first output node, or node named 'output')
-    let primaryOutput = '';
-    const outputNodeId = outputNodes[0]?.id || 'output';
-    if (result.nodeStates[outputNodeId] && result.nodeStates[outputNodeId].data) {
-      primaryOutput = result.nodeStates[outputNodeId].data;
-    }
-    
-    return {
-      success: true,
-      status: result.status,
-      output: primaryOutput,
-      logId: workflowLog.id
-    };
-    
-  } catch (executionError) {
-    console.error(`Error executing ${workflowName}:`, executionError);
-    // Update log with error
-    await storage.updateLog(workflowLog.id, {
-      status: 'error',
-      error: executionError instanceof Error ? executionError.message : String(executionError),
-      completedAt: new Date()
-    });
-    
-    return { 
-      success: false, 
-      error: `${workflowName} execution error: ${executionError instanceof Error ? executionError.message : String(executionError)}`,
-      logId: workflowLog.id
-    };
-  }
+  });
+
+  const server = createServer(app);
+  return server;
 }
