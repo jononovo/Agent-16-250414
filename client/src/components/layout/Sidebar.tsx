@@ -1,5 +1,5 @@
 import { Link, useLocation } from "wouter";
-import { User, Settings, HelpCircle, Bot, Home, GitBranch, Puzzle, Link2, Braces, TestTube, Code } from "lucide-react";
+import { User, Settings, HelpCircle, Bot, Home, GitBranch, Puzzle, Link2, Braces, TestTube, Code, Library } from "lucide-react";
 
 export interface SidebarProps {
   collapsed?: boolean;
@@ -16,6 +16,7 @@ const Sidebar = ({ collapsed = false }: SidebarProps) => {
   ];
 
   const libraryItems = [
+    { path: "/library", icon: <Library className="h-4 w-4" />, label: "All Resources" },
     { path: "/agents", icon: <Bot className="h-4 w-4" />, label: "Agents" },
     { path: "/workflows", icon: <GitBranch className="h-4 w-4" />, label: "Workflows" },
     { path: "/nodes", icon: <Puzzle className="h-4 w-4" />, label: "Nodes" }
