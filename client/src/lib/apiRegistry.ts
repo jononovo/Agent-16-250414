@@ -477,12 +477,12 @@ export const apiEndpoints: ApiEndpoint[] = [
     responseFormat: '{ success: boolean, message: string }'
   },
   {
-    path: '/api/agent-interaction',
+    path: '/api/user-chat-ui-main',
     method: 'POST',
-    description: 'Facilitate interactive communication between users and agents through the platform',
+    description: 'Main entry point for the user chat UI to interact with agents of any type',
     category: 'agents',
-    requestFormat: '{ agentId: number, message: string, sessionId?: string, context?: object, options?: { streamResponse?: boolean, returnIntermediateSteps?: boolean, timeout?: number } }',
-    responseFormat: '{ success: boolean, response: string, sessionId: string, completed: boolean, requiresFollowup: boolean, intermediateSteps?: object[], metadata?: object }',
+    requestFormat: '{ prompt: string, agentId?: number, sessionId?: string, metadata?: object }',
+    responseFormat: '{ success: boolean, generatorResult?: object, coordinatorResult?: object, response?: string }',
     queryParams: [
       {
         name: 'stream',

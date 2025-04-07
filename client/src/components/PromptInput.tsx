@@ -32,8 +32,8 @@ const PromptInput = () => {
     setIsLoading(true);
     
     try {
-      // Send request to agent chain API using apiClient
-      const data = await apiClient.post('/api/execute-agent-chain', { prompt: userText });
+      // Send request to the main chat UI endpoint
+      const data = await apiClient.post('/api/user-chat-ui-main', { prompt: userText });
       
       // Add the agent's response to the chat
       if (data.success) {
@@ -60,7 +60,7 @@ const PromptInput = () => {
         });
       }
     } catch (error) {
-      console.error('Error sending prompt to agent chain:', error);
+      console.error('Error sending prompt to chat UI:', error);
       const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
       
       addMessage(`Sorry, I encountered an error while processing your request. Please try again.`, 'system');

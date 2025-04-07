@@ -1779,9 +1779,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/execute-agent-chain", async (req, res) => {
+  // Main entry point for the user chat UI
+  app.post("/api/user-chat-ui-main", async (req, res) => {
     try {
-      const { prompt, agentId, metadata = {}, _callStack = [] } = req.body;
+      const { prompt, agentId, sessionId, metadata = {}, _callStack = [] } = req.body;
       if (!prompt) {
         return res.status(400).json({ message: "Prompt is required" });
       }
@@ -1789,7 +1790,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // If specific agent ID is provided, execute that agent's workflow
       if (agentId) {
         const promptStr = typeof prompt === 'string' ? prompt : JSON.stringify(prompt);
-        console.log(`Executing specific agent chain (agentId: ${agentId}) with prompt: ${promptStr}`);
+        console.log(`[user-chat-ui-main] Executing specific agent (agentId: ${agentId}) with prompt: ${promptStr}`);
         
         // Import and register workflow engine and executors
         const { executeWorkflow } = await import('../client/src/lib/workflowEngine');
@@ -1833,13 +1834,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
           const updatedCallStack = [..._callStack, agentKey];
           
           // Execute the agent's workflow
-          console.log(`Executing ${agent.name}'s workflow (${agentWorkflow.name})...`);
+          console.log(`[user-chat-ui-main] Executing ${agent.name}'s workflow (${agentWorkflow.name})...`);
           const result = await runWorkflow(
             agentWorkflow, 
             agentWorkflow.name, 
             promptStr, 
             executeWorkflow, 
-            { _callStack: updatedCallStack, metadata: metadata }
+            { _callStack: updatedCallStack, sessionId, metadata }
           );
           
           // Return results in format expected by the agent trigger node
@@ -1855,12 +1856,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
               id: agentWorkflow.id,
               name: agentWorkflow.name
             },
+            sessionId: sessionId || `session-${Date.now()}`,
             logId: result.logId
           });
         } catch (error) {
-          console.error(`Error executing agent ${agentId}:`, error);
+          console.error(`[user-chat-ui-main] Error executing agent ${agentId}:`, error);
           return res.status(500).json({ 
-            success: true,
+            success: false,
             status: "error",
             message: "Failed to execute agent workflow",
             error: error instanceof Error ? error.message : String(error)
@@ -1869,14 +1871,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       // Default behavior (no specific agent ID) - general conversation flow
-      console.log(`Starting intelligent chain execution with prompt: ${prompt}`);
+      console.log(`[user-chat-ui-main] Starting workflow chain with prompt: ${prompt}`);
       
       // Get the simple chat workflow (ID 13) and coordinator workflow (ID 7)
       const simpleChatWorkflow = await storage.getWorkflow(13);
       const coordinatorWorkflow = await storage.getWorkflow(7);
       
       if (!simpleChatWorkflow) {
-        console.log("Simple chat workflow (ID 13) not found.");
+        console.log("[user-chat-ui-main] Simple chat workflow (ID 13) not found.");
         return res.status(404).json({ message: "Simple chat workflow not found" });
       }
       
@@ -1886,14 +1888,31 @@ export async function registerRoutes(app: Express): Promise<Server> {
       registerAllNodeExecutors();
       
       // Execute the simple chat workflow first (this is for immediate response)
-      const simpleChatResult = await runWorkflow(simpleChatWorkflow, "Simple Chat Workflow", prompt, executeWorkflow);
+      console.log("[user-chat-ui-main] Executing simple chat workflow (ID 13)");
+      const simpleChatResult = await runWorkflow(
+        simpleChatWorkflow, 
+        "Simple Chat Workflow", 
+        prompt, 
+        executeWorkflow,
+        { sessionId, metadata }
+      );
       
       // Now execute the coordinator workflow if it exists
       let coordinatorResult = null;
       if (coordinatorWorkflow) {
-        console.log("Executing Coordinator Workflow...");
-        // Pass the original prompt string as is
-        coordinatorResult = await runWorkflow(coordinatorWorkflow, "Coordinator Workflow", prompt, executeWorkflow);
+        console.log("[user-chat-ui-main] Executing coordinator workflow (ID 7)");
+        // Pass the original prompt string as is, along with the generator result
+        coordinatorResult = await runWorkflow(
+          coordinatorWorkflow, 
+          "Coordinator Workflow", 
+          prompt, 
+          executeWorkflow,
+          { 
+            generatorResult: simpleChatResult,
+            sessionId, 
+            metadata
+          }
+        );
       }
       
       // Return results in format expected by the chat UI
@@ -1910,15 +1929,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
           status: coordinatorResult.status,
           output: coordinatorResult.output,
           logId: coordinatorResult.logId
-        } : null
+        } : null,
+        sessionId: sessionId || `session-${Date.now()}`
       });
     } catch (error) {
-      console.error('Error in workflow execution:', error);
+      console.error('[user-chat-ui-main] Error in workflow execution:', error);
       res.status(500).json({ 
+        success: false,
         message: "Failed to execute workflow",
         error: error instanceof Error ? error.message : String(error)
       });
     }
+  });
+
+  // Legacy endpoint - maintain for backward compatibility, will be deprecated
+  app.post("/api/execute-agent-chain", async (req, res) => {
+    console.log("WARNING: Using deprecated endpoint /api/execute-agent-chain. Please update to /api/user-chat-ui-main");
+    // Forward to the new endpoint
+    req.url = "/api/user-chat-ui-main";
+    app._router.handle(req, res);
   });
 
   const httpServer = createServer(app);
