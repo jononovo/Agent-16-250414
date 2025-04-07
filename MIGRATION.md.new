@@ -1,0 +1,190 @@
+# Database Migration Guide
+
+This document provides instructions for migrating data between databases for the AI Agent Workflow Platform.
+
+## Overview
+
+The migration system allows you to:
+1. Export all data from an existing database to a JSON file
+2. Import data from a JSON file into a new database
+3. Create backups of your database
+
+The system preserves all relationships between agents, workflows, nodes, and logs during the migration process.
+
+## Important Migration Considerations
+
+### Workbench Page and Workflow Logs
+- The platform includes a workbench page that displays logs of workflows
+- **Always include logs in production migrations** using the `--import-logs` flag
+- All historical workflow execution data is preserved only when this flag is used
+- The workbench interface depends on complete log migration for proper functionality
+
+### Complete Node and Workflow Data
+- Some platform functionality relies on node and workflow data that may not be directly stored in the database
+- When migrating between environments, ensure that ALL nodes, workflows, and their configurations are included
+- The migration utility is designed to preserve this data when used correctly
+- Custom workflows and specialized nodes require complete configuration data to function
+
+### Migration Order Priority
+For complete system integrity, ensure the following migration order priority:
+1. Users and authentication data (unless using `--skip-users`)
+2. Nodes and their configurations
+3. Agents and their metadata
+4. Workflows and their flow data
+5. Logs (using the `--import-logs` flag)
+
+## Prerequisites
+
+- Access to both the source and target database environments
+- Node.js and NPM installed
+- Proper DATABASE_URL environment variable set
+
+## Migration Steps
+
+### 1. Exporting Data
+
+To export all your data from the current database:
+
+```bash
+./migrate.sh export [optional-output-path]
+```
+
+If no output path is specified, the data will be exported to `db-export.json` in the current directory.
+
+### 2. Creating a Backup
+
+To create a timestamped backup of your current database:
+
+```bash
+./migrate.sh backup
+```
+
+This will create a file named `backup-[timestamp].json` in the current directory.
+
+### 3. Importing Data
+
+To import data into a new database:
+
+```bash
+./migrate.sh import <path-to-json-file> [options]
+```
+
+Available options:
+- `--clear` - Clear existing data in the target database before import
+- `--skip-users` - Don't import user accounts
+- `--import-logs` - Import execution logs (by default, logs are skipped)
+- `--no-preserve-ids` - Generate new IDs for all imported data
+
+### 4. Recommended Usage
+
+#### For Production Migrations
+Always include logs and clear existing data:
+```bash
+./migrate.sh import data.json --clear --import-logs
+```
+
+#### For Development/Testing
+Generate new IDs to avoid conflicts with existing data:
+```bash
+./migrate.sh import data.json --no-preserve-ids
+```
+
+## Database Relationships
+
+The migration process preserves these relationships:
+- Workflows → Agents
+- Logs → Agents and Workflows
+- Flow data references to nodes and workflows
+
+## Technical Details
+
+### Data Structure
+
+The exported JSON file contains:
+```json
+{
+  "users": [...],
+  "agents": [...],
+  "workflows": [...],
+  "nodes": [...],
+  "logs": [...],
+  "metadata": {
+    "exportedAt": "ISO-date",
+    "version": "1.0.0"
+  }
+}
+```
+
+### Implementation
+
+The migration utility handles:
+1. Exporting all data from database tables
+2. Importing data while maintaining referential integrity
+3. Updating references in JSON data (like workflow.flowData) to match new IDs if needed
+4. Automatic conversion of date string fields to proper Date objects during import
+
+### Date Field Handling
+
+The migration utility includes automatic date field processing:
+- A `processDateFields` helper function properly converts string dates to JavaScript Date objects
+- Handled date fields include: `createdAt`, `updatedAt`, `startedAt`, `completedAt`
+- This prevents common errors like `value.toISOString is not a function` during database imports
+- The conversion happens during the import process before insertion into the database
+
+## Troubleshooting
+
+### Common Issues
+
+1. **Database connection errors**:
+   - Ensure the DATABASE_URL environment variable is set correctly
+   - Verify database permissions
+
+2. **Import conflicts**:
+   - Use the `--clear` option to avoid conflicts with existing data
+
+3. **Missing relationships**:
+   - Make sure to import the complete export file
+   - Don't manually edit the exported JSON unless you understand the schema relationships
+
+4. **Date/Timestamp field errors**:
+   - If you encounter errors with timestamp fields during import, ensure the migration utility is using the latest version
+   - Check that all date fields are properly handled in the `processDateFields` function
+   - The error "value.toISOString is not a function" typically indicates a date field that wasn't properly converted
+
+5. **Missing Nodes or Workflow Configurations**:
+   - If workflows appear but don't function correctly, ensure all node configurations were migrated
+   - Check that the JSON file contains complete data for all entities
+   - Verify that workflow.flowData contains all necessary node references
+
+## Examples
+
+### Full Production Migration
+
+1. On the source system:
+```bash
+./migrate.sh export production-data.json
+```
+
+2. Transfer the JSON file to the target system.
+
+3. On the target system:
+```bash
+./migrate.sh import production-data.json --clear --import-logs
+```
+
+### Creating a Test Environment with Real Data
+
+```bash
+# Export production data
+./migrate.sh export prod-data.json
+
+# Import to test environment with new IDs to avoid conflicts
+./migrate.sh import prod-data.json --no-preserve-ids
+```
+
+### Migrating Only Configuration (No Logs)
+
+For migrating configuration without historical data:
+```bash
+./migrate.sh import config-only.json --clear
+```
