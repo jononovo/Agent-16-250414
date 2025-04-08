@@ -7,6 +7,7 @@ import { ChatProvider } from "@/components/chat";
 import Builder from "@/pages/builder";
 import WorkflowEditor from "@/pages/workflow-editor";
 import WorkflowTestBench from "@/pages/workflow-test";
+import WorkflowGenerator from "@/pages/workflow-generator";
 import AgentPage from "@/pages/agent-page";
 import ApiRegistry from "@/pages/api-registry";
 import Library from "@/pages/library";
@@ -20,6 +21,7 @@ function Router() {
       <Route path="/workflow-editor/:id" component={WorkflowEditor} />
       <Route path="/workflow-test" component={WorkflowTestBench} />
       <Route path="/workflow-test/:id" component={WorkflowTestBench} />
+      <Route path="/workflow-generator" component={WorkflowGenerator} />
       <Route path="/agent/:id" component={AgentPage} />
       <Route path="/api-registry" component={ApiRegistry} />
       <Route path="/library" component={Library} />

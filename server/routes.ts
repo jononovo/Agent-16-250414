@@ -4,6 +4,7 @@ import { storage } from "./storage";
 import { insertAgentSchema, insertWorkflowSchema, insertNodeSchema, insertLogSchema } from "@shared/schema";
 import { z } from "zod";
 import { fromZodError } from "zod-validation-error";
+import { createWorkflowGenerationService } from "./services/workflowGenerationService";
 
 // Simplified API-oriented flow for our client-side workflow architecture
 
@@ -437,6 +438,78 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(204).send();
     } catch (error) {
       res.status(500).json({ message: "Failed to delete agent" });
+    }
+  });
+
+  // Workflow Generation API
+  const workflowGenerationService = createWorkflowGenerationService(storage);
+  
+  app.post("/api/workflows/generate", async (req, res) => {
+    try {
+      // Validate request body
+      const generateSchema = z.object({
+        prompt: z.string(),
+        agentId: z.number().optional(),
+        name: z.string().optional(),
+        description: z.string().optional(),
+        options: z.object({
+          apiKey: z.string().optional(),
+          model: z.string().optional(),
+          complexity: z.enum(['simple', 'moderate', 'complex']).optional(),
+          domain: z.string().optional(),
+          maxNodes: z.number().optional(),
+          timeout: z.number().optional(),
+        }).optional(),
+      });
+      
+      const result = generateSchema.safeParse(req.body);
+      if (!result.success) {
+        const validationError = fromZodError(result.error);
+        return res.status(400).json({ 
+          message: "Invalid workflow generation request", 
+          details: validationError.message 
+        });
+      }
+      
+      // Generate the workflow
+      const { prompt, agentId, name, description, options } = result.data;
+      
+      console.log(`Generating workflow from prompt: "${prompt}"`);
+      
+      const workflowDefinition = await workflowGenerationService.generateWorkflow(
+        prompt,
+        agentId,
+        options
+      );
+      
+      // Add name and description if provided
+      if (name) workflowDefinition.name = name;
+      if (description) workflowDefinition.description = description;
+      
+      // Create the workflow in the database
+      const workflow = await storage.createWorkflow(workflowDefinition);
+      
+      res.status(201).json({
+        workflow,
+        message: "Workflow generated successfully"
+      });
+    } catch (error) {
+      console.error("Workflow generation error:", error);
+      
+      // Special handling for API key errors
+      if (error instanceof Error && error.message.includes('API key')) {
+        return res.status(401).json({
+          error: true,
+          message: "Missing or invalid API key for the LLM service",
+          details: error.message
+        });
+      }
+      
+      res.status(500).json({ 
+        error: true,
+        message: "Failed to generate workflow", 
+        details: error instanceof Error ? error.message : String(error)
+      });
     }
   });
 

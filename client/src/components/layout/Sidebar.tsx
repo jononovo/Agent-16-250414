@@ -1,5 +1,5 @@
 import { Link, useLocation } from "wouter";
-import { User, Settings, HelpCircle, Bot, Home, GitBranch, Puzzle, Link2, Braces, TestTube, Code, Library } from "lucide-react";
+import { User, Settings, HelpCircle, Bot, Home, GitBranch, Puzzle, Link2, Braces, TestTube, Code, Library, Wand2 } from "lucide-react";
 
 export interface SidebarProps {
   collapsed?: boolean;
@@ -23,6 +23,7 @@ const Sidebar = ({ collapsed = false }: SidebarProps) => {
   ];
   
   const advancedItems = [
+    { path: "/workflow-generator", icon: <Wand2 className="h-4 w-4" />, label: "Generate Workflow" },
     { path: "/workflow-test", icon: <TestTube className="h-4 w-4" />, label: "Test Bench" },
     { path: "/api-registry", icon: <Code className="h-4 w-4" />, label: "API Registry" }
   ];

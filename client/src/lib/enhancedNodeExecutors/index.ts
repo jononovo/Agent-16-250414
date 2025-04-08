@@ -10,6 +10,7 @@ import { executeApiNode } from './apiExecutor';
 import { executeApiVerifyNode } from './apiVerifyExecutor';
 import { executeDatabaseOperationNode } from './databaseOperationExecutor';
 import { apiResponseMessageExecutor } from './apiResponseMessageExecutor';
+import { dslInterpreterExecutor } from './dslInterpreterExecutor';
 
 // Registry of node executors
 const nodeExecutors: Record<string, (nodeData: any, input: any) => Promise<any>> = {};
@@ -82,6 +83,9 @@ export function registerAllNodeExecutors(): void {
   
   // Register the API Response Message executor
   registerNodeExecutor('api_response_message', apiResponseMessageExecutor.execute);
+  
+  // Register the DSL Interpreter executor
+  registerNodeExecutor('dsl_interpreter', dslInterpreterExecutor.execute);
   
   // Additional executors can be registered here
   
