@@ -23,7 +23,8 @@ const Sidebar = ({ collapsed = false }: SidebarProps) => {
   ];
   
   const advancedItems = [
-    { path: "/workflow-generator", icon: <Wand2 className="h-4 w-4" />, label: "Generate Workflow" },
+    { path: "/workflow-chat-generator", icon: <Wand2 className="h-4 w-4" />, label: "AI Workflow Generator" },
+    { path: "/workflow-generator", icon: <Wand2 className="h-4 w-4" />, label: "Form Generator" },
     { path: "/workflow-test", icon: <TestTube className="h-4 w-4" />, label: "Test Bench" },
     { path: "/api-registry", icon: <Code className="h-4 w-4" />, label: "API Registry" }
   ];
