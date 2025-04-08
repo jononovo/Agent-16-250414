@@ -3,8 +3,100 @@
 import MainContent from '@/components/layout/MainContent';
 import { WorkflowGenerator } from '@/components/workflows/WorkflowGenerator';
 import { Separator } from '@/components/ui/separator';
+import { useState, useEffect } from 'react';
+import { ChatContainer, Message } from '@/components/chat';
+import { useToast } from '@/hooks/use-toast';
+import { useLocation } from 'wouter';
 
 export default function WorkflowGeneratorPage() {
+  const [messages, setMessages] = useState<Message[]>([
+    {
+      id: 'welcome',
+      role: 'system',
+      content: 'Welcome to the Workflow Generator! Describe the workflow you want to create, and I\'ll help you build it.',
+      timestamp: new Date()
+    }
+  ]);
+  const [isLoading, setIsLoading] = useState(false);
+  const { toast } = useToast();
+  const [_, navigate] = useLocation();
+  const [workflowId, setWorkflowId] = useState<number | null>(null);
+
+  // Add a message to the chat
+  const addMessage = (content: string, role: 'user' | 'system' | 'agent') => {
+    const newMessage: Message = {
+      id: Date.now().toString(),
+      role,
+      content,
+      timestamp: new Date()
+    };
+    
+    setMessages((prevMessages) => [...prevMessages, newMessage]);
+  };
+
+  // Handle message from user
+  const handleSendMessage = async (content: string) => {
+    // Add user message to chat
+    addMessage(content, 'user');
+    setIsLoading(true);
+    
+    try {
+      // Call the generate workflow API
+      const response = await fetch('/api/workflows/generate', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          prompt: content,
+          options: {
+            complexity: 'moderate',
+          }
+        }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Failed to generate workflow');
+      }
+
+      const data = await response.json();
+      
+      // Add success message to chat
+      addMessage(`I've created a workflow called "${data.workflow.name}" based on your description. You can now view and edit it.`, 'agent');
+      
+      // Store the workflow ID
+      setWorkflowId(data.workflow.id);
+      
+      // Success toast
+      toast({
+        title: 'Workflow Generated!',
+        description: `Successfully created: ${data.workflow.name}`,
+      });
+      
+    } catch (error) {
+      console.error('Workflow generation error:', error);
+      
+      // Add error message to chat
+      addMessage(`Sorry, I encountered an error: ${error instanceof Error ? error.message : 'Unknown error'}`, 'system');
+      
+      toast({
+        title: 'Generation Failed',
+        description: error instanceof Error ? error.message : 'Unknown error',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // Navigate to editor when workflow is created
+  useEffect(() => {
+    if (workflowId) {
+      navigate(`/workflow-editor?id=${workflowId}`);
+    }
+  }, [workflowId, navigate]);
+
   return (
     <MainContent>
       <div className="container py-6 space-y-6">
@@ -18,7 +110,24 @@ export default function WorkflowGeneratorPage() {
         
         <Separator />
         
-        <WorkflowGenerator />
+        <div className="flex flex-col md:flex-row gap-4">
+          {/* Chat interface on the right */}
+          <div className="w-full md:w-1/2 h-[500px]">
+            <ChatContainer
+              title="Workflow Generator"
+              messages={messages}
+              onSendMessage={handleSendMessage}
+              placeholder="Describe the workflow you want to create..."
+              isLoading={isLoading}
+              className="h-full"
+            />
+          </div>
+          
+          {/* Form interface on the left */}
+          <div className="w-full md:w-1/2">
+            <WorkflowGenerator />
+          </div>
+        </div>
         
         <div className="mt-8 space-y-4 max-w-3xl mx-auto">
           <h2 className="text-xl font-semibold">How It Works</h2>

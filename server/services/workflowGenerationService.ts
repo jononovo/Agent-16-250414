@@ -126,6 +126,11 @@ export class WorkflowGenerationService {
         workflowDefinition.agentId = agentId;
       }
       
+      // Ensure type field is set (required by the schema)
+      if (!workflowDefinition.type) {
+        workflowDefinition.type = 'generated';
+      }
+      
       return workflowDefinition;
     } catch (error) {
       console.error('Error generating workflow:', error);
