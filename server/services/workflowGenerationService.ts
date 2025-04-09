@@ -153,11 +153,31 @@ export class WorkflowGenerationService {
       })
       .join('\n');
     
+    // Define the most important node types with clear descriptions
+    const preferredNodeTypes = `
+Preferred Node Types (use these whenever possible):
+- text_prompt: For text input, prompts, or questions a user would answer
+- text_input: For collecting text input from users or systems
+- generate_text: For generating text using AI models
+- http_request: For making API calls to external services
+- transform: For transforming data between different formats
+- output: For displaying results or final output
+- visualize_text: For creating visualizations of text data
+- chat_interface: For creating chat-based interactions
+- claude: For using the Claude AI model for generation
+- database_query: For querying databases
+- email_send: For sending emails
+- trigger: For starting workflow processes
+- processor: For processing data in various ways
+`;
+    
     // Create the system prompt
     return `You are an expert workflow designer for an AI agent system. 
 Your task is to create workflow definitions that can be visualized in ReactFlow and executed by a workflow engine.
 
-Available node types:
+${preferredNodeTypes}
+
+Available node types in catalog (reference only):
 ${nodeTypesFormatted}
 
 Complexity level: ${complexity}
@@ -166,7 +186,7 @@ Maximum nodes: ${maxNodes}
 
 Your task is to:
 1. Analyze the user's natural language description of a workflow
-2. Identify the appropriate node types to use
+2. Identify the appropriate node types, ALWAYS preferring from the "Preferred Node Types" list above
 3. Create a coherent workflow with properly connected nodes and edges
 4. Return a valid JSON workflow definition with the following structure:
 
@@ -177,12 +197,12 @@ Your task is to:
     "nodes": [
       {
         "id": "unique-node-id",
-        "type": "node-type",
+        "type": "text_prompt", // ALWAYS use types from the Preferred Node Types list
         "position": { "x": number, "y": number },
         "data": {
           "label": "Node Label",
           "description": "Node Description",
-          "type": "node-type",
+          "type": "text_prompt", // Must match the node's type field
           "category": "node-category",
           "settings": {}
         }
@@ -201,6 +221,8 @@ Your task is to:
 }
 
 Ensure that:
+- All nodes MUST use types from the "Preferred Node Types" list (text_prompt, text_input, generate_text, etc.)
+- Never use deprecated types like "prompt", "api", or "input" - instead use their proper equivalents
 - All nodes are properly connected with edges
 - The workflow has clear input and output nodes
 - Node positions are logical (from left to right, with proper spacing)
@@ -296,6 +318,41 @@ Ensure that:
       }
       if (!workflow.flowData.edges || !Array.isArray(workflow.flowData.edges)) {
         throw new Error('Workflow edges must be an array');
+      }
+      
+      // Map node types to the ones supported by the FlowEditor component
+      const nodeTypeMapping: Record<string, string> = {
+        'prompt': 'text_prompt',
+        'api': 'http_request',
+        'transform': 'transform',
+        'output': 'output',
+        'input': 'text_input',
+        'textGeneration': 'generate_text',
+        'visualization': 'visualize_text',
+        'chat': 'chat_interface',
+        'aiModel': 'claude',
+        'database': 'database_query',
+        'email': 'email_send',
+        'trigger': 'trigger',
+        'process': 'processor',
+        'filter': 'filter'
+      };
+      
+      // Update node types in the workflow
+      if (workflow.flowData.nodes) {
+        workflow.flowData.nodes = workflow.flowData.nodes.map((node: any) => {
+          // Check if this node type needs to be mapped
+          if (node.type && nodeTypeMapping[node.type]) {
+            node.type = nodeTypeMapping[node.type];
+          }
+          
+          // Also update the type in the data object if it exists
+          if (node.data && node.data.type && nodeTypeMapping[node.data.type]) {
+            node.data.type = nodeTypeMapping[node.data.type];
+          }
+          
+          return node;
+        });
       }
       
       // Convert to string for storage
