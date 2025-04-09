@@ -1,102 +1,148 @@
-'use client';
+import { useState, useEffect, useCallback } from "react";
+import { Link } from "wouter";
+import { ArrowLeft } from "lucide-react";
+import { useQuery, useMutation } from "@tanstack/react-query";
+import { v4 as uuidv4 } from "uuid";
+import { ReactFlowProvider } from "reactflow";
 
-import { useState, useEffect } from 'react';
-import { useQuery } from '@tanstack/react-query';
-import { useRoute, useLocation } from 'wouter';
-import { Workflow } from '@shared/schema';
-import FlowEditor from '@/components/flow/FlowEditor';
-import { Skeleton } from '@/components/ui/skeleton';
-import { WorkflowGenerationChatPanel } from '@/components/workflows/WorkflowGenerationChatPanel';
-import { Button } from '@/components/ui/button';
-import { ArrowLeft } from 'lucide-react';
-import MainContent from '@/components/layout/MainContent';
+import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
+import { queryClient } from "@/lib/queryClient";
+import { Chat, type ChatMessage } from "@/components/ui/chat";
+import WorkflowEditorPanel from "../components/workflows/WorkflowEditorPanel";
 
-const WorkflowChatGeneratorPage = () => {
-  const [workflowId, setWorkflowId] = useState<number | null>(null);
-  const [_, navigate] = useLocation();
-  
-  const { 
-    data: workflow, 
-    isLoading,
-    refetch
-  } = useQuery({
-    queryKey: ['/api/workflows', workflowId],
-    queryFn: async () => {
-      if (!workflowId) return undefined;
+// Preload an initial workflow editor content
+import { getEmptyWorkflow } from "../lib/emptyWorkflow";
+
+interface WorkflowResponse {
+  workflow: {
+    id: number;
+    name: string;
+    description: string;
+    type: string;
+    flowData: any;
+  };
+}
+
+export default function WorkflowChatGenerator() {
+  const [chatInput, setChatInput] = useState("");
+  const [messages, setMessages] = useState<ChatMessage[]>([
+    {
+      id: "welcome-message",
+      role: "assistant",
+      content: "Describe the workflow you want to create, and I'll help you build it.",
+      createdAt: new Date()
+    }
+  ]);
+  const [currentWorkflowId, setCurrentWorkflowId] = useState<number | null>(null);
+  const [flowData, setFlowData] = useState(getEmptyWorkflow());
+
+  // Load workflow data when ID changes
+  useEffect(() => {
+    if (currentWorkflowId) {
+      queryClient.fetchQuery({
+        queryKey: ['/api/workflows', currentWorkflowId],
+        queryFn: async () => {
+          const response = await fetch(`/api/workflows/${currentWorkflowId}`);
+          return response.json();
+        }
+      }).then(data => {
+        if (data && data.flowData) {
+          setFlowData(data.flowData);
+        }
+      });
+    }
+  }, [currentWorkflowId]);
+
+  // Generate workflow mutation
+  const generateWorkflow = useMutation({
+    mutationFn: async (prompt: string) => {
+      const response = await fetch('/api/workflows/generate', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ prompt }),
+      });
       
-      const res = await fetch(`/api/workflows/${workflowId}`);
-      if (!res.ok) throw new Error('Failed to fetch workflow');
-      return res.json() as Promise<Workflow>;
+      if (!response.ok) {
+        throw new Error('Failed to generate workflow');
+      }
+      
+      return response.json() as Promise<WorkflowResponse>;
     },
-    enabled: !!workflowId
+    onSuccess: (data) => {
+      // Update workflow ID when generation is successful
+      setCurrentWorkflowId(data.workflow.id);
+      
+      // Add AI response to messages
+      const responseContent = `I've generated a workflow called "${data.workflow.name}" based on your description. You can see it in the editor and make any adjustments as needed.`;
+      
+      setMessages(prev => [
+        ...prev,
+        {
+          id: uuidv4(),
+          role: 'assistant',
+          content: responseContent,
+          createdAt: new Date()
+        }
+      ]);
+    }
   });
 
-  // Handler for when a workflow is generated from the chat
-  const handleWorkflowGenerated = (id: number) => {
-    console.log("Workflow generated with ID:", id);
-    setWorkflowId(id);
-    refetch();
-  };
-
-  if (isLoading) {
-    return (
-      <div className="h-screen flex items-center justify-center">
-        <div className="space-y-4 w-1/2">
-          <Skeleton className="h-12 w-full" />
-          <Skeleton className="h-[600px] w-full" />
-        </div>
-      </div>
-    );
-  }
+  const handleSubmit = useCallback((input: string) => {
+    // Add user message
+    const userMessage: ChatMessage = {
+      id: uuidv4(),
+      role: 'user',
+      content: input,
+      createdAt: new Date()
+    };
+    
+    // Clear input and add message
+    setChatInput('');
+    setMessages(prev => [...prev, userMessage]);
+    
+    // Generate the workflow
+    generateWorkflow.mutate(input);
+  }, [generateWorkflow]);
 
   return (
-    <div className="h-screen flex flex-col">
-      <div className="border-b bg-background flex justify-between items-center p-4">
-        <Button 
-          variant="ghost" 
-          onClick={() => navigate('/')}
-          className="gap-2"
-        >
-          <ArrowLeft className="h-4 w-4" />
-          Back to Builder
-        </Button>
-        <h1 className="text-2xl font-semibold">AI Workflow Generator</h1>
-        <div className="w-[100px]"></div> {/* Spacer for centering */}
-      </div>
-      
-      <div className="flex flex-1 overflow-hidden">
-        {/* Left side - Chat panel */}
-        <div className="w-1/3 border-r overflow-hidden">
-          <div className="h-full overflow-hidden">
-            <WorkflowGenerationChatPanel onWorkflowGenerated={handleWorkflowGenerated} />
-          </div>
+    <div className="flex flex-col h-screen bg-slate-50 dark:bg-slate-900">
+      <header className="border-b bg-white dark:bg-slate-950">
+        <div className="container flex h-14 items-center">
+          <Link href="/">
+            <Button variant="ghost" size="icon" className="mr-2">
+              <ArrowLeft className="h-4 w-4" />
+              <span className="sr-only">Back</span>
+            </Button>
+          </Link>
+          <h1 className="text-xl font-semibold">AI Workflow Generator</h1>
         </div>
-        
-        {/* Right side - Flow editor */}
-        <div className="w-2/3 overflow-hidden">
-          {workflow ? (
-            <div className="h-full">
-              <FlowEditor workflow={workflow} isNew={false} />
-            </div>
-          ) : (
-            <div className="h-full flex items-center justify-center bg-gray-50">
-              <div className="text-center max-w-md p-6">
-                <h2 className="text-xl font-semibold mb-4">Describe Your Workflow</h2>
-                <p className="text-muted-foreground mb-6">
-                  Use the chat panel on the left to describe what you want your workflow to do.
-                  I'll generate a complete workflow that you can see and edit right here.
-                </p>
-                <p className="text-sm text-muted-foreground">
-                  For example: "Create a workflow that fetches weather data based on user location,
-                  analyzes the forecast, and sends an alert if rain is expected."
-                </p>
-              </div>
-            </div>
-          )}
+      </header>
+
+      <main className="flex-1 flex overflow-hidden">
+        {/* Workflow Editor Panel - Takes the majority of the screen */}
+        <div className="flex-1 overflow-auto relative">
+          <ReactFlowProvider>
+            <WorkflowEditorPanel 
+              flowData={flowData} 
+              readOnly={generateWorkflow.isPending}
+            />
+          </ReactFlowProvider>
         </div>
-      </div>
+
+        {/* Chat Interface Overlay - Fixed on the right side */}
+        <div className="absolute top-20 right-6 bottom-6 w-full max-w-md z-10">
+          <Chat
+            messages={messages}
+            input={chatInput}
+            onInputChange={setChatInput}
+            onSubmit={handleSubmit}
+            isLoading={generateWorkflow.isPending}
+          />
+        </div>
+      </main>
     </div>
   );
-};
-
-export default WorkflowChatGeneratorPage;
+}
