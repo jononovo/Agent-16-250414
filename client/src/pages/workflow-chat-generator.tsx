@@ -1,18 +1,15 @@
 import { useState, useEffect, useCallback } from "react";
-import { Link } from "wouter";
-import { ArrowLeft } from "lucide-react";
+import { Link, useLocation } from "wouter";
+import { ArrowLeft, ChevronRight, ChevronLeft, MinusCircle } from "lucide-react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { v4 as uuidv4 } from "uuid";
 import { ReactFlowProvider } from "reactflow";
+import { Workflow } from '@shared/schema';
 
 import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
 import { queryClient } from "@/lib/queryClient";
 import { Chat, type ChatMessage } from "@/components/ui/chat";
-import WorkflowEditorPanel from "../components/workflows/WorkflowEditorPanel";
-
-// Preload an initial workflow editor content
-import { getEmptyWorkflow } from "../lib/emptyWorkflow";
+import FlowEditor from "@/components/flow/FlowEditor";
 
 interface WorkflowResponse {
   workflow: {
@@ -25,6 +22,7 @@ interface WorkflowResponse {
 }
 
 export default function WorkflowChatGenerator() {
+  const [, navigate] = useLocation();
   const [chatInput, setChatInput] = useState("");
   const [messages, setMessages] = useState<ChatMessage[]>([
     {
@@ -35,24 +33,23 @@ export default function WorkflowChatGenerator() {
     }
   ]);
   const [currentWorkflowId, setCurrentWorkflowId] = useState<number | null>(null);
-  const [flowData, setFlowData] = useState(getEmptyWorkflow());
-
-  // Load workflow data when ID changes
-  useEffect(() => {
-    if (currentWorkflowId) {
-      queryClient.fetchQuery({
-        queryKey: ['/api/workflows', currentWorkflowId],
-        queryFn: async () => {
-          const response = await fetch(`/api/workflows/${currentWorkflowId}`);
-          return response.json();
-        }
-      }).then(data => {
-        if (data && data.flowData) {
-          setFlowData(data.flowData);
-        }
-      });
-    }
-  }, [currentWorkflowId]);
+  const [chatMinimized, setChatMinimized] = useState(false);
+  
+  // Fetch workflow when ID changes
+  const { 
+    data: workflow,
+    isLoading 
+  } = useQuery({
+    queryKey: ['/api/workflows', currentWorkflowId],
+    queryFn: async () => {
+      if (!currentWorkflowId) return undefined;
+      
+      const res = await fetch(`/api/workflows/${currentWorkflowId}`);
+      if (!res.ok) throw new Error('Failed to fetch workflow');
+      return res.json() as Promise<Workflow>;
+    },
+    enabled: !!currentWorkflowId
+  });
 
   // Generate workflow mutation
   const generateWorkflow = useMutation({
@@ -107,6 +104,11 @@ export default function WorkflowChatGenerator() {
     generateWorkflow.mutate(input);
   }, [generateWorkflow]);
 
+  // Toggle chat panel visibility
+  const toggleChatPanel = () => {
+    setChatMinimized(!chatMinimized);
+  };
+
   return (
     <div className="flex flex-col h-screen bg-slate-50 dark:bg-slate-900">
       <header className="border-b bg-white dark:bg-slate-950">
@@ -121,19 +123,29 @@ export default function WorkflowChatGenerator() {
         </div>
       </header>
 
-      <main className="flex-1 flex overflow-hidden">
-        {/* Workflow Editor Panel - Takes the majority of the screen */}
-        <div className="flex-1 overflow-auto relative">
-          <ReactFlowProvider>
-            <WorkflowEditorPanel 
-              flowData={flowData} 
-              readOnly={generateWorkflow.isPending}
-            />
-          </ReactFlowProvider>
+      <main className="flex-1 flex overflow-hidden relative">
+        {/* Main Content Area - Contains the FlowEditor */}
+        <div className="flex-1 overflow-hidden">
+          {isLoading ? (
+            <div className="h-full flex items-center justify-center">
+              <div className="animate-pulse text-lg">Loading workflow...</div>
+            </div>
+          ) : (
+            <FlowEditor workflow={workflow} isNew={!currentWorkflowId} />
+          )}
         </div>
 
-        {/* Chat Interface Overlay - Fixed on the right side */}
-        <div className="absolute top-20 right-6 bottom-6 w-full max-w-md z-10">
+        {/* Chat Panel Toggle Button */}
+        <button 
+          onClick={toggleChatPanel}
+          className="absolute top-4 right-4 z-20 p-2 bg-primary text-white rounded-full shadow-md hover:bg-primary/90 transition-all"
+          aria-label={chatMinimized ? "Expand chat" : "Minimize chat"}
+        >
+          {chatMinimized ? <ChevronLeft className="h-4 w-4" /> : <MinusCircle className="h-4 w-4" />}
+        </button>
+
+        {/* Chat Panel - Fixed on the right side with toggle functionality */}
+        <div className={`absolute top-4 ${chatMinimized ? 'right-[-340px]' : 'right-4'} bottom-4 w-[350px] z-10 transition-all duration-300 ease-in-out`}>
           <Chat
             messages={messages}
             input={chatInput}
