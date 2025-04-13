@@ -153,9 +153,9 @@ export class WorkflowGenerationService {
       })
       .join('\n');
     
-    // Define the most important node types with clear descriptions
-    const preferredNodeTypes = `
-Preferred Node Types (use these whenever possible):
+    // Define the supported node types with clear descriptions
+    const supportedNodeTypes = `
+Supported Node Types (use ONLY these types):
 - text_prompt: For text input, prompts, or questions a user would answer
 - text_input: For collecting text input from users or systems
 - generate_text: For generating text using AI models
@@ -169,13 +169,18 @@ Preferred Node Types (use these whenever possible):
 - email_send: For sending emails
 - trigger: For starting workflow processes
 - processor: For processing data in various ways
+- filter: For filtering data based on conditions
+- response_message: For formatting response messages
+- api_response_message: For formatting API responses
+- workflow_trigger: For triggering other workflows
+- agent_trigger: For triggering agents
 `;
     
     // Create the system prompt
     return `You are an expert workflow designer for an AI agent system. 
 Your task is to create workflow definitions that can be visualized in ReactFlow and executed by a workflow engine.
 
-${preferredNodeTypes}
+${supportedNodeTypes}
 
 Available node types in catalog (reference only):
 ${nodeTypesFormatted}
@@ -186,7 +191,7 @@ Maximum nodes: ${maxNodes}
 
 Your task is to:
 1. Analyze the user's natural language description of a workflow
-2. Identify the appropriate node types, ALWAYS preferring from the "Preferred Node Types" list above
+2. Identify the appropriate node types, ALWAYS using ONLY from the "Supported Node Types" list above
 3. Create a coherent workflow with properly connected nodes and edges
 4. Return a valid JSON workflow definition with the following structure:
 
@@ -197,7 +202,7 @@ Your task is to:
     "nodes": [
       {
         "id": "unique-node-id",
-        "type": "text_prompt", // ALWAYS use types from the Preferred Node Types list
+        "type": "text_prompt", // ALWAYS use types from the Supported Node Types list
         "position": { "x": number, "y": number },
         "data": {
           "label": "Node Label",
@@ -221,7 +226,7 @@ Your task is to:
 }
 
 Ensure that:
-- All nodes MUST use types from the "Preferred Node Types" list (text_prompt, text_input, generate_text, etc.)
+- All nodes MUST use types from the "Supported Node Types" list (text_prompt, text_input, generate_text, http_request, etc.)
 - Never use deprecated types like "prompt", "api", or "input" - instead use their proper equivalents
 - All nodes are properly connected with edges
 - The workflow has clear input and output nodes
@@ -321,16 +326,10 @@ Ensure that:
       }
       
       // Map node types to the ones supported by the FlowEditor component
+      // Only keeping essential mappings for standard node types
       const nodeTypeMapping: Record<string, string> = {
-        'prompt': 'text_prompt',
-        'api': 'http_request',
         'transform': 'transform',
         'output': 'output',
-        'input': 'text_input',
-        'textGeneration': 'generate_text',
-        'visualization': 'visualize_text',
-        'chat': 'chat_interface',
-        'aiModel': 'claude',
         'database': 'database_query',
         'email': 'email_send',
         'trigger': 'trigger',
