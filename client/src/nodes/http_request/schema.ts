@@ -40,8 +40,16 @@ const schema: NodeSchema = {
     method: {
       type: 'string',
       description: 'HTTP method to use',
-      enum: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'HEAD', 'OPTIONS'],
-      default: 'GET'
+      default: 'GET',
+      options: [
+        { value: 'GET', label: 'GET' },
+        { value: 'POST', label: 'POST' },
+        { value: 'PUT', label: 'PUT' },
+        { value: 'DELETE', label: 'DELETE' },
+        { value: 'PATCH', label: 'PATCH' },
+        { value: 'HEAD', label: 'HEAD' },
+        { value: 'OPTIONS', label: 'OPTIONS' }
+      ]
     },
     headers: {
       type: 'object',

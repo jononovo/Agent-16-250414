@@ -40,25 +40,21 @@ const schema: NodeSchema = {
       type: 'string',
       description: 'The Claude model to use',
       default: 'claude-3-haiku-20240307',
-      enum: [
-        'claude-3-opus-20240229',
-        'claude-3-sonnet-20240229',
-        'claude-3-haiku-20240307'
+      options: [
+        { value: 'claude-3-opus-20240229', label: 'Claude 3 Opus' },
+        { value: 'claude-3-sonnet-20240229', label: 'Claude 3 Sonnet' },
+        { value: 'claude-3-haiku-20240307', label: 'Claude 3 Haiku' }
       ]
     },
     maxTokens: {
       type: 'number',
-      description: 'Maximum tokens to generate',
-      default: 1000,
-      minimum: 1,
-      maximum: 4096
+      description: 'Maximum tokens to generate (1-4096)',
+      default: 1000
     },
     temperature: {
       type: 'number',
-      description: 'Temperature for response generation',
-      default: 0.7,
-      minimum: 0,
-      maximum: 1
+      description: 'Temperature for response generation (0-1)',
+      default: 0.7
     },
     systemPrompt: {
       type: 'string',
