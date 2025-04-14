@@ -4,9 +4,15 @@
  */
 
 import { NodeDefinition } from '../types';
-import { PortDefinition } from '@shared/nodeTypes';
 import { Sparkles } from 'lucide-react';
 import React from 'react';
+
+// Define default data for the node
+const defaultData = {
+  model: 'claude-3-opus-20240229',
+  temperature: 0.7,
+  maxTokens: 1000
+};
 
 export const nodeDefinition: NodeDefinition = {
   type: 'claude',
@@ -14,36 +20,35 @@ export const nodeDefinition: NodeDefinition = {
   description: 'Generate text using Anthropic\'s Claude AI model',
   icon: 'sparkles',
   category: 'ai',
-  version: '1.0.0',
-  tags: ["ai", "text generation", "claude", "llm"],
-  color: "#5646ED",
-  reactIcon: React.createElement(Sparkles, { size: 16 }),
+  defaultData,
   inputs: {
     prompt: {
       type: 'string',
-      description: 'Input prompt to send to Claude',
-      isArray: false,
-      optional: false
+      description: 'Input prompt to send to Claude'
     },
     systemPrompt: {
       type: 'string',
-      description: 'System instructions for Claude',
-      isArray: false,
-      optional: true
+      description: 'System instructions for Claude'
     }
   },
   outputs: {
     response: {
       type: 'string',
-      description: 'Generated response from Claude',
-      isArray: false
+      description: 'Generated response from Claude'
     },
     metadata: {
       type: 'object',
-      description: 'Additional metadata about the response',
-      isArray: false
+      description: 'Additional metadata about the response'
     }
-  },
+  }
+};
+
+// Additional metadata - not part of NodeDefinition interface but used for UI/rendering
+export const nodeMetadata = {
+  version: '1.0.0',
+  tags: ["ai", "text generation", "claude", "llm"],
+  color: "#5646ED",
+  reactIcon: React.createElement(Sparkles, { size: 16 }),
   configOptions: [
     {
       key: 'model',

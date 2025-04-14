@@ -5,13 +5,13 @@
  */
 
 import { NodeDefinition } from '../types';
-import nodeDefinition from './definition';
+import nodeDefinition, { nodeMetadata } from './definition';
 import schema from './schema';
 import * as executor from './executor';
 import * as ui from './ui';
 
-// Re-export the node definition
-export { nodeDefinition };
+// Re-export the node definition and metadata
+export { nodeDefinition, nodeMetadata };
 
 // Re-export the executor for dynamic imports
 export { execute } from './executor';
