@@ -1,101 +1,188 @@
-# AI Agent Workflow Platform
+# AI Agent Workflow Platform Node System
 
-## Mission
+## Node Architecture Overview
 
-We enable non-technical people to build, manage, and optimize incredible workflows with AI. Our platform allows users to create and orchestrate AI agents through a visual workflow builder, making complex AI interactions accessible to everyone.
+The platform is built on a folder-based node architecture where each node is a modular, self-contained component with standardized interfaces. This document focuses on the technical aspects of the node system to help developers and AI agents understand the internals.
 
-## Core Features
+## Technical Node Structure
 
-- **Visual Workflow Builder**: Drag-and-drop interface using React Flow
-- **Modular Node System**: Folder-based architecture for scalable node development
-- **Agent Orchestration**: Higher-level agents can coordinate other agents
-- **Chat Interface**: Natural language interaction with agents
-- **Dynamic Validation**: Runtime checking of node and workflow integrity
-
-## Architecture Overview
-
-The platform consists of these key components:
-
-1. **Agents**: Core entities representing AI assistants with specific purposes
-2. **Workflows**: Visual representations of agent logic built with React Flow
-3. **Nodes**: Individual components in workflows, each with a specific function
-4. **Endpoints**: API interfaces for agent interaction and management
-
-### Folder-Based Node System
-
-The platform has been upgraded to use a folder-based node architecture where:
-
-- Each node type is contained in its own folder with standardized files
-- Node components (definition, executor, UI) are clearly separated
-- Nodes are discovered and registered dynamically
-- No central registry files need to be manually maintained
+Each node is defined by three core technical components:
 
 ```
-nodes/
-  └── text_input/               # Self-contained node folder
-      ├── definition.ts         # Node metadata and interface
-      ├── executor.ts           # Runtime execution logic
-      └── ui.tsx                # React component for rendering
+client/src/nodes/node_type/
+  ├── definition.ts  # Node interface definition & metadata
+  ├── executor.ts    # Runtime execution logic
+  └── ui.tsx         # React component for visualization
 ```
 
-### Benefits of Folder-Based Architecture
+### 1. Node Definition (definition.ts)
 
-- **Maintainability**: Changes to one node don't affect others
-- **Developer Experience**: Standardized structure for all nodes
-- **Performance**: Dynamic loading of nodes only when needed
-- **Scalability**: Easy to add or remove node types
+The definition file contains the formal interface specification for the node:
 
-## Core Principles
+```typescript
+import { NodeDefinition } from '../types';
 
-- **Client-centric**: Browser execution with API backend communication
-- **Registry-based**: Use registries, not code modifications
-- **API-first**: Well-defined interfaces between components
-- **Separation**: Platform ≠ Workflows
+const definition: NodeDefinition = {
+  // Core identity
+  type: 'text_input',           // Unique identifier
+  name: 'Text Input',           // Display name
+  category: 'input',            // Functional category
+  version: '1.0.0',             // Semantic versioning
+  description: 'Provides text input for workflows',
+  
+  // Technical interface
+  inputs: {                     // Input ports with type definitions
+    default: {
+      type: 'string',
+      description: 'Default value for the input',
+      optional: true
+    }
+  },
+  outputs: {                    // Output ports with type definitions
+    text: {
+      type: 'string',
+      description: 'The text input value'
+    }
+  },
+  
+  // Default configuration 
+  defaultData: {
+    text: '',
+    placeholder: 'Enter text...'
+  }
+};
 
-## Standards & Best Practices
+export default definition;
+```
 
-### ✅ DO
+### 2. Node Executor (executor.ts)
 
-- Use the folder-based system for adding new nodes
-- Follow standard interfaces and validation requirements
-- Keep platform and workflows separate
-- Use built-in validation for ensuring node correctness
-- Leverage component libraries for consistent UI
+The executor implements the runtime logic for processing inputs and producing outputs:
 
-### ⚠️ DON'T
+```typescript
+import { NodeExecutorFunction } from '../../lib/types';
 
-- Modify core files
-- Hardcode workflows into platform
-- Create special cases
-- Add console.log to production
-- Build custom test endpoints
-- Create centralized registries for nodes
+export const execute: NodeExecutorFunction = async (nodeData, inputs) => {
+  // Process inputs and node configuration
+  const result = nodeData.text || inputs.default || '';
+  
+  // Return structured outputs
+  return result; // or { outputName: result } for multiple outputs
+};
+```
 
-## Available Node Types
+The executor function is pure and isolated, with inputs coming from:
+- `inputs`: Values from connected upstream nodes
+- `nodeData`: Configuration values from the node instance
 
-The system currently includes the following node types:
+### 3. Node Registration System
 
-| Type | Category | Description |
-|------|----------|-------------|
-| `text_input` | Input | Provides text input for workflows |
-| `claude` | AI | Integration with Claude AI model |
-| `http_request` | Integration | Makes HTTP requests to external APIs |
-| `text_template` | Transformation | Creates text from templates with variables |
-| `data_transform` | Transformation | Transforms data between formats |
-| `decision` | Logic | Makes decisions based on conditions |
-| `function` | Code | Executes custom JavaScript code |
-| `json_path` | Data | Extracts data using JSONPath expressions |
+Nodes are automatically discovered and registered through dynamic imports in `nodeSystem.ts`:
 
-## Getting Started
+```typescript
+// List of implemented node types
+const FOLDER_BASED_NODE_TYPES = [
+  'text_input', 'claude', 'http_request', 'text_template',
+  'data_transform', 'decision', 'function', 'json_path'
+];
 
-1. Run the application and explore the UI to understand the workflow builder
-2. Review a simple workflow to see the basic structure
-3. Examine the node definitions to understand their capabilities
-4. Try creating a simple workflow with a few connected nodes
+// Dynamic registration loop
+FOLDER_BASED_NODE_TYPES.forEach(nodeType => {
+  import(/* @vite-ignore */ `../nodes/${nodeType}/executor`).then(executor => {
+    import(/* @vite-ignore */ `../nodes/${nodeType}/definition`).then(definition => {
+      // Register with the workflow engine
+      registerEnhancedNodeExecutor(nodeType, /* ... */);
+    });
+  });
+});
+```
 
-## For detailed documentation, see:
+## Technical Node Interfaces
 
-- [ARCHITECTURE.md](./ARCHITECTURE.md): Technical details of the system architecture
-- [DEVELOPMENT.md](./DEVELOPMENT.md): Guide to creating and working with nodes
+The node system uses TypeScript interfaces to enforce consistent implementation:
 
-Remember: Build ON the platform, not IN it.
+```typescript
+// Core interfaces (simplified)
+export interface NodeDefinition {
+  type: string;                 // Unique type identifier
+  name: string;                 // Display name
+  description: string;          // Human-readable description
+  category: string;             // Functional category
+  version: string;              // Semantic version
+  inputs: Record<string, PortDefinition>;  // Input ports 
+  outputs: Record<string, PortDefinition>; // Output ports
+  defaultData: Record<string, any>;        // Default configuration
+}
+
+export interface PortDefinition {
+  type: string;                 // Data type (string, number, object, etc.)
+  description: string;          // Human-readable description
+  optional?: boolean;           // Whether the port is required
+}
+
+export interface NodeExecutorFunction {
+  (nodeData: any, inputs: Record<string, any>): Promise<any>;
+}
+```
+
+## Node Validation System
+
+The platform includes built-in validation for all nodes at runtime and development time:
+
+```typescript
+// Validation workflow in validateAllNodes.ts
+export function validateAllNodes(verbose = true): boolean {
+  // Find all node definitions
+  const nodeModules = import.meta.glob('../nodes/*/definition.ts', { eager: true });
+  
+  // Extract and validate each definition
+  const nodeDefinitions = {};
+  for (const path in nodeModules) {
+    const module = nodeModules[path] as any;
+    const nodeDef = module.default;
+    nodeDefinitions[nodeDef.type] = nodeDef;
+  }
+  
+  // Run validation on all nodes
+  const results = validateNodes(nodeDefinitions);
+  return !Object.values(results).some(result => !result.valid);
+}
+```
+
+## Node Type Hierarchy
+
+The system includes these core node types, each with specific technical characteristics:
+
+| Node Type | Technical Function | Input/Output Interface |
+|-----------|-------------------|------------------------|
+| `text_input` | Provides literal text or user input | `outputs: { text: string }` |
+| `claude` | AI model integration with Anthropic's Claude | `inputs: { prompt: string }, outputs: { completion: string }` |
+| `http_request` | Makes HTTP requests to external services | `inputs: { url: string, method: string, headers: object, body: string }, outputs: { response: object, statusCode: number }` |
+| `text_template` | String templating with variable substitution | `inputs: { template: string, variables: object }, outputs: { result: string }` |
+| `data_transform` | Data transformation and manipulation | `inputs: { data: any, transform: string }, outputs: { result: any }` |
+| `decision` | Conditional branching based on inputs | `inputs: { condition: any }, outputs: { true: any, false: any }` |
+| `function` | Executes JavaScript code dynamically | `inputs: { code: string, args: object }, outputs: { result: any }` |
+| `json_path` | Data extraction using JSONPath | `inputs: { data: object, path: string }, outputs: { result: any }` |
+
+## Node Execution Flow
+
+When a workflow runs, the node execution follows these steps:
+
+1. Workflow engine determines execution order based on node dependencies
+2. For each node:
+   - Input values are collected from upstream nodes
+   - Node executor function is called with inputs and configuration
+   - Outputs are captured and passed to downstream nodes
+   - Execution results are logged and monitored
+
+## For Developers
+
+To implement a new node:
+
+1. Create a folder `client/src/nodes/your_node_type/`
+2. Create `definition.ts` with the NodeDefinition interface
+3. Implement `executor.ts` with the execution logic
+4. Add the node type to `FOLDER_BASED_NODE_TYPES` in nodeSystem.ts
+
+For detailed development instructions, see [DEVELOPMENT.md](./DEVELOPMENT.md)
+For deeper technical architecture details, see [ARCHITECTURE.md](./ARCHITECTURE.md)
