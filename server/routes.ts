@@ -722,9 +722,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
       
-      // Chinese language learning workflow
-      if (prompt.toLowerCase().includes('chinese') && prompt.toLowerCase().includes('learn')) {
-        console.log("Creating Chinese learning workflow nodes");
+      // Handle any learning or educational workflow
+      if (prompt.toLowerCase().includes('learn') || prompt.toLowerCase().includes('education') || prompt.toLowerCase().includes('tip')) {
+        console.log("Creating educational/learning workflow nodes");
         
         // Get starting position to ensure visibility
         // Place nodes at the top-left of the canvas to ensure they're visible
@@ -748,64 +748,64 @@ export async function registerRoutes(app: Express): Promise<Server> {
           }
         };
         
-        // Create a text generator node
-        const chineseTipNode = {
-          id: `chinese-tip-${Date.now()}`,
+        // Create a text generator node - generalized to handle any educational content
+        const contentGenNode = {
+          id: `content-gen-${Date.now()}`,
           type: 'generate_text',  // Use the registered generate_text type
           position: { x: startX, y: startY + nodeSpacing },
           data: {
-            label: 'Generate Chinese Tip',
+            label: 'Generate Educational Content',
             category: 'AI',
-            description: 'Creates a daily Chinese language learning tip',
+            description: 'Creates educational content based on the workflow topic',
             type: 'generate_text',
             settings: {
-              prompt: 'Generate a daily Chinese language learning tip with: 1) A new Chinese character, 2) Its pinyin pronunciation, 3) Its meaning, 4) An example sentence using it, 5) A memory tip for remembering it.'
+              prompt: 'Generate educational content based on the following topic: {{topic}}. Include key points, examples, and learning tips.'
             }
           }
         };
         
-        // Create an email sender node
+        // Create an email sender node - generalized for any educational content
         const emailNode = {
           id: `email-${Date.now()}`,
           type: 'email_send',  // Use the registered email_send type
           position: { x: startX, y: startY + (nodeSpacing * 2) },
           data: {
-            label: 'Send Chinese Tip Email',
+            label: 'Send Educational Email',
             category: 'Actions',
-            description: 'Sends email with the daily Chinese learning tip',
+            description: 'Sends email with the generated educational content',
             type: 'email_send',
             settings: {
               to: '{{recipient_email}}',
-              subject: 'Your Daily Chinese Learning Tip 汉字',
-              body: 'Good morning! Here is your daily Chinese learning tip:\n\n{{chinese_tip.output}}'
+              subject: 'Your Daily Educational Content',
+              body: 'Hello!\n\nHere is your educational content for today:\n\n{{content_gen.output}}'
             }
           }
         };
         
         // Create edges connecting the nodes
         const edge1 = {
-          id: `edge-trigger-tip-${Date.now()}`,
+          id: `edge-trigger-content-${Date.now()}`,
           source: triggerNode.id,
-          target: chineseTipNode.id,
+          target: contentGenNode.id,
           type: 'default'
         };
         
         const edge2 = {
-          id: `edge-tip-email-${Date.now()}`,
-          source: chineseTipNode.id,
+          id: `edge-content-email-${Date.now()}`,
+          source: contentGenNode.id,
           target: emailNode.id,
           type: 'default'
         };
         
         // Add the nodes and edges to the workflow
-        flowData.nodes.push(triggerNode, chineseTipNode, emailNode);
+        flowData.nodes.push(triggerNode, contentGenNode, emailNode);
         flowData.edges.push(edge1, edge2);
         
         // Update the workflow with new data
         const updatedData = {
           ...existingWorkflow,
           flowData: flowData,
-          description: existingWorkflow.description || 'Daily Chinese learning tips workflow'
+          description: existingWorkflow.description || 'Educational content delivery workflow'
         };
         
         // Update the workflow in the database
