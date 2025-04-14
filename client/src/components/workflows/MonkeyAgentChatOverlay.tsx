@@ -67,17 +67,16 @@ export function MonkeyAgentChatOverlay({
       
       // Add a system message with the node details and instructions
       const helpText = `
-You can modify the node by using any of the following commands:
+You can modify the node by describing the changes you want to make:
 
-- Change label to "New Label"
-- Update description to "New Description"
-- Change system prompt to "Your new system prompt"
-- Update model to claude-3-sonnet-20240229
-- Set temperature to 0.8
-- Change max tokens to 4000
+- "Change the label to 'New Label'"
+- "Update the description to explain that this node processes customer data"
+- "Change the system prompt to be more friendly and conversational"
+- "Set the temperature to 0.7"
+- "Make this node use the claude-3-haiku model"
+- "Update the max tokens to 2000"
 
-Or you can specify settings as JSON:
-{"settings": {"systemPrompt": "You are a helpful assistant", "temperature": 0.7}}
+I'll understand natural language requests and apply the changes to the node.
       `.trim();
       
       const systemMessage: ChatMessage = {
@@ -148,9 +147,6 @@ Please provide instructions for how you'd like to modify this node.
     
     setMessages(prev => [...prev, confirmationMessage]);
   };
-  
-  // We no longer display workflow context messages in the chat
-  // The component internally knows which workflow it's working with
   
   // Mutation for workflow operations
   const workflowMutation = useMutation({
@@ -351,169 +347,87 @@ Please provide instructions for how you'd like to modify this node.
         const thinkingMessage: ChatMessage = {
           id: uuidv4(),
           role: 'assistant',
-          content: "I'm analyzing your request to modify the node...",
+          content: "I'm analyzing your request and updating the node...",
           createdAt: new Date()
         };
         
         setMessages(prev => [...prev, thinkingMessage]);
         
-        // Analyze the input to determine what changes to make
-        // This is a simple implementation - in a real system we might use an LLM
-        // to parse the user's natural language request
-        
-        // For now, we'll look for some specific patterns:
-        // "change/set/update label to X" for changing the label
-        // "change/set/update description to X" for changing the description
-        // "change model to X" for changing the model (Claude node)
-        
-        const updateData: Record<string, any> = {};
-        
-        // Extract label changes
-        const labelMatch = input.match(/(?:change|set|update)\s+(?:the\s+)?label\s+(?:to|as)\s+"([^"]+)"/i) ||
-                          input.match(/(?:change|set|update)\s+(?:the\s+)?label\s+(?:to|as)\s+(.+?)(?:\.|$)/i);
-        
-        if (labelMatch) {
-          updateData.label = labelMatch[1].trim();
-        }
-        
-        // Extract description changes
-        const descMatch = input.match(/(?:change|set|update)\s+(?:the\s+)?description\s+(?:to|as)\s+"([^"]+)"/i) ||
-                         input.match(/(?:change|set|update)\s+(?:the\s+)?description\s+(?:to|as)\s+(.+?)(?:\.|$)/i);
-        
-        if (descMatch) {
-          updateData.description = descMatch[1].trim();
-        }
-        
-        // Extract model changes for Claude node
-        const modelMatch = input.match(/(?:change|set|update)\s+(?:the\s+)?model\s+(?:to|as)\s+"([^"]+)"/i) ||
-                          input.match(/(?:change|set|update)\s+(?:the\s+)?model\s+(?:to|as)\s+(.+?)(?:\.|$)/i);
-        
-        if (modelMatch && selectedNodeForEdit.type === 'claude') {
-          if (!updateData.settings) updateData.settings = {};
-          updateData.settings.model = modelMatch[1].trim();
-        }
-        
-        // Extract system prompt changes for Claude node
-        const systemPromptMatch = input.match(/(?:change|set|update)\s+(?:the\s+)?system\s+prompt\s+(?:to|as)\s+"([^"]+)"/i) ||
-                                 input.match(/(?:change|set|update)\s+(?:the\s+)?system\s+prompt\s+(?:to|as)\s+(.+?)(?:\.|$)/i);
-        
-        if (systemPromptMatch && selectedNodeForEdit.type === 'claude') {
-          if (!updateData.settings) updateData.settings = {};
-          updateData.settings.systemPrompt = systemPromptMatch[1].trim();
-        }
-        
-        // Extract temperature changes for Claude node
-        const temperatureMatch = input.match(/(?:change|set|update)\s+(?:the\s+)?temperature\s+(?:to|as)\s+(\d+\.?\d*)/i);
-        
-        if (temperatureMatch && selectedNodeForEdit.type === 'claude') {
-          if (!updateData.settings) updateData.settings = {};
-          updateData.settings.temperature = parseFloat(temperatureMatch[1].trim());
-        }
-        
-        // Extract max tokens changes for Claude node
-        const maxTokensMatch = input.match(/(?:change|set|update)\s+(?:the\s+)?max(?:\s+)?tokens\s+(?:to|as)\s+(\d+)/i);
-        
-        if (maxTokensMatch && selectedNodeForEdit.type === 'claude') {
-          if (!updateData.settings) updateData.settings = {};
-          updateData.settings.maxTokens = parseInt(maxTokensMatch[1].trim(), 10);
-        }
-        
-        // General approach for any setting: "change [setting name] to [value]"
-        const generalSettingMatch = input.match(/(?:change|set|update)\s+(?:the\s+)?(\w+(?:\s+\w+)*)\s+(?:to|as)\s+"([^"]+)"/i) ||
-                                   input.match(/(?:change|set|update)\s+(?:the\s+)?(\w+(?:\s+\w+)*)\s+(?:to|as)\s+([^\.]+)(?:\.|$)/i);
-        
-        if (generalSettingMatch) {
-          const settingKey = generalSettingMatch[1].trim().replace(/\s+/g, '');
-          const settingValue = generalSettingMatch[2].trim();
-          
-          // Only apply if it's not one of the settings we've already handled
-          const handledSettings = ['model', 'systemprompt', 'temperature', 'maxtokens', 'label', 'description'];
-          
-          if (!handledSettings.includes(settingKey.toLowerCase())) {
-            if (!updateData.settings) updateData.settings = {};
+        // Call the AI-powered node editing API
+        fetch('/api/nodes/edit-with-ai', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            nodeData: selectedNodeForEdit,
+            userPrompt: input
+          })
+        })
+        .then(response => {
+          if (!response.ok) {
+            throw new Error(`API returned ${response.status}: ${response.statusText}`);
+          }
+          return response.json();
+        })
+        .then(data => {
+          if (data.success && data.updatedNodeData) {
+            console.log('AI node edit successful:', data.updatedNodeData);
             
-            // Try to parse as number or boolean if applicable
-            if (settingValue === 'true') {
-              updateData.settings[settingKey] = true;
-            } else if (settingValue === 'false') {
-              updateData.settings[settingKey] = false;
-            } else if (!isNaN(Number(settingValue))) {
-              updateData.settings[settingKey] = Number(settingValue);
-            } else {
-              updateData.settings[settingKey] = settingValue;
-            }
-          }
-        }
-        
-        // If the user provides settings for a node as JSON
-        const settingsMatch = input.match(/(?:change|set|update)\s+(?:the\s+)?settings\s+(?:to|as)\s+({.+})/i);
-        if (settingsMatch) {
-          try {
-            const settingsObject = JSON.parse(settingsMatch[1]);
-            if (!updateData.settings) updateData.settings = {};
-            updateData.settings = {
-              ...updateData.settings,
-              ...settingsObject
+            // Update node with the AI-generated changes
+            updateSelectedNode(selectedNodeForEdit.id, data.updatedNodeData);
+            
+            // Remove the "thinking" message
+            setMessages(prev => prev.filter(msg => msg.id !== thinkingMessage.id));
+            
+            // Add a success message
+            const successMessage: ChatMessage = {
+              id: uuidv4(),
+              role: 'assistant',
+              content: `I've updated the node with your requested changes. The node has been modified as you requested.`,
+              createdAt: new Date()
             };
-          } catch (e) {
-            console.error('Failed to parse settings JSON:', e);
+            
+            setMessages(prev => [...prev, successMessage]);
+            
+            // Reset the selected node
+            setSelectedNodeForEdit(null);
+          } else {
+            throw new Error('API response did not contain valid update data');
           }
-        }
-        
-        // If no specific updates were detected but input contains JSON
-        if (Object.keys(updateData).length === 0) {
-          const jsonMatch = input.match(/({[\s\S]*})/);
-          if (jsonMatch) {
-            try {
-              const jsonData = JSON.parse(jsonMatch[1]);
-              Object.assign(updateData, jsonData);
-            } catch (e) {
-              console.error('Failed to parse JSON in input:', e);
-            }
-          }
-        }
-        
-        // If we still don't have any updates, use the whole input as a content update for text nodes
-        if (Object.keys(updateData).length === 0 && selectedNodeForEdit.type === 'text_prompt') {
-          updateData.content = input;
-        }
-        
-        // If we have updates to make
-        if (Object.keys(updateData).length > 0) {
-          // Remove the thinking message first
+        })
+        .catch(error => {
+          console.error('Error in AI node editing:', error);
+          
+          // Remove the "thinking" message
           setMessages(prev => prev.filter(msg => msg.id !== thinkingMessage.id));
           
-          // Update the node
-          updateSelectedNode(selectedNodeForEdit.id, updateData);
-          
-          // Clear the selected node so we're not in edit mode anymore
-          setSelectedNodeForEdit(null);
-        } else {
-          // If we couldn't determine what to update, replace the thinking message with an error
-          setMessages(prev => 
-            prev.map(msg => 
-              msg.id === thinkingMessage.id 
-                ? {
-                    ...msg,
-                    content: "I couldn't determine how to update the node based on your input. Please provide specific instructions like 'change label to \"New Label\"' or 'update description to \"New description\"'."
-                  }
-                : msg
-            )
-          );
-        }
-      } catch (error) {
-        console.error('Error processing node edit request:', error);
-        
-        // Add error message
-        setMessages(prev => [
-          ...prev,
-          {
+          // Add an error message
+          const errorMessage: ChatMessage = {
             id: uuidv4(),
             role: 'assistant',
-            content: `I encountered an error while processing your request: ${error instanceof Error ? error.message : String(error)}`,
+            content: `Sorry, I encountered an error while trying to update the node: ${error.message}. Please try again with different wording.`,
             createdAt: new Date()
-          }
-        ]);
+          };
+          
+          setMessages(prev => [...prev, errorMessage]);
+        });
+        
+        // Return early as we're handling the rest asynchronously
+        return;
+      } catch (error) {
+        console.error('Error processing node edit:', error);
+        
+        // Add error message
+        const errorMessage: ChatMessage = {
+          id: uuidv4(),
+          role: 'assistant',
+          content: `Sorry, there was an error processing your request: ${error instanceof Error ? error.message : String(error)}`,
+          createdAt: new Date()
+        };
+        
+        setMessages(prev => [...prev, errorMessage]);
+        return;
       }
     } else {
       // Not in node edit mode, process as a normal workflow request

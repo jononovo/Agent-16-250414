@@ -87,10 +87,10 @@ Please provide ONLY the updated fields in valid JSON format.
         throw new Error(`Claude API error: ${response.status} ${response.statusText}`);
       }
       
-      const data = await response.json();
+      const data = await response.json() as { content: Array<{ text: string }> };
       
       // Extract the content from Claude's response
-      const aiResponse = data.content[0].text;
+      const aiResponse = data.content && data.content[0] ? data.content[0].text as string : "";
       
       // Extract the JSON from the response (Claude will likely wrap it in ```json and ```)
       const jsonMatch = aiResponse.match(/```(?:json)?([\s\S]+?)```/) || 

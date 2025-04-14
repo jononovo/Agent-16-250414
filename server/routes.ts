@@ -1435,6 +1435,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   
   // ===== Node Routes =====
   
+  // AI-powered node editing
+  app.post("/api/nodes/edit-with-ai", handleNodeAiEdit);
+  
   // Get all nodes
   app.get("/api/nodes", async (req, res) => {
     try {
