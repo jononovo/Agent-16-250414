@@ -118,12 +118,15 @@ async function runWorkflow(
       };
       
       // Update the log entry
+      // Get the current executionPath or create an empty object if it doesn't exist
+      const currentExecutionPath = executionLog.executionPath || {};
+      
       await storage.updateLog(executionLog.id, {
         status: "completed",
         output: result.output,
         completedAt: new Date(),
         executionPath: {
-          ...executionLog.executionPath,
+          ...currentExecutionPath,
           message: `Workflow execution completed: ${workflow.name}`,
           status: "completed"
         }
@@ -242,7 +245,7 @@ async function runWorkflow(
           // Provide a fallback for backward compatibility
           nodeResult = {
             output: Object.values(nodeInputs)[0]?.output || null,
-            error: `Error executing node: ${error.message}`
+            error: `Error executing node: ${error instanceof Error ? error.message : String(error)}`
           };
         }
         
@@ -319,13 +322,14 @@ async function runWorkflow(
     };
     
     // Update the log entry
+    const currentExecPath = executionLog.executionPath || {};
     await storage.updateLog(executionLog.id, {
       status: executionStatus,
       output: finalOutput,
       error: errors.length > 0 ? JSON.stringify(errors) : null,
       completedAt: new Date(),
       executionPath: {
-        ...executionLog.executionPath,
+        ...currentExecPath,
         message: `Workflow execution ${executionStatus}: ${workflow.name}`,
         executionTime,
         nodesExecuted: processedNodes.size
@@ -1762,10 +1766,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       // Create response data
+      // Convert headers to a plain object
+      const headersObject: Record<string, string> = {};
+      response.headers.forEach((value, key) => {
+        headersObject[key] = value;
+      });
+      
       const responseData = {
         status: response.status,
         statusText: response.statusText,
-        headers: Object.fromEntries([...response.headers.entries()]),
+        headers: headersObject,
         data: responseBody
       };
       
