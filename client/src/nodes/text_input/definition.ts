@@ -3,7 +3,9 @@
  * Defines the node's properties, appearance, and behavior
  */
 
-export const definition = {
+import { NodeDefinition } from '../types';
+
+export const definition: NodeDefinition = {
   type: 'text_input',
   name: 'Text Input',
   description: 'Captures text input for use in workflows',
@@ -30,7 +32,11 @@ export const definition = {
       default: '',
       description: 'Default text to pre-fill in the input field'
     }
-  ]
+  ],
+  defaultData: {
+    placeholder: 'Enter your text here...',
+    defaultValue: ''
+  }
 };
 
 export default definition;
