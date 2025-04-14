@@ -8,19 +8,19 @@ import { NodeSchema } from '../registry';
 
 const schema: NodeSchema = {
   inputs: {
-    json: {
+    data: {
       type: 'object',
-      description: 'JSON data to extract from'
+      description: 'JSON data to query with JSONPath'
     }
   },
   outputs: {
     result: {
       type: 'any',
-      description: 'The extracted data'
+      description: 'The extracted data from the JSONPath query'
     },
     error: {
       type: 'string',
-      description: 'Error message if extraction failed'
+      description: 'Error message if JSONPath query failed'
     }
   },
   parameters: {
@@ -29,15 +29,15 @@ const schema: NodeSchema = {
       description: 'JSONPath expression to extract data',
       default: '$.data'
     },
+    returnFirst: {
+      type: 'boolean',
+      description: 'Return only the first match if multiple results are found',
+      default: false
+    },
     defaultValue: {
       type: 'string',
-      description: 'Default value to return if path is not found',
+      description: 'Default value to return if no matches are found',
       default: ''
-    },
-    multiple: {
-      type: 'boolean',
-      description: 'Whether to return multiple results or just the first match',
-      default: false
     }
   }
 };

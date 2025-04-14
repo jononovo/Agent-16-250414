@@ -1,8 +1,7 @@
 /**
  * JSON Path Node
  * 
- * This node allows users to extract specific data from JSON objects
- * using JSONPath expressions.
+ * This node extracts data using JSONPath expressions.
  */
 
 import { NodeRegistryEntry } from '../registry';
@@ -10,10 +9,10 @@ import metadata from './metadata.json';
 import schema from './schema';
 import * as executor from './executor';
 import * as ui from './ui';
-import { FileJson } from 'lucide-react';
+import { FileSearch } from 'lucide-react';
 import React from 'react';
 
-const JsonPathNode: NodeRegistryEntry = {
+const JSONPathNode: NodeRegistryEntry = {
   type: 'json_path',
   metadata,
   schema,
@@ -23,7 +22,7 @@ const JsonPathNode: NodeRegistryEntry = {
     defaultData: ui.defaultData,
     validator: ui.validator
   },
-  icon: React.createElement(FileJson, { size: 16 })
+  icon: React.createElement(FileSearch, { size: 16 })
 };
 
-export default JsonPathNode;
+export default JSONPathNode;

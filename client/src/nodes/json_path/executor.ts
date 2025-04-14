@@ -5,46 +5,54 @@
  * which extracts data from JSON objects using JSONPath expressions.
  */
 
-export interface JsonPathNodeData {
+// Note: In a real implementation, we would use a proper JSONPath library
+// This is a simplified version for demonstration purposes
+
+export interface JSONPathNodeData {
   path: string;
-  defaultValue?: string;
-  multiple?: boolean;
+  returnFirst: boolean;
+  defaultValue: string;
 }
 
-/**
- * Simple implementation of JSONPath extraction
- * This is a basic implementation and would need to be replaced with a full JSONPath library
- * in a production environment
- */
-function getValueByPath(obj: any, path: string): any {
-  if (!path || !obj) return undefined;
-  
-  // Handle root object reference
-  if (path === '$') return obj;
-  
-  // Remove $ from the beginning if present
-  const normalizedPath = path.startsWith('$') ? path.slice(1) : path;
-  
-  // Split path by dots and brackets
-  const parts = normalizedPath
-    .replace(/\[(\w+)\]/g, '.$1') // convert [0] to .0
-    .replace(/^\./, '') // remove leading dot
-    .split('.');
-  
-  let current = obj;
-  
-  for (const part of parts) {
-    if (!current) return undefined;
+// Helper function to safely traverse a JSON object given a path
+function getValueByPath(obj: any, path: string, defaultValue: any = undefined) {
+  try {
+    // Remove the leading $ if present (JSONPath standard)
+    const normalizedPath = path.replace(/^\$\.?/, '');
     
-    // Handle array access with wildcards - returns array of all matches
-    if (part === '*' && Array.isArray(current)) {
-      return current;
+    // Split the path into segments
+    const segments = normalizedPath.split('.');
+    
+    // Traverse the object
+    let current = obj;
+    for (const segment of segments) {
+      // Handle array indices in the path (e.g., items[0])
+      const arrayMatch = segment.match(/^([^\[]+)\[(\d+)\]$/);
+      if (arrayMatch) {
+        const [_, arrayName, indexStr] = arrayMatch;
+        const index = parseInt(indexStr, 10);
+        
+        if (!current[arrayName] || !Array.isArray(current[arrayName]) || current[arrayName].length <= index) {
+          return defaultValue;
+        }
+        
+        current = current[arrayName][index];
+        continue;
+      }
+      
+      // Handle regular object properties
+      if (current === undefined || current === null || !(segment in current)) {
+        return defaultValue;
+      }
+      
+      current = current[segment];
     }
     
-    current = current[part];
+    return current;
+  } catch (error) {
+    console.error('Error in getValueByPath:', error);
+    return defaultValue;
   }
-  
-  return current;
 }
 
 /**
@@ -54,28 +62,25 @@ function getValueByPath(obj: any, path: string): any {
  * @param inputs Optional inputs from connected nodes
  * @returns The execution result
  */
-export const execute = async (nodeData: JsonPathNodeData, inputs?: any): Promise<any> => {
+export const execute = async (nodeData: JSONPathNodeData, inputs?: any): Promise<any> => {
   try {
     const startTime = new Date().toISOString();
     
-    // Check if we have JSON data to process
-    if (!inputs?.json) {
-      throw new Error('No JSON data provided');
+    // Check if we have data to query
+    if (!inputs?.data) {
+      throw new Error('No data provided for JSONPath query');
     }
     
-    // Get the JSONPath expression
+    // Get the path and options
     const path = nodeData.path || '$.data';
+    const returnFirst = nodeData.returnFirst || false;
+    const defaultValue = nodeData.defaultValue || '';
     
-    // Extract the data
-    let result = getValueByPath(inputs.json, path);
+    // Extract the data using the JSONPath
+    let result = getValueByPath(inputs.data, path, defaultValue);
     
-    // Use default value if result is undefined
-    if (result === undefined && nodeData.defaultValue !== undefined) {
-      result = nodeData.defaultValue;
-    }
-    
-    // Multiple results vs single result
-    if (!nodeData.multiple && Array.isArray(result)) {
+    // If result is an array and returnFirst is true, return just the first element
+    if (Array.isArray(result) && returnFirst && result.length > 0) {
       result = result[0];
     }
     
@@ -83,7 +88,7 @@ export const execute = async (nodeData: JsonPathNodeData, inputs?: any): Promise
     return {
       meta: {
         status: 'success',
-        message: 'JSONPath extraction successful',
+        message: 'JSONPath query executed successfully',
         startTime,
         endTime
       },
@@ -100,7 +105,7 @@ export const execute = async (nodeData: JsonPathNodeData, inputs?: any): Promise
     return {
       meta: {
         status: 'error',
-        message: error.message || 'Error during JSONPath extraction',
+        message: error.message || 'Error executing JSONPath query',
         startTime: new Date().toISOString(),
         endTime: new Date().toISOString(),
         error: {
