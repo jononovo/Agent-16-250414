@@ -56,8 +56,10 @@ export function registerEnhancedNodeExecutor(nodeType: string, executor: Enhance
  */
 export async function registerAllEnhancedNodeExecutors(): Promise<void> {
   try {
-    // Import nodeSystem module that manages folder-based executors
-    const { getNodeExecutor } = await import('./enhancedNodeExecutors');
+    // Import the nodeSystem module for registering folder-based executors
+    await import('./nodeSystem').then(nodeSystem => {
+      nodeSystem.registerNodeExecutorsFromRegistry();
+    });
     
     // List of built-in node types we need to ensure are registered
     const criticalNodeTypes = [

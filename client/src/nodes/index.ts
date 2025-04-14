@@ -55,42 +55,77 @@ export async function getNode(nodeType: string): Promise<any> {
 
 /**
  * Get all available node types from the folder structure
- * Note: This would require server-side implementation or a static list
- * since browser JS cannot read directories
+ * Uses the same folder list that nodeSystem.ts uses for consistency
  */
 export function getAllNodes(): any[] {
-  // This is just a static list of the node types we know are implemented
-  // In a real implementation, this would be generated from the folder structure
-  return [
-    { 
-      type: 'text_input',
-      name: 'Text Input',
-      description: 'Input text into the workflow',
-      category: 'ai',
-      icon: 'type'
-    },
-    { 
-      type: 'claude',
-      name: 'Claude API',
-      description: 'Generate content with Claude AI',
-      category: 'ai', 
-      icon: 'sparkles'
-    },
-    { 
-      type: 'http_request',
-      name: 'HTTP Request',
-      description: 'Make HTTP requests to external APIs',
-      category: 'actions',
-      icon: 'globe'
-    },
-    { 
-      type: 'data_transform',
-      name: 'Data Transform',
-      description: 'Transform data between nodes',
-      category: 'data',
-      icon: 'repeat'
-    }
+  // Import the same list of node types used by nodeSystem.ts
+  // This ensures consistency across the application
+  const FOLDER_BASED_NODE_TYPES = [
+    'text_input',
+    'claude',
+    'http_request',
+    'text_template',
+    'data_transform',
+    'decision',
+    'function',
+    'json_path'
   ];
+  
+  // Map the node types to their basic information
+  // The detailed information will be loaded dynamically when needed
+  return FOLDER_BASED_NODE_TYPES.map(type => {
+    // Default values that will be overridden by definition when loaded
+    let info: any = {
+      type,
+      name: type.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase()),
+      description: `${type.replace(/_/g, ' ')} node`,
+      category: getCategoryForNodeType(type),
+      icon: getIconForNodeType(type)
+    };
+    
+    return info;
+  });
+}
+
+/**
+ * Helper function to determine category based on node type
+ */
+function getCategoryForNodeType(type: string): string {
+  // AI-related nodes
+  if (['text_input', 'claude', 'text_template'].includes(type)) {
+    return 'ai';
+  }
+  
+  // Data processing nodes
+  if (['data_transform', 'json_path', 'function'].includes(type)) {
+    return 'data';
+  }
+  
+  // Action/integration nodes
+  if (['http_request', 'decision'].includes(type)) {
+    return 'actions';
+  }
+  
+  // Default category
+  return 'general';
+}
+
+/**
+ * Helper function to determine icon based on node type
+ */
+function getIconForNodeType(type: string): string {
+  const iconMap: Record<string, string> = {
+    'text_input': 'type',
+    'claude': 'sparkles',
+    'http_request': 'globe',
+    'text_template': 'file-text',
+    'data_transform': 'repeat',
+    'decision': 'git-branch',
+    'function': 'code',
+    'json_path': 'filter'
+  };
+  
+  return iconMap[type] || 'box';
 }
 
 /**
