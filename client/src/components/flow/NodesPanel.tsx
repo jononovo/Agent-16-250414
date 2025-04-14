@@ -33,6 +33,7 @@ import nodeRegistry from '../../nodes/registry';
 const NODE_CATEGORIES = [
   { id: 'ai', name: 'AI', description: 'AI model interactions, prompt engineering, and text generation' },
   { id: 'data', name: 'Data', description: 'Data visualization, transformation, and filtering' },
+  { id: 'code', name: 'Code', description: 'Custom code and function execution' },
   { id: 'triggers', name: 'Triggers', description: 'Nodes that initiate workflows based on events or schedules' },
   { id: 'actions', name: 'Actions', description: 'Nodes that perform operations such as API requests or database queries' },
   { id: 'internal', name: 'Internal', description: 'Internal system nodes that trigger system operations' }
@@ -358,12 +359,13 @@ const NodesPanel = () => {
         />
       </div>
       
-      <Tabs defaultValue="ai" className="mb-4" onValueChange={setActiveTab}>
+      <Tabs defaultValue="all" className="mb-4" onValueChange={setActiveTab}>
         <div className="overflow-auto scrollbar-none">
           <TabsList className="w-auto inline-flex">
             <TabsTrigger value="all" className="px-4">All</TabsTrigger>
             <TabsTrigger value="ai" className="px-4">AI</TabsTrigger>
             <TabsTrigger value="data" className="px-4">Data</TabsTrigger>
+            <TabsTrigger value="code" className="px-4">Code</TabsTrigger>
             <TabsTrigger value="triggers" className="px-4">Triggers</TabsTrigger>
             <TabsTrigger value="actions" className="px-4">Actions</TabsTrigger>
             <TabsTrigger value="internal" className="px-4">Internal</TabsTrigger>

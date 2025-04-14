@@ -106,11 +106,8 @@ const nodeTypes: NodeTypes = {
   data_transform: ProcessorNode,
   filter: ProcessorNode,
   
-  // Register new folder-based nodes
-  text_template: CustomNode,   // Temporarily using CustomNode as a fallback
-  decision: CustomNode,        // Temporarily using CustomNode as a fallback
-  function: CustomNode,        // Temporarily using CustomNode as a fallback
-  json_path: CustomNode        // Temporarily using CustomNode as a fallback
+  // Import and use the folder-based UI components directly
+  function: require('../../nodes/function/ui').component
 };
 
 interface FlowEditorProps {
