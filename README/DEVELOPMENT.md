@@ -1,86 +1,123 @@
 # Node System Development Guide
 
-This guide provides practical instructions for working with the folder-based node system. It covers how to create, test, and extend nodes in the AI Agent Workflow Platform.
+This guide provides step-by-step instructions for developers working with the folder-based node system. It covers node creation, testing, common patterns, and best practices.
 
-## Creating a New Node
+## Quick Start: Creating a New Node
 
-### Step 1: Create the Node Folder
+### 1. Set Up Node Structure
 
-Create a new folder in `client/src/nodes/` with your node's type name. Use snake_case for the folder name.
+Create a folder for your node and the required files:
 
 ```bash
 mkdir -p client/src/nodes/my_custom_node
+touch client/src/nodes/my_custom_node/{definition.ts,executor.ts,ui.tsx}
 ```
 
-### Step 2: Create Node Definition
-
-Create a `definition.ts` file with your node's metadata:
+### 2. Define Node Interface (definition.ts)
 
 ```typescript
 // client/src/nodes/my_custom_node/definition.ts
 import { NodeDefinition } from '../types';
 
 const definition: NodeDefinition = {
-  type: 'my_custom_node',
-  name: 'My Custom Node',
-  description: 'Description of what your node does',
-  icon: 'star',  // Icon identifier
-  category: 'utility',  // Choose an appropriate category
-  version: '1.0.0',
+  // Core identity - all required
+  type: 'my_custom_node',        // Unique identifier (snake_case)
+  name: 'My Custom Node',        // Display name
+  description: 'Performs custom processing on text input',
+  category: 'utility',           // Standard category
+  version: '1.0.0',              // Semantic version
   
+  // Port definitions - what flows in and out of the node
   inputs: {
-    input1: {
-      type: 'string',
-      description: 'First input'
+    text: {
+      type: 'string',            // Data type
+      description: 'Text to process',
+      optional: false            // Required input
     },
-    input2: {
-      type: 'number',
-      description: 'Second input',
-      optional: true
+    options: {
+      type: 'object',
+      description: 'Processing options',
+      optional: true             // Optional input
     }
   },
   
   outputs: {
-    output: {
+    result: {
       type: 'string',
-      description: 'The output data'
+      description: 'Processed output'
+    },
+    metadata: {
+      type: 'object',
+      description: 'Additional output information'
     }
   },
   
+  // Default configuration values for the node
   defaultData: {
-    // Default configuration values
-    setting1: 'default value',
-    setting2: 42
+    prefix: 'Result: ',
+    uppercase: false,
+    maxLength: 100
   }
 };
 
 export default definition;
 ```
 
-### Step 3: Implement Node Executor
-
-Create an `executor.ts` file to implement the node's logic:
+### 3. Implement Execution Logic (executor.ts)
 
 ```typescript
 // client/src/nodes/my_custom_node/executor.ts
 import { NodeExecutorFunction } from '../../lib/types';
 
-export const execute: NodeExecutorFunction = async (nodeData, inputs) => {
-  // Get input values (with fallbacks)
-  const input1 = inputs.input1 || '';
-  const input2 = parseFloat(inputs.input2 || '0');
-  
-  // Process the inputs
-  const result = `Processed: ${input1} (${input2})`;
-  
-  // Return output
-  return result;
+// Type interface for the node's configuration data
+interface MyCustomNodeData {
+  prefix: string;
+  uppercase: boolean;
+  maxLength: number;
+}
+
+export const execute: NodeExecutorFunction = async (
+  nodeData: MyCustomNodeData, 
+  inputs: Record<string, any>
+) => {
+  try {
+    // Get the input text with fallback
+    const inputText = inputs.text || '';
+    
+    // Apply transformations based on configuration
+    let result = inputText;
+    
+    // Apply prefix
+    result = nodeData.prefix + result;
+    
+    // Apply uppercase if configured
+    if (nodeData.uppercase) {
+      result = result.toUpperCase();
+    }
+    
+    // Apply length limit
+    if (nodeData.maxLength > 0 && result.length > nodeData.maxLength) {
+      result = result.substring(0, nodeData.maxLength) + '...';
+    }
+    
+    // Return multiple outputs as an object
+    return {
+      result: result,
+      metadata: {
+        originalLength: inputText.length,
+        resultLength: result.length,
+        transformed: result !== inputText
+      }
+    };
+  } catch (error) {
+    // Error handling
+    console.error('Error executing MyCustomNode:', error);
+    throw new Error(`Processing failed: ${error.message}`);
+  }
 };
 ```
 
-### Step 4: Create Node UI Component
-
-Create a `ui.tsx` file for the node's visual representation:
+### 4. Create the UI Component (ui.tsx)
 
 ```tsx
 // client/src/nodes/my_custom_node/ui.tsx
@@ -92,8 +129,12 @@ import { NodeContent } from '../../components/nodes/common/NodeContent';
 import { HandleWithLabel } from '../../components/nodes/handles/HandleWithLabel';
 import { Position } from 'reactflow';
 import { Input } from '../../components/ui/input';
+import { Switch } from '../../components/ui/switch';
+import { Label } from '../../components/ui/label';
 
+// Component for the node's UI in the workflow editor
 export function MyCustomNodeComponent({ data, isConnectable, selected }: NodeProps) {
+  // Handler for data changes
   const handleDataChange = (key: string, value: any) => {
     if (data.onChange) {
       data.onChange({
@@ -105,48 +146,76 @@ export function MyCustomNodeComponent({ data, isConnectable, selected }: NodePro
 
   return (
     <NodeContainer selected={selected}>
-      <NodeHeader title="My Custom Node" icon="star" />
+      <NodeHeader 
+        title="My Custom Node" 
+        icon="settings" 
+      />
       <NodeContent>
+        {/* Input Handles */}
         <HandleWithLabel
           type="target"
           position={Position.Left}
-          id="input1"
-          label="Input 1"
+          id="text"
+          label="Text"
           isConnectable={isConnectable}
         />
         
         <HandleWithLabel
           type="target"
           position={Position.Left}
-          id="input2"
-          label="Input 2"
+          id="options"
+          label="Options"
           isConnectable={isConnectable}
         />
         
-        <div className="p-2">
-          <label className="text-sm font-medium">Setting 1</label>
-          <Input
-            value={data.setting1 || ''}
-            onChange={(e) => handleDataChange('setting1', e.target.value)}
-            placeholder="Enter setting 1"
-            className="mt-1 mb-2"
-          />
+        {/* Node Configuration UI */}
+        <div className="p-3 space-y-4">
+          <div>
+            <Label htmlFor="prefix">Prefix</Label>
+            <Input
+              id="prefix"
+              value={data.prefix || ''}
+              onChange={(e) => handleDataChange('prefix', e.target.value)}
+              placeholder="Enter prefix"
+              className="mt-1"
+            />
+          </div>
           
-          <label className="text-sm font-medium">Setting 2</label>
-          <Input
-            type="number"
-            value={data.setting2 || 0}
-            onChange={(e) => handleDataChange('setting2', parseInt(e.target.value))}
-            placeholder="Enter setting 2"
-            className="mt-1"
-          />
+          <div className="flex items-center space-x-2">
+            <Switch
+              id="uppercase"
+              checked={!!data.uppercase}
+              onCheckedChange={(checked) => handleDataChange('uppercase', checked)}
+            />
+            <Label htmlFor="uppercase">Convert to uppercase</Label>
+          </div>
+          
+          <div>
+            <Label htmlFor="maxLength">Max Length</Label>
+            <Input
+              id="maxLength"
+              type="number"
+              value={data.maxLength || 0}
+              onChange={(e) => handleDataChange('maxLength', parseInt(e.target.value))}
+              className="mt-1"
+            />
+          </div>
         </div>
+        
+        {/* Output Handles */}
+        <HandleWithLabel
+          type="source"
+          position={Position.Right}
+          id="result"
+          label="Result"
+          isConnectable={isConnectable}
+        />
         
         <HandleWithLabel
           type="source"
           position={Position.Right}
-          id="output"
-          label="Output"
+          id="metadata"
+          label="Metadata"
           isConnectable={isConnectable}
         />
       </NodeContent>
@@ -155,179 +224,227 @@ export function MyCustomNodeComponent({ data, isConnectable, selected }: NodePro
 }
 ```
 
-### Step 5: Register the Node
+### 5. Register the Node
 
-Add your node type to the list in `client/src/lib/nodeSystem.ts`:
+Add your node to the list in `client/src/lib/nodeSystem.ts`:
 
 ```typescript
-// client/src/lib/nodeSystem.ts
 const FOLDER_BASED_NODE_TYPES = [
   'text_input',
   'claude',
   'http_request',
-  // Add your node type here
-  'my_custom_node'
+  // ...
+  'my_custom_node'  // Add your node here
 ];
 ```
 
-## Testing and Validation
+## Node Component Structure
 
-### Manual Testing
+A complete node implementation includes these key files:
 
-1. After adding a new node, restart the development server to ensure it's registered
-2. Open the workflow editor and verify your node appears in the node picker
-3. Add the node to a workflow and test its functionality
-4. Check the browser console for any validation errors
+| File | Purpose | Required |
+|------|---------|----------|
+| **definition.ts** | Node interface and metadata | Yes |
+| **executor.ts** | Execution and processing logic | Yes |
+| **ui.tsx** | Visual representation in editor | Yes |
+| **schema.ts** | Input/output schema details | No |
+| **index.ts** | Entry point and exports | No |
+| **README.md** | Documentation | No |
 
-### Automated Validation
+## Standard Node Categories
 
-The node system includes built-in validation that runs at startup in development mode.
+Use these standard categories for consistent organization:
 
-You can also run validation manually in the browser console:
+| Category | Purpose | Examples |
+|----------|---------|----------|
+| `input` | User/system input collection | text_input |
+| `output` | Result display/storage | response_message |
+| `processing` | Data processing/transformation | data_transform, text_template |
+| `ai` | AI model integration | claude, openai |
+| `integration` | External API/service integration | http_request |
+| `logic` | Control flow/decisions | decision, switch |
+| `utility` | General purpose helpers | function, json_path |
 
-```javascript
-import('./lib/validateAllNodes').then(module => {
-  module.default(true); // true enables verbose logging
-});
-```
+## Technical Requirements & Validation
 
-### Common Validation Requirements
+Every node must meet these technical requirements to pass validation:
 
-All nodes must include:
+1. **Definition Properties**:
+   - Core identity: `type`, `name`, `description`, `category`, `version`
+   - Interface: `inputs`, `outputs`
+   - Configuration: `defaultData`
 
-1. **Unique Type**: A unique string identifier
-2. **Name and Description**: Human-readable labels
-3. **Category**: One of the standard categories
-4. **Version**: Semantic version string (e.g., "1.0.0")
-5. **Inputs and Outputs**: Properly defined port definitions
-6. **Default Data**: Initial configuration values
+2. **Executor Function**:
+   - Must be async function
+   - Parameters: `nodeData`, `inputs`
+   - Return type must match defined outputs
 
-## UI Component Guidelines
+3. **Type Safety**:
+   - Use TypeScript interfaces for nodeData
+   - Match output structure to output definitions
 
-When building node UI components, follow these guidelines for consistency:
+## Testing & Debugging
 
-### 1. Use Standard Components
+### Testing a New Node
 
-- `NodeContainer`: Base container for all nodes
-- `NodeHeader`: Standard header with title and controls
-- `NodeContent`: Content area with consistent padding
-- `HandleWithLabel`: Connection handle with readable label
+1. **Basic Testing**:
+   ```bash
+   # Start the development server
+   npm run dev
+   ```
 
-### 2. Layout Patterns
+2. **Validation Testing**: Open browser console and run:
+   ```javascript
+   import('./src/lib/validateAllNodes').then(mod => mod.default(true));
+   ```
 
-- Place input handles on the left side
-- Place output handles on the right side
-- Group similar controls together
-- Use consistent spacing and padding
+3. **Workflow Testing**:
+   - Add your node to a workflow in the editor
+   - Connect it to other nodes
+   - Use the debug mode to trace execution
 
-### 3. Responsive Design
+### Debugging Tools
 
-- Ensure the node looks good at various sizes
-- Use responsive layout techniques
-- Don't hardcode dimensions unless necessary
-
-### 4. State Management
-
-- Use React hooks for local state
-- Pass configuration changes via `onChange` callback
-- Handle null/undefined values gracefully
-
-## Best Practices
-
-### For Node Design
-
-1. **Single Responsibility**: Each node should do one thing well
-2. **Meaningful Names**: Choose clear, descriptive names for node types, inputs, and outputs
-3. **Appropriate Categories**: Place nodes in categories that reflect their function
-4. **Consistent Interfaces**: Follow the established input/output naming patterns
-5. **Reasonable Defaults**: Provide sensible default values for all settings
-
-### For Node Execution
-
-1. **Async Operations**: Always make executor functions async for consistency
-2. **Error Handling**: Properly catch and handle errors in executor functions
-3. **Input Validation**: Check inputs before processing to avoid runtime errors
-4. **Immutable Returns**: Don't modify input objects, return new objects instead
-5. **Performance**: Optimize for processing speed when handling large datasets
-
-## Debugging Tips
-
-1. Add console logs to your executor function:
+1. **Node-Specific Logging**:
    ```typescript
    export const execute = async (nodeData, inputs) => {
-     console.log('Node data:', nodeData);
+     console.group(`Executing ${nodeData.type}`);
+     console.log('Config:', nodeData);
      console.log('Inputs:', inputs);
-     // ...
+     const result = /* processing logic */;
+     console.log('Result:', result);
+     console.groupEnd();
+     return result;
    };
    ```
 
-2. Use the browser DevTools to inspect the node component.
-
-3. Check validation results to identify issues with your node definition:
+2. **Validation Debugging**:
    ```typescript
    import { validateNodeDefinition } from '../../lib/nodeValidation';
    
-   const result = validateNodeDefinition(myNodeDefinition);
-   console.log(result);
+   const validationResult = validateNodeDefinition(definition);
+   console.log('Validation result:', validationResult);
    ```
 
-## Advanced Node Features
+3. **Development Mode Auto-Validation**:
+   - The system automatically validates nodes during development
+   - Check browser console for validation messages
+   - Fix any reported issues to ensure compatibility
 
-### Dynamic Inputs/Outputs
+## Advanced Node Patterns
 
-For nodes with variable inputs or outputs, you can specify dynamic port configurations:
+### 1. Dynamic Port Configuration
+
+For nodes with variable numbers of inputs/outputs:
 
 ```typescript
 const definition: NodeDefinition = {
-  // ...
-  dynamicInputs: true,
+  // ... other properties
+  
+  dynamicInputs: true,  // Enable dynamic inputs
   dynamicInputConfig: {
-    prefix: 'input_',
-    template: {
+    prefix: 'input_',  // Prefix for dynamically added inputs
+    template: {        // Template for dynamic input ports
       type: 'string',
-      description: 'Dynamic input'
+      description: 'Dynamic input port'
     }
   }
 };
 ```
 
-### State Persistence
+### 2. Conditional Processing
 
-For nodes that need to maintain state between executions:
+For nodes that handle different processing paths:
 
 ```typescript
-export const execute: NodeExecutorFunction = async (nodeData, inputs, context) => {
-  // Get persisted state
-  const state = context.getState() || { counter: 0 };
+export const execute = async (nodeData, inputs) => {
+  const mode = nodeData.mode || 'default';
   
-  // Update state
-  state.counter++;
-  
-  // Save state for next execution
-  context.setState(state);
-  
-  return { output: `Count: ${state.counter}` };
+  switch (mode) {
+    case 'transform':
+      return handleTransform(inputs);
+    case 'filter':
+      return handleFilter(inputs);
+    default:
+      return handleDefault(inputs);
+  }
 };
 ```
 
-## Troubleshooting Common Issues
+### 3. AI Model Integration
 
-### Node Not Appearing in UI
+Pattern for integrating with AI models:
 
-- Check if your node type is added to `FOLDER_BASED_NODE_TYPES` in `nodeSystem.ts`
-- Verify there are no console errors during node registration
-- Make sure your definition file has a proper default export
+```typescript
+export const execute = async (nodeData, inputs) => {
+  // Prepare the API request
+  const requestBody = {
+    model: nodeData.model || 'claude-3-opus-20240229',
+    messages: [
+      { role: 'user', content: inputs.prompt || '' }
+    ],
+    temperature: nodeData.temperature || 0.7,
+    max_tokens: nodeData.maxTokens || 1000
+  };
+  
+  try {
+    // Call the API
+    const response = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': nodeData.apiKey || '',
+        'anthropic-version': '2023-06-01'
+      },
+      body: JSON.stringify(requestBody)
+    });
+    
+    const data = await response.json();
+    
+    // Return the AI response
+    return {
+      completion: data.content[0].text,
+      metadata: {
+        model: data.model,
+        usage: data.usage
+      }
+    };
+  } catch (error) {
+    console.error('AI model error:', error);
+    throw new Error(`AI processing failed: ${error.message}`);
+  }
+};
+```
 
-### Execution Errors
+## Best Practices
 
-- Check input types and validate before processing
-- Use try/catch blocks to handle potential errors
-- Verify that your executor is returning the expected output structure
+### Node Design
 
-### UI Rendering Issues
+1. **Single Responsibility**: Each node should do one thing well
+2. **Comprehensive Error Handling**: Always catch and process errors
+3. **Typed Interfaces**: Use TypeScript for nodeData and inputs/outputs
+4. **Validation**: Check all inputs before processing
+5. **Default Values**: Provide sensible defaults for all settings
+6. **Clear Naming**: Use descriptive names for inputs and outputs
+7. **Documentation**: Add comments for complex logic
 
-- Ensure your UI component matches the expected props interface
-- Check for missing key React properties
-- Verify CSS class names and styling
+### UI Design
 
-Remember: The folder-based node system is designed to be modular and maintainable. Following these guidelines will ensure your nodes integrate seamlessly with the platform.
+1. **Consistent Layout**: Follow platform UI patterns
+2. **Responsive Design**: Adapt to different node sizes
+3. **Input Validation**: Validate user inputs in real-time
+4. **Visual Feedback**: Indicate required fields and validation status
+5. **Accessibility**: Use proper labels and keyboard navigation
+6. **Error Messages**: Display clear error messages
+7. **Help Text**: Provide context and descriptions for settings
+
+## Common Troubleshooting
+
+| Issue | Possible Solutions |
+|-------|-------------------|
+| Node not appearing in editor | Check registration in FOLDER_BASED_NODE_TYPES |
+| Inputs not receiving data | Verify input handle IDs match input names |
+| Outputs not connecting | Check output handle IDs match output names |
+| Execution errors | Add try/catch and verbose logging |
+| UI not rendering properly | Check component imports and props |
+| Type errors | Ensure type definitions match actual data |

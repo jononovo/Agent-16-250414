@@ -1,232 +1,416 @@
-# Node System Architecture
+# AI Agent Workflow Platform Architecture
 
-This document provides a comprehensive technical overview of the folder-based node system architecture.
+This document provides a technical overview of the node system architecture, focusing on the folder-based design patterns, execution flow, and internal mechanics.
+
+## System Architecture Overview
+
+The AI Agent Workflow Platform is built around a modular node-based architecture that enables the composition of complex workflows through simple, reusable components. The architecture follows these core design principles:
+
+1. **Modularity**: Each node is a self-contained unit with well-defined interfaces
+2. **Discoverability**: Components are automatically discovered and registered
+3. **Type Safety**: Strong typing ensures consistent interfaces and validation
+4. **Separation of Concerns**: Clear boundaries between definition, execution, and presentation
 
 ## Directory Structure
 
 ```
 client/src/
 ├── nodes/                        # Root folder for all node implementations
-│   ├── types.ts                  # Shared type definitions for all nodes
-│   └── node_type/                # Folder for a specific node type (e.g., text_input)
-│       ├── definition.ts         # Node metadata and interface definitions
-│       ├── executor.ts           # Node execution logic
-│       └── ui.tsx                # React component for node UI
+│   ├── types.ts                  # Core type definitions for nodes
+│   └── [node_type]/              # Folder for each node type
+│       ├── definition.ts         # Node metadata and interface
+│       ├── executor.ts           # Execution logic
+│       └── ui.tsx                # UI representation
 │
-├── lib/                          # Supporting libraries for the node system
-│   ├── nodeSystem.ts             # Node registration and dynamic import system
-│   ├── nodeValidation.ts         # Validation utilities for node definitions
-│   └── validateAllNodes.ts       # System-wide node validation
+├── lib/                          # Core system libraries
+│   ├── nodeSystem.ts             # Node discovery and registration
+│   ├── nodeValidation.ts         # Validation utilities
+│   ├── validateAllNodes.ts       # System-wide validation
+│   └── enhancedWorkflowEngine.ts # Workflow execution engine
 │
-└── components/
-    └── nodes/                    # Shared UI components for node rendering
-        ├── common/               # Basic building blocks
-        ├── handles/              # Connection points components
-        └── controls/             # Input controls and interactive elements
+└── components/                   # UI components 
+    └── nodes/                    # Node-specific UI components
+        └── common/               # Shared node UI components
 ```
 
-## System Components
+## Core Subsystems
 
-### 1. Node Definition
+### 1. Node Definition System
 
-The `definition.ts` file defines the core metadata and interface for a node:
+Nodes are defined through a standard interface that describes their capabilities, inputs, outputs, and default configuration:
 
 ```typescript
-// definition.ts
-import { NodeDefinition } from '../types';
+// NodeDefinition interface (simplified)
+export interface NodeDefinition {
+  // Core identity
+  type: string;          // Unique identifier (snake_case)
+  name: string;          // Human-readable name
+  description: string;   // Purpose description
+  category: string;      // Functional category
+  version: string;       // Semantic version
+  
+  // Interface definitions
+  inputs: Record<string, PortDefinition>;    // Input ports
+  outputs: Record<string, PortDefinition>;   // Output ports
+  
+  // Default configuration
+  defaultData: Record<string, any>;          // Initial values
+}
 
-const definition: NodeDefinition = {
-  type: 'text_input',            // Unique identifier for the node type
-  name: 'Text Input',            // Display name
-  description: 'Provides text input for workflows',
-  category: 'input',             // Functional category
-  version: '1.0.0',              // Semantic versioning
-  icon: 'text',                  // Icon identifier
-  
-  // Input ports and their data types
-  inputs: {
-    default: {
-      type: 'string',
-      description: 'Default value for the input'
-    }
-  },
-  
-  // Output ports and their data types
-  outputs: {
-    text: {
-      type: 'string',
-      description: 'The text input value'
-    }
-  },
-  
-  // Default data for initialization
-  defaultData: {
-    text: '',
-    placeholder: 'Enter text...'
-  }
-};
-
-export default definition;
+// Port definition for inputs/outputs
+export interface PortDefinition {
+  type: string;          // Data type (string, number, object, etc.)
+  description: string;   // Human-readable description
+  optional?: boolean;    // Whether the input is required
+}
 ```
 
-### 2. Node Executor
+The definition system enforces a consistent interface across all nodes, ensuring that they can be properly discovered, validated, and connected in workflows.
 
-The `executor.ts` file implements the execution logic for the node:
+### 2. Node Registration & Discovery
 
-```typescript
-// executor.ts
-import { NodeExecutorFunction } from '../../lib/types';
-
-export const execute: NodeExecutorFunction = async (nodeData, inputs) => {
-  // Implementation of the node's execution logic
-  const result = nodeData.text || inputs.default || '';
-  return result;
-};
-```
-
-### 3. Node UI Component
-
-The `ui.tsx` file defines the React component for rendering the node in the workflow editor.
-
-### 4. Node Registration System
-
-The node system uses dynamic imports to discover and register node components:
+The node system uses dynamic imports to discover and register node implementations:
 
 ```typescript
-// nodeSystem.ts
+// nodeSystem.ts (simplified)
 export function registerNodeExecutorsFromRegistry(): void {
-  // List of known node types
   const FOLDER_BASED_NODE_TYPES = [
-    'text_input',
-    'claude',
-    'http_request',
-    // etc.
+    'text_input', 'claude', 'http_request', /* etc. */
   ];
   
-  // Register each node by dynamically importing it
   FOLDER_BASED_NODE_TYPES.forEach(nodeType => {
-    import(/* @vite-ignore */ `../nodes/${nodeType}/executor`).then(executor => {
-      import(/* @vite-ignore */ `../nodes/${nodeType}/definition`).then(definition => {
-        // Register with workflow engine
-        registerEnhancedNodeExecutor(nodeType, createEnhancedNodeExecutor(...));
+    // Dynamic imports with Vite
+    import(/* @vite-ignore */ `../nodes/${nodeType}/executor`)
+      .then(executor => {
+        import(/* @vite-ignore */ `../nodes/${nodeType}/definition`)
+          .then(definition => {
+            // Register node with the workflow engine
+            registerEnhancedNodeExecutor(
+              nodeType,
+              createEnhancedNodeExecutor(/* ... */)
+            );
+          });
       });
-    });
   });
 }
 ```
 
-### 5. Node Validation System
+This approach enables:
+- **Lazy Loading**: Nodes are loaded only when needed
+- **Independent Development**: Nodes can be developed and tested in isolation
+- **Easy Extension**: New node types can be added by simply creating a new folder
 
-The validation system ensures all nodes meet the required standards:
+### 3. Node Validation System
+
+The validation system ensures that all nodes meet the required specifications:
 
 ```typescript
-// validateAllNodes.ts
-export function validateAllNodes(verbose = true): boolean {
-  // Import all node definitions
-  const nodeModules = import.meta.glob('../nodes/*/definition.ts', { eager: true });
+// nodeValidation.ts (simplified)
+export function validateNodeDefinition(
+  definition: Partial<NodeDefinition>
+): ValidationResult {
+  const errors = [];
+  const warnings = [];
   
-  // Extract node definitions from modules
-  const nodeDefinitions = {};
-  for (const path in nodeModules) {
-    const module = nodeModules[path] as any;
-    const nodeDef = module.default;
-    if (nodeDef) {
-      nodeDefinitions[nodeDef.type] = nodeDef;
+  // Check required fields
+  REQUIRED_NODE_FIELDS.forEach(field => {
+    if (!definition[field]) {
+      errors.push(`Missing required field: ${field}`);
     }
+  });
+  
+  // Validate inputs
+  if (definition.inputs) {
+    Object.entries(definition.inputs).forEach(([name, port]) => {
+      if (!port.type) {
+        errors.push(`Input port ${name} missing type`);
+      }
+      if (!port.description) {
+        warnings.push(`Input port ${name} missing description`);
+      }
+    });
   }
   
-  // Validate all node definitions
-  const results = validateNodes(nodeDefinitions);
+  // Validate outputs (similar to inputs)
+  // ...
   
-  // Log results if verbose mode is enabled
-  if (verbose) {
-    logValidationResults(results);
-  }
-  
-  // Return whether all nodes are valid
-  return !Object.values(results).some(result => !result.valid);
+  return {
+    valid: errors.length === 0,
+    errors,
+    warnings
+  };
 }
 ```
 
-## Workflow Engine Operation
+Validation occurs at multiple levels:
+- **Development Time**: Automatic validation during development
+- **Registration Time**: Validation when nodes are registered
+- **Runtime**: Validation before node execution
 
-The workflow engine (`enhancedWorkflowEngine.ts`) processes nodes in topological order:
+### 4. Workflow Execution Engine
 
-1. Data flows between nodes through defined connections
-2. Each node has inputs, processing logic, and outputs
-3. Nodes are executed asynchronously based on their dependencies
-
-## Data Flow
-
-1. User sends prompt to an agent through chat UI
-2. Prompt passes through API endpoint
-3. Workflow engine processes the prompt through the agent's workflow
-4. Nodes in the workflow execute in sequence based on connections
-5. Results return to the user through the chat interface
-
-## Type System
-
-The node system uses TypeScript interfaces to ensure consistent implementation:
+The `enhancedWorkflowEngine` is responsible for executing workflows by processing nodes in the correct order:
 
 ```typescript
-// Core interfaces for node definitions
-export interface NodeDefinition {
-  type: string;
-  name: string;
-  description: string;
-  category: string;
-  version: string;
-  icon?: string;
-  inputs: Record<string, PortDefinition>;
-  outputs: Record<string, PortDefinition>;
-  defaultData: Record<string, any>;
+// Simplified workflow execution
+function executeWorkflow(workflowData, initialInputs) {
+  // Build a dependency graph of nodes
+  const graph = buildNodeGraph(workflowData);
+  
+  // Topologically sort nodes for execution order
+  const nodeExecutionOrder = topologicalSort(graph);
+  
+  // Execute nodes in order
+  return executeNodesInOrder(nodeExecutionOrder, initialInputs);
 }
 
-export interface PortDefinition {
-  type: string;
-  description: string;
-  optional?: boolean;
+async function executeNodesInOrder(nodeOrder, initialInputs) {
+  const nodeResults = new Map();
+  
+  // Store initial inputs
+  nodeResults.set('__input__', initialInputs);
+  
+  // Execute each node in order
+  for (const nodeId of nodeOrder) {
+    const node = getNodeById(nodeId);
+    const nodeInputs = getNodeInputs(node, nodeResults);
+    
+    // Execute the node
+    const nodeResult = await executeNode(
+      node.type,
+      node.data,
+      nodeInputs
+    );
+    
+    // Store the results for downstream nodes
+    nodeResults.set(nodeId, nodeResult);
+  }
+  
+  return nodeResults;
 }
 ```
 
-## Standard Node Categories
+The execution engine handles:
+- **Dependency Resolution**: Determining which nodes depend on others
+- **Data Flow**: Passing data between connected nodes
+- **Error Handling**: Gracefully handling node execution failures
+- **Execution Context**: Providing execution context to nodes
 
-Nodes are organized into categories for easier discovery:
+### 5. Node UI System
 
-- **Input**: Nodes that collect data from users or external sources
-- **Output**: Nodes that display or send data
-- **Processing**: Nodes that transform or analyze data
-- **AI**: Nodes that utilize AI models
-- **Integration**: Nodes that connect to external systems
-- **Logic**: Nodes that implement decision logic
-- **Utility**: General-purpose utility nodes
+The node UI system provides React components for rendering nodes in the workflow editor:
 
-## Performance Considerations
+```tsx
+// Simplified node UI component
+export function NodeComponent({ data, isConnectable }) {
+  return (
+    <NodeContainer>
+      <NodeHeader title={data.name} />
+      <NodeContent>
+        {/* Input handles */}
+        {Object.entries(data.inputDefinitions).map(([id, port]) => (
+          <HandleWithLabel
+            key={id}
+            type="target"
+            position={Position.Left}
+            id={id}
+            label={port.displayName || id}
+            isConnectable={isConnectable}
+          />
+        ))}
+        
+        {/* Node configuration UI */}
+        <NodeConfigUI
+          data={data}
+          onChange={handleDataChange}
+        />
+        
+        {/* Output handles */}
+        {Object.entries(data.outputDefinitions).map(([id, port]) => (
+          <HandleWithLabel
+            key={id}
+            type="source"
+            position={Position.Right}
+            id={id}
+            label={port.displayName || id}
+            isConnectable={isConnectable}
+          />
+        ))}
+      </NodeContent>
+    </NodeContainer>
+  );
+}
+```
 
-- **Dynamic Imports**: Nodes are loaded only when needed
-- **Validation**: Early validation prevents runtime errors
-- **Caching**: Results can be cached for improved performance
-- **Error Isolation**: Issues in one node don't break others
+The UI system provides:
+- **Consistent Styling**: Standardized appearance for all nodes
+- **Interactive Configuration**: UI controls for node settings
+- **Connection Points**: Input and output handles for connecting nodes
+- **Visual Feedback**: Highlighting and status indicators
 
-## Migration from Legacy System
+## Data Flow Architecture
 
-The folder-based node system replaces the previous centralized registry approach:
+The system uses a data flow architecture where:
 
-**Before (Centralized Registry)**
-- All nodes registered in a single registry file
-- Node definitions spread across multiple files
-- Manual registration required for each new node
+1. **Data Sources**: Initial inputs come from user interactions or API calls
+2. **Node Processing**: Each node processes inputs and produces outputs
+3. **Data Transformation**: Data is transformed as it flows through the workflow
+4. **Results Collection**: Final outputs are collected and returned
 
-**After (Folder-Based Architecture)**
-- Each node in its own folder with standard files
-- Clear separation of concerns
-- Automatic node discovery and registration
+### Node Execution Flow
 
-## Current Status and Future Development
+When a node executes, it follows this process:
 
-The migration to the folder-based architecture is complete, with all nodes now following the new pattern. Future enhancements will focus on:
+```
+┌───────────────┐       ┌───────────────┐       ┌───────────────┐
+│ Input         │       │ Node          │       │ Output        │
+│ Collection    │──────▶│ Processing    │──────▶│ Distribution  │
+└───────────────┘       └───────────────┘       └───────────────┘
+      │                        │                        │
+      ▼                        ▼                        ▼
+┌───────────────┐       ┌───────────────┐       ┌───────────────┐
+│ Data          │       │ Configuration │       │ Error         │
+│ Validation    │       │ Application   │       │ Handling      │
+└───────────────┘       └───────────────┘       └───────────────┘
+```
 
-1. Enhanced validation capabilities
-2. More specialized node types
-3. Improved UI components for node configuration
-4. Performance optimizations for complex workflows
+1. **Input Collection**: Gather inputs from connected upstream nodes
+2. **Data Validation**: Validate input types and formats
+3. **Node Processing**: Apply the node's specific logic
+4. **Configuration Application**: Apply node-specific configuration
+5. **Output Distribution**: Format and distribute outputs to downstream nodes
+6. **Error Handling**: Catch and process any errors that occur
+
+## Technical Implementation Details
+
+### Dynamic Import System
+
+The system uses Vite's dynamic import capabilities with the `@vite-ignore` directive to load node components:
+
+```typescript
+import(/* @vite-ignore */ `../nodes/${nodeType}/executor`)
+```
+
+This pattern allows:
+- **Code Splitting**: Only load code for nodes that are actually used
+- **Dynamic Loading**: Load node implementations on demand
+- **Isolation**: Keep node implementations separate
+
+### Type Safety System
+
+The type system uses TypeScript interfaces to enforce consistent implementations:
+
+```typescript
+// Core execution types
+export interface NodeExecutorFunction<T = any> {
+  (
+    nodeData: T,                      // Node configuration
+    inputs: Record<string, any>,      // Input values
+    context?: ExecutionContext        // Optional execution context
+  ): Promise<any>;                    // Output values
+}
+
+export interface ExecutionContext {
+  getState: () => any;                // Get persisted state
+  setState: (state: any) => void;     // Set persisted state
+  getWorkflowData: () => any;         // Get workflow data
+  getNodeData: (nodeId: string) => any; // Get data for another node
+}
+```
+
+These types ensure:
+- **Consistent Interfaces**: All nodes implement the same interfaces
+- **Error Prevention**: Catch errors at compile time rather than runtime
+- **Code Completion**: Enable IDE features like auto-completion and type hints
+
+### Error Handling Strategy
+
+The system implements a comprehensive error handling strategy:
+
+1. **Node-Level Error Handling**:
+   ```typescript
+   try {
+     // Node execution logic
+     return result;
+   } catch (error) {
+     console.error(`Error executing node ${nodeType}:`, error);
+     return {
+       error: true,
+       message: error instanceof Error ? error.message : String(error)
+     };
+   }
+   ```
+
+2. **Workflow-Level Error Handling**:
+   ```typescript
+   try {
+     const result = await executeWorkflow(workflowData, inputs);
+     return { success: true, result };
+   } catch (workflowError) {
+     return {
+       success: false,
+       error: workflowError.message,
+       nodeErrors: workflowError.nodeErrors
+     };
+   }
+   ```
+
+3. **UI-Level Error Handling**:
+   ```tsx
+   {nodeExecutionError && (
+     <NodeErrorDisplay
+       error={nodeExecutionError}
+       onRetry={handleRetry}
+     />
+   )}
+   ```
+
+This multi-layered approach ensures that errors are:
+- **Contained**: Errors in one node don't crash the entire workflow
+- **Reported**: Errors are logged and displayed to users
+- **Recoverable**: The system can recover from certain types of errors
+
+## Performance Optimizations
+
+The system includes several performance optimizations:
+
+1. **Lazy Loading**: Nodes are loaded on demand, reducing initial load time
+2. **Caching**: Node results can be cached to avoid redundant processing
+3. **Parallel Execution**: Independent nodes can be executed in parallel
+4. **Selective Updates**: Only nodes affected by input changes are re-executed
+5. **Efficient Data Passing**: Data is passed by reference when possible
+
+## Security Considerations
+
+The architecture includes security measures:
+
+1. **Input Validation**: All node inputs are validated to prevent injection attacks
+2. **Sandboxed Execution**: Code execution nodes run in a restricted environment
+3. **API Key Management**: Sensitive credentials are stored securely
+4. **Permission Controls**: Nodes with external access have configurable permissions
+
+## Migration Path from Legacy System
+
+The system has successfully migrated from a centralized registry approach to the folder-based architecture:
+
+**Legacy Approach (Before)**:
+- Central registry files listing all nodes
+- Manual registration of node executors
+- Tight coupling between components
+- No standardized validation
+
+**Current Architecture (After)**:
+- Self-contained node folders
+- Automatic discovery and registration
+- Loose coupling between components
+- Comprehensive validation system
+
+## Future Architectural Directions
+
+The architecture is designed to support these future enhancements:
+
+1. **Plugin System**: Support for third-party node packages
+2. **Distributed Execution**: Run nodes across multiple workers or services
+3. **Advanced Caching**: Intelligent caching based on node dependencies
+4. **Visual Node Development**: GUI for creating custom nodes
+5. **Versioned Nodes**: Support for multiple versions of the same node type
