@@ -25,17 +25,15 @@ export function registerNodeExecutorsFromRegistry(): void {
       console.log(`Registering executor for node type: ${node.type}`);
       
       // Register with enhancedNodeExecutors
-      registerNodeExecutor(node.type, {
-        execute: async (nodeData, inputs) => {
-          try {
-            // Execute the node's folder-based executor
-            return await node.executor.execute(nodeData, inputs);
-          } catch (error) {
-            console.error(`Error executing ${node.type} node:`, error);
-            return {
-              error: error instanceof Error ? error.message : String(error)
-            };
-          }
+      registerNodeExecutor(node.type, async (nodeData: any, inputs: any) => {
+        try {
+          // Execute the node's folder-based executor
+          return await node.executor.execute(nodeData, inputs);
+        } catch (error) {
+          console.error(`Error executing ${node.type} node:`, error);
+          return {
+            error: error instanceof Error ? error.message : String(error)
+          };
         }
       });
       
@@ -116,17 +114,15 @@ export function registerSingleNodeExecutor(nodeType: string): void {
     console.log(`Registering executor for node type: ${nodeType}`);
     
     // Register with enhancedNodeExecutors
-    registerNodeExecutor(nodeType, {
-      execute: async (nodeData, inputs) => {
-        try {
-          // Execute the node's folder-based executor
-          return await node.executor.execute(nodeData, inputs);
-        } catch (error) {
-          console.error(`Error executing ${nodeType} node:`, error);
-          return {
-            error: error instanceof Error ? error.message : String(error)
-          };
-        }
+    registerNodeExecutor(nodeType, async (nodeData: any, inputs: any) => {
+      try {
+        // Execute the node's folder-based executor
+        return await node.executor.execute(nodeData, inputs);
+      } catch (error) {
+        console.error(`Error executing ${nodeType} node:`, error);
+        return {
+          error: error instanceof Error ? error.message : String(error)
+        };
       }
     });
   }
