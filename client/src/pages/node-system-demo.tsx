@@ -43,7 +43,7 @@ export default function NodeSystemDemo() {
                   <CardHeader className="pb-2">
                     <div className="flex justify-between items-start">
                       <div className="flex items-center gap-2">
-                        {node.icon && <div className="text-muted-foreground">{node.icon}</div>}
+                        {node.metadata.icon && <div className="text-muted-foreground">{node.metadata.icon}</div>}
                         <CardTitle className="text-lg">{node.metadata.name}</CardTitle>
                       </div>
                       <Badge variant="secondary" className="capitalize">
