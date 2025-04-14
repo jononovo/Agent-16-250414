@@ -1,62 +1,46 @@
 /**
  * Decision Node Definition
  * 
- * This file defines both the metadata and schema for the Decision node.
+ * This file defines the metadata and schema for the Decision node.
  */
 
-import { NodeSchema } from '../registry';
-
-/**
- * Node metadata - describes the node for display in the UI
- */
+// Node metadata
 export const metadata = {
   name: "Decision",
-  description: "Create conditional branches based on input data",
-  category: "flow",
+  description: "Create conditional branches in workflows based on rules",
+  category: "logic", // Embedded category information
   version: "1.0.0",
-  tags: ["flow", "condition", "branch", "if-else"],
-  color: "#4CAF50"
+  tags: ["logic", "decision", "branch", "condition", "if", "else"],
+  color: "#10B981" // Emerald color
 };
 
-/**
- * Node schema - defines inputs, outputs, and parameters
- */
-export const schema: NodeSchema = {
+// Node schema
+export const schema = {
   inputs: {
-    data: {
-      type: 'object',
-      description: 'Input data to evaluate conditions against'
+    value: {
+      type: "any",
+      description: "Value to evaluate against conditions"
     }
   },
   outputs: {
     true: {
-      type: 'object',
-      description: 'Output when condition evaluates to true'
+      type: "any",
+      description: "Output if condition is true"
     },
     false: {
-      type: 'object',
-      description: 'Output when condition evaluates to false'
+      type: "any",
+      description: "Output if condition is false"
     },
     error: {
-      type: 'string',
-      description: 'Error message if condition evaluation failed'
+      type: "string",
+      description: "Error message if the condition evaluation fails"
     }
   },
   parameters: {
     condition: {
-      type: 'string',
-      description: 'JavaScript expression that evaluates to true or false',
-      default: 'data.value > 10'
-    },
-    trueData: {
-      type: 'object',
-      description: 'Data to pass when condition is true',
-      default: {}
-    },
-    falseData: {
-      type: 'object',
-      description: 'Data to pass when condition is false',
-      default: {}
+      type: "string",
+      description: "JavaScript expression for the condition (e.g., value > 10)",
+      default: "value === true"
     }
   }
 };

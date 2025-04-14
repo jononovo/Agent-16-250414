@@ -6,18 +6,12 @@
 
 import React, { useState } from 'react';
 import { Handle, Position } from 'reactflow';
-import { 
-  Textarea, 
-  Label, 
-  Card, 
-  CardContent, 
-  CardHeader, 
-  CardTitle, 
-  CardDescription,
-  Input,
-  Button,
-  Switch
-} from '@/components/ui';
+import { Textarea } from '@/components/ui/textarea';
+import { Label } from '@/components/ui/label';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import { Button } from '@/components/ui/button';
+import { Switch } from '@/components/ui/switch';
 import { Plus, Trash2, ArrowUpDown } from 'lucide-react';
 import { DataTransformNodeData, Transformation } from './executor';
 

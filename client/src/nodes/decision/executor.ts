@@ -1,91 +1,56 @@
 /**
  * Decision Node Executor
  * 
- * This file contains the execution logic for the decision node,
- * which evaluates a condition and routes data accordingly.
+ * This executor evaluates conditional logic and routes data flow.
  */
 
+// Define the shape of the node's data
 export interface DecisionNodeData {
   condition: string;
-  trueData?: Record<string, any>;
-  falseData?: Record<string, any>;
 }
 
 /**
- * Safely evaluate a JavaScript expression with a data context
+ * Execute the decision node with the provided data and inputs
  */
-function evaluateExpression(expression: string, data: any): boolean {
+export async function execute(nodeData: DecisionNodeData, inputs: Record<string, any> = {}) {
+  const { condition } = nodeData;
+  const value = inputs.value;
+  
   try {
-    // Create a function from the expression with 'data' as a parameter
-    const fn = new Function('data', `return !!(${expression});`);
-    return !!fn(data);
-  } catch (error) {
-    throw new Error(`Error evaluating condition "${expression}": ${error}`);
-  }
-}
-
-/**
- * Execute the decision node
- * 
- * @param nodeData The node configuration data
- * @param inputs Optional inputs from connected nodes
- * @returns The execution result
- */
-export const execute = async (nodeData: DecisionNodeData, inputs?: any): Promise<any> => {
-  try {
-    const startTime = new Date().toISOString();
-    
-    // Check if we have data to evaluate
-    if (!inputs?.data) {
-      throw new Error('No data provided for condition evaluation');
+    if (value === undefined) {
+      return {
+        error: 'No input value provided'
+      };
     }
     
-    // Get the condition to evaluate
-    const condition = nodeData.condition || 'false';
+    if (!condition || condition.trim() === '') {
+      return {
+        error: 'No condition provided'
+      };
+    }
     
-    // Evaluate the condition
-    const result = evaluateExpression(condition, inputs.data);
+    // Create and evaluate the condition expression
+    const conditionFunction = new Function('value', `return ${condition};`);
+    const result = conditionFunction(value);
     
-    // Prepare the output based on the condition result
-    const outputData = result ? 
-      { true: { ...(inputs.data), ...(nodeData.trueData || {}) } } : 
-      { false: { ...(inputs.data), ...(nodeData.falseData || {}) } };
-    
-    const endTime = new Date().toISOString();
+    // Return the appropriate output based on the condition result
+    if (result) {
+      return {
+        true: value
+      };
+    } else {
+      return {
+        false: value
+      };
+    }
+  } catch (error) {
+    console.error('Error executing decision node:', error);
     return {
-      meta: {
-        status: 'success',
-        message: `Condition evaluated to ${result}`,
-        startTime,
-        endTime
-      },
-      items: [
-        {
-          json: outputData,
-          binary: null
-        }
-      ]
-    };
-  } catch (error: any) {
-    return {
-      meta: {
-        status: 'error',
-        message: error.message || 'Error evaluating condition',
-        startTime: new Date().toISOString(),
-        endTime: new Date().toISOString(),
-        error: {
-          message: error.message,
-          stack: error.stack
-        }
-      },
-      items: [
-        {
-          json: {
-            error: error.message
-          },
-          binary: null
-        }
-      ]
+      error: error instanceof Error ? error.message : String(error)
     };
   }
+}
+
+export const defaultData: DecisionNodeData = {
+  condition: 'value === true'
 };

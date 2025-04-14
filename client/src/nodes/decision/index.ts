@@ -1,27 +1,25 @@
 /**
  * Decision Node
  * 
- * This node allows branching in workflows based on conditions.
+ * This node creates conditional branching based on rules and input data.
  */
 
 import { NodeRegistryEntry } from '../../lib/types';
 import { metadata, schema } from './definition';
 import * as executor from './executor';
 import * as ui from './ui';
-import { GitBranch } from 'lucide-react';
-import React from 'react';
 
-const DecisionNode: NodeRegistryEntry = {
+/**
+ * Decision Node Registry Entry
+ */
+const entry: NodeRegistryEntry = {
   type: 'decision',
   metadata,
   schema,
   executor,
-  ui: {
-    component: ui.component,
-    defaultData: ui.defaultData,
-    validator: ui.validator
-  },
-  icon: React.createElement(GitBranch, { size: 16 })
+  ui: ui.component,
+  defaultData: executor.defaultData,
+  validator: ui.validator
 };
 
-export default DecisionNode;
+export default entry;
