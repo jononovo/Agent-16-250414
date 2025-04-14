@@ -52,6 +52,9 @@ import WorkflowTriggerNode from '../flow/nodes/WorkflowTriggerNode';
 import ResponseMessageNode from '../flow/nodes/ResponseMessageNode';
 import ApiResponseMessageNode from '../flow/nodes/ApiResponseMessageNode';
 
+// Import our new folder-based node components
+import { nodeRegistry } from '../../nodes/registry';
+
 // Register node types according to the documentation
 const nodeTypes: NodeTypes = {
   // Enhanced system node types
@@ -101,7 +104,13 @@ const nodeTypes: NodeTypes = {
   email_send: OutputNode,
   database_query: ProcessorNode,
   data_transform: ProcessorNode,
-  filter: ProcessorNode
+  filter: ProcessorNode,
+  
+  // Register new folder-based nodes
+  text_template: CustomNode,   // Temporarily using CustomNode as a fallback
+  decision: CustomNode,        // Temporarily using CustomNode as a fallback
+  function: CustomNode,        // Temporarily using CustomNode as a fallback
+  json_path: CustomNode        // Temporarily using CustomNode as a fallback
 };
 
 interface FlowEditorProps {
