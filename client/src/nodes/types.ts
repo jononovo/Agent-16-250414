@@ -13,6 +13,35 @@ import { PortDefinition as BasePortDefinition } from '../lib/types';
 // ======================================================
 
 /**
+ * Node Schema
+ * Defines the core schema for node configuration
+ */
+export interface NodeSchema {
+  inputs: Record<string, {
+    type: string;
+    description: string;
+    optional?: boolean;
+    isArray?: boolean;
+  }>;
+  outputs: Record<string, {
+    type: string;
+    description: string;
+    optional?: boolean;
+    isArray?: boolean;
+  }>;
+  parameters?: Record<string, {
+    type: string;
+    description: string;
+    default?: any;
+    required?: boolean;
+    options?: Array<{
+      value: string | number | boolean;
+      label: string;
+    }>;
+  }>;
+}
+
+/**
  * Node Definition
  * Defines the core attributes and behavior of a node
  */
@@ -26,6 +55,7 @@ export interface NodeDefinition {
   inputs: Record<string, PortDefinition>;    // Input ports
   outputs: Record<string, PortDefinition>;   // Output ports
   configOptions?: NodeConfigOption[];  // Configuration options
+  defaultData?: Record<string, any>;   // Default data for node initialization
 }
 
 /**

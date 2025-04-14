@@ -7,7 +7,6 @@
  * - Default settings
  */
 
-import { MessageSquare } from 'lucide-react';
 import { NodeDefinition } from '../../nodes/types';
 
 // Text Prompt Node Data interface
@@ -41,7 +40,8 @@ export const nodeDefinition: NodeDefinition = {
   name: 'Text Prompt',
   description: 'A node for creating and managing text prompts',
   category: 'Input',  // Category for grouping in the node panel
-  icon: MessageSquare,  // Lucide icon to display
+  icon: 'message-square',  // Icon identifier as string
+  version: '1.0.0',
   
   defaultData: {
     label: 'Text Prompt',

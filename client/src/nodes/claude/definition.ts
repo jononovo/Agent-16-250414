@@ -20,6 +20,7 @@ export const nodeDefinition: NodeDefinition = {
   description: 'Generate text using Anthropic\'s Claude AI model',
   icon: 'sparkles',
   category: 'ai',
+  version: '1.0.0',
   defaultData,
   inputs: {
     prompt: {
