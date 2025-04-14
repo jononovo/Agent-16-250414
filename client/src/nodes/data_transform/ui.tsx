@@ -8,11 +8,10 @@ import React, { useState } from 'react';
 import { Handle, Position } from 'reactflow';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
-import { Plus, Trash2, ArrowUpDown } from 'lucide-react';
+import { Plus, Trash2, ArrowUpDown, Wrench } from 'lucide-react';
 import { DataTransformNodeData, Transformation } from './executor';
 
 export const defaultData: DataTransformNodeData = {
@@ -25,10 +24,15 @@ export const defaultData: DataTransformNodeData = {
   ]
 };
 
-export const component: React.FC<{
-  data: DataTransformNodeData;
+export function component({ 
+  data, 
+  onChange,
+  isConnectable = true
+}: { 
+  data: DataTransformNodeData; 
   onChange: (data: DataTransformNodeData) => void;
-}> = ({ data, onChange }) => {
+  isConnectable?: boolean;
+}) {
   const [transformations, setTransformations] = useState<Transformation[]>(
     data.transformations?.length ? data.transformations : defaultData.transformations
   );
@@ -81,94 +85,106 @@ export const component: React.FC<{
   };
 
   return (
-    <div className="data-transform-node">
-      <Handle type="target" position={Position.Left} id="input" />
+    <div className="p-3 rounded-md bg-background border shadow-sm min-w-[320px]">
+      {/* Input handle */}
+      <Handle
+        type="target"
+        position={Position.Top}
+        id="input"
+        isConnectable={isConnectable}
+        className="w-2 h-2 bg-blue-500"
+      />
       
-      <Card className="w-[450px]">
-        <CardHeader className="pb-2">
-          <CardTitle className="text-md">Data Transform</CardTitle>
-          <CardDescription className="text-xs">Apply transformations to data</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-4">
-            {transformations.map((transformation, index) => (
-              <div key={index} className="p-3 border rounded-md space-y-2">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <Switch 
-                      checked={transformation.enabled}
-                      onCheckedChange={(checked) => updateTransformation(index, { enabled: checked })}
-                      id={`transform-${index}-enabled`}
-                    />
-                    <Input
-                      value={transformation.name}
-                      onChange={(e) => updateTransformation(index, { name: e.target.value })}
-                      className="h-8 w-[200px]"
-                      placeholder="Transformation name"
-                    />
-                  </div>
-                  <div className="flex gap-1">
-                    <Button 
-                      variant="ghost" 
-                      size="icon" 
-                      className="h-8 w-8"
-                      onClick={() => moveTransformation(index, 'up')}
-                      disabled={index === 0}
-                    >
-                      <ArrowUpDown className="h-4 w-4 rotate-90" />
-                    </Button>
-                    <Button 
-                      variant="ghost" 
-                      size="icon" 
-                      className="h-8 w-8"
-                      onClick={() => moveTransformation(index, 'down')}
-                      disabled={index === transformations.length - 1}
-                    >
-                      <ArrowUpDown className="h-4 w-4 -rotate-90" />
-                    </Button>
-                    <Button 
-                      variant="ghost" 
-                      size="icon" 
-                      className="h-8 w-8 text-destructive"
-                      onClick={() => deleteTransformation(index)}
-                      disabled={transformations.length <= 1}
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
-                  </div>
-                </div>
-                
-                <div>
-                  <Textarea
-                    value={transformation.expression}
-                    onChange={(e) => updateTransformation(index, { expression: e.target.value })}
-                    className="font-mono text-sm min-h-[80px]"
-                    placeholder="Enter JavaScript code to transform data..."
-                  />
-                  <p className="text-xs text-muted-foreground mt-1">
-                    Use 'data' to access input and 'return' to send output
-                  </p>
-                </div>
+      <div className="flex items-center gap-2 mb-2">
+        <Wrench className="h-4 w-4 text-primary" />
+        <h3 className="text-sm font-medium">Data Transform</h3>
+      </div>
+      
+      <div className="space-y-3 max-h-[350px] overflow-y-auto pr-1">
+        {transformations.map((transformation, index) => (
+          <div key={index} className="p-2 border rounded-md space-y-2">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Switch 
+                  checked={transformation.enabled}
+                  onCheckedChange={(checked) => updateTransformation(index, { enabled: checked })}
+                  id={`transform-${index}-enabled`}
+                  className="scale-75 origin-left"
+                />
+                <Input
+                  value={transformation.name}
+                  onChange={(e) => updateTransformation(index, { name: e.target.value })}
+                  className="h-7 w-[180px] text-xs"
+                  placeholder="Transformation name"
+                />
               </div>
-            ))}
+              <div className="flex gap-1">
+                <Button 
+                  variant="ghost" 
+                  size="icon" 
+                  className="h-6 w-6"
+                  onClick={() => moveTransformation(index, 'up')}
+                  disabled={index === 0}
+                >
+                  <ArrowUpDown className="h-3 w-3 rotate-90" />
+                </Button>
+                <Button 
+                  variant="ghost" 
+                  size="icon" 
+                  className="h-6 w-6"
+                  onClick={() => moveTransformation(index, 'down')}
+                  disabled={index === transformations.length - 1}
+                >
+                  <ArrowUpDown className="h-3 w-3 -rotate-90" />
+                </Button>
+                <Button 
+                  variant="ghost" 
+                  size="icon" 
+                  className="h-6 w-6 text-destructive"
+                  onClick={() => deleteTransformation(index)}
+                  disabled={transformations.length <= 1}
+                >
+                  <Trash2 className="h-3 w-3" />
+                </Button>
+              </div>
+            </div>
             
-            <Button 
-              variant="outline" 
-              size="sm" 
-              className="w-full"
-              onClick={addTransformation}
-            >
-              <Plus className="h-4 w-4 mr-2" />
-              Add Transformation
-            </Button>
+            <div>
+              <Textarea
+                value={transformation.expression}
+                onChange={(e) => updateTransformation(index, { expression: e.target.value })}
+                className="font-mono text-xs min-h-[60px]"
+                placeholder="Enter JavaScript code to transform data..."
+              />
+              <p className="text-xs text-muted-foreground mt-1">
+                Use 'data' to access input and 'return' to send output
+              </p>
+            </div>
           </div>
-        </CardContent>
-      </Card>
+        ))}
+        
+        <Button 
+          variant="outline" 
+          size="sm" 
+          className="w-full text-xs"
+          onClick={addTransformation}
+        >
+          <Plus className="h-3 w-3 mr-1" />
+          Add Transformation
+        </Button>
+      </div>
       
-      <Handle type="source" position={Position.Right} id="output" />
+      {/* Output handle */}
+      <Handle
+        type="source"
+        position={Position.Bottom}
+        id="output"
+        isConnectable={isConnectable}
+        className="w-2 h-2 bg-blue-500"
+      />
     </div>
   );
-};
+}
 
 export const validator = (data: DataTransformNodeData) => {
   const errors: string[] = [];

@@ -8,7 +8,7 @@ import React, { useState } from 'react';
 import { Handle, Position } from 'reactflow';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Code } from 'lucide-react';
 
 interface FunctionNodeData {
   code: string;
@@ -24,10 +24,15 @@ return {
 };`
 };
 
-export const component: React.FC<{
-  data: FunctionNodeData;
+export function component({ 
+  data, 
+  onChange,
+  isConnectable = true
+}: { 
+  data: FunctionNodeData; 
   onChange: (data: FunctionNodeData) => void;
-}> = ({ data, onChange }) => {
+  isConnectable?: boolean;
+}) {
   const [code, setCode] = useState(data.code || defaultData.code);
 
   const handleCodeChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
@@ -37,31 +42,46 @@ export const component: React.FC<{
   };
 
   return (
-    <div className="function-node">
-      <Handle type="target" position={Position.Left} id="input" />
+    <div className="p-3 rounded-md bg-background border shadow-sm min-w-[320px]">
+      {/* Input handle */}
+      <Handle
+        type="target"
+        position={Position.Top}
+        id="input"
+        isConnectable={isConnectable}
+        className="w-2 h-2 bg-blue-500"
+      />
       
-      <Card className="w-[400px]">
-        <CardHeader className="pb-2">
-          <CardTitle className="text-md">Function</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-2">
-            <Label htmlFor="code">JavaScript Code</Label>
-            <Textarea
-              id="code"
-              value={code}
-              onChange={handleCodeChange}
-              className="font-mono text-sm h-[200px]"
-              placeholder="Enter your JavaScript code here..."
-            />
-          </div>
-        </CardContent>
-      </Card>
+      <div className="flex items-center gap-2 mb-2">
+        <Code className="h-4 w-4 text-primary" />
+        <h3 className="text-sm font-medium">Function</h3>
+      </div>
       
-      <Handle type="source" position={Position.Right} id="output" />
+      <div className="space-y-2">
+        <Label htmlFor="code" className="text-xs">JavaScript Code</Label>
+        <Textarea
+          id="code"
+          value={code}
+          onChange={handleCodeChange}
+          className="font-mono text-xs h-[180px]"
+          placeholder="Enter your JavaScript code here..."
+        />
+        <p className="text-xs text-muted-foreground">
+          The 'inputs' variable contains data from connected nodes
+        </p>
+      </div>
+      
+      {/* Output handle */}
+      <Handle
+        type="source"
+        position={Position.Bottom}
+        id="output"
+        isConnectable={isConnectable}
+        className="w-2 h-2 bg-blue-500"
+      />
     </div>
   );
-};
+}
 
 export const validator = (data: FunctionNodeData) => {
   const errors: string[] = [];
