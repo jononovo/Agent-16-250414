@@ -1,0 +1,8 @@
+{
+  "name": "JSON Path",
+  "description": "Extract data from JSON objects using JSONPath expressions",
+  "category": "data",
+  "version": "1.0.0",
+  "tags": ["json", "path", "data", "extraction"],
+  "color": "#4CAF50"
+}
