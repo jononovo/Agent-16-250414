@@ -56,9 +56,70 @@ export function registerEnhancedNodeExecutor(nodeType: string, executor: Enhance
  */
 export async function registerAllEnhancedNodeExecutors(): Promise<void> {
   try {
-    // Import and call the registration function from the executors index
-    const { registerAllNodeExecutors } = await import('./enhancedNodeExecutors');
-    registerAllNodeExecutors();
+    // Import nodeSystem module that manages folder-based executors
+    const { getNodeExecutor } = await import('./enhancedNodeExecutors');
+    
+    // List of built-in node types we need to ensure are registered
+    const criticalNodeTypes = [
+      'text_input', 
+      'claude',
+      'text_template',
+      'http_request'
+    ];
+    
+    // Ensure critical node types are registered
+    for (const nodeType of criticalNodeTypes) {
+      if (!getNodeExecutor(nodeType)) {
+        // Try to directly import the node's executor from folder structure
+        try {
+          const { execute } = await import(/* @vite-ignore */ `../nodes/${nodeType}/executor`);
+          
+          // Convert folder-based executor to enhanced format
+          registerEnhancedNodeExecutor(
+            nodeType,
+            createEnhancedNodeExecutor(
+              {
+                type: nodeType,
+                displayName: nodeType.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase()),
+                description: `${nodeType} node`,
+                icon: 'box',
+                category: 'general',
+                version: '1.0.0',
+                inputs: {},
+                outputs: {}
+              },
+              async (nodeData, inputs) => {
+                try {
+                  // Execute the node's folder-based executor
+                  const result = await execute(nodeData, inputs);
+                  
+                  // Format the result as a NodeExecutionData object
+                  return {
+                    items: Array.isArray(result) 
+                      ? result.map(item => ({ json: item, text: JSON.stringify(item) }))
+                      : [{ json: result, text: typeof result === 'string' ? result : JSON.stringify(result) }],
+                    meta: { startTime: new Date(), endTime: new Date() }
+                  };
+                } catch (error) {
+                  console.error(`Error executing ${nodeType} node with enhanced workflow engine:`, error);
+                  return {
+                    items: [{
+                      json: { error: error instanceof Error ? error.message : String(error) },
+                      text: error instanceof Error ? error.message : String(error)
+                    }],
+                    meta: { startTime: new Date(), endTime: new Date(), error: true }
+                  };
+                }
+              }
+            )
+          );
+          
+          console.log(`Registered executor for node type: ${nodeType}`);
+        } catch (error) {
+          console.error(`Error registering executor for ${nodeType}:`, error);
+        }
+      }
+    }
     
     console.log('All enhanced node executors registered successfully');
   } catch (error) {

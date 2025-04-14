@@ -84,36 +84,17 @@ export default function WorkflowTestBench() {
   useEffect(() => {
     const initWorkflowEngine = async () => {
       try {
-        // Register both traditional and folder-based node executors
+        // Direct initialization of folder-based node system
+        // Import the nodeSystem module that will handle node registration
+        const { registerNodeExecutorsFromRegistry } = await import('@/lib/nodeSystem');
+        
+        // Register all node executors directly from the folder-based system
+        registerNodeExecutorsFromRegistry();
+        
+        // Update the enhancedWorkflowEngine registration if needed
         await registerAllEnhancedNodeExecutors();
         
-        // Additional node registration check
-        // Import the enhancedNodeExecutors to ensure all executors are registered
-        const { getRegisteredNodeTypes, registerNodeExecutor } = await import('@/lib/enhancedNodeExecutors');
-        
-        // Log the registered node types for debugging
-        const registeredTypes = getRegisteredNodeTypes();
-        console.log('Registered node types:', registeredTypes);
-        
-        // Ensure text_input is registered since it's commonly used
-        if (!registeredTypes.includes('text_input')) {
-          console.warn('text_input node not registered, adding manual implementation');
-          
-          // Manually register text_input node if folder-based registration failed
-          registerNodeExecutor('text_input', async (nodeData: any) => {
-            const inputText = nodeData.inputText || '';
-            return {
-              meta: {
-                status: 'success',
-                message: 'Text input processed',
-                startTime: new Date().toISOString(),
-                endTime: new Date().toISOString()
-              },
-              items: [{ json: { text: inputText }, binary: null }]
-            };
-          });
-        }
-        
+        // Log success message
         console.log('Workflow engine initialized with folder-based node system');
       } catch (err) {
         console.error('Failed to initialize workflow engine:', err);
