@@ -1,11 +1,8 @@
 {
-  "type": "text_input",
   "name": "Text Input",
-  "description": "Captures text input for use in workflows",
-  "icon": "type",
+  "description": "A node that provides text input for workflows",
   "category": "input",
   "version": "1.0.0",
-  "author": "AI Agent Platform",
-  "license": "MIT",
-  "tags": ["input", "text", "user input"]
+  "tags": ["input", "text", "basic"],
+  "color": "#3b82f6"
 }

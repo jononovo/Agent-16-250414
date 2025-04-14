@@ -1,35 +1,30 @@
 /**
- * Text Input Node - Main Export File
+ * Text Input Node
+ * 
+ * This node provides a simple text input that can be connected to other nodes.
+ * It's a fundamental building block for workflows.
  */
-import UIComponent from './ui';
-import executor from './executor';
-import schema from './schema';
-// Import metadata from JSON
+
+import { NodeRegistryEntry } from '../registry';
 import metadata from './metadata.json';
-// For SVG imports, we can use URL import
-import iconUrl from './icon.svg';
+import schema from './schema';
+import * as executor from './executor';
+import * as ui from './ui';
+import { MessageSquare } from 'lucide-react';
+import React from 'react';
 
-// Node type from metadata
-const TYPE = metadata.type;
-
-// Export individual pieces
-export {
-  UIComponent,    // UI Component
-  executor,       // Execution Logic
-  schema,         // Node Schema
-  metadata,       // Node Metadata
-  iconUrl         // Node Icon URL
-};
-
-// Create the node definition object that follows the registry structure
-const textInputNode = {
-  type: TYPE,
-  component: UIComponent,
-  executor,
-  schema,
+// Text Input Node Implementation
+const TextInputNode: NodeRegistryEntry = {
+  type: 'text_input',
   metadata,
-  icon: metadata.icon // Using the icon name from metadata for Lucide icons
+  schema,
+  executor,
+  ui: {
+    component: ui.component,
+    defaultData: ui.defaultData,
+    validator: ui.validator
+  },
+  icon: React.createElement(MessageSquare, { size: 16 })
 };
 
-// Default export for direct import and registration
-export default textInputNode;
+export default TextInputNode;

@@ -1,65 +1,69 @@
 /**
  * Claude Node Schema
- * Defines the node's inputs, outputs, and properties
+ * 
+ * Defines the inputs, outputs, and parameters for the Claude AI node.
  */
 
-// Schema for the Claude node
-export const schema = {
-  // Inputs this node can receive
+import { NodeSchema } from '../registry';
+
+// Schema definition
+const schema: NodeSchema = {
+  // Inputs to the node
   inputs: {
     prompt: {
       type: 'string',
-      description: 'Input prompt to send to Claude'
-    },
-    systemPrompt: {
-      type: 'string',
-      description: 'System instructions for Claude',
-      required: false
+      description: 'The input text to send to Claude'
     }
   },
   
-  // Outputs this node produces
+  // Outputs from the node
   outputs: {
     response: {
       type: 'string',
-      description: 'Generated response from Claude'
+      description: 'The text response from Claude'
     },
-    metadata: {
+    fullResponse: {
       type: 'object',
-      description: 'Additional metadata about the response'
+      description: 'The complete response object from the Claude API'
     }
   },
-
-  // Properties/configuration options for this node
-  properties: {
+  
+  // Parameters that can be configured
+  parameters: {
+    prompt: {
+      type: 'string',
+      description: 'The prompt to send to Claude',
+      default: '',
+      required: true
+    },
     model: {
       type: 'string',
+      description: 'The Claude model to use',
+      default: 'claude-3-haiku-20240307',
       enum: [
         'claude-3-opus-20240229',
         'claude-3-sonnet-20240229',
         'claude-3-haiku-20240307'
-      ],
-      default: 'claude-3-opus-20240229',
-      description: 'Claude model to use'
-    },
-    temperature: {
-      type: 'number',
-      minimum: 0,
-      maximum: 1,
-      default: 0.7,
-      description: 'Temperature for response generation'
+      ]
     },
     maxTokens: {
       type: 'number',
-      minimum: 1,
-      maximum: 4096,
+      description: 'Maximum tokens to generate',
       default: 1000,
-      description: 'Maximum tokens to generate'
+      minimum: 1,
+      maximum: 4096
     },
-    apiKey: {
+    temperature: {
+      type: 'number',
+      description: 'Temperature for response generation',
+      default: 0.7,
+      minimum: 0,
+      maximum: 1
+    },
+    systemPrompt: {
       type: 'string',
-      description: 'API key for Claude (will use system default if empty)',
-      required: false
+      description: 'System prompt that guides Claude behavior',
+      default: ''
     }
   }
 };

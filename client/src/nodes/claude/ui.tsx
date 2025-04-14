@@ -1,182 +1,189 @@
 /**
  * Claude Node UI Component
- * Visual representation of the Claude node in the flow editor
+ * 
+ * This file contains the React component used to render the Claude node
+ * in the workflow editor.
  */
-import { useState } from 'react';
-import { Handle, Position, NodeProps, useReactFlow } from 'reactflow';
-import { Card, CardContent, CardHeader, CardFooter } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
-import { Sparkles, Settings, Info } from 'lucide-react';
-import { Textarea } from '@/components/ui/textarea';
-import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@/components/ui/select';
-import { Slider } from '@/components/ui/slider';
-import { ClaudeNodeData } from './executor';
-import metadata from './metadata.json';
 
-// The UI component for Claude node
-const ClaudeNodeUI = ({ data, selected, id }: NodeProps<ClaudeNodeData>) => {
-  const { setNodes } = useReactFlow();
-  const [showSettings, setShowSettings] = useState(false);
+import React, { useState } from 'react';
+import { Handle, Position } from 'reactflow';
+import { Textarea } from '@/components/ui/textarea';
+import { Label } from '@/components/ui/label';
+import { Slider } from '@/components/ui/slider';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Input } from '@/components/ui/input';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+
+// Default data for the node
+export const defaultData = {
+  prompt: '',
+  model: 'claude-3-haiku-20240307',
+  temperature: 0.7,
+  maxTokens: 1000,
+  systemPrompt: ''
+};
+
+// Validator for the node data
+export const validator = (data: any) => {
+  const errors = [];
   
-  // Available models
-  const models = [
-    { value: 'claude-3-opus-20240229', label: 'Claude 3 Opus' },
-    { value: 'claude-3-sonnet-20240229', label: 'Claude 3 Sonnet' },
-    { value: 'claude-3-haiku-20240307', label: 'Claude 3 Haiku' }
-  ];
+  if (!data.prompt) {
+    errors.push('Prompt is required');
+  }
   
-  // Update node data when configuration changes
-  const updateNodeData = (updates: Partial<ClaudeNodeData>) => {
-    setNodes(nodes => 
-      nodes.map(node => {
-        if (node.id === id) {
-          return {
-            ...node,
-            data: {
-              ...node.data,
-              ...updates
-            }
-          };
-        }
-        return node;
-      })
-    );
+  if (data.temperature < 0 || data.temperature > 1) {
+    errors.push('Temperature must be between 0 and 1');
+  }
+  
+  if (data.maxTokens < 1 || data.maxTokens > 4096) {
+    errors.push('Max tokens must be between 1 and 4096');
+  }
+  
+  return {
+    valid: errors.length === 0,
+    errors
+  };
+};
+
+// React component for the node
+export const component = ({ data, isConnectable }: any) => {
+  const [localModel, setLocalModel] = useState(data.model || 'claude-3-haiku-20240307');
+  const [localTemperature, setLocalTemperature] = useState(data.temperature !== undefined ? data.temperature : 0.7);
+  const [localMaxTokens, setLocalMaxTokens] = useState(data.maxTokens || 1000);
+  const [localPrompt, setLocalPrompt] = useState(data.prompt || '');
+  const [localSystemPrompt, setLocalSystemPrompt] = useState(data.systemPrompt || '');
+  
+  // Update the node data when values change
+  const updateNodeData = (updates: Record<string, any>) => {
+    if (data && typeof data.onChange === 'function') {
+      data.onChange({
+        ...data,
+        ...updates
+      });
+    }
+  };
+  
+  const handlePromptChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    const newValue = e.target.value;
+    setLocalPrompt(newValue);
+    updateNodeData({ prompt: newValue });
+  };
+  
+  const handleSystemPromptChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    const newValue = e.target.value;
+    setLocalSystemPrompt(newValue);
+    updateNodeData({ systemPrompt: newValue });
+  };
+  
+  const handleModelChange = (value: string) => {
+    setLocalModel(value);
+    updateNodeData({ model: value });
+  };
+  
+  const handleTemperatureChange = (value: number[]) => {
+    setLocalTemperature(value[0]);
+    updateNodeData({ temperature: value[0] });
+  };
+  
+  const handleMaxTokensChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = parseInt(e.target.value, 10);
+    setLocalMaxTokens(value);
+    updateNodeData({ maxTokens: value });
   };
   
   return (
-    <Card className={`w-72 transition-all duration-200 ${selected ? 'ring-2 ring-primary' : ''}`}
-        style={{ background: '#111', color: '#fff', borderColor: '#333' }}>
-      <CardHeader className="flex flex-row items-center justify-between p-3 pb-2">
-        <div className="flex items-center gap-2">
-          <div className="w-6 h-6 rounded-md bg-purple-900 flex items-center justify-center text-purple-300">
-            <Sparkles className="h-4 w-4" />
-          </div>
-          <span className="font-medium text-sm truncate">{data.label || metadata.name}</span>
-        </div>
-        <Badge variant="outline" className="bg-purple-950 text-purple-300 text-[10px] font-normal border-purple-800">AI</Badge>
-      </CardHeader>
-      
-      <CardContent className="p-3 pt-0">
-        {showSettings ? (
-          <div className="space-y-3">
-            <div className="space-y-1">
-              <label className="text-xs text-zinc-400">Model</label>
-              <Select
-                value={data.model || 'claude-3-opus-20240229'}
-                onValueChange={(value) => updateNodeData({ model: value })}
-              >
-                <SelectTrigger className="h-8 text-xs bg-zinc-900 border-zinc-700">
-                  <SelectValue placeholder="Select Model" />
-                </SelectTrigger>
-                <SelectContent className="bg-zinc-900 border-zinc-700 text-zinc-300">
-                  {models.map((model) => (
-                    <SelectItem key={model.value} value={model.value} className="text-xs">
-                      {model.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            
-            <div className="space-y-1">
-              <div className="flex justify-between">
-                <label className="text-xs text-zinc-400">Temperature</label>
-                <span className="text-xs text-zinc-400">{data.temperature || 0.7}</span>
-              </div>
-              <Slider 
-                value={[data.temperature || 0.7]}
-                min={0}
-                max={1}
-                step={0.1}
-                onValueChange={([value]) => updateNodeData({ temperature: value })}
-                className="py-1"
-              />
-            </div>
-            
-            <div className="space-y-1">
-              <div className="flex justify-between">
-                <label className="text-xs text-zinc-400">Max Tokens</label>
-                <span className="text-xs text-zinc-400">{data.maxTokens || 1000}</span>
-              </div>
-              <Slider 
-                value={[data.maxTokens || 1000]}
-                min={100}
-                max={4000}
-                step={100}
-                onValueChange={([value]) => updateNodeData({ maxTokens: value })}
-                className="py-1"
-              />
-            </div>
-            
-            <div className="space-y-1">
-              <label className="text-xs text-zinc-400">System Prompt</label>
-              <Textarea 
-                placeholder="Instructions for Claude"
-                className="bg-zinc-900 border-zinc-700 text-zinc-300 min-h-[80px] text-xs"
-                value={data.systemPrompt || ''}
-                onChange={(e) => updateNodeData({ systemPrompt: e.target.value })}
-              />
-            </div>
-          </div>
-        ) : (
-          <div className="space-y-2">
-            <div className="text-xs text-purple-300 rounded-sm bg-purple-950/30 p-2 border border-purple-900/50">
-              <div className="flex items-center gap-1 mb-1">
-                <Info className="h-3 w-3" />
-                <span className="font-medium">Claude AI</span>
-              </div>
-              <p className="text-xs opacity-80">
-                Generates AI responses using Claude language models.
-              </p>
-            </div>
-            
-            <div>
-              <Badge variant="outline" className="bg-zinc-900 text-zinc-400 text-[10px] border-zinc-800">
-                {data.model || 'claude-3-opus-20240229'}
-              </Badge>
-            </div>
-          </div>
-        )}
-      </CardContent>
-      
-      <CardFooter className="p-2 flex justify-between items-center border-t border-zinc-800">
-        <Badge className="bg-purple-950 text-purple-300 text-[10px] border-none">
-          {showSettings ? 'Settings' : 'Claude AI'}
-        </Badge>
-        <Button 
-          variant="outline" 
-          size="sm" 
-          className="h-7 text-xs bg-zinc-800 text-zinc-300 border-zinc-700 hover:bg-zinc-700"
-          onClick={() => setShowSettings(!showSettings)}
-        >
-          {showSettings ? 'Back' : <Settings className="h-3 w-3" />}
-        </Button>
-      </CardFooter>
-      
-      {/* Input handles */}
-      <Handle
-        type="target"
-        position={Position.Left}
-        id="prompt"
-        className="!w-3 !h-3 !-ml-0.5 !border-2 !border-zinc-500 !bg-zinc-900"
-      />
+    <div className="p-3 rounded-md bg-background border shadow-sm min-w-[320px]">
+      {/* Input handle */}
       <Handle
         type="target"
         position={Position.Top}
-        id="systemPrompt"
-        className="!w-3 !h-3 !-mt-0.5 !border-2 !border-zinc-500 !bg-zinc-900"
+        id="prompt"
+        isConnectable={isConnectable}
+        className="w-2 h-2 bg-blue-500"
       />
+      
+      <Tabs defaultValue="prompt" className="w-full">
+        <TabsList className="w-full mb-2">
+          <TabsTrigger value="prompt" className="flex-1">Prompt</TabsTrigger>
+          <TabsTrigger value="settings" className="flex-1">Settings</TabsTrigger>
+        </TabsList>
+        
+        <TabsContent value="prompt" className="space-y-2">
+          <div>
+            <Label htmlFor="prompt">Prompt</Label>
+            <Textarea
+              id="prompt"
+              value={localPrompt}
+              onChange={handlePromptChange}
+              placeholder="Enter your prompt for Claude..."
+              rows={4}
+              className="mt-1"
+            />
+          </div>
+          
+          <div>
+            <Label htmlFor="systemPrompt">System Prompt (Optional)</Label>
+            <Textarea
+              id="systemPrompt"
+              value={localSystemPrompt}
+              onChange={handleSystemPromptChange}
+              placeholder="Enter system instructions for Claude..."
+              rows={2}
+              className="mt-1"
+            />
+          </div>
+        </TabsContent>
+        
+        <TabsContent value="settings" className="space-y-3">
+          <div>
+            <Label htmlFor="model">Model</Label>
+            <Select value={localModel} onValueChange={handleModelChange}>
+              <SelectTrigger id="model" className="mt-1">
+                <SelectValue placeholder="Select a model" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="claude-3-opus-20240229">Claude 3 Opus</SelectItem>
+                <SelectItem value="claude-3-sonnet-20240229">Claude 3 Sonnet</SelectItem>
+                <SelectItem value="claude-3-haiku-20240307">Claude 3 Haiku</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          
+          <div>
+            <Label>Temperature: {localTemperature.toFixed(1)}</Label>
+            <Slider
+              value={[localTemperature]}
+              onValueChange={handleTemperatureChange}
+              min={0}
+              max={1}
+              step={0.1}
+              className="mt-1"
+            />
+          </div>
+          
+          <div>
+            <Label htmlFor="maxTokens">Max Tokens</Label>
+            <Input
+              id="maxTokens"
+              type="number"
+              value={localMaxTokens}
+              onChange={handleMaxTokensChange}
+              min={1}
+              max={4096}
+              className="mt-1"
+            />
+          </div>
+        </TabsContent>
+      </Tabs>
       
       {/* Output handle */}
       <Handle
         type="source"
-        position={Position.Right}
+        position={Position.Bottom}
         id="response"
-        className="!w-3 !h-3 !-mr-0.5 !border-2 !border-purple-500 !bg-zinc-900"
+        isConnectable={isConnectable}
+        className="w-2 h-2 bg-blue-500"
       />
-    </Card>
+    </div>
   );
 };
-
-export default ClaudeNodeUI;

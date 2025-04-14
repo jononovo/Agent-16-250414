@@ -3,8 +3,8 @@
  * 
  * This file provides utility functions for node execution in workflows.
  */
-import { getNodeByType } from './nodeRegistry';
-import { NodeExecutionData } from './types/workflow';
+
+import { getNodeByType } from '../nodes/registry';
 
 /**
  * Execute a node with the given data and inputs
@@ -15,32 +15,32 @@ import { NodeExecutionData } from './types/workflow';
  * @returns The execution result
  */
 export async function executeNode(
-  nodeType: string, 
+  nodeType: string,
   nodeData: any,
-  inputs: Record<string, NodeExecutionData> = {}
-): Promise<NodeExecutionData> {
-  // Get the node definition from the registry
+  inputs?: any
+): Promise<any> {
+  // Get the node from the registry
   const node = getNodeByType(nodeType);
   
   if (!node) {
     throw new Error(`Node type not found: ${nodeType}`);
   }
   
+  // Execute the node using its executor
   try {
-    // Execute the node with the provided data and inputs
     return await node.executor.execute(nodeData, inputs);
   } catch (error: any) {
     console.error(`Error executing node ${nodeType}:`, error);
     
-    // Return error result
+    // Return a standardized error response
     return {
-      items: [],
       meta: {
-        startTime: new Date(),
-        endTime: new Date(),
         status: 'error',
-        message: error.message || `Error executing node ${nodeType}`
-      }
+        message: error.message || `Error executing ${nodeType} node`,
+        startTime: new Date().toISOString(),
+        endTime: new Date().toISOString()
+      },
+      items: []
     };
   }
 }
@@ -50,93 +50,71 @@ export async function executeNode(
  * This is a simplified version of a workflow execution engine
  */
 export async function executeSimpleWorkflow(
-  nodes: Array<{type: string, id: string, data: any}>,
-  edges: Array<{source: string, sourceHandle: string, target: string, targetHandle: string}>,
-  inputData: Record<string, any> = {}
-): Promise<Record<string, NodeExecutionData>> {
-  // Store node execution results by node ID
-  const results: Record<string, NodeExecutionData> = {};
+  nodes: any[],
+  edges: any[],
+  inputData: any = {}
+): Promise<any> {
+  // Map of node ID to its output data
+  const nodeOutputs: Record<string, any> = {};
   
-  // Determine node execution order (simple topological sort)
-  const visited = new Set<string>();
-  const executionOrder: string[] = [];
-  
-  // Create a map of node dependencies
-  const incomingEdges: Record<string, Array<{source: string, sourceHandle: string, targetHandle: string}>> = {};
-  
-  // Initialize empty arrays for all nodes
-  nodes.forEach(node => {
-    incomingEdges[node.id] = [];
+  // Find input nodes (nodes with no incoming edges)
+  const inputNodes = nodes.filter(node => {
+    return !edges.some(edge => edge.target === node.id);
   });
   
-  // Populate incoming edges
-  edges.forEach(edge => {
-    if (!incomingEdges[edge.target]) {
-      incomingEdges[edge.target] = [];
-    }
-    incomingEdges[edge.target].push({
-      source: edge.source,
-      sourceHandle: edge.sourceHandle,
-      targetHandle: edge.targetHandle
-    });
-  });
-  
-  // Find nodes with no dependencies
-  const startNodes = nodes.filter(node => incomingEdges[node.id].length === 0);
-  
-  // Simple recursive function to process nodes in order
-  const processNode = (nodeId: string) => {
-    if (visited.has(nodeId)) return;
-    visited.add(nodeId);
-    
-    // Process all dependencies first
-    for (const edge of incomingEdges[nodeId]) {
-      processNode(edge.source);
-    }
-    
-    executionOrder.push(nodeId);
-  };
-  
-  // Start with nodes that have no incoming edges
-  startNodes.forEach(node => {
-    processNode(node.id);
-  });
-  
-  // Execute nodes in order
-  for (const nodeId of executionOrder) {
-    const node = nodes.find(n => n.id === nodeId);
-    if (!node) continue;
-    
-    // Gather inputs from connected nodes
-    const nodeInputs: Record<string, NodeExecutionData> = {};
-    
-    // Get edges that target this node
-    for (const edge of incomingEdges[nodeId]) {
-      const sourceNode = results[edge.source];
-      if (!sourceNode) continue;
-      
-      // Connect the source output to target input based on handles
-      nodeInputs[edge.targetHandle || 'default'] = sourceNode;
-    }
-    
-    // Add any direct inputs from the workflow input
-    if (inputData[nodeId]) {
-      if (!nodeInputs.input) {
-        nodeInputs.input = { items: [], meta: { startTime: new Date(), endTime: new Date(), status: 'success' } };
-      }
-      
-      nodeInputs.input.items = [{ json: inputData[nodeId] }];
-    }
-    
-    // Execute the node
-    console.log(`Executing node ${nodeId} (${node.type})...`);
-    results[nodeId] = await executeNode(node.type, node.data, nodeInputs);
+  // Apply input data to input nodes
+  for (const node of inputNodes) {
+    nodeOutputs[node.id] = {
+      output: inputData[node.id] || null
+    };
   }
   
-  return results;
+  // Create a queue of nodes to process
+  const nodeQueue = [...nodes.filter(node => !inputNodes.includes(node))];
+  
+  // Process nodes until the queue is empty
+  while (nodeQueue.length > 0) {
+    const nodeToProcess = nodeQueue[0];
+    
+    // Get all inputs to this node
+    const nodeInputs: Record<string, any> = {};
+    const inputEdges = edges.filter(edge => edge.target === nodeToProcess.id);
+    
+    // Check if all inputs are available
+    const allInputsAvailable = inputEdges.every(edge => nodeOutputs[edge.source]);
+    
+    if (!allInputsAvailable) {
+      // Move this node to the end of the queue and continue
+      nodeQueue.shift();
+      nodeQueue.push(nodeToProcess);
+      continue;
+    }
+    
+    // Collect input data for the node
+    for (const edge of inputEdges) {
+      nodeInputs[edge.source] = nodeOutputs[edge.source];
+    }
+    
+    try {
+      // Execute the node
+      const result = await executeNode(
+        nodeToProcess.data.type,
+        nodeToProcess.data,
+        nodeInputs
+      );
+      
+      // Store the output
+      nodeOutputs[nodeToProcess.id] = result;
+      
+      // Remove the node from the queue
+      nodeQueue.shift();
+    } catch (error) {
+      console.error(`Error executing node ${nodeToProcess.id}:`, error);
+      // Remove the node from the queue to avoid infinite loops
+      nodeQueue.shift();
+    }
+  }
+  
+  // Return all node outputs
+  return nodeOutputs;
 }
-
-export default {
-  executeNode,
-  executeSimpleWorkflow
-};

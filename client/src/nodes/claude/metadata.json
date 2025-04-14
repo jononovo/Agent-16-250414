@@ -1,11 +1,8 @@
 {
-  "type": "claude",
   "name": "Claude AI",
-  "description": "Generate content with Anthropic's Claude AI model",
-  "icon": "sparkles",
+  "description": "Generate text using Anthropic's Claude AI model",
   "category": "ai",
   "version": "1.0.0",
-  "author": "AI Agent Platform",
-  "license": "MIT",
-  "tags": ["ai", "llm", "text generation", "claude", "anthropic"]
+  "tags": ["ai", "text generation", "claude", "llm"],
+  "color": "#5646ED"
 }

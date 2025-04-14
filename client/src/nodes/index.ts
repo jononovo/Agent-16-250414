@@ -5,18 +5,54 @@
  * It re-exports everything from the registry for convenience.
  */
 
-import { nodeTypes, nodeRegistry, registerNode } from './registry';
+import { 
+  nodeTypes, 
+  nodeRegistry, 
+  registerNode, 
+  getAllCategories, 
+  getNodesInCategory, 
+  getNodeByType, 
+  getAllNodes,
+  NodeSchema,
+  NodeMetadata,
+  NodeExecutor,
+  NodeUI,
+  NodeRegistryEntry
+} from './registry';
+
+// Individual node exports
+import TextInputNode from './text_input';
+import ClaudeNode from './claude';
 
 export {
   // Node registry and types
   nodeTypes,
   nodeRegistry,
-  registerNode
+  registerNode,
+  getAllCategories,
+  getNodesInCategory,
+  getNodeByType,
+  getAllNodes,
+  
+  // Node interfaces
+  NodeSchema,
+  NodeMetadata,
+  NodeExecutor,
+  NodeUI,
+  NodeRegistryEntry,
+  
+  // Individual nodes
+  TextInputNode,
+  ClaudeNode
 };
 
 // Default export includes everything
 export default {
   nodeTypes,
   nodeRegistry,
-  registerNode
+  registerNode,
+  getAllCategories,
+  getNodesInCategory,
+  getNodeByType,
+  getAllNodes
 };

@@ -1,35 +1,29 @@
 /**
- * Claude Node - Main Export File
+ * Claude AI Node
+ * 
+ * This node provides integration with the Claude AI API for text generation.
  */
-import UIComponent from './ui';
-import executor from './executor';
-import schema from './schema';
-// Import metadata from JSON
+
+import { NodeRegistryEntry } from '../registry';
 import metadata from './metadata.json';
-// For SVG imports
-import iconUrl from './icon.svg';
+import schema from './schema';
+import * as executor from './executor';
+import * as ui from './ui';
+import { Sparkles } from 'lucide-react';
+import React from 'react';
 
-// Node type from metadata
-const TYPE = metadata.type;
-
-// Export individual pieces
-export {
-  UIComponent,    // UI Component
-  executor,       // Execution Logic
-  schema,         // Node Schema
-  metadata,       // Node Metadata
-  iconUrl         // Node Icon URL
-};
-
-// Create the node definition object that follows the registry structure
-const claudeNode = {
-  type: TYPE,
-  component: UIComponent,
-  executor,
-  schema,
+// Claude Node Implementation
+const ClaudeNode: NodeRegistryEntry = {
+  type: 'claude',
   metadata,
-  icon: metadata.icon // Using the icon name from metadata for Lucide icons
+  schema,
+  executor,
+  ui: {
+    component: ui.component,
+    defaultData: ui.defaultData,
+    validator: ui.validator
+  },
+  icon: React.createElement(Sparkles, { size: 16 })
 };
 
-// Default export for direct import and registration
-export default claudeNode;
+export default ClaudeNode;

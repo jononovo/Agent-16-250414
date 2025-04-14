@@ -5,8 +5,9 @@
  * It shows the available nodes and allows testing their execution.
  */
 import { useState, useEffect } from 'react';
-import { getAllNodes, getNodesByCategory, getAllCategories } from '../lib/nodeRegistry';
+import { getAllNodes, getNodesInCategory, getAllCategories } from '../nodes/registry';
 import { executeNode } from '../lib/nodeExecution';
+import { testNodeSystem } from '../test-node-system';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -46,7 +47,7 @@ export default function NodeSystemDemo() {
   useEffect(() => {
     if (selectedCategory) {
       try {
-        const categoryNodes = getNodesByCategory(selectedCategory);
+        const categoryNodes = getNodesInCategory(selectedCategory);
         setNodes(categoryNodes);
         
         if (categoryNodes.length > 0 && (!selectedNode || !categoryNodes.includes(selectedNode))) {
@@ -91,9 +92,25 @@ export default function NodeSystemDemo() {
     }
   };
 
+  // Run the node system test suite
+  const runNodeSystemTest = async () => {
+    try {
+      setError(null);
+      console.clear();
+      await testNodeSystem();
+    } catch (err: any) {
+      setError(`Error running node system test: ${err.message}`);
+    }
+  };
+
   return (
     <div className="container mx-auto py-8 px-4">
-      <h1 className="text-3xl font-bold mb-6">Node System Demo</h1>
+      <div className="flex items-center justify-between mb-6">
+        <h1 className="text-3xl font-bold">Node System Demo</h1>
+        <Button onClick={runNodeSystemTest} variant="outline">
+          Run Complete Test
+        </Button>
+      </div>
       
       {error && (
         <Alert variant="destructive" className="mb-6">

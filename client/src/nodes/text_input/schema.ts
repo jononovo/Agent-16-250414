@@ -1,42 +1,41 @@
 /**
  * Text Input Node Schema
- * Defines the node's inputs, outputs, and properties
+ * 
+ * Defines the inputs, outputs, and parameters for the text input node.
  */
 
-// Schema for the text input node
-export const schema = {
-  // Inputs this node can receive
+import { NodeSchema } from '../registry';
+
+// Schema definition
+const schema: NodeSchema = {
+  // This node has no inputs as it's typically a starting point
   inputs: {},
   
-  // Outputs this node produces
+  // It outputs a text string
   outputs: {
     text: {
       type: 'string',
-      description: 'The input text'
+      description: 'The text entered by the user'
     }
   },
-
-  // Properties/configuration options for this node
-  properties: {
-    placeholder: {
+  
+  // Parameters that can be configured
+  parameters: {
+    inputText: {
       type: 'string',
-      default: 'Enter your text here...',
-      description: 'Placeholder text to display in the input field'
-    },
-    defaultValue: {
-      type: 'string',
+      description: 'The input text',
       default: '',
-      description: 'Default text to pre-fill in the input field'
+      required: true
     },
     label: {
       type: 'string',
-      default: 'Text Input',
-      description: 'Label to display for this node'
+      description: 'A label for the input field',
+      default: 'Input Text'
     },
-    required: {
-      type: 'boolean',
-      default: false,
-      description: 'Whether input is required'
+    placeholder: {
+      type: 'string',
+      description: 'Placeholder text when empty',
+      default: 'Enter text here...'
     }
   }
 };
