@@ -27,7 +27,7 @@ import { queryClient } from '@/lib/queryClient';
 import { apiRequest } from '@/lib/queryClient';
 import { ArrowLeft, Save, Play, Settings, TestTube } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-import MonkeyAgentChatOverlay from '@/components/workflows/WorkflowGenerationChatOverlay';
+import MonkeyAgentChatOverlay from '@/components/workflows/MonkeyAgentChatOverlay';
 import NodeSettingsDrawer from './NodeSettingsDrawer';
 
 // Import node components
