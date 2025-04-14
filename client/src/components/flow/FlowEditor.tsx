@@ -55,6 +55,7 @@ import ApiResponseMessageNode from '../flow/nodes/ApiResponseMessageNode';
 // Import our new folder-based node components
 import nodeRegistry from '../../nodes/registry';
 import { component as functionNode } from '../../nodes/function/ui';
+import { component as claudeNode } from '../../nodes/claude/ui';
 
 // Register node types according to the documentation
 const nodeTypes: NodeTypes = {
@@ -65,7 +66,7 @@ const nodeTypes: NodeTypes = {
   visualize_text: VisualizeTextNode,
   transform: TransformNode,
   chat_interface: ChatInterfaceNode,
-  claude: ClaudeNode,
+  claude: claudeNode,
   
   // Specialized AI nodes
   generate_text: GenerateTextNode,
