@@ -15,6 +15,7 @@ const NodeHoverMenu = ({
   position,
   onDuplicate, 
   onDelete, 
+  onSettings,
   onMonkeyAgentModify 
 }: { 
   nodeId: string;
@@ -23,6 +24,7 @@ const NodeHoverMenu = ({
   position: { x: number, y: number };
   onDuplicate: () => void;
   onDelete: () => void;
+  onSettings: () => void;
   onMonkeyAgentModify: () => void;
 }) => {
   return (
@@ -45,6 +47,16 @@ const NodeHoverMenu = ({
         title="Delete node"
       >
         <Lucide.Trash2 className="h-4 w-4" />
+      </Button>
+      
+      <Button 
+        variant="ghost" 
+        size="icon"
+        className="h-8 w-8 hover:bg-slate-100 text-indigo-500"
+        onClick={onSettings}
+        title="Node settings"
+      >
+        <Lucide.Settings className="h-4 w-4" />
       </Button>
       
       <Button 
@@ -314,6 +326,7 @@ const ClaudeNode = ({ data, selected, id, xPos, yPos }: NodeProps<NodeData>) => 
           position={{ x: xPos || 0, y: yPos || 0 }}
           onDuplicate={handleDuplicate}
           onDelete={handleDelete}
+          onSettings={openSettings}
           onMonkeyAgentModify={handleMonkeyAgentModify}
         />
       )}

@@ -13,7 +13,8 @@ const NodeHoverMenu = ({
   nodeData, 
   position,
   onDuplicate, 
-  onDelete, 
+  onDelete,
+  onSettings,
   onMonkeyAgentModify 
 }: { 
   nodeId: string;
@@ -22,38 +23,49 @@ const NodeHoverMenu = ({
   position: { x: number, y: number };
   onDuplicate: () => void;
   onDelete: () => void;
+  onSettings: () => void;
   onMonkeyAgentModify: () => void;
 }) => {
   return (
-    <div className="absolute z-50 bg-white rounded-md shadow-lg border border-slate-200 p-1 flex flex-col gap-1">
+    <div className="absolute z-50 right-0 top-0 translate-x-[calc(100%)] bg-white rounded-md shadow-lg border border-slate-200 p-1 flex flex-col gap-1">
       <Button 
         variant="ghost" 
-        size="sm" 
-        className="flex items-center justify-start px-2 py-1 h-8 hover:bg-slate-100"
+        size="icon"
+        className="h-8 w-8 hover:bg-slate-100"
         onClick={onDuplicate}
+        title="Duplicate node"
       >
-        <Lucide.Copy className="h-4 w-4 mr-2" />
-        <span className="text-xs">Duplicate</span>
+        <Lucide.Copy className="h-4 w-4" />
       </Button>
       
       <Button 
         variant="ghost" 
-        size="sm" 
-        className="flex items-center justify-start px-2 py-1 h-8 hover:bg-slate-100 text-red-500 hover:text-red-600"
+        size="icon"
+        className="h-8 w-8 hover:bg-slate-100 text-red-500 hover:text-red-600"
         onClick={onDelete}
+        title="Delete node"
       >
-        <Lucide.Trash2 className="h-4 w-4 mr-2" />
-        <span className="text-xs">Delete</span>
+        <Lucide.Trash2 className="h-4 w-4" />
       </Button>
       
       <Button 
         variant="ghost" 
-        size="sm" 
-        className="flex items-center justify-start px-2 py-1 h-8 hover:bg-slate-100 text-primary"
-        onClick={onMonkeyAgentModify}
+        size="icon"
+        className="h-8 w-8 hover:bg-slate-100 text-primary"
+        onClick={onSettings}
+        title="Node settings"
       >
-        <Lucide.Bot className="h-4 w-4 mr-2" />
-        <span className="text-xs">MonkeyAgent Modify</span>
+        <Lucide.Settings className="h-4 w-4" />
+      </Button>
+      
+      <Button 
+        variant="ghost" 
+        size="icon"
+        className="h-8 w-8 hover:bg-slate-100 text-primary"
+        onClick={onMonkeyAgentModify}
+        title="MonkeyAgent Modify"
+      >
+        <Lucide.Bot className="h-4 w-4" />
       </Button>
     </div>
   );
@@ -134,6 +146,17 @@ const CustomNode = ({ id, type, data, selected, xPos, yPos }: NodeProps<NodeData
     window.dispatchEvent(event);
   };
   
+  // Open settings drawer when settings button is clicked
+  const openSettings = () => {
+    if (reactFlowInstance && id) {
+      // Dispatch a custom event that FlowEditor listens for
+      const event = new CustomEvent('node-settings-open', { 
+        detail: { nodeId: id }
+      });
+      window.dispatchEvent(event);
+    }
+  };
+  
   return (
     <div 
       ref={nodeRef}
@@ -183,6 +206,7 @@ const CustomNode = ({ id, type, data, selected, xPos, yPos }: NodeProps<NodeData
           position={{ x: xPos || 0, y: yPos || 0 }}
           onDuplicate={handleDuplicate}
           onDelete={handleDelete}
+          onSettings={openSettings}
           onMonkeyAgentModify={handleMonkeyAgentModify}
         />
       )}
