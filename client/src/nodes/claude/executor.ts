@@ -10,7 +10,62 @@ export const execute = async (nodeData: any, inputs?: any): Promise<any> => {
     const startTime = new Date();
     
     // Get inputs and parameters
-    const promptInput = inputs?.prompt?.text || '';
+    // Enhanced input handling to support various formats
+    let promptInput = '';
+    
+    if (inputs?.prompt) {
+      // Handle various possible input formats
+      if (typeof inputs.prompt === 'string') {
+        promptInput = inputs.prompt;
+      } else if (typeof inputs.prompt === 'object') {
+        // Try to extract text from various object structures
+        if (inputs.prompt?.text) {
+          promptInput = inputs.prompt.text;
+        } else if (inputs.prompt?.items && Array.isArray(inputs.prompt.items)) {
+          // Try to extract from items array
+          const item = inputs.prompt.items[0];
+          if (typeof item === 'string') {
+            promptInput = item;
+          } else if (item?.text) {
+            promptInput = item.text;
+          } else if (item?.json) {
+            // Try to find text in the json property
+            if (item.json.text) {
+              promptInput = item.json.text;
+            } else if (item.json.items && Array.isArray(item.json.items) && item.json.items.length > 0) {
+              // Handle deeper nesting
+              const nestedItem = item.json.items[0];
+              if (nestedItem?.json?.text) {
+                promptInput = nestedItem.json.text;
+              }
+            }
+          }
+        }
+      }
+      
+      // If the input is still a string and looks like JSON, try to parse it
+      // This handles cases where the output from the previous node was stringified
+      if (typeof promptInput === 'string' && promptInput.startsWith('{') && promptInput.includes('items')) {
+        try {
+          const parsedJson = JSON.parse(promptInput);
+          if (parsedJson.items && Array.isArray(parsedJson.items) && parsedJson.items.length > 0) {
+            const item = parsedJson.items[0];
+            if (item.json && item.json.text) {
+              promptInput = item.json.text;
+            }
+          }
+        } catch (e) {
+          // Failed to parse as JSON, keep using the string as is
+        }
+      }
+    }
+    
+    // Log what we received to help with debugging
+    console.log('Claude inputs received:', {
+      rawInput: inputs?.prompt,
+      extractedPrompt: promptInput
+    });
+    
     const prompt = nodeData.prompt || promptInput || '';
     const model = nodeData.model || 'claude-3-haiku-20240307';
     const temperature = nodeData.temperature !== undefined ? nodeData.temperature : 0.7;

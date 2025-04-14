@@ -313,6 +313,10 @@ export async function executeEnhancedWorkflow(
         const inputs: Record<string, NodeExecutionData> = {};
         const nodeInputMapping = inputMapping[nodeId] || {};
         
+        // Import the transformation utility
+        // @ts-ignore - This is dynamically loaded
+        const { transformNodeData } = await import('./nodeDataUtils');
+        
         // For each input target, get the output from the source node
         for (const [inputKey, { nodeId: sourceNodeId, outputKey }] of Object.entries(nodeInputMapping)) {
           const sourceOutput = executionState.nodeOutputs[sourceNodeId];
@@ -321,9 +325,26 @@ export async function executeEnhancedWorkflow(
             throw new Error(`No output available from source node ${sourceNodeId}`);
           }
           
-          // Get the output with the matching outputKey, or use the default if available
-          // Some nodes might not use named outputs
-          inputs[inputKey] = sourceOutput;
+          // Transform the output based on source node type and target node expectations
+          // Determine source type and target type (simplified for now)
+          const sourceType = typeof sourceOutput === 'object' ? 'object' : typeof sourceOutput;
+          const targetType = 'string'; // Simplified assumption for now
+          
+          // Transform the data for compatibility
+          try {
+            // First try to access specific outputKey if specified
+            let transformedOutput = sourceOutput;
+            
+            // Apply data transformation
+            transformedOutput = transformNodeData(transformedOutput, sourceType, targetType);
+            
+            // Set the transformed output as input
+            inputs[inputKey] = transformedOutput;
+          } catch (error) {
+            console.warn(`Error transforming data from node ${sourceNodeId} to ${nodeId}:`, error);
+            // Still use the raw output as fallback
+            inputs[inputKey] = sourceOutput;
+          }
         }
         
         // Use node data as inputs for any configured values
