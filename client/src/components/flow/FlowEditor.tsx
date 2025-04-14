@@ -53,7 +53,8 @@ import ResponseMessageNode from '../flow/nodes/ResponseMessageNode';
 import ApiResponseMessageNode from '../flow/nodes/ApiResponseMessageNode';
 
 // Import our new folder-based node components
-import { nodeRegistry } from '../../nodes/registry';
+import nodeRegistry from '../../nodes/registry';
+import { component as functionNode } from '../../nodes/function/ui';
 
 // Register node types according to the documentation
 const nodeTypes: NodeTypes = {
@@ -107,7 +108,7 @@ const nodeTypes: NodeTypes = {
   filter: ProcessorNode,
   
   // Import and use the folder-based UI components directly
-  function: require('../../nodes/function/ui').component
+  function: functionNode
 };
 
 interface FlowEditorProps {

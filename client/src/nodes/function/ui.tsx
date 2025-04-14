@@ -5,13 +5,16 @@
  */
 
 import React, { useState } from 'react';
-import { Handle, Position } from 'reactflow';
+import { Handle, Position, NodeProps } from 'reactflow';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Code } from 'lucide-react';
 
 interface FunctionNodeData {
   code: string;
+  label?: string;
+  description?: string;
+  settings?: Record<string, any>;
 }
 
 export const defaultData: FunctionNodeData = {
@@ -24,7 +27,28 @@ return {
 };`
 };
 
-export function component({ 
+// This is the component that will be used by ReactFlow
+export function FunctionNodeComponent(props: NodeProps) {
+  const { data } = props;
+  const nodeData = data as FunctionNodeData;
+  
+  // Create a wrapper that uses our internal component
+  return <FunctionNode 
+    data={nodeData}
+    onChange={(updatedData) => {
+      // In ReactFlow, we typically don't get an onChange prop
+      // This is handled internally by the node
+      console.log('Function node data updated:', updatedData);
+    }}
+    isConnectable={true}
+  />;
+}
+
+// Export the component for ReactFlow
+export const component = FunctionNodeComponent;
+
+// Internal component with full functionality
+function FunctionNode({ 
   data, 
   onChange,
   isConnectable = true

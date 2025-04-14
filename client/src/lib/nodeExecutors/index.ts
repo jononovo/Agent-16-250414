@@ -7,6 +7,7 @@ import { generateTextExecutor } from './generateTextExecutor';
 import { transformExecutor } from './transformExecutor';
 import { outputExecutor } from './outputExecutor';
 import { webhookNodeExecutor } from './webhookNodeExecutor';
+import { functionExecutor } from './functionExecutor';
 
 // Register all node executors
 export function registerAllNodeExecutors() {
@@ -96,6 +97,9 @@ export function registerAllNodeExecutors() {
   // Action/API nodes
   registerNodeExecutor('webhook', webhookNodeExecutor);
   registerNodeExecutor('api', webhookNodeExecutor); // Map 'api' type to webhookNodeExecutor
+  
+  // Code nodes
+  registerNodeExecutor('function', functionExecutor);
   
   // Modern workflow trigger implementation
   registerNodeExecutor('workflow_trigger', {
