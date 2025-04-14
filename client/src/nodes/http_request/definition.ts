@@ -3,29 +3,30 @@
  * Defines the HTTP request node's properties, appearance, and behavior
  */
 
-import schema from './schema';
+import { NodeDefinition } from '../types';
 
-// Use a simplified structure that doesn't depend on external interfaces
-// This will be adapted to the required interface formats in index.ts
-const definition = {
+/**
+ * HTTP Request Node Definition
+ */
+const definition: NodeDefinition = {
   type: 'http_request',
   name: 'HTTP Request',
   description: 'Make HTTP requests to external APIs and web services',
   category: 'integration',
   version: '1.0.0',
   icon: 'globe',
+  
   inputs: {
     body: {
       type: 'object',
-      description: 'Input data to use as the request body',
-      required: false
+      description: 'Input data to use as the request body'
     },
     headers: {
       type: 'object',
-      description: 'Headers to merge with the request',
-      required: false
+      description: 'Headers to merge with the request'
     }
   },
+  
   outputs: {
     response: {
       type: 'object',
@@ -40,6 +41,7 @@ const definition = {
       description: 'HTTP status code of the response'
     }
   },
+  
   configOptions: [
     {
       key: 'url',
@@ -52,7 +54,15 @@ const definition = {
       type: 'select',
       default: 'GET',
       description: 'HTTP method to use',
-      options: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'HEAD', 'OPTIONS']
+      options: [
+        { value: 'GET', label: 'GET' },
+        { value: 'POST', label: 'POST' },
+        { value: 'PUT', label: 'PUT' },
+        { value: 'DELETE', label: 'DELETE' },
+        { value: 'PATCH', label: 'PATCH' },
+        { value: 'HEAD', label: 'HEAD' },
+        { value: 'OPTIONS', label: 'OPTIONS' }
+      ]
     },
     {
       key: 'headers',
@@ -62,7 +72,7 @@ const definition = {
     },
     {
       key: 'body',
-      type: 'text',
+      type: 'string',
       default: '',
       description: 'Default request body (JSON string or other format)'
     },
@@ -72,7 +82,21 @@ const definition = {
       default: 10000,
       description: 'Request timeout in milliseconds'
     }
-  ]
+  ],
+  
+  defaultData: {
+    url: '',
+    method: 'GET',
+    headers: { 'Content-Type': 'application/json' },
+    body: '',
+    timeout: 10000
+  }
+};
+
+// Additional metadata for UI/rendering (optional)
+export const nodeMetadata = {
+  tags: ['integration', 'api', 'http', 'web', 'request'],
+  color: '#0EA5E9' // Sky blue color
 };
 
 export default definition;

@@ -6,6 +6,7 @@
  */
 
 import { registerEnhancedNodeExecutor, createEnhancedNodeExecutor } from './enhancedWorkflowEngine';
+import { validateNodeDefinition } from './nodeValidation';
 
 // List of known node types that are implemented in the folder-based system
 const FOLDER_BASED_NODE_TYPES = [
@@ -26,18 +27,37 @@ const FOLDER_BASED_NODE_TYPES = [
 export function registerNodeExecutorsFromRegistry(): void {
   console.log('Registering node executors from folder-based registry...');
   
+  // Track missing node definitions or executors for reporting
+  const missingComponents: Record<string, string[]> = {};
+  
   // Register each node by dynamically importing it
   FOLDER_BASED_NODE_TYPES.forEach(nodeType => {
     try {
       // Dynamically import the node's executor
       import(/* @vite-ignore */ `../nodes/${nodeType}/executor`).then(executor => {
         if (executor && executor.execute) {
-          console.log(`Registering executor for node type: ${nodeType}`);
-          
           // Also import the node's definition for enhanced workflow engine registration
           import(/* @vite-ignore */ `../nodes/${nodeType}/definition`).then(definition => {
             if (definition && definition.default) {
               const nodeDefinition = definition.default;
+              
+              // Validate the node definition
+              const validationResult = validateNodeDefinition(nodeDefinition);
+              
+              if (!validationResult.valid) {
+                console.warn(`Node definition for ${nodeType} has validation errors:`, validationResult.errors);
+                if (missingComponents[nodeType]) {
+                  missingComponents[nodeType].push(...validationResult.errors);
+                } else {
+                  missingComponents[nodeType] = validationResult.errors;
+                }
+              }
+              
+              if (validationResult.warnings.length > 0) {
+                console.warn(`Node definition for ${nodeType} has validation warnings:`, validationResult.warnings);
+              }
+              
+              console.log(`Registering executor for node type: ${nodeType}`);
               
               // Register with enhancedWorkflowEngine
               registerEnhancedNodeExecutor(
@@ -47,7 +67,7 @@ export function registerNodeExecutorsFromRegistry(): void {
                     type: nodeType,
                     displayName: nodeDefinition.name || nodeType,
                     description: nodeDefinition.description || '',
-                    icon: 'bolt',
+                    icon: nodeDefinition.icon || 'bolt',
                     category: nodeDefinition.category || 'general',
                     version: nodeDefinition.version || '1.0.0',
                     inputs: Object.fromEntries(
@@ -99,18 +119,54 @@ export function registerNodeExecutorsFromRegistry(): void {
               );
               
               console.log(`Registered enhanced node executor for type: ${nodeType}`);
+            } else {
+              if (missingComponents[nodeType]) {
+                missingComponents[nodeType].push('Missing default export in definition');
+              } else {
+                missingComponents[nodeType] = ['Missing default export in definition'];
+              }
+              console.warn(`Invalid definition for node type ${nodeType}: Missing default export`);
             }
           }).catch(error => {
+            if (missingComponents[nodeType]) {
+              missingComponents[nodeType].push('Definition import error');
+            } else {
+              missingComponents[nodeType] = ['Definition import error'];
+            }
             console.error(`Error importing definition for node type ${nodeType}:`, error);
           });
+        } else {
+          if (missingComponents[nodeType]) {
+            missingComponents[nodeType].push('Missing execute function in executor');
+          } else {
+            missingComponents[nodeType] = ['Missing execute function in executor'];
+          }
+          console.warn(`Invalid executor for node type ${nodeType}: Missing execute function`);
         }
       }).catch(error => {
+        if (missingComponents[nodeType]) {
+          missingComponents[nodeType].push('Executor import error');
+        } else {
+          missingComponents[nodeType] = ['Executor import error'];
+        }
         console.error(`Error importing executor for node type ${nodeType}:`, error);
       });
     } catch (error) {
+      if (missingComponents[nodeType]) {
+        missingComponents[nodeType].push('Registration error');
+      } else {
+        missingComponents[nodeType] = ['Registration error'];
+      }
       console.error(`Failed to register node type ${nodeType}:`, error);
     }
   });
+  
+  // Report any missing components after a short delay to allow imports to complete
+  setTimeout(() => {
+    if (Object.keys(missingComponents).length > 0) {
+      console.warn('Some folder-based node components could not be imported:', missingComponents);
+    }
+  }, 1000);
   
   console.log('Node executors registration complete');
 }

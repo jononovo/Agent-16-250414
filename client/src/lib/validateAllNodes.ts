@@ -18,7 +18,11 @@ const nodeModules = import.meta.glob('../nodes/*/definition.ts', { eager: true }
  * @returns True if all nodes are valid, false otherwise
  */
 export function validateAllNodes(verbose = true): boolean {
+  console.group('🔍 Node Definition Validation');
+  console.log('Validating all node definitions in the system...');
+  
   const nodeDefinitions: Record<string, Partial<NodeDefinition>> = {};
+  let moduleCount = 0;
   
   // Extract node definitions from modules
   for (const path in nodeModules) {
@@ -27,12 +31,15 @@ export function validateAllNodes(verbose = true): boolean {
       const nodeDef = module.default as NodeDefinition;
       
       if (nodeDef) {
+        moduleCount++;
         nodeDefinitions[nodeDef.type || path] = nodeDef;
       }
     } catch (error) {
       console.error(`Error loading node definition from ${path}:`, error);
     }
   }
+  
+  console.log(`Found ${moduleCount} node modules to validate`);
   
   // Validate all node definitions
   const results = validateNodes(nodeDefinitions);
@@ -43,13 +50,21 @@ export function validateAllNodes(verbose = true): boolean {
   }
   
   // Check if any node has validation errors
+  let hasErrors = false;
   for (const result of Object.values(results)) {
     if (!result.valid) {
-      return false;
+      hasErrors = true;
     }
   }
   
-  return true;
+  if (hasErrors) {
+    console.error('❌ Node validation failed! Some nodes have errors that need to be fixed.');
+  } else {
+    console.log('✅ All node definitions passed validation!');
+  }
+  
+  console.groupEnd();
+  return !hasErrors;
 }
 
 export default validateAllNodes;
