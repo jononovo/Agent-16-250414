@@ -27,6 +27,7 @@ import {
   Search as SearchIcon
 } from 'lucide-react';
 import NodeItem from './NodeItem';
+import nodeRegistry from '../../nodes/registry';
 
 // Node categories based on the documentation
 const NODE_CATEGORIES = [
@@ -255,7 +256,8 @@ const NodesPanel = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [activeTab, setActiveTab] = useState('all');
   
-  const { data: nodes, isLoading } = useQuery({
+  // Load both legacy nodes from the API and our new folder-based nodes
+  const { data: dbNodes, isLoading: isLoadingDb } = useQuery({
     queryKey: ['/api/nodes'],
     queryFn: async () => {
       const res = await fetch('/api/nodes');
@@ -264,19 +266,36 @@ const NodesPanel = () => {
     }
   });
   
-  // Create nodes from NODE_TYPES if nodes aren't loaded yet
-  const nodeItems = isLoading ? [] : NODE_TYPES.map((type, index) => ({
-    id: index,
-    name: type.name,
-    type: type.id,
-    description: type.description,
-    icon: type.icon, // Use the icon component directly
+  // Get nodes from our folder-based registry
+  const folderBasedNodes = nodeRegistry.getAllNodes().map((node: any, index: number) => ({
+    id: 1000 + index, // Use a different ID range to avoid conflicts
+    name: node.metadata.displayName || node.type,
+    type: node.type,
+    description: node.metadata.description || '',
+    icon: node.metadata.icon || undefined,
     createdAt: new Date(),
     updatedAt: new Date(),
     userId: null,
-    category: type.category,
-    configuration: type.configuration || {}
+    category: node.metadata.category || 'custom',
+    configuration: {}
   } as Node));
+  
+  // Combine both node sets - prefer our folder-based nodes over legacy ones
+  const nodeItems = isLoadingDb ? folderBasedNodes : [
+    ...folderBasedNodes,
+    ...NODE_TYPES.map((type, index) => ({
+      id: index,
+      name: type.name,
+      type: type.id,
+      description: type.description,
+      icon: type.icon, // Use the icon component directly
+      createdAt: new Date(),
+      updatedAt: new Date(),
+      userId: null,
+      category: type.category,
+      configuration: type.configuration || {}
+    } as Node))
+  ];
   
   const filteredNodes = nodeItems.filter(node => {
     // First apply category filter if not "all"
