@@ -122,13 +122,10 @@ const MainContent = ({ children }: MainContentProps) => {
                 </Button>
               </DialogTrigger>
               <DialogContent>
-                <div className="flex flex-col">
-                  <h2 className="text-lg font-semibold mb-2" id="api-config-dialog-title">API Configuration</h2>
-                  <ApiConfigForm 
-                    onApiKeysSaved={handleApiKeySaved} 
-                    onClose={() => setIsApiDialogOpen(false)} 
-                  />
-                </div>
+                <ApiConfigForm 
+                  onApiKeysSaved={handleApiKeySaved} 
+                  onClose={() => setIsApiDialogOpen(false)} 
+                />
               </DialogContent>
             </Dialog>
             
