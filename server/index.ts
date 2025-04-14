@@ -3,8 +3,6 @@ import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
 import session from 'express-session';
 import { sessionOptions } from './session';
-import { migrate } from 'drizzle-orm/postgres-js/migrator';
-import { db } from './database';
 
 const app = express();
 app.use(express.json());
@@ -47,94 +45,6 @@ app.use((req, res, next) => {
   let server;
   
   try {
-    // Create database schema background flag
-    let dbInitialized = false;
-
-    // Start creating database schema in the background
-    if (process.env.DATABASE_URL) {
-      log('Initializing database schema in background...');
-      
-      // Background task to set up the database
-      (async () => {
-        try {
-          // Create tables based on the schema
-          await db.execute(/* sql */`
-            CREATE TABLE IF NOT EXISTS users (
-              id SERIAL PRIMARY KEY,
-              username TEXT NOT NULL UNIQUE,
-              password TEXT NOT NULL
-            );
-            
-            CREATE TABLE IF NOT EXISTS agents (
-              id SERIAL PRIMARY KEY,
-              name TEXT NOT NULL,
-              description TEXT,
-              type TEXT NOT NULL,
-              icon TEXT,
-              status TEXT DEFAULT 'active',
-              created_at TIMESTAMP DEFAULT NOW(),
-              updated_at TIMESTAMP DEFAULT NOW(),
-              user_id INTEGER,
-              configuration JSONB DEFAULT '{}'::jsonb
-            );
-            
-            CREATE TABLE IF NOT EXISTS workflows (
-              id SERIAL PRIMARY KEY,
-              name TEXT NOT NULL,
-              description TEXT,
-              type TEXT NOT NULL,
-              icon TEXT,
-              status TEXT DEFAULT 'draft',
-              created_at TIMESTAMP DEFAULT NOW(),
-              updated_at TIMESTAMP DEFAULT NOW(),
-              user_id INTEGER,
-              agent_id INTEGER,
-              flow_data JSONB DEFAULT '{}'::jsonb
-            );
-            
-            CREATE TABLE IF NOT EXISTS nodes (
-              id SERIAL PRIMARY KEY,
-              name TEXT NOT NULL,
-              description TEXT,
-              type TEXT NOT NULL,
-              icon TEXT,
-              category TEXT DEFAULT '',
-              created_at TIMESTAMP DEFAULT NOW(),
-              updated_at TIMESTAMP DEFAULT NOW(),
-              user_id INTEGER,
-              configuration JSONB DEFAULT '{}'::jsonb
-            );
-            
-            CREATE TABLE IF NOT EXISTS logs (
-              id SERIAL PRIMARY KEY,
-              agent_id INTEGER NOT NULL,
-              workflow_id INTEGER NOT NULL,
-              status TEXT NOT NULL,
-              input JSONB DEFAULT '{}'::jsonb,
-              output JSONB DEFAULT '{}'::jsonb,
-              error TEXT,
-              started_at TIMESTAMP DEFAULT NOW(),
-              completed_at TIMESTAMP,
-              execution_path JSONB DEFAULT '{}'::jsonb
-            );
-            
-            CREATE TABLE IF NOT EXISTS session (
-              sid VARCHAR NOT NULL,
-              sess JSON NOT NULL,
-              expire TIMESTAMP(6) NOT NULL,
-              CONSTRAINT session_pkey PRIMARY KEY (sid)
-            )
-          `);
-          
-          dbInitialized = true;
-          log('Database schema created successfully');
-        } catch (dbError) {
-          log(`Warning: Database schema creation error: ${dbError}`);
-          log('Continuing with application running despite database error');
-        }
-      })();
-    }
-    
     // Set up routes
     server = await registerRoutes(app);
     
@@ -174,7 +84,7 @@ app.use((req, res, next) => {
     const simpleServer = http.createServer((req: any, res: any) => {
       if (req.url.startsWith('/api')) {
         res.writeHead(500, { 'Content-Type': 'application/json' });
-        res.end(JSON.stringify({ error: 'Database connection error. Please try again later.' }));
+        res.end(JSON.stringify({ error: 'Server initialization error. Please try again later.' }));
       } else {
         res.writeHead(200, { 'Content-Type': 'text/html' });
         res.end(`
@@ -191,7 +101,7 @@ app.use((req, res, next) => {
             <body>
               <div class="error-container">
                 <h1>Application Error</h1>
-                <p>We're experiencing some technical difficulties. The server encountered an issue while connecting to the database.</p>
+                <p>We're experiencing some technical difficulties. The server encountered an issue while starting up.</p>
                 <p>Please try again in a few moments.</p>
               </div>
               <button class="retry-btn" onclick="window.location.reload()">Retry</button>

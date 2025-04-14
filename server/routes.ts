@@ -5,7 +5,7 @@ import { Express, NextFunction, Request, Response } from "express";
 import { z } from "zod";
 import { fromZodError } from "zod-validation-error";
 import { Agent, InsertAgent, InsertLog, InsertWorkflow, Log, Node, Workflow } from "@shared/schema";
-import { storage } from "./simpleStorage";
+import { storage } from "./storage";
 import { createServer } from "http";
 import { WebSocketServer, WebSocket } from "ws";
 import { Server } from "http";
