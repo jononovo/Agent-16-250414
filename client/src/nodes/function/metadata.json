@@ -1,0 +1,8 @@
+{
+  "name": "Function",
+  "description": "Execute custom JavaScript code within your workflow",
+  "category": "programming",
+  "version": "1.0.0",
+  "tags": ["code", "function", "javascript", "programming"],
+  "color": "#F7DF1E"
+}

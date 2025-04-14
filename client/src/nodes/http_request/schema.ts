@@ -1,63 +1,56 @@
 /**
  * HTTP Request Node Schema
  * 
- * Defines the inputs, outputs, and parameters for the HTTP request node.
+ * This file defines the inputs, outputs, and parameters for the HTTP request node.
  */
 
 import { NodeSchema } from '../registry';
 
-// Schema definition
 const schema: NodeSchema = {
-  // Inputs to the node
   inputs: {
     body: {
-      type: 'any',
-      description: 'The request body (for POST, PUT, PATCH)'
+      type: 'object',
+      description: 'Input data to use as the request body'
     },
     headers: {
       type: 'object',
-      description: 'Additional headers to include in the request'
+      description: 'Headers to merge with the request'
     }
   },
-  
-  // Outputs from the node
   outputs: {
     response: {
       type: 'object',
-      description: 'The full response from the API'
+      description: 'Full response object from the request'
     },
     data: {
-      type: 'any',
-      description: 'The response data (parsed JSON if available)'
+      type: 'object',
+      description: 'Response data (typically JSON)'
     },
     status: {
       type: 'number',
-      description: 'The HTTP status code'
+      description: 'HTTP status code of the response'
     }
   },
-  
-  // Parameters that can be configured
   parameters: {
     url: {
       type: 'string',
-      description: 'The URL to send the request to',
-      default: '',
+      description: 'URL to send the request to',
       required: true
     },
     method: {
       type: 'string',
-      description: 'The HTTP method to use',
-      default: 'GET',
-      enum: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'HEAD', 'OPTIONS']
+      description: 'HTTP method to use',
+      enum: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'HEAD', 'OPTIONS'],
+      default: 'GET'
     },
     headers: {
       type: 'object',
-      description: 'Headers to include in the request',
+      description: 'Default headers to include with the request',
       default: { 'Content-Type': 'application/json' }
     },
     body: {
       type: 'string',
-      description: 'Body content for POST, PUT, PATCH requests',
+      description: 'Default request body (JSON string or other format)',
       default: ''
     },
     timeout: {

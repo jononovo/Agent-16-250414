@@ -1,8 +1,8 @@
 /**
- * HTTP Request Node
+ * Function Node
  * 
- * This node allows workflows to make HTTP requests to external APIs
- * and web services.
+ * This node allows users to write and execute custom JavaScript code
+ * within their workflows.
  */
 
 import { NodeRegistryEntry } from '../registry';
@@ -10,11 +10,11 @@ import metadata from './metadata.json';
 import schema from './schema';
 import * as executor from './executor';
 import * as ui from './ui';
-import { Globe } from 'lucide-react';
+import { Code } from 'lucide-react';
 import React from 'react';
 
-const HttpRequestNode: NodeRegistryEntry = {
-  type: 'http_request',
+const FunctionNode: NodeRegistryEntry = {
+  type: 'function',
   metadata,
   schema,
   executor,
@@ -23,7 +23,7 @@ const HttpRequestNode: NodeRegistryEntry = {
     defaultData: ui.defaultData,
     validator: ui.validator
   },
-  icon: React.createElement(Globe, { size: 16 })
+  icon: React.createElement(Code, { size: 16 })
 };
 
-export default HttpRequestNode;
+export default FunctionNode;
