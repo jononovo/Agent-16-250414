@@ -5,6 +5,49 @@
  * It sends a prompt to the Claude API and returns the response.
  */
 
+// Deep search function to extract text from nested structures
+// Moved outside to avoid strict mode error with function declarations inside blocks
+function extractTextFromData(data: any): string | null {
+  // Direct case - string
+  if (typeof data === 'string') {
+    return data;
+  }
+  
+  // If it's an object, search through common patterns
+  if (data && typeof data === 'object') {
+    // Common patterns
+    if (data.text) return data.text;
+    if (data.content) return data.content;
+    if (data.inputText) return data.inputText;
+    
+    // Check for items array
+    if (data.items && Array.isArray(data.items) && data.items.length > 0) {
+      // Try to extract from each item
+      for (const item of data.items) {
+        const extracted = extractTextFromData(item);
+        if (extracted) return extracted;
+      }
+    }
+    
+    // Check for json property
+    if (data.json) {
+      const extracted = extractTextFromData(data.json);
+      if (extracted) return extracted;
+    }
+    
+    // Try all properties recursively
+    for (const key in data) {
+      if (typeof data[key] === 'object' && data[key] !== null) {
+        const extracted = extractTextFromData(data[key]);
+        if (extracted) return extracted;
+      }
+    }
+  }
+  
+  // If nothing works, return null
+  return null;
+}
+
 export const execute = async (nodeData: any, inputs?: any): Promise<any> => {
   try {
     const startTime = new Date();
@@ -16,48 +59,6 @@ export const execute = async (nodeData: any, inputs?: any): Promise<any> => {
     if (inputs?.prompt) {
       // Handle various possible input formats - simplified approach for reliability
       console.log('Raw prompt input:', typeof inputs.prompt, inputs.prompt);
-      
-      // Deep search function to extract text from nested structures
-      function extractTextFromData(data: any): string | null {
-        // Direct case - string
-        if (typeof data === 'string') {
-          return data;
-        }
-        
-        // If it's an object, search through common patterns
-        if (data && typeof data === 'object') {
-          // Common patterns
-          if (data.text) return data.text;
-          if (data.content) return data.content;
-          if (data.inputText) return data.inputText;
-          
-          // Check for items array
-          if (data.items && Array.isArray(data.items) && data.items.length > 0) {
-            // Try to extract from each item
-            for (const item of data.items) {
-              const extracted = extractTextFromData(item);
-              if (extracted) return extracted;
-            }
-          }
-          
-          // Check for json property
-          if (data.json) {
-            const extracted = extractTextFromData(data.json);
-            if (extracted) return extracted;
-          }
-          
-          // Try all properties recursively
-          for (const key in data) {
-            if (typeof data[key] === 'object' && data[key] !== null) {
-              const extracted = extractTextFromData(data[key]);
-              if (extracted) return extracted;
-            }
-          }
-        }
-        
-        // If nothing works, return null
-        return null;
-      }
       
       // Try to extract text from the input
       const extractedText = extractTextFromData(inputs.prompt);
