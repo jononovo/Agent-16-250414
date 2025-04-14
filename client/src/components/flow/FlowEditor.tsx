@@ -30,86 +30,88 @@ import { useToast } from '@/hooks/use-toast';
 import MonkeyAgentChatOverlay from '@/components/workflows/MonkeyAgentChatOverlay';
 import NodeSettingsDrawer from './NodeSettingsDrawer';
 
-// Import node components
-import CustomNode from '../flow/nodes/CustomNode';
-import TriggerNode from '../flow/nodes/TriggerNode';
-import ProcessorNode from '../flow/nodes/ProcessorNode';
-import OutputNode from '../flow/nodes/OutputNode';
-import TextInputNode from '../flow/nodes/TextInputNode';
-import GenerateTextNode from '../flow/nodes/GenerateTextNode';
-import VisualizeTextNode from '../flow/nodes/VisualizeTextNode';
-import RoutingNode from '../flow/nodes/RoutingNode';
-import PromptCrafterNode from '../flow/nodes/PromptCrafterNode';
-import ValidResponseNode from '../flow/nodes/ValidResponseNode';
-import PerplexityNode from '../flow/nodes/PerplexityNode';
-import ClaudeNode from '../flow/nodes/ClaudeNode';
-import TextPromptNode from '../flow/nodes/TextPromptNode';
-import TransformNode from '../flow/nodes/TransformNode';
-import ChatInterfaceNode from '../flow/nodes/ChatInterfaceNode';
+// Import basic fallback node for backward compatibility
 import InternalNode from '../flow/nodes/InternalNode';
-import AgentTriggerNode from '../flow/nodes/AgentTriggerNode';
-import WorkflowTriggerNode from '../flow/nodes/WorkflowTriggerNode';
-import ResponseMessageNode from '../flow/nodes/ResponseMessageNode';
-import ApiResponseMessageNode from '../flow/nodes/ApiResponseMessageNode';
 
-// Import our new folder-based node components
+// Import folder-based node registry and components
 import nodeRegistry from '../../nodes/registry';
 import { component as functionNode } from '../../nodes/function/ui';
 import { component as claudeNode } from '../../nodes/claude/ui';
+import { component as textInputNode } from '../../nodes/text_input/ui';
+import { component as httpRequestNode } from '../../nodes/http_request/ui';
 
-// Register node types according to the documentation
+// Wrap imports with defensive code to handle potential incompatibility issues
+let textTemplateNode = InternalNode;
+let dataTransformNode = InternalNode;
+let decisionNode = InternalNode;
+let jsonPathNode = InternalNode;
+
+// Import other components and use try/catch to handle import errors safely
+try {
+  // These imports might fail if the components don't match ReactFlow's expected interface
+  const textTemplate = require('../../nodes/text_template/ui');
+  const dataTransform = require('../../nodes/data_transform/ui');
+  const decision = require('../../nodes/decision/ui');
+  const jsonPath = require('../../nodes/json_path/ui');
+  
+  textTemplateNode = textTemplate.component;
+  dataTransformNode = dataTransform.component;
+  decisionNode = decision.component;
+  jsonPathNode = jsonPath.component;
+} catch (error) {
+  console.warn('Some folder-based node components could not be imported:', error);
+}
+
+// Register node types with folder-based implementations
 const nodeTypes: NodeTypes = {
-  // Enhanced system node types
-  text_input: TextInputNode,
-  text_prompt: TextPromptNode,
-  output: OutputNode,
-  visualize_text: VisualizeTextNode,
-  transform: TransformNode,
-  chat_interface: ChatInterfaceNode,
+  // Folder-based node implementations
+  text_input: textInputNode,
   claude: claudeNode,
+  http_request: httpRequestNode,
+  text_template: textTemplateNode,
+  data_transform: dataTransformNode,
+  decision: decisionNode,
+  function: functionNode,
+  json_path: jsonPathNode,
   
-  // Specialized AI nodes
-  generate_text: GenerateTextNode,
-  prompt_crafter: PromptCrafterNode,
-  valid_response: ValidResponseNode,
-  perplexity: PerplexityNode,
-  
-  // Agent and Workflow node types
-  agent_trigger: AgentTriggerNode,
-  workflow_trigger: WorkflowTriggerNode,
-  response_message: ResponseMessageNode,
-  api_response_message: ApiResponseMessageNode,
-  
-  // Internal system node types
+  // Internal node types for backward compatibility - fallback to InternalNode for all legacy node types
   internal_new_agent: InternalNode,
   internal_ai_chat_agent: InternalNode,
   internal: InternalNode,
+  custom: InternalNode,
+  trigger: InternalNode,
+  processor: InternalNode,
+  output: InternalNode,
   
-  // Legacy/basic node types (with mapping to specialized versions)
-  custom: CustomNode,
-  trigger: TriggerNode,
-  processor: ProcessorNode,
+  // Legacy mappings to folder-based versions where available
+  textInput: textInputNode,
   
-  // Maintain backward compatibility
-  textInput: TextInputNode,
-  generateText: GenerateTextNode,
-  visualizeText: VisualizeTextNode,
-  routing: RoutingNode,
-  promptCrafter: PromptCrafterNode,
-  validResponse: ValidResponseNode,
+  // Fallback types for other legacy nodes
+  webhook: InternalNode,
+  scheduler: InternalNode,
+  email_trigger: InternalNode,
+  email_send: InternalNode,
+  database_query: InternalNode,
+  filter: InternalNode,
   
-  // Generic node types from documentation
-  webhook: TriggerNode,
-  scheduler: TriggerNode,
-  email_trigger: TriggerNode,
-  http_request: ProcessorNode,
-  email_send: OutputNode,
-  database_query: ProcessorNode,
-  data_transform: ProcessorNode,
-  filter: ProcessorNode,
-  
-  // Import and use the folder-based UI components directly
-  function: functionNode
+  // Other legacy types we need to handle
+  text_prompt: InternalNode,
+  visualize_text: InternalNode,
+  transform: InternalNode,
+  chat_interface: InternalNode,
+  generate_text: InternalNode,
+  prompt_crafter: InternalNode,
+  valid_response: InternalNode,
+  perplexity: InternalNode,
+  agent_trigger: InternalNode,
+  workflow_trigger: InternalNode,
+  response_message: InternalNode,
+  api_response_message: InternalNode,
+  generateText: InternalNode,
+  visualizeText: InternalNode,
+  routing: InternalNode,
+  promptCrafter: InternalNode,
+  validResponse: InternalNode
 };
 
 interface FlowEditorProps {
