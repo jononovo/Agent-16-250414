@@ -241,123 +241,127 @@ const TextPromptNode = ({ id, data, isConnectable = true, selected, xPos, yPos }
           onMonkeyAgentModify={handleMonkeyAgentModify}
         />
       )}
-      <div className={cn(
-        'text-prompt-node relative p-0 rounded-md min-w-[250px] max-w-[350px] bg-background border transition-all shadow-md',
-        selected ? 'border-primary ring-2 ring-primary ring-opacity-20' : 'border-border'
-      )}>
-      {/* Header */}
-      <div className="p-3 border-b flex items-center justify-between">
-        <div className="font-medium text-sm flex items-center">
-          <MessageSquare className="h-4 w-4 mr-2 text-blue-500" />
-          <span>{data.label || 'Text Prompt'}</span>
-          {getStatusBadge()}
-        </div>
-        {data.onSettingsClick && (
-          <button 
-            onClick={data.onSettingsClick}
-            className="ml-auto hover:bg-muted p-1 rounded-sm"
-          >
-            <Settings className="h-4 w-4 text-muted-foreground" />
-          </button>
-        )}
-      </div>
       
-      {/* Body */}
-      <div className="p-3">
-        {data.description && (
-          <p className="text-sm text-muted-foreground mb-2">{data.description}</p>
+      <div 
+        className={cn(
+          'text-prompt-node relative p-0 rounded-md min-w-[250px] max-w-[350px] bg-background border transition-all shadow-md',
+          selected ? 'border-primary ring-2 ring-primary ring-opacity-20' : 'border-border'
         )}
-        <Textarea
-          value={localPrompt}
-          onChange={handlePromptChange}
-          className="min-h-[120px] text-sm resize-y"
-          placeholder="Enter your prompt text here..."
-        />
+      >
+        {/* Header */}
+        <div className="p-3 border-b flex items-center justify-between">
+          <div className="font-medium text-sm flex items-center">
+            <MessageSquare className="h-4 w-4 mr-2 text-blue-500" />
+            <span>{data.label || 'Text Prompt'}</span>
+            {getStatusBadge()}
+          </div>
+          {data.onSettingsClick && (
+            <button 
+              onClick={data.onSettingsClick}
+              className="ml-auto hover:bg-muted p-1 rounded-sm"
+            >
+              <Settings className="h-4 w-4 text-muted-foreground" />
+            </button>
+          )}
+        </div>
         
-        {/* Dynamic Inputs Section */}
-        {data.dynamicHandles?.inputs && data.dynamicHandles.inputs.length > 0 && (
-          <div className="mt-4 border-t pt-4">
-            <div className="flex items-center justify-between mb-2">
-              <h3 className="text-sm font-medium">Dynamic Inputs</h3>
-            </div>
-            <div className="space-y-2 text-sm">
-              {data.dynamicHandles.inputs.map((input) => (
-                <div key={input.id} className="flex items-center gap-2">
-                  <div className="w-full flex items-center gap-2 relative px-4 py-2">
-                    <div className="flex-1 flex flex-col overflow-hidden">
-                      <div className="flex items-center justify-between">
-                        <div className="text-sm font-medium truncate">{input.name}</div>
-                        <div className="flex gap-1">
-                          <button
-                            onClick={() => handleRemoveInput(input.id)}
-                            className="p-1 text-muted-foreground hover:text-red-500 transition-colors"
-                            aria-label="Delete handle"
-                          >
-                            <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                              <path d="M3 6h18"></path>
-                              <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"></path>
-                              <path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
-                            </svg>
-                          </button>
+        {/* Body */}
+        <div className="p-3">
+          {data.description && (
+            <p className="text-sm text-muted-foreground mb-2">{data.description}</p>
+          )}
+          <Textarea
+            value={localPrompt}
+            onChange={handlePromptChange}
+            className="min-h-[120px] text-sm resize-y"
+            placeholder="Enter your prompt text here..."
+          />
+          
+          {/* Dynamic Inputs Section */}
+          {data.dynamicHandles?.inputs && data.dynamicHandles.inputs.length > 0 && (
+            <div className="mt-4 border-t pt-4">
+              <div className="flex items-center justify-between mb-2">
+                <h3 className="text-sm font-medium">Dynamic Inputs</h3>
+              </div>
+              <div className="space-y-2 text-sm">
+                {data.dynamicHandles.inputs.map((input) => (
+                  <div key={input.id} className="flex items-center gap-2">
+                    <div className="w-full flex items-center gap-2 relative px-4 py-2">
+                      <div className="flex-1 flex flex-col overflow-hidden">
+                        <div className="flex items-center justify-between">
+                          <div className="text-sm font-medium truncate">{input.name}</div>
+                          <div className="flex gap-1">
+                            <button
+                              onClick={() => handleRemoveInput(input.id)}
+                              className="p-1 text-muted-foreground hover:text-red-500 transition-colors"
+                              aria-label="Delete handle"
+                            >
+                              <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                <path d="M3 6h18"></path>
+                                <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"></path>
+                                <path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                              </svg>
+                            </button>
+                          </div>
                         </div>
+                        {input.description && <div className="text-xs text-muted-foreground truncate">{input.description}</div>}
                       </div>
-                      {input.description && <div className="text-xs text-muted-foreground truncate">{input.description}</div>}
                     </div>
                   </div>
-                </div>
-              ))}
+                ))}
+              </div>
             </div>
-          </div>
-        )}
-        
-        {/* Add Input Button */}
-        <EditableHandleDialog
-          variant="create"
-          label=""
-          onSave={handleCreateInput}
-          onCancel={() => {}}
-          align="start"
-        >
-          <Button 
-            variant="outline" 
-            size="sm" 
-            className="mt-3 w-full"
+          )}
+          
+          {/* Add Input Button */}
+          <EditableHandleDialog
+            variant="create"
+            label=""
+            onSave={handleCreateInput}
+            onCancel={() => {}}
+            align="start"
           >
-            <Plus className="h-3 w-3 mr-1" /> Add Input
-          </Button>
-        </EditableHandleDialog>
+            <Button 
+              variant="outline" 
+              size="sm" 
+              className="mt-3 w-full"
+            >
+              <Plus className="h-3 w-3 mr-1" /> Add Input
+            </Button>
+          </EditableHandleDialog>
+          
+          {data.errorMessage && (
+            <div className="mt-2 text-xs text-red-500 bg-red-50 p-2 rounded">
+              {data.errorMessage}
+            </div>
+          )}
+        </div>
         
-        {data.errorMessage && (
-          <div className="mt-2 text-xs text-red-500 bg-red-50 p-2 rounded">
-            {data.errorMessage}
-          </div>
-        )}
-      </div>
-      
-      {/* Input handles - dynamically positioned */}
-      {data.dynamicHandles?.inputs?.map((input, index) => (
+        {/* Input handles - dynamically positioned */}
+        {data.dynamicHandles?.inputs?.map((input, index) => (
+          <Handle
+            key={input.id}
+            type="target"
+            position={Position.Left}
+            id={input.id}
+            className="w-3 h-3 left-[-6px] !bg-blue-500 border-2 border-background"
+            style={{
+              top: `${100 + (index * 30)}px`,
+            }}
+            data-label={input.name}
+            isConnectable={isConnectable}
+          />
+        ))}
+        
+        {/* Output handle */}
         <Handle
-          key={input.id}
-          type="target"
-          position={Position.Left}
-          id={input.id}
-          className="w-3 h-3 left-[-6px] !bg-blue-500 border-2 border-background"
-          style={{
-            top: `${100 + (index * 30)}px`,
-          }}
-          data-label={input.name}
+          type="source"
+          position={Position.Right}
+          id="output"
+          className="w-3 h-3 right-[-6px] !bg-blue-500 border-2 border-background"
           isConnectable={isConnectable}
         />
-      ))}
-      
-      {/* Output handle */}
-      <Handle
-        type="source"
-        position={Position.Right}
-        id="output"
-        className="w-3 h-3 right-[-6px] !bg-blue-500 border-2 border-background"
-        isConnectable={isConnectable}
-      />
+      </div>
     </div>
   );
 };
