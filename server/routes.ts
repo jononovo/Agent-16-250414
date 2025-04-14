@@ -851,14 +851,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
           edges: [edge1, edge2]
         };
         
-        // Create a new workflow
+        // Create a new workflow - ensure flowData is an object, not a string
+        const processedFlowData = typeof flowData === 'string' ? JSON.parse(flowData) : flowData;
         const fallbackWorkflow = await storage.createWorkflow({
           name: workflowName,
           description: `Workflow generated from prompt: ${prompt}`,
           type: 'custom',
           status: 'active',
           agentId: agentId,
-          flowData: flowData
+          flowData: processedFlowData
         });
         
         return res.status(200).json({
@@ -1225,6 +1226,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
           type = type || generatedWorkflow.type;
           flowData = generatedWorkflow.flowData;
           
+          // Ensure flowData is a proper object
+          let processedFlowData = flowData;
+          if (typeof processedFlowData === 'string') {
+            try {
+              processedFlowData = JSON.parse(processedFlowData);
+            } catch (e) {
+              processedFlowData = { nodes: [], edges: [] };
+            }
+          }
+
           // Create the workflow
           const workflow = await storage.createWorkflow({
             name,
@@ -1232,7 +1243,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             type,
             status: 'active',
             agentId,
-            flowData
+            flowData: processedFlowData
           });
           
           // Return the created workflow
@@ -1262,6 +1273,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
         flowData = { nodes: [], edges: [] };
       }
       
+      // Ensure flowData is a proper object
+      let processedFlowData = flowData;
+      if (typeof processedFlowData === 'string') {
+        try {
+          processedFlowData = JSON.parse(processedFlowData);
+        } catch (e) {
+          processedFlowData = { nodes: [], edges: [] };
+        }
+      }
+
       // Create the workflow
       const workflow = await storage.createWorkflow({
         name,
@@ -1269,7 +1290,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         type,
         status: 'active',
         agentId,
-        flowData
+        flowData: processedFlowData
       });
       
       // Return the created workflow
@@ -1316,8 +1337,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
       
+      // Process the update data
+      const updateData = { ...result.data };
+      
+      // Ensure flowData is a proper object if it exists in the update
+      if (updateData.flowData !== undefined) {
+        if (typeof updateData.flowData === 'string') {
+          try {
+            updateData.flowData = JSON.parse(updateData.flowData);
+          } catch (e) {
+            updateData.flowData = { nodes: [], edges: [] };
+          }
+        }
+      }
+      
       // Update the workflow
-      const updatedWorkflow = await storage.updateWorkflow(id, result.data);
+      const updatedWorkflow = await storage.updateWorkflow(id, updateData);
       
       // Return the updated workflow
       res.json(updatedWorkflow);
