@@ -1,12 +1,11 @@
 /**
  * Text Template Node
  * 
- * This node allows users to create text templates with variable interpolation.
+ * This node processes text templates with variable substitution.
  */
 
 import { NodeRegistryEntry } from '../registry';
-import metadata from './metadata.json';
-import schema from './schema';
+import { metadata, schema } from './definition';
 import * as executor from './executor';
 import * as ui from './ui';
 import { FileText } from 'lucide-react';

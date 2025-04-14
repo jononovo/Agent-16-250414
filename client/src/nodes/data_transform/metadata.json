@@ -1,8 +1,0 @@
-{
-  "name": "Data Transform",
-  "description": "Transform data using mapping expressions and operations",
-  "category": "data",
-  "version": "1.0.0",
-  "tags": ["data", "transform", "map", "filter"],
-  "color": "#FF5722"
-}

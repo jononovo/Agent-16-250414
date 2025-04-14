@@ -1,12 +1,27 @@
 /**
- * Data Transform Node Schema
+ * Data Transform Node Definition
  * 
- * This file defines the inputs, outputs, and parameters for the data transform node.
+ * This file defines both the metadata and schema for the Data Transform node.
  */
 
 import { NodeSchema } from '../registry';
 
-const schema: NodeSchema = {
+/**
+ * Node metadata - describes the node for display in the UI
+ */
+export const metadata = {
+  name: "Data Transform",
+  description: "Transform data using mapping expressions and operations",
+  category: "data",
+  version: "1.0.0",
+  tags: ["data", "transform", "map", "filter"],
+  color: "#FF5722"
+};
+
+/**
+ * Node schema - defines inputs, outputs, and parameters
+ */
+export const schema: NodeSchema = {
   inputs: {
     data: {
       type: 'object',
@@ -39,5 +54,3 @@ const schema: NodeSchema = {
     }
   }
 };
-
-export default schema;

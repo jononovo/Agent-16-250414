@@ -1,12 +1,27 @@
 /**
- * Text Template Node Schema
+ * Text Template Node Definition
  * 
- * This file defines the inputs, outputs, and parameters for the text template node.
+ * This file defines both the metadata and schema for the Text Template node.
  */
 
 import { NodeSchema } from '../registry';
 
-const schema: NodeSchema = {
+/**
+ * Node metadata - describes the node for display in the UI
+ */
+export const metadata = {
+  name: "Text Template",
+  description: "Process text templates with variable substitution",
+  category: "text",
+  version: "1.0.0",
+  tags: ["text", "template", "formatting", "variables"],
+  color: "#9C27B0"
+};
+
+/**
+ * Node schema - defines inputs, outputs, and parameters
+ */
+export const schema: NodeSchema = {
   inputs: {
     variables: {
       type: 'object',
@@ -41,5 +56,3 @@ const schema: NodeSchema = {
     }
   }
 };
-
-export default schema;

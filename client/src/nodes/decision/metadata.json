@@ -1,8 +1,0 @@
-{
-  "name": "Decision",
-  "description": "Create conditional branches based on input data",
-  "category": "flow",
-  "version": "1.0.0",
-  "tags": ["flow", "condition", "branch", "if-else"],
-  "color": "#4CAF50"
-}

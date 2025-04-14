@@ -1,12 +1,27 @@
 /**
- * Decision Node Schema
+ * Decision Node Definition
  * 
- * This file defines the inputs, outputs, and parameters for the decision node.
+ * This file defines both the metadata and schema for the Decision node.
  */
 
 import { NodeSchema } from '../registry';
 
-const schema: NodeSchema = {
+/**
+ * Node metadata - describes the node for display in the UI
+ */
+export const metadata = {
+  name: "Decision",
+  description: "Create conditional branches based on input data",
+  category: "flow",
+  version: "1.0.0",
+  tags: ["flow", "condition", "branch", "if-else"],
+  color: "#4CAF50"
+};
+
+/**
+ * Node schema - defines inputs, outputs, and parameters
+ */
+export const schema: NodeSchema = {
   inputs: {
     data: {
       type: 'object',
@@ -45,5 +60,3 @@ const schema: NodeSchema = {
     }
   }
 };
-
-export default schema;
