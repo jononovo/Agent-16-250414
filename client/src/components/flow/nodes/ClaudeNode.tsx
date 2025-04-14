@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { NodeProps, Handle, Position, useReactFlow } from 'reactflow';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -6,6 +6,59 @@ import { Badge } from '@/components/ui/badge';
 import { Textarea } from '@/components/ui/textarea';
 import * as Lucide from 'lucide-react';
 import DynamicIcon from '@/components/ui/dynamic-icon';
+
+// This component provides a visual submenu for node operations
+const NodeHoverMenu = ({ 
+  nodeId, 
+  nodeType, 
+  nodeData, 
+  position,
+  onDuplicate, 
+  onDelete, 
+  onMonkeyAgentModify 
+}: { 
+  nodeId: string;
+  nodeType: string;
+  nodeData: any;
+  position: { x: number, y: number };
+  onDuplicate: () => void;
+  onDelete: () => void;
+  onMonkeyAgentModify: () => void;
+}) => {
+  return (
+    <div className="absolute z-50 top-0 right-0 -mt-1 -mr-1 bg-white rounded-md shadow-lg border border-slate-200 p-1 flex flex-col gap-1">
+      <Button 
+        variant="ghost" 
+        size="sm" 
+        className="flex items-center justify-start px-2 py-1 h-8 hover:bg-slate-100"
+        onClick={onDuplicate}
+      >
+        <Lucide.Copy className="h-4 w-4 mr-2" />
+        <span className="text-xs">Duplicate</span>
+      </Button>
+      
+      <Button 
+        variant="ghost" 
+        size="sm" 
+        className="flex items-center justify-start px-2 py-1 h-8 hover:bg-slate-100 text-red-500 hover:text-red-600"
+        onClick={onDelete}
+      >
+        <Lucide.Trash2 className="h-4 w-4 mr-2" />
+        <span className="text-xs">Delete</span>
+      </Button>
+      
+      <Button 
+        variant="ghost" 
+        size="sm" 
+        className="flex items-center justify-start px-2 py-1 h-8 hover:bg-slate-100 text-indigo-500"
+        onClick={onMonkeyAgentModify}
+      >
+        <Lucide.Bot className="h-4 w-4 mr-2" />
+        <span className="text-xs">MonkeyAgent Modify</span>
+      </Button>
+    </div>
+  );
+};
 
 // Define the node data interface
 interface NodeData {
@@ -33,11 +86,83 @@ interface NodeData {
 /**
  * Claude AI node for generating text using Anthropic's Claude API
  */
-const ClaudeNode = ({ data, selected, id }: NodeProps<NodeData>) => {
+const ClaudeNode = ({ data, selected, id, xPos, yPos }: NodeProps<NodeData>) => {
   const [expanded, setExpanded] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
   const [generatedText, setGeneratedText] = useState('');
+  const [showHoverMenu, setShowHoverMenu] = useState(false);
+  const [hoverTimer, setHoverTimer] = useState<NodeJS.Timeout | null>(null);
+  const nodeRef = useRef<HTMLDivElement>(null);
   const reactFlowInstance = useReactFlow();
+  
+  // Function to handle hover start
+  const handleHoverStart = () => {
+    // Set a timeout to show the menu after hovering for 500ms
+    const timer = setTimeout(() => {
+      setShowHoverMenu(true);
+    }, 500);
+    
+    setHoverTimer(timer);
+  };
+  
+  // Function to handle hover end
+  const handleHoverEnd = () => {
+    // Clear the timeout if the user stops hovering before the menu appears
+    if (hoverTimer) {
+      clearTimeout(hoverTimer);
+      setHoverTimer(null);
+    }
+    setShowHoverMenu(false);
+  };
+  
+  // Cleanup timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (hoverTimer) {
+        clearTimeout(hoverTimer);
+      }
+    };
+  }, [hoverTimer]);
+  
+  // Handle node duplication
+  const handleDuplicate = () => {
+    // Create a new node based on the current one
+    const position = { x: (xPos || 0) + 20, y: (yPos || 0) + 20 };
+    
+    // Clone the node with a new ID
+    const newNode = {
+      id: `claude-${Date.now()}`,
+      type: 'claude',
+      position,
+      data: { ...data }
+    };
+    
+    // Add the new node to the flow
+    reactFlowInstance.addNodes(newNode);
+  };
+  
+  // Handle node deletion
+  const handleDelete = () => {
+    reactFlowInstance.deleteElements({ nodes: [{ id }] });
+  };
+  
+  // Handle MonkeyAgent modification
+  const handleMonkeyAgentModify = () => {
+    // Create an event with all the node details
+    const nodeDetails = {
+      id,
+      type: 'claude',
+      position: { x: xPos, y: yPos },
+      data: { ...data }
+    };
+    
+    // Dispatch a custom event that the MonkeyAgentChatOverlay will listen for
+    const event = new CustomEvent('monkey-agent-modify-node', {
+      detail: { nodeDetails }
+    });
+    
+    window.dispatchEvent(event);
+  };
   
   // Try to get API key from environment, settings, or direct node data
   const envApiKey = import.meta.env.CLAUDE_API_KEY;
@@ -173,10 +298,27 @@ const ClaudeNode = ({ data, selected, id }: NodeProps<NodeData>) => {
   };
   
   return (
-    <Card 
-      className={`w-64 transition-all duration-200 ${selected ? 'ring-2 ring-primary' : ''}`}
-      style={{ background: 'linear-gradient(135deg, #f0f4ff 0%, #e0e7ff 100%)' }}
+    <div 
+      ref={nodeRef}
+      onMouseEnter={handleHoverStart}
+      onMouseLeave={handleHoverEnd}
+      className="relative"
     >
+      {showHoverMenu && (
+        <NodeHoverMenu 
+          nodeId={id}
+          nodeType="claude"
+          nodeData={data}
+          position={{ x: xPos || 0, y: yPos || 0 }}
+          onDuplicate={handleDuplicate}
+          onDelete={handleDelete}
+          onMonkeyAgentModify={handleMonkeyAgentModify}
+        />
+      )}
+      <Card 
+        className={`w-64 transition-all duration-200 ${selected ? 'ring-2 ring-primary' : ''}`}
+        style={{ background: 'linear-gradient(135deg, #f0f4ff 0%, #e0e7ff 100%)' }}
+      >
       <CardHeader className="flex flex-row items-center justify-between p-3 pb-2">
         <div className="flex items-center gap-2">
           <div className="w-6 h-6 rounded-md bg-indigo-100 flex items-center justify-center text-indigo-600">
@@ -337,6 +479,7 @@ const ClaudeNode = ({ data, selected, id }: NodeProps<NodeData>) => {
         className="!w-3 !h-3 !border-2 !border-indigo-400 !bg-white"
       />
     </Card>
+    </div>
   );
 };
 
