@@ -96,7 +96,7 @@ export class WorkflowGenerationService {
   ): Promise<any> {
     // Default options
     const {
-      model = "claude-3-opus-20240229",
+      model = "claude-3-7-sonnet-20250219",
       complexity = "moderate",
       domain = "general",
       maxNodes = 10,
@@ -268,27 +268,29 @@ Ensure that:
     timeout: number,
   ): Promise<string> {
     // Use the provided API key, or fall back to environment variable
-    const effectiveApiKey = apiKey || process.env.OPENAI_API_KEY;
+    const effectiveApiKey = apiKey || process.env.CLAUDE_API_KEY;
     
     // Ensure we have an API key
     if (!effectiveApiKey) {
-      throw new Error("No API key provided for LLM service. Please set OPENAI_API_KEY environment variable or provide an API key in the request.");
+      throw new Error("No API key provided for Claude service. Please set CLAUDE_API_KEY environment variable or provide an API key in the request.");
     }
     try {
-      // Prepare the request to OpenAI API
-      const url = "https://api.openai.com/v1/chat/completions";
+      // Prepare the request to Claude API
+      const url = "https://api.anthropic.com/v1/messages";
       const headers = {
         "Content-Type": "application/json",
-        Authorization: `Bearer ${effectiveApiKey}`,
+        "x-api-key": effectiveApiKey,
+        "anthropic-version": "2023-06-01"
       };
+      
       const data = {
         model,
+        system: systemPrompt,
         messages: [
-          { role: "system", content: systemPrompt },
-          { role: "user", content: userPrompt },
+          { role: "user", content: userPrompt }
         ],
-        temperature: 0.7,
-        max_tokens: 2000,
+        max_tokens: 4000,
+        temperature: 0.7
       };
 
       // Make the API request
@@ -305,16 +307,16 @@ Ensure that:
       // Check for errors
       if (!response.ok) {
         const errorText = await response.text();
-        throw new Error(`LLM API error: ${response.status} ${errorText}`);
+        throw new Error(`Claude API error: ${response.status} ${errorText}`);
       }
 
       // Parse the response
       const result = await response.json();
 
       // Extract and return the generated workflow
-      return result.choices[0].message.content;
+      return result.content[0].text;
     } catch (error) {
-      console.error("Error calling LLM API:", error);
+      console.error("Error calling Claude API:", error);
       throw error;
     }
   }
