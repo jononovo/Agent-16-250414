@@ -10,20 +10,21 @@ import { Handle, Position } from 'reactflow';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { Switch } from '@/components/ui/switch';
+import { JSONPathNodeData } from './executor';
 
 // Default data for the node
-export const defaultData = {
+export const defaultData: JSONPathNodeData = {
   path: '$.data',
-  defaultValue: '',
-  multiple: false
+  returnFirst: false,
+  defaultValue: ''
 };
 
 // Validator for the node data
-export const validator = (data: any) => {
+export const validator = (data: JSONPathNodeData) => {
   const errors = [];
   
   if (!data.path || data.path.trim() === '') {
-    errors.push('JSONPath expression is required');
+    errors.push('JSONPath is required');
   }
   
   return {
@@ -34,12 +35,12 @@ export const validator = (data: any) => {
 
 // React component for the node
 export const component = ({ data, isConnectable }: any) => {
-  const [localPath, setLocalPath] = useState(data.path || defaultData.path);
-  const [localDefaultValue, setLocalDefaultValue] = useState(data.defaultValue || defaultData.defaultValue);
-  const [localMultiple, setLocalMultiple] = useState(data.multiple || defaultData.multiple);
+  const [path, setPath] = useState(data.path || defaultData.path);
+  const [returnFirst, setReturnFirst] = useState(data.returnFirst || defaultData.returnFirst);
+  const [defaultValue, setDefaultValue] = useState(data.defaultValue || defaultData.defaultValue);
   
   // Update the node data when values change
-  const updateNodeData = (updates: Record<string, any>) => {
+  const updateNodeData = (updates: Partial<JSONPathNodeData>) => {
     if (data && typeof data.onChange === 'function') {
       data.onChange({
         ...data,
@@ -50,19 +51,19 @@ export const component = ({ data, isConnectable }: any) => {
   
   const handlePathChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const newValue = e.target.value;
-    setLocalPath(newValue);
+    setPath(newValue);
     updateNodeData({ path: newValue });
+  };
+  
+  const handleReturnFirstChange = (checked: boolean) => {
+    setReturnFirst(checked);
+    updateNodeData({ returnFirst: checked });
   };
   
   const handleDefaultValueChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const newValue = e.target.value;
-    setLocalDefaultValue(newValue);
+    setDefaultValue(newValue);
     updateNodeData({ defaultValue: newValue });
-  };
-  
-  const handleMultipleChange = (checked: boolean) => {
-    setLocalMultiple(checked);
-    updateNodeData({ multiple: checked });
   };
   
   return (
@@ -71,23 +72,23 @@ export const component = ({ data, isConnectable }: any) => {
       <Handle
         type="target"
         position={Position.Top}
-        id="json"
+        id="data"
         isConnectable={isConnectable}
         className="w-2 h-2 bg-blue-500"
       />
       
       <div className="space-y-3">
         <div>
-          <Label htmlFor="path">JSONPath Expression</Label>
+          <Label htmlFor="path">JSONPath</Label>
           <Input
             id="path"
-            value={localPath}
+            value={path}
             onChange={handlePathChange}
-            className="mt-1"
+            className="mt-1 font-mono text-sm"
             placeholder="$.data.items[0].name"
           />
           <p className="text-xs text-muted-foreground mt-1">
-            Use $ to reference the root object
+            Use JSONPath to extract data, e.g., $.data.users[0].name
           </p>
         </div>
         
@@ -95,20 +96,20 @@ export const component = ({ data, isConnectable }: any) => {
           <Label htmlFor="defaultValue">Default Value</Label>
           <Input
             id="defaultValue"
-            value={localDefaultValue}
+            value={defaultValue}
             onChange={handleDefaultValueChange}
             className="mt-1"
-            placeholder="Value to use if path not found"
+            placeholder="Value to return if no matches found"
           />
         </div>
         
         <div className="flex items-center space-x-2">
           <Switch
-            id="multiple"
-            checked={localMultiple}
-            onCheckedChange={handleMultipleChange}
+            id="returnFirst"
+            checked={returnFirst}
+            onCheckedChange={handleReturnFirstChange}
           />
-          <Label htmlFor="multiple">Return multiple results</Label>
+          <Label htmlFor="returnFirst">Return only first match from array results</Label>
         </div>
       </div>
       

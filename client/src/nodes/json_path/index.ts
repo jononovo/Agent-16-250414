@@ -5,8 +5,7 @@
  */
 
 import { NodeRegistryEntry } from '../registry';
-import metadata from './metadata.json';
-import schema from './schema';
+import { metadata, schema } from './definition';
 import * as executor from './executor';
 import * as ui from './ui';
 import { FileSearch } from 'lucide-react';
