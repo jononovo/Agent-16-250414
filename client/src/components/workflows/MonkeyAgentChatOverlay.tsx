@@ -251,14 +251,14 @@ export function MonkeyAgentChatOverlay({
       {/* Chat Panel Toggle Button */}
       <button 
         onClick={toggleChatPanel}
-        className="absolute top-4 right-4 z-20 p-2 bg-primary text-white rounded-full shadow-md hover:bg-primary/90 transition-all"
+        className="absolute top-24 right-4 z-20 p-2 bg-primary text-white rounded-full shadow-md hover:bg-primary/90 transition-all"
         aria-label={chatMinimized ? "Expand chat" : "Minimize chat"}
       >
         {chatMinimized ? <ChevronLeft className="h-4 w-4" /> : <MinusCircle className="h-4 w-4" />}
       </button>
 
       {/* Chat Panel - Fixed on the right side with toggle functionality */}
-      <div className={`absolute top-4 ${chatMinimized ? 'right-[-340px]' : 'right-4'} bottom-4 w-[350px] z-10 transition-all duration-300 ease-in-out`}>
+      <div className={`absolute top-24 ${chatMinimized ? 'right-[-340px]' : 'right-4'} bottom-4 w-[350px] z-10 transition-all duration-300 ease-in-out`}>
         <Chat
           messages={messages}
           input={chatInput}

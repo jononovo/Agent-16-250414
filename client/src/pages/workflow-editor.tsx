@@ -67,11 +67,10 @@ const WorkflowEditorPage = () => {
 
   return (
     <>
-      <FlowEditor workflow={workflow} isNew={isNew} />
-      <MonkeyAgentChatOverlay 
+      <FlowEditor 
         workflow={workflow} 
         isNew={isNew} 
-        onWorkflowGenerated={handleWorkflowUpdated} 
+        onWorkflowUpdate={handleWorkflowUpdated}
       />
     </>
   );

@@ -107,9 +107,14 @@ const nodeTypes: NodeTypes = {
 interface FlowEditorProps {
   workflow?: Workflow;
   isNew?: boolean;
+  onWorkflowUpdate?: (workflowId: number) => void;
 }
 
-const FlowEditor = ({ workflow, isNew = false }: FlowEditorProps) => {
+const FlowEditor = ({ 
+  workflow, 
+  isNew = false,
+  onWorkflowUpdate
+}: FlowEditorProps) => {
   const [, navigate] = useLocation();
   const [editingName, setEditingName] = useState(isNew);
   const [name, setName] = useState(workflow?.name || 'New Workflow');
@@ -640,6 +645,11 @@ const FlowEditor = ({ workflow, isNew = false }: FlowEditorProps) => {
     // If we're already on this workflow ID, simply update our nodes and edges
     if (workflow?.id === workflowId) {
       queryClient.invalidateQueries({ queryKey: ['/api/workflows', workflowId] });
+      
+      // Call the parent's update handler if provided
+      if (onWorkflowUpdate) {
+        onWorkflowUpdate(workflowId);
+      }
     } else {
       // If we're on a different workflow, navigate to the new one
       navigate(`/workflow-editor/${workflowId}`);
