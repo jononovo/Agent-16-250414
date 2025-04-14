@@ -46,10 +46,16 @@ export function MonkeyAgentChatOverlay({
   ]);
   const [chatMinimized, setChatMinimized] = useState(false);
   
+  // Store the currently selected node for editing
+  const [selectedNodeForEdit, setSelectedNodeForEdit] = useState<NodeDetails | null>(null);
+  
   // Listen for the monkey-agent-modify-node event
   useEffect(() => {
     const handleNodeModifyRequest = (event: CustomEvent<{ nodeDetails: NodeDetails }>) => {
       const { nodeDetails } = event.detail;
+      
+      // Store the selected node for editing
+      setSelectedNodeForEdit(nodeDetails);
       
       // Format the node details for a nice display in the chat
       const nodeDescription = formatNodeDetails(nodeDetails);
@@ -103,6 +109,30 @@ ${JSON.stringify(nodeDetails, null, 2)}
 
 Please provide instructions for how you'd like to modify this node.
     `.trim();
+  };
+  
+  // Helper function to update a node based on user input
+  const updateSelectedNode = (nodeId: string, updateData: Record<string, any>) => {
+    // Dispatch a custom event to tell the FlowEditor to update this node
+    const event = new CustomEvent('monkey-agent-update-node', {
+      detail: { 
+        nodeId,
+        updateData
+      }
+    });
+    
+    console.log('Dispatching monkey-agent-update-node event:', event.detail);
+    window.dispatchEvent(event);
+    
+    // Add a confirmation message to the chat
+    const confirmationMessage: ChatMessage = {
+      id: uuidv4(),
+      role: 'assistant',
+      content: `I've updated the node with ID "${nodeId}" according to your specifications. You should see the changes in the editor now.`,
+      createdAt: new Date()
+    };
+    
+    setMessages(prev => [...prev, confirmationMessage]);
   };
   
   // We no longer display workflow context messages in the chat
@@ -297,15 +327,140 @@ Please provide instructions for how you'd like to modify this node.
     setChatInput('');
     setMessages(prev => [...prev, userMessage]);
     
-    // Determine whether to update existing workflow or generate a new one
-    const action = (!isNew && workflow?.id) ? 'update' : 'generate';
-    
-    // Call the appropriate API
-    workflowMutation.mutate({ 
-      prompt: input, 
-      action 
-    });
-  }, [workflowMutation, workflow, isNew]);
+    // Check if we're in node edit mode
+    if (selectedNodeForEdit) {
+      // Process the request to modify the selected node
+      try {
+        console.log('Processing node edit request:', input);
+        
+        // Add a thinking message
+        const thinkingMessage: ChatMessage = {
+          id: uuidv4(),
+          role: 'assistant',
+          content: "I'm analyzing your request to modify the node...",
+          createdAt: new Date()
+        };
+        
+        setMessages(prev => [...prev, thinkingMessage]);
+        
+        // Analyze the input to determine what changes to make
+        // This is a simple implementation - in a real system we might use an LLM
+        // to parse the user's natural language request
+        
+        // For now, we'll look for some specific patterns:
+        // "change/set/update label to X" for changing the label
+        // "change/set/update description to X" for changing the description
+        // "change model to X" for changing the model (Claude node)
+        
+        const updateData: Record<string, any> = {};
+        
+        // Extract label changes
+        const labelMatch = input.match(/(?:change|set|update)\s+(?:the\s+)?label\s+(?:to|as)\s+"([^"]+)"/i) ||
+                          input.match(/(?:change|set|update)\s+(?:the\s+)?label\s+(?:to|as)\s+(.+?)(?:\.|$)/i);
+        
+        if (labelMatch) {
+          updateData.label = labelMatch[1].trim();
+        }
+        
+        // Extract description changes
+        const descMatch = input.match(/(?:change|set|update)\s+(?:the\s+)?description\s+(?:to|as)\s+"([^"]+)"/i) ||
+                         input.match(/(?:change|set|update)\s+(?:the\s+)?description\s+(?:to|as)\s+(.+?)(?:\.|$)/i);
+        
+        if (descMatch) {
+          updateData.description = descMatch[1].trim();
+        }
+        
+        // Extract model changes for Claude node
+        const modelMatch = input.match(/(?:change|set|update)\s+(?:the\s+)?model\s+(?:to|as)\s+"([^"]+)"/i) ||
+                          input.match(/(?:change|set|update)\s+(?:the\s+)?model\s+(?:to|as)\s+(.+?)(?:\.|$)/i);
+        
+        if (modelMatch && selectedNodeForEdit.type === 'claude') {
+          if (!updateData.settings) updateData.settings = {};
+          updateData.settings.model = modelMatch[1].trim();
+        }
+        
+        // If the user provides settings for a node
+        const settingsMatch = input.match(/(?:change|set|update)\s+(?:the\s+)?settings\s+(?:to|as)\s+({.+})/i);
+        if (settingsMatch) {
+          try {
+            const settingsObject = JSON.parse(settingsMatch[1]);
+            if (!updateData.settings) updateData.settings = {};
+            updateData.settings = {
+              ...updateData.settings,
+              ...settingsObject
+            };
+          } catch (e) {
+            console.error('Failed to parse settings JSON:', e);
+          }
+        }
+        
+        // If no specific updates were detected but input contains JSON
+        if (Object.keys(updateData).length === 0) {
+          const jsonMatch = input.match(/({[\s\S]*})/);
+          if (jsonMatch) {
+            try {
+              const jsonData = JSON.parse(jsonMatch[1]);
+              Object.assign(updateData, jsonData);
+            } catch (e) {
+              console.error('Failed to parse JSON in input:', e);
+            }
+          }
+        }
+        
+        // If we still don't have any updates, use the whole input as a content update for text nodes
+        if (Object.keys(updateData).length === 0 && selectedNodeForEdit.type === 'text_prompt') {
+          updateData.content = input;
+        }
+        
+        // If we have updates to make
+        if (Object.keys(updateData).length > 0) {
+          // Remove the thinking message first
+          setMessages(prev => prev.filter(msg => msg.id !== thinkingMessage.id));
+          
+          // Update the node
+          updateSelectedNode(selectedNodeForEdit.id, updateData);
+          
+          // Clear the selected node so we're not in edit mode anymore
+          setSelectedNodeForEdit(null);
+        } else {
+          // If we couldn't determine what to update, replace the thinking message with an error
+          setMessages(prev => 
+            prev.map(msg => 
+              msg.id === thinkingMessage.id 
+                ? {
+                    ...msg,
+                    content: "I couldn't determine how to update the node based on your input. Please provide specific instructions like 'change label to \"New Label\"' or 'update description to \"New description\"'."
+                  }
+                : msg
+            )
+          );
+        }
+      } catch (error) {
+        console.error('Error processing node edit request:', error);
+        
+        // Add error message
+        setMessages(prev => [
+          ...prev,
+          {
+            id: uuidv4(),
+            role: 'assistant',
+            content: `I encountered an error while processing your request: ${error instanceof Error ? error.message : String(error)}`,
+            createdAt: new Date()
+          }
+        ]);
+      }
+    } else {
+      // Not in node edit mode, process as a normal workflow request
+      // Determine whether to update existing workflow or generate a new one
+      const action = (!isNew && workflow?.id) ? 'update' : 'generate';
+      
+      // Call the appropriate API
+      workflowMutation.mutate({ 
+        prompt: input, 
+        action 
+      });
+    }
+  }, [workflowMutation, workflow, isNew, selectedNodeForEdit]);
 
   // Toggle chat panel visibility
   const toggleChatPanel = () => {

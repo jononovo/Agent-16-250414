@@ -438,6 +438,66 @@ const FlowEditor = ({
         });
       }
     };
+    
+    // Handle node updates from MonkeyAgent
+    const handleMonkeyAgentNodeUpdate = (event: CustomEvent) => {
+      if (event.detail && event.detail.nodeId && event.detail.updateData) {
+        const { nodeId, updateData } = event.detail;
+        
+        console.log('MonkeyAgent updating node:', nodeId, updateData);
+        
+        // Update the node with the new data
+        setNodes(nds => {
+          return nds.map(node => {
+            if (node.id === nodeId) {
+              // Create a new node data object with the updates applied
+              const newData = { ...node.data };
+              
+              // Apply each update to the appropriate part of the node data
+              Object.entries(updateData).forEach(([key, value]) => {
+                if (key === 'settings' && typeof value === 'object') {
+                  // For settings, merge with existing settings
+                  newData.settings = {
+                    ...newData.settings,
+                    ...value
+                  };
+                } else if (key === 'label') {
+                  // Update label
+                  newData.label = value;
+                } else if (key === 'description') {
+                  // Update description
+                  newData.description = value;
+                } else if (key === 'content' && node.type === 'text_prompt') {
+                  // For text_prompt nodes, update the content
+                  newData.content = value;
+                } else {
+                  // For any other property, just set it directly
+                  newData[key] = value;
+                }
+              });
+              
+              // Return a new node with the updated data
+              return {
+                ...node,
+                data: newData
+              };
+            }
+            return node;
+          });
+        });
+        
+        // Trigger a save after updating the node
+        setTimeout(() => {
+          saveMutation.mutate({
+            name,
+            data: {
+              nodes,
+              edges
+            }
+          });
+        }, 500);
+      }
+    };
 
     const handleWorkflowTriggerUpdate = (event: CustomEvent) => {
       if (event.detail && event.detail.nodeId && event.detail.settings) {
@@ -469,14 +529,16 @@ const FlowEditor = ({
     window.addEventListener('node-settings-open', handleNodeSettingsOpen as EventListener);
     window.addEventListener('agent-trigger-update', handleAgentTriggerUpdate as EventListener);
     window.addEventListener('workflow-trigger-update', handleWorkflowTriggerUpdate as EventListener);
+    window.addEventListener('monkey-agent-update-node', handleMonkeyAgentNodeUpdate as EventListener);
     
     // Cleanup function to remove event listeners
     return () => {
       window.removeEventListener('node-settings-open', handleNodeSettingsOpen as EventListener);
       window.removeEventListener('agent-trigger-update', handleAgentTriggerUpdate as EventListener);
       window.removeEventListener('workflow-trigger-update', handleWorkflowTriggerUpdate as EventListener);
+      window.removeEventListener('monkey-agent-update-node', handleMonkeyAgentNodeUpdate as EventListener);
     };
-  }, [nodes, setSelectedNode, setSettingsDrawerOpen]);
+  }, [nodes, setNodes, setSelectedNode, setSettingsDrawerOpen, name, edges, saveMutation]);
   
   const handleNodeClick = (event: React.MouseEvent, node: Node) => {
     // Don't automatically open settings for most node types
