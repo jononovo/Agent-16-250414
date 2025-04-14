@@ -14,6 +14,7 @@ import ApiRegistry from "@/pages/api-registry";
 import Library from "@/pages/library";
 import NotFound from "@/pages/not-found";
 import NodeSystemDemo from "@/pages/node-system-demo";
+import NodeTesting from "@/pages/node-testing";
 
 function Router() {
   return (
@@ -32,6 +33,7 @@ function Router() {
       <Route path="/agents" component={Library} />
       <Route path="/nodes" component={Library} />
       <Route path="/node-system-demo" component={NodeSystemDemo} />
+      <Route path="/node-testing" component={NodeTesting} />
       <Route component={NotFound} />
     </Switch>
   );
