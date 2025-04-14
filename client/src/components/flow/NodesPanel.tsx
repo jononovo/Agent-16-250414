@@ -269,14 +269,14 @@ const NodesPanel = () => {
   // Get nodes from our folder-based registry
   const folderBasedNodes = nodeRegistry.getAllNodes().map((node: any, index: number) => ({
     id: 1000 + index, // Use a different ID range to avoid conflicts
-    name: node.metadata.displayName || node.type,
-    type: node.type,
-    description: node.metadata.description || '',
-    icon: node.metadata.icon || undefined,
+    name: node.metadata?.displayName || node.type || 'Unknown Node',
+    type: node.type || 'unknown',
+    description: node.metadata?.description || '',
+    icon: node.metadata?.icon || undefined,
     createdAt: new Date(),
     updatedAt: new Date(),
     userId: null,
-    category: node.metadata.category || 'custom',
+    category: node.metadata?.category || 'custom',
     configuration: {}
   } as Node));
   
@@ -352,7 +352,7 @@ const NodesPanel = () => {
       </Tabs>
 
       <ScrollArea className="flex-1">
-        {isLoading ? (
+        {isLoadingDb ? (
           <div className="p-4 text-center text-sm text-muted-foreground">
             Loading nodes...
           </div>
