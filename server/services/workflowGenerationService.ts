@@ -1,14 +1,14 @@
 /**
  * Workflow Generation Service
- * 
+ *
  * This service is responsible for generating workflow definitions from natural language
  * prompts using AI models. It structures the data to be compatible with ReactFlow
  * visualization and our workflow execution engine.
  */
 
-import { IStorage } from '../storage';
-import { InsertWorkflow, Node } from '@shared/schema';
-import { fetchWithTimeout } from '../utils/fetch';
+import { IStorage } from "../storage";
+import { InsertWorkflow, Node } from "@shared/schema";
+import { fetchWithTimeout } from "../utils/fetch";
 
 /**
  * Interface for workflow generation options
@@ -16,7 +16,7 @@ import { fetchWithTimeout } from '../utils/fetch';
 interface WorkflowGenerationOptions {
   apiKey?: string;
   model?: string;
-  complexity?: 'simple' | 'moderate' | 'complex';
+  complexity?: "simple" | "moderate" | "complex";
   domain?: string;
   nodeTypes?: string[];
   maxNodes?: number;
@@ -45,114 +45,129 @@ interface NodeTypesCatalog {
 export class WorkflowGenerationService {
   private storage: IStorage;
   private nodeTypesCatalog: NodeTypesCatalog;
-  
+
   constructor(storage: IStorage) {
     this.storage = storage;
     this.nodeTypesCatalog = {}; // Will be populated in the init method
   }
-  
+
   /**
    * Initialize the service, loading available node types
    */
   async init(): Promise<void> {
     // Retrieve all registered node types from the database
     const nodes = await this.storage.getNodes();
-    
+
     // Create a catalog of node types for the AI to reference
-    this.nodeTypesCatalog = nodes.reduce((catalog: NodeTypesCatalog, node: Node) => {
-      // Extract node configuration
-      const config = node.configuration as any || {};
-      
-      // Add node to catalog
-      catalog[node.type] = {
-        type: node.type,
-        displayName: node.name,
-        description: node.description || '',
-        category: node.category || 'Other',
-        icon: node.icon || 'square',
-        inputs: config.inputs || {},
-        outputs: config.outputs || {},
-        settings: config.settings || {}
-      };
-      
-      return catalog;
-    }, {});
-    
-    console.log(`Workflow Generation Service initialized with ${Object.keys(this.nodeTypesCatalog).length} node types`);
+    this.nodeTypesCatalog = nodes.reduce(
+      (catalog: NodeTypesCatalog, node: Node) => {
+        // Extract node configuration
+        const config = (node.configuration as any) || {};
+
+        // Add node to catalog
+        catalog[node.type] = {
+          type: node.type,
+          displayName: node.name,
+          description: node.description || "",
+          category: node.category || "Other",
+          icon: node.icon || "square",
+          inputs: config.inputs || {},
+          outputs: config.outputs || {},
+          settings: config.settings || {},
+        };
+
+        return catalog;
+      },
+      {},
+    );
+
+    console.log(
+      `Workflow Generation Service initialized with ${Object.keys(this.nodeTypesCatalog).length} node types`,
+    );
   }
-  
+
   /**
    * Generate a workflow definition from a natural language prompt
    */
   async generateWorkflow(
-    prompt: string, 
+    prompt: string,
     agentId?: number,
-    options: WorkflowGenerationOptions = {}
+    options: WorkflowGenerationOptions = {},
   ): Promise<any> {
     // Default options
     const {
-      model = 'gpt-4',
-      complexity = 'moderate',
-      domain = 'general',
+      model = "gpt-4",
+      complexity = "moderate",
+      domain = "general",
       maxNodes = 10,
       timeout = 30000,
-      apiKey
+      apiKey,
     } = options;
-    
+
     try {
       // Check if we have an API key for the LLM
       if (!apiKey && !process.env.OPENAI_API_KEY) {
-        throw new Error('No API key provided for workflow generation');
+        throw new Error("No API key provided for workflow generation");
       }
-      
+
       // Prepare the prompt for the LLM
-      const systemPrompt = this.createSystemPrompt(complexity, domain, maxNodes);
+      const systemPrompt = this.createSystemPrompt(
+        complexity,
+        domain,
+        maxNodes,
+      );
       const userPrompt = this.createUserPrompt(prompt);
-      
+
       // Check for API key
       const apiKeyToUse = apiKey || process.env.OPENAI_API_KEY;
       if (!apiKeyToUse) {
-        throw new Error('No API key available for the LLM service');
+        throw new Error("No API key available for the LLM service");
       }
-      
+
       // Call the LLM API to generate the workflow
-      const response = await this.callLLMApi(systemPrompt, userPrompt, model, apiKeyToUse, timeout);
-      
+      const response = await this.callLLMApi(
+        systemPrompt,
+        userPrompt,
+        model,
+        apiKeyToUse,
+        timeout,
+      );
+
       // Parse and validate the workflow structure
       const workflowDefinition = this.parseAndValidateWorkflow(response);
-      
+
       // Add agent ID if provided
       if (agentId) {
         workflowDefinition.agentId = agentId;
       }
-      
+
       // Ensure type field is set (required by the schema)
       if (!workflowDefinition.type) {
-        workflowDefinition.type = 'generated';
+        workflowDefinition.type = "generated";
       }
-      
+
       return workflowDefinition;
     } catch (error) {
-      console.error('Error generating workflow:', error);
+      console.error("Error generating workflow:", error);
       throw error;
     }
   }
-  
+
   /**
    * Create the system prompt for the LLM
    */
   private createSystemPrompt(
-    complexity: string, 
-    domain: string, 
-    maxNodes: number
+    complexity: string,
+    domain: string,
+    maxNodes: number,
   ): string {
     // Get the node types catalog as a formatted string
     const nodeTypesFormatted = Object.entries(this.nodeTypesCatalog)
       .map(([_, nodeType]) => {
         return `- ${nodeType.type} (${nodeType.category}): ${nodeType.description}`;
       })
-      .join('\n');
-    
+      .join("\n");
+
     // Define the supported node types with clear descriptions
     const supportedNodeTypes = `
 Supported Node Types (use ONLY these types):
@@ -175,7 +190,7 @@ Supported Node Types (use ONLY these types):
 - workflow_trigger: For triggering other workflows
 - agent_trigger: For triggering agents
 `;
-    
+
     // Create the system prompt
     return `You are an expert workflow designer for an AI agent system. 
 Your task is to create workflow definitions that can be visualized in ReactFlow and executed by a workflow engine.
@@ -234,69 +249,69 @@ Ensure that:
 - Response is ONLY valid JSON without any additional text or explanation
 - Each node has appropriate settings based on its type`;
   }
-  
+
   /**
    * Create the user prompt for the LLM
    */
   private createUserPrompt(prompt: string): string {
     return `Create a workflow based on this description: "${prompt}"`;
   }
-  
+
   /**
    * Call the LLM API to generate the workflow
    */
   private async callLLMApi(
-    systemPrompt: string, 
-    userPrompt: string, 
+    systemPrompt: string,
+    userPrompt: string,
     model: string,
     apiKey: string,
-    timeout: number
+    timeout: number,
   ): Promise<string> {
     try {
       // Prepare the request to OpenAI API
-      const url = 'https://api.openai.com/v1/chat/completions';
+      const url = "https://api.openai.com/v1/chat/completions";
       const headers = {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${apiKey}`
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${apiKey}`,
       };
       const data = {
         model,
         messages: [
-          { role: 'system', content: systemPrompt },
-          { role: 'user', content: userPrompt }
+          { role: "system", content: systemPrompt },
+          { role: "user", content: userPrompt },
         ],
         temperature: 0.7,
-        max_tokens: 2000
+        max_tokens: 2000,
       };
-      
+
       // Make the API request
       const response = await fetchWithTimeout(
         url,
         {
-          method: 'POST',
+          method: "POST",
           headers,
-          body: JSON.stringify(data)
+          body: JSON.stringify(data),
         },
-        timeout
+        timeout,
       );
-      
+
       // Check for errors
       if (!response.ok) {
         const errorText = await response.text();
         throw new Error(`LLM API error: ${response.status} ${errorText}`);
       }
-      
+
       // Parse the response
       const result = await response.json();
-      
+
       // Extract and return the generated workflow
       return result.choices[0].message.content;
     } catch (error) {
-      console.error('Error calling LLM API:', error);
+      console.error("Error calling LLM API:", error);
       throw error;
     }
   }
-  
+
   /**
    * Parse and validate the workflow structure
    */
@@ -304,143 +319,153 @@ Ensure that:
     try {
       // Extract JSON from the response
       let jsonStr = responseText.trim();
-      
+
       // If the response includes markdown code blocks, extract the JSON
-      if (jsonStr.includes('```json')) {
-        jsonStr = jsonStr.split('```json')[1].split('```')[0].trim();
-      } else if (jsonStr.includes('```')) {
-        jsonStr = jsonStr.split('```')[1].split('```')[0].trim();
+      if (jsonStr.includes("```json")) {
+        jsonStr = jsonStr.split("```json")[1].split("```")[0].trim();
+      } else if (jsonStr.includes("```")) {
+        jsonStr = jsonStr.split("```")[1].split("```")[0].trim();
       }
-      
+
       // Parse the JSON
       const workflow = JSON.parse(jsonStr);
-      
+
       // Basic validation
-      if (!workflow.name) throw new Error('Workflow name is required');
-      if (!workflow.flowData) throw new Error('Workflow flowData is required');
+      if (!workflow.name) throw new Error("Workflow name is required");
+      if (!workflow.flowData) throw new Error("Workflow flowData is required");
       if (!workflow.flowData.nodes || !Array.isArray(workflow.flowData.nodes)) {
-        throw new Error('Workflow nodes must be an array');
+        throw new Error("Workflow nodes must be an array");
       }
       if (!workflow.flowData.edges || !Array.isArray(workflow.flowData.edges)) {
-        throw new Error('Workflow edges must be an array');
+        throw new Error("Workflow edges must be an array");
       }
-      
+
       // Map node types to the ones supported by the FlowEditor component
       // Only keeping essential mappings for standard node types
       const nodeTypeMapping: Record<string, string> = {
-        'transform': 'transform',
-        'output': 'output',
-        'database': 'database_query',
-        'email': 'email_send',
-        'trigger': 'trigger',
-        'process': 'processor',
-        'filter': 'filter'
+        transform: "transform",
+        output: "output",
+        database: "database_query",
+        email: "email_send",
+        trigger: "trigger",
+        process: "processor",
+        filter: "filter",
       };
-      
+
       // Update node types and positions in the workflow
       if (workflow.flowData.nodes) {
         // Ensure all nodes are nicely positioned in the top-left of the canvas
         // This makes them immediately visible to users
-        const baseX = 100;  // Start X position
-        const baseY = 100;  // Start Y position
-        const nodeWidth = 250;  // Average node width
-        const nodePadding = 50;  // Padding between nodes
-        const nodesPerRow = 3;  // Nodes per row before wrapping to a new row
-        
-        workflow.flowData.nodes = workflow.flowData.nodes.map((node: any, index: number) => {
-          // Check if this node type needs to be mapped
-          if (node.type && nodeTypeMapping[node.type]) {
-            node.type = nodeTypeMapping[node.type];
-          }
-          
-          // Also update the type in the data object if it exists
-          if (node.data && node.data.type && nodeTypeMapping[node.data.type]) {
-            node.data.type = nodeTypeMapping[node.data.type];
-          }
-          
-          // Calculate grid position
-          const row = Math.floor(index / nodesPerRow);
-          const col = index % nodesPerRow;
-          
-          // Position nodes in a grid layout, starting from top-left
-          node.position = {
-            x: baseX + (col * (nodeWidth + nodePadding)),
-            y: baseY + (row * 200)  // 200px vertical spacing between rows
-          };
-          
-          // Ensure every node has a unique ID
-          if (!node.id) {
-            node.id = `${node.type || 'node'}-${Date.now()}-${index}`;
-          }
-          
-          // Make sure data has label and category
-          if (!node.data) {
-            node.data = {};
-          }
-          
-          if (!node.data.label) {
-            node.data.label = node.type ? `${node.type.charAt(0).toUpperCase() + node.type.slice(1)} Node` : 'Node';
-          }
-          
-          if (!node.data.category) {
-            node.data.category = this.getCategoryForNodeType(node.type);
-          }
-          
-          return node;
-        });
+        const baseX = 100; // Start X position
+        const baseY = 100; // Start Y position
+        const nodeWidth = 250; // Average node width
+        const nodePadding = 50; // Padding between nodes
+        const nodesPerRow = 3; // Nodes per row before wrapping to a new row
+
+        workflow.flowData.nodes = workflow.flowData.nodes.map(
+          (node: any, index: number) => {
+            // Check if this node type needs to be mapped
+            if (node.type && nodeTypeMapping[node.type]) {
+              node.type = nodeTypeMapping[node.type];
+            }
+
+            // Also update the type in the data object if it exists
+            if (
+              node.data &&
+              node.data.type &&
+              nodeTypeMapping[node.data.type]
+            ) {
+              node.data.type = nodeTypeMapping[node.data.type];
+            }
+
+            // Calculate grid position
+            const row = Math.floor(index / nodesPerRow);
+            const col = index % nodesPerRow;
+
+            // Position nodes in a grid layout, starting from top-left
+            node.position = {
+              x: baseX + col * (nodeWidth + nodePadding),
+              y: baseY + row * 200, // 200px vertical spacing between rows
+            };
+
+            // Ensure every node has a unique ID
+            if (!node.id) {
+              node.id = `${node.type || "node"}-${Date.now()}-${index}`;
+            }
+
+            // Make sure data has label and category
+            if (!node.data) {
+              node.data = {};
+            }
+
+            if (!node.data.label) {
+              node.data.label = node.type
+                ? `${node.type.charAt(0).toUpperCase() + node.type.slice(1)} Node`
+                : "Node";
+            }
+
+            if (!node.data.category) {
+              node.data.category = this.getCategoryForNodeType(node.type);
+            }
+
+            return node;
+          },
+        );
       }
-      
+
       // Convert to string for storage
       workflow.flowData = JSON.stringify(workflow.flowData);
-      
+
       return workflow;
     } catch (error) {
-      console.error('Error parsing workflow JSON:', error);
-      throw new Error(`Failed to parse workflow: ${error instanceof Error ? error.message : String(error)}`);
+      console.error("Error parsing workflow JSON:", error);
+      throw new Error(
+        `Failed to parse workflow: ${error instanceof Error ? error.message : String(error)}`,
+      );
     }
   }
-  
+
   /**
    * Get the appropriate category for a node type
    */
   private getCategoryForNodeType(type: string | undefined): string {
-    if (!type) return 'default';
-    
+    if (!type) return "default";
+
     // Map node types to categories
     const categoryMap: Record<string, string> = {
       // Trigger nodes
-      'trigger': 'trigger',
-      'schedule_trigger': 'trigger',
-      'webhook': 'trigger',
-      'email_trigger': 'trigger',
-      
+      trigger: "trigger",
+      schedule_trigger: "trigger",
+      webhook: "trigger",
+      email_trigger: "trigger",
+
       // AI nodes
-      'text_prompt': 'AI',
-      'prompt_crafter': 'AI',
-      'generate_text': 'AI',
-      'claude': 'AI',
-      'perplexity': 'AI',
-      
+      text_prompt: "AI",
+      prompt_crafter: "AI",
+      generate_text: "AI",
+      claude: "AI",
+      perplexity: "AI",
+
       // Input/Output nodes
-      'text_input': 'input',
-      'output': 'output',
-      'email_send': 'output',
-      'visualize_text': 'output',
-      
+      text_input: "input",
+      output: "output",
+      email_send: "output",
+      visualize_text: "output",
+
       // Data nodes
-      'transform': 'data',
-      'database_query': 'data',
-      'filter': 'data',
-      'data_transform': 'data',
-      
+      transform: "data",
+      database_query: "data",
+      filter: "data",
+      data_transform: "data",
+
       // Processor nodes
-      'processor': 'process',
-      'http_request': 'process',
+      processor: "process",
+      http_request: "process",
     };
-    
-    return categoryMap[type] || 'default';
+
+    return categoryMap[type] || "default";
   }
-  
+
   /**
    * Create a new workflow in the database
    */
@@ -448,26 +473,29 @@ Ensure that:
     try {
       // Create the workflow in the database
       const workflow = await this.storage.createWorkflow(workflowData);
-      
+
       return workflow;
     } catch (error) {
-      console.error('Error creating workflow:', error);
+      console.error("Error creating workflow:", error);
       throw error;
     }
   }
 }
 
 // Import storage
-import { storage } from '../storage';
+import { storage } from "../storage";
 
 // Export a function to create the service
-export function createWorkflowGenerationService(storage: IStorage): WorkflowGenerationService {
+export function createWorkflowGenerationService(
+  storage: IStorage,
+): WorkflowGenerationService {
   const service = new WorkflowGenerationService(storage);
-  service.init().catch(error => {
-    console.error('Error initializing workflow generation service:', error);
+  service.init().catch((error) => {
+    console.error("Error initializing workflow generation service:", error);
   });
   return service;
 }
 
 // Create and export the default instance
-export const workflowGenerationService = createWorkflowGenerationService(storage);
+export const workflowGenerationService =
+  createWorkflowGenerationService(storage);

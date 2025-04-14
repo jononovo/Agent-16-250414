@@ -440,6 +440,60 @@ export async function registerRoutes(app: Express): Promise<Server> {
     res.json({ status: 'ok', timestamp: new Date().toISOString() });
   });
   
+  // API Configuration endpoints
+  
+  // Get API configuration
+  app.get('/api/config', (req: Request, res: Response) => {
+    try {
+      // Return masked API keys to verify they exist
+      // Don't return the actual keys for security reasons
+      const config = {
+        // Check for environment variables and create masked versions
+        openaiApiKey: process.env.OPENAI_API_KEY ? '****' + process.env.OPENAI_API_KEY.slice(-4) : null,
+        claudeApiKey: process.env.CLAUDE_API_KEY ? '****' + process.env.CLAUDE_API_KEY.slice(-4) : null,
+        perplexityApiKey: process.env.PERPLEXITY_API_KEY ? '****' + process.env.PERPLEXITY_API_KEY.slice(-4) : null
+      };
+      
+      res.json(config);
+    } catch (error) {
+      console.error("Error getting API config:", error);
+      res.status(500).json({ 
+        error: true, 
+        message: "Failed to get API configuration" 
+      });
+    }
+  });
+  
+  // Update API configuration
+  app.post('/api/config', (req: Request, res: Response) => {
+    try {
+      const { openaiApiKey, claudeApiKey, perplexityApiKey } = req.body;
+      
+      // In a production environment, we would save these to a secure storage
+      // For this demo, we'll log them (but masked) and use environment variables
+      console.log('API Key update requested:', {
+        openaiApiKey: openaiApiKey ? '****' + openaiApiKey.slice(-4) : null,
+        claudeApiKey: claudeApiKey ? '****' + claudeApiKey.slice(-4) : null,
+        perplexityApiKey: perplexityApiKey ? '****' + perplexityApiKey.slice(-4) : null
+      });
+      
+      // Return the masked config to confirm receipt
+      const config = {
+        openaiApiKey: openaiApiKey ? '****' + openaiApiKey.slice(-4) : null,
+        claudeApiKey: claudeApiKey ? '****' + claudeApiKey.slice(-4) : null,
+        perplexityApiKey: perplexityApiKey ? '****' + perplexityApiKey.slice(-4) : null
+      };
+      
+      res.json(config);
+    } catch (error) {
+      console.error("Error updating API config:", error);
+      res.status(500).json({ 
+        error: true, 
+        message: "Failed to update API configuration" 
+      });
+    }
+  });
+  
   // ===== Agent Routes =====
   
   // Get all agents
