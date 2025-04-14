@@ -461,20 +461,49 @@ const FlowEditor = ({
                     ...newData.settings,
                     ...value
                   };
+                  
+                  // Also check for specific Claude API settings to provide feedback
+                  if (node.type === 'claude') {
+                    // Log the specific settings being changed to help debug
+                    const valueObj = value as Record<string, any>;
+                    if (valueObj) {
+                      const updatedSettings = Object.keys(valueObj);
+                      console.log(`Updating Claude node settings: ${updatedSettings.join(', ')}`);
+                    }
+                    
+                    // For Claude nodes, update the model display if the model is changed
+                    const valueObject = value as Record<string, any>;
+                    if (valueObject && valueObject.model) {
+                      console.log(`Claude model updated to: ${valueObject.model}`);
+                    }
+                    
+                    // For Claude nodes, update system prompt if it's changed
+                    if (valueObject && valueObject.systemPrompt) {
+                      const promptPrefix = valueObject.systemPrompt.substring(0, 30);
+                      console.log(`System prompt updated to: ${promptPrefix}...`);
+                    }
+                  }
                 } else if (key === 'label') {
                   // Update label
                   newData.label = value;
+                  console.log(`Updated label to: ${value}`);
                 } else if (key === 'description') {
                   // Update description
                   newData.description = value;
+                  console.log(`Updated description to: ${value}`);
                 } else if (key === 'content' && node.type === 'text_prompt') {
                   // For text_prompt nodes, update the content
                   newData.content = value;
+                  console.log(`Updated content for text_prompt node`);
                 } else {
                   // For any other property, just set it directly
                   newData[key] = value;
+                  console.log(`Updated ${key} to:`, value);
                 }
               });
+              
+              // Log the updated node data
+              console.log('Updated node data:', newData);
               
               // Return a new node with the updated data
               return {
@@ -484,6 +513,12 @@ const FlowEditor = ({
             }
             return node;
           });
+        });
+        
+        // Display a toast to confirm the update
+        toast({
+          title: "Node Updated",
+          description: `Successfully updated node: ${nodeId}`,
         });
         
         // Trigger a save after updating the node

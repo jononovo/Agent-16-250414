@@ -65,11 +65,25 @@ export function MonkeyAgentChatOverlay({
         setChatMinimized(false);
       }
       
-      // Add a system message with the node details
+      // Add a system message with the node details and instructions
+      const helpText = `
+You can modify the node by using any of the following commands:
+
+- Change label to "New Label"
+- Update description to "New Description"
+- Change system prompt to "Your new system prompt"
+- Update model to claude-3-sonnet-20240229
+- Set temperature to 0.8
+- Change max tokens to 4000
+
+Or you can specify settings as JSON:
+{"settings": {"systemPrompt": "You are a helpful assistant", "temperature": 0.7}}
+      `.trim();
+      
       const systemMessage: ChatMessage = {
         id: uuidv4(),
         role: "system",
-        content: `Please modify the following node:\n\n${nodeDescription}`,
+        content: `Please modify the following node:\n\n${nodeDescription}\n\n${helpText}`,
         createdAt: new Date()
       };
       
@@ -379,7 +393,59 @@ Please provide instructions for how you'd like to modify this node.
           updateData.settings.model = modelMatch[1].trim();
         }
         
-        // If the user provides settings for a node
+        // Extract system prompt changes for Claude node
+        const systemPromptMatch = input.match(/(?:change|set|update)\s+(?:the\s+)?system\s+prompt\s+(?:to|as)\s+"([^"]+)"/i) ||
+                                 input.match(/(?:change|set|update)\s+(?:the\s+)?system\s+prompt\s+(?:to|as)\s+(.+?)(?:\.|$)/i);
+        
+        if (systemPromptMatch && selectedNodeForEdit.type === 'claude') {
+          if (!updateData.settings) updateData.settings = {};
+          updateData.settings.systemPrompt = systemPromptMatch[1].trim();
+        }
+        
+        // Extract temperature changes for Claude node
+        const temperatureMatch = input.match(/(?:change|set|update)\s+(?:the\s+)?temperature\s+(?:to|as)\s+(\d+\.?\d*)/i);
+        
+        if (temperatureMatch && selectedNodeForEdit.type === 'claude') {
+          if (!updateData.settings) updateData.settings = {};
+          updateData.settings.temperature = parseFloat(temperatureMatch[1].trim());
+        }
+        
+        // Extract max tokens changes for Claude node
+        const maxTokensMatch = input.match(/(?:change|set|update)\s+(?:the\s+)?max(?:\s+)?tokens\s+(?:to|as)\s+(\d+)/i);
+        
+        if (maxTokensMatch && selectedNodeForEdit.type === 'claude') {
+          if (!updateData.settings) updateData.settings = {};
+          updateData.settings.maxTokens = parseInt(maxTokensMatch[1].trim(), 10);
+        }
+        
+        // General approach for any setting: "change [setting name] to [value]"
+        const generalSettingMatch = input.match(/(?:change|set|update)\s+(?:the\s+)?(\w+(?:\s+\w+)*)\s+(?:to|as)\s+"([^"]+)"/i) ||
+                                   input.match(/(?:change|set|update)\s+(?:the\s+)?(\w+(?:\s+\w+)*)\s+(?:to|as)\s+([^\.]+)(?:\.|$)/i);
+        
+        if (generalSettingMatch) {
+          const settingKey = generalSettingMatch[1].trim().replace(/\s+/g, '');
+          const settingValue = generalSettingMatch[2].trim();
+          
+          // Only apply if it's not one of the settings we've already handled
+          const handledSettings = ['model', 'systemprompt', 'temperature', 'maxtokens', 'label', 'description'];
+          
+          if (!handledSettings.includes(settingKey.toLowerCase())) {
+            if (!updateData.settings) updateData.settings = {};
+            
+            // Try to parse as number or boolean if applicable
+            if (settingValue === 'true') {
+              updateData.settings[settingKey] = true;
+            } else if (settingValue === 'false') {
+              updateData.settings[settingKey] = false;
+            } else if (!isNaN(Number(settingValue))) {
+              updateData.settings[settingKey] = Number(settingValue);
+            } else {
+              updateData.settings[settingKey] = settingValue;
+            }
+          }
+        }
+        
+        // If the user provides settings for a node as JSON
         const settingsMatch = input.match(/(?:change|set|update)\s+(?:the\s+)?settings\s+(?:to|as)\s+({.+})/i);
         if (settingsMatch) {
           try {
