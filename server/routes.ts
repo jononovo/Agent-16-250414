@@ -570,9 +570,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       let updatedWorkflow;
       
-      // Email workflow with schedule and emojis
-      if (prompt.toLowerCase().includes('email') && prompt.toLowerCase().includes('morning') || 
-          prompt.toLowerCase().includes('emojis') || prompt.toLowerCase().includes('emojies')) {
+      // Check various types of requests and add corresponding nodes
+      // Email workflow with morning schedule
+      if (prompt.toLowerCase().includes('email') && prompt.toLowerCase().includes('morning')) {
         
         // Create a scheduled trigger node
         const triggerNode = {
@@ -647,6 +647,157 @@ export async function registerRoutes(app: Express): Promise<Server> {
           message: "Workflow updated successfully"
         });
       } 
+      
+      // Claude API question workflow
+      if (prompt.toLowerCase().includes('claude') && prompt.toLowerCase().includes('api') && 
+          (prompt.toLowerCase().includes('question') || prompt.toLowerCase().includes('ask'))) {
+        
+        // Create a text input node
+        const textInputNode = {
+          id: `text-input-${Date.now()}`,
+          type: 'text_input',
+          position: { x: 100, y: 100 },
+          data: {
+            name: 'Question Input',
+            description: 'Enter your question for Claude AI'
+          }
+        };
+        
+        // Create a Claude API node
+        const claudeApiNode = {
+          id: `claude-api-${Date.now()}`,
+          type: 'claude_api',
+          position: { x: 100, y: 250 },
+          data: {
+            name: 'Claude API',
+            prompt: '{{text_input.output}}',
+            description: 'Sends your question to Claude AI and gets a response'
+          }
+        };
+        
+        // Create an output node
+        const outputNode = {
+          id: `output-${Date.now()}`,
+          type: 'output',
+          position: { x: 100, y: 400 },
+          data: {
+            name: 'Display Result',
+            description: 'Displays the response from Claude'
+          }
+        };
+        
+        // Create edges connecting the nodes
+        const edge1 = {
+          id: `edge-input-claude-${Date.now()}`,
+          source: textInputNode.id,
+          target: claudeApiNode.id,
+          type: 'default'
+        };
+        
+        const edge2 = {
+          id: `edge-claude-output-${Date.now()}`,
+          source: claudeApiNode.id,
+          target: outputNode.id,
+          type: 'default'
+        };
+        
+        // Add the nodes and edges to the workflow
+        flowData.nodes.push(textInputNode, claudeApiNode, outputNode);
+        flowData.edges.push(edge1, edge2);
+        
+        // Update the workflow with new data
+        const updatedData = {
+          ...existingWorkflow,
+          flowData: flowData,
+          description: existingWorkflow.description || 'Claude API question workflow'
+        };
+        
+        // Update the workflow in the database
+        updatedWorkflow = await storage.updateWorkflow(workflowId, updatedData);
+        
+        // Return the updated workflow
+        return res.status(200).json({
+          workflow: updatedWorkflow,
+          message: "Workflow updated successfully"
+        });
+      }
+      
+      // Chinese language learning workflow
+      if (prompt.toLowerCase().includes('chinese') && prompt.toLowerCase().includes('learn')) {
+        
+        // Create a scheduled trigger node
+        const triggerNode = {
+          id: `trigger-${Date.now()}`,
+          type: 'schedule_trigger',
+          position: { x: 100, y: 100 },
+          data: {
+            name: 'Daily Morning Schedule',
+            schedule: '0 7 * * *', // 7 AM daily
+            description: 'Triggers workflow every morning at 7 AM'
+          }
+        };
+        
+        // Create a text generator node
+        const chineseTipNode = {
+          id: `chinese-tip-${Date.now()}`,
+          type: 'generate_text',
+          position: { x: 100, y: 250 },
+          data: {
+            name: 'Generate Chinese Tip',
+            prompt: 'Generate a daily Chinese language learning tip with: 1) A new Chinese character, 2) Its pinyin pronunciation, 3) Its meaning, 4) An example sentence using it, 5) A memory tip for remembering it.',
+            description: 'Creates a daily Chinese language learning tip'
+          }
+        };
+        
+        // Create an email sender node
+        const emailNode = {
+          id: `email-${Date.now()}`,
+          type: 'email',
+          position: { x: 100, y: 400 },
+          data: {
+            name: 'Send Chinese Tip Email',
+            to: '{{recipient_email}}',
+            subject: 'Your Daily Chinese Learning Tip 汉字',
+            body: 'Good morning! Here is your daily Chinese learning tip:\n\n{{chinese_tip.output}}',
+            description: 'Sends email with the daily Chinese learning tip'
+          }
+        };
+        
+        // Create edges connecting the nodes
+        const edge1 = {
+          id: `edge-trigger-tip-${Date.now()}`,
+          source: triggerNode.id,
+          target: chineseTipNode.id,
+          type: 'default'
+        };
+        
+        const edge2 = {
+          id: `edge-tip-email-${Date.now()}`,
+          source: chineseTipNode.id,
+          target: emailNode.id,
+          type: 'default'
+        };
+        
+        // Add the nodes and edges to the workflow
+        flowData.nodes.push(triggerNode, chineseTipNode, emailNode);
+        flowData.edges.push(edge1, edge2);
+        
+        // Update the workflow with new data
+        const updatedData = {
+          ...existingWorkflow,
+          flowData: flowData,
+          description: existingWorkflow.description || 'Daily Chinese learning tips workflow'
+        };
+        
+        // Update the workflow in the database
+        updatedWorkflow = await storage.updateWorkflow(workflowId, updatedData);
+        
+        // Return the updated workflow
+        return res.status(200).json({
+          workflow: updatedWorkflow,
+          message: "Workflow updated successfully"
+        });
+      }
       
       // If no update matched, just return the original workflow
       // No changes needed
