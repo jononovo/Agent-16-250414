@@ -292,22 +292,8 @@ const NodesPanel = () => {
   // Debug: Log folder-based nodes
   console.log("Folder-based nodes:", folderBasedNodes.map(node => `${node.name} (${node.type})`));
   
-  // Combine both node sets - prefer our folder-based nodes over legacy ones
-  const nodeItems = isLoadingDb ? folderBasedNodes : [
-    ...folderBasedNodes,
-    ...NODE_TYPES.map((type, index) => ({
-      id: index,
-      name: type.name,
-      type: type.id,
-      description: type.description,
-      icon: type.icon, // Use the icon component directly
-      createdAt: new Date(),
-      updatedAt: new Date(),
-      userId: null,
-      category: type.category,
-      configuration: type.configuration || {}
-    } as Node))
-  ];
+  // Only use folder-based nodes from our registry
+  const nodeItems = folderBasedNodes;
   
   const filteredNodes = nodeItems.filter(node => {
     // First apply category filter if not "all"
