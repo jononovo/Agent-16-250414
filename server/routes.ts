@@ -81,14 +81,14 @@ async function runWorkflow(
   
   // Create a log entry for this workflow execution
   const logEntry: InsertLog = {
-    agentId: workflow.agentId,
-    type: "workflow_execution",
-    level: "info",
-    message: `Starting workflow execution: ${workflow.name}`,
-    source: "workflow_engine",
-    data: {
-      workflowId,
-      input,
+    agentId: workflow.agentId || 1, // Default to agent 1 if null
+    workflowId: workflowId,
+    status: "running",
+    input: input,
+    executionPath: {
+      execution_type: "workflow_execution", 
+      source: "workflow_engine",
+      message: `Starting workflow execution: ${workflow.name}`,
       status: "in_progress"
     }
   };
@@ -119,12 +119,13 @@ async function runWorkflow(
       
       // Update the log entry
       await storage.updateLog(executionLog.id, {
-        message: `Workflow execution completed: ${workflow.name}`,
-        level: "info",
-        data: {
-          ...executionLog.data,
-          status: "completed",
-          result: result.output
+        status: "completed",
+        output: result.output,
+        completedAt: new Date(),
+        executionPath: {
+          ...executionLog.executionPath,
+          message: `Workflow execution completed: ${workflow.name}`,
+          status: "completed"
         }
       });
       
@@ -319,13 +320,13 @@ async function runWorkflow(
     
     // Update the log entry
     await storage.updateLog(executionLog.id, {
-      message: `Workflow execution ${executionStatus}: ${workflow.name}`,
-      level: executionStatus === "error" ? "error" : "info",
-      data: {
-        ...executionLog.data,
-        status: executionStatus,
-        result: finalOutput,
-        errors: errors.length > 0 ? errors : undefined,
+      status: executionStatus,
+      output: finalOutput,
+      error: errors.length > 0 ? JSON.stringify(errors) : null,
+      completedAt: new Date(),
+      executionPath: {
+        ...executionLog.executionPath,
+        message: `Workflow execution ${executionStatus}: ${workflow.name}`,
         executionTime,
         nodesExecuted: processedNodes.size
       }
@@ -338,12 +339,12 @@ async function runWorkflow(
     
     // Update the log entry with the error
     await storage.updateLog(executionLog.id, {
-      message: `Workflow execution failed: ${workflow.name}`,
-      level: "error",
-      data: {
-        ...executionLog.data,
-        status: "failed",
-        error: error instanceof Error ? error.message : String(error)
+      status: "error",
+      error: error instanceof Error ? error.message : String(error),
+      completedAt: new Date(),
+      executionPath: {
+        message: `Workflow execution failed: ${workflow.name}`,
+        status: "failed"
       }
     });
     
