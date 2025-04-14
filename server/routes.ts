@@ -704,6 +704,164 @@ export async function registerRoutes(app: Express): Promise<Server> {
   
   // ===== Workflow Routes =====
   
+  // Generate a new workflow from a natural language prompt
+  app.post("/api/workflows/generate", async (req, res) => {
+    try {
+      // Validate request body
+      const generateSchema = z.object({
+        prompt: z.string(),
+        agentId: z.number().optional(),
+        options: z.object({
+          apiKey: z.string().optional(),
+          model: z.string().optional(),
+          complexity: z.enum(['simple', 'moderate', 'complex']).optional(),
+          domain: z.string().optional(),
+          maxNodes: z.number().optional(),
+          timeout: z.number().optional(),
+        }).optional(),
+      });
+      
+      const result = generateSchema.safeParse(req.body);
+      if (!result.success) {
+        const validationError = fromZodError(result.error);
+        return res.status(400).json({ 
+          message: "Invalid workflow generation request", 
+          details: validationError.message 
+        });
+      }
+      
+      // Extract prompt and options from the request
+      const { prompt, agentId, options } = result.data;
+      
+      console.log(`Generating workflow from prompt: "${prompt}"`);
+      
+      // Try to use the dynamic workflow generation service
+      try {
+        console.log("Using workflowGenerationService to generate dynamic workflow");
+        
+        // Generate a workflow using the dynamic generation service
+        const generatedWorkflow = await workflowGenerationService.generateWorkflow(
+          prompt,
+          agentId,
+          {
+            ...(options || {}),
+            complexity: options?.complexity || 'moderate',
+            domain: options?.domain || 'general',
+            maxNodes: options?.maxNodes || 10
+          }
+        );
+        
+        // Return the generated workflow
+        return res.status(200).json({
+          workflow: generatedWorkflow,
+          message: "Workflow generated successfully with dynamically generated nodes"
+        });
+        
+      } catch (error) {
+        console.error("Error using dynamic workflow generation:", error);
+        
+        // Handle error case with a fallback simple workflow
+        console.log("Using fallback approach for workflow generation");
+        
+        // Create a simple "generated text" workflow based on the prompt
+        const timestamp = Date.now();
+        const workflowName = `Generated workflow ${new Date().toLocaleString()}`;
+        
+        // Create a flow with a basic three-node pattern
+        const textInputNode = {
+          id: `text-input-${timestamp}`,
+          type: 'text_input',
+          position: { x: 100, y: 100 },
+          data: {
+            label: 'Input from prompt',
+            category: 'input',
+            description: `Input created from: ${prompt}`,
+            type: 'text_input'
+          }
+        };
+        
+        const processingNode = {
+          id: `process-${timestamp}`,
+          type: 'generate_text',
+          position: { x: 350, y: 100 },
+          data: {
+            label: 'Process Input',
+            category: 'ai',
+            description: 'Processes the input data',
+            type: 'generate_text',
+            settings: {
+              prompt: 'Process this input: {{text_input.output}}'
+            }
+          }
+        };
+        
+        const outputNode = {
+          id: `output-${timestamp}`,
+          type: 'output',
+          position: { x: 600, y: 100 },
+          data: {
+            label: 'Output Result',
+            category: 'output',
+            description: 'Shows the processed result',
+            type: 'output'
+          }
+        };
+        
+        // Create edges connecting the nodes
+        const edge1 = {
+          id: `edge-input-process-${timestamp}`,
+          source: textInputNode.id,
+          target: processingNode.id,
+          type: 'default'
+        };
+        
+        const edge2 = {
+          id: `edge-process-output-${timestamp}`,
+          source: processingNode.id,
+          target: outputNode.id,
+          type: 'default'
+        };
+        
+        // Create the flow data structure
+        const flowData = {
+          nodes: [textInputNode, processingNode, outputNode],
+          edges: [edge1, edge2]
+        };
+        
+        // Create a new workflow
+        const fallbackWorkflow = await storage.createWorkflow({
+          name: workflowName,
+          description: `Workflow generated from prompt: ${prompt}`,
+          type: 'custom',
+          agentId: agentId,
+          flowData: flowData
+        });
+        
+        return res.status(200).json({
+          workflow: fallbackWorkflow,
+          message: "Workflow generated with basic processing nodes (fallback mode)"
+        });
+      }
+    } catch (error) {
+      console.error("Workflow generation error:", error);
+      
+      // Special handling for API key errors
+      if (error instanceof Error && error.message.includes('API key')) {
+        return res.status(401).json({
+          error: true,
+          message: "Missing or invalid API key for the LLM service",
+          details: error.message
+        });
+      }
+      
+      res.status(500).json({ 
+        error: true,
+        message: "Failed to generate workflow", 
+        details: error instanceof Error ? error.message : String(error)
+      });
+    }
+  });
+  
   // Update an existing workflow based on a natural language prompt
   app.post("/api/workflows/update/:id", async (req, res) => {
     try {
