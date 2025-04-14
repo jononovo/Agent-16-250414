@@ -724,42 +724,61 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Chinese language learning workflow
       if (prompt.toLowerCase().includes('chinese') && prompt.toLowerCase().includes('learn')) {
+        console.log("Creating Chinese learning workflow nodes");
+        
+        // Get starting position to ensure visibility
+        // Place nodes at the top-left of the canvas to ensure they're visible
+        const startX = 100;  // Start at X position 100
+        const startY = 100;  // Start at Y position 100
+        const nodeSpacing = 150;  // Vertical spacing between nodes
         
         // Create a scheduled trigger node
         const triggerNode = {
           id: `trigger-${Date.now()}`,
-          type: 'schedule_trigger',
-          position: { x: 100, y: 100 },
+          type: 'trigger',  // Use the standard trigger type that's registered
+          position: { x: startX, y: startY },
           data: {
-            name: 'Daily Morning Schedule',
-            schedule: '0 7 * * *', // 7 AM daily
-            description: 'Triggers workflow every morning at 7 AM'
+            label: 'Daily Morning Schedule',
+            category: 'trigger',
+            description: 'Triggers workflow every morning at 7 AM',
+            type: 'trigger',
+            settings: {
+              schedule: '0 7 * * *' // 7 AM daily
+            }
           }
         };
         
         // Create a text generator node
         const chineseTipNode = {
           id: `chinese-tip-${Date.now()}`,
-          type: 'generate_text',
-          position: { x: 100, y: 250 },
+          type: 'generate_text',  // Use the registered generate_text type
+          position: { x: startX, y: startY + nodeSpacing },
           data: {
-            name: 'Generate Chinese Tip',
-            prompt: 'Generate a daily Chinese language learning tip with: 1) A new Chinese character, 2) Its pinyin pronunciation, 3) Its meaning, 4) An example sentence using it, 5) A memory tip for remembering it.',
-            description: 'Creates a daily Chinese language learning tip'
+            label: 'Generate Chinese Tip',
+            category: 'AI',
+            description: 'Creates a daily Chinese language learning tip',
+            type: 'generate_text',
+            settings: {
+              prompt: 'Generate a daily Chinese language learning tip with: 1) A new Chinese character, 2) Its pinyin pronunciation, 3) Its meaning, 4) An example sentence using it, 5) A memory tip for remembering it.'
+            }
           }
         };
         
         // Create an email sender node
         const emailNode = {
           id: `email-${Date.now()}`,
-          type: 'email',
-          position: { x: 100, y: 400 },
+          type: 'email_send',  // Use the registered email_send type
+          position: { x: startX, y: startY + (nodeSpacing * 2) },
           data: {
-            name: 'Send Chinese Tip Email',
-            to: '{{recipient_email}}',
-            subject: 'Your Daily Chinese Learning Tip 汉字',
-            body: 'Good morning! Here is your daily Chinese learning tip:\n\n{{chinese_tip.output}}',
-            description: 'Sends email with the daily Chinese learning tip'
+            label: 'Send Chinese Tip Email',
+            category: 'Actions',
+            description: 'Sends email with the daily Chinese learning tip',
+            type: 'email_send',
+            settings: {
+              to: '{{recipient_email}}',
+              subject: 'Your Daily Chinese Learning Tip 汉字',
+              body: 'Good morning! Here is your daily Chinese learning tip:\n\n{{chinese_tip.output}}'
+            }
           }
         };
         

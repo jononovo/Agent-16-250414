@@ -337,9 +337,17 @@ Ensure that:
         'filter': 'filter'
       };
       
-      // Update node types in the workflow
+      // Update node types and positions in the workflow
       if (workflow.flowData.nodes) {
-        workflow.flowData.nodes = workflow.flowData.nodes.map((node: any) => {
+        // Ensure all nodes are nicely positioned in the top-left of the canvas
+        // This makes them immediately visible to users
+        const baseX = 100;  // Start X position
+        const baseY = 100;  // Start Y position
+        const nodeWidth = 250;  // Average node width
+        const nodePadding = 50;  // Padding between nodes
+        const nodesPerRow = 3;  // Nodes per row before wrapping to a new row
+        
+        workflow.flowData.nodes = workflow.flowData.nodes.map((node: any, index: number) => {
           // Check if this node type needs to be mapped
           if (node.type && nodeTypeMapping[node.type]) {
             node.type = nodeTypeMapping[node.type];
@@ -348,6 +356,34 @@ Ensure that:
           // Also update the type in the data object if it exists
           if (node.data && node.data.type && nodeTypeMapping[node.data.type]) {
             node.data.type = nodeTypeMapping[node.data.type];
+          }
+          
+          // Calculate grid position
+          const row = Math.floor(index / nodesPerRow);
+          const col = index % nodesPerRow;
+          
+          // Position nodes in a grid layout, starting from top-left
+          node.position = {
+            x: baseX + (col * (nodeWidth + nodePadding)),
+            y: baseY + (row * 200)  // 200px vertical spacing between rows
+          };
+          
+          // Ensure every node has a unique ID
+          if (!node.id) {
+            node.id = `${node.type || 'node'}-${Date.now()}-${index}`;
+          }
+          
+          // Make sure data has label and category
+          if (!node.data) {
+            node.data = {};
+          }
+          
+          if (!node.data.label) {
+            node.data.label = node.type ? `${node.type.charAt(0).toUpperCase() + node.type.slice(1)} Node` : 'Node';
+          }
+          
+          if (!node.data.category) {
+            node.data.category = this.getCategoryForNodeType(node.type);
           }
           
           return node;
@@ -362,6 +398,47 @@ Ensure that:
       console.error('Error parsing workflow JSON:', error);
       throw new Error(`Failed to parse workflow: ${error instanceof Error ? error.message : String(error)}`);
     }
+  }
+  
+  /**
+   * Get the appropriate category for a node type
+   */
+  private getCategoryForNodeType(type: string | undefined): string {
+    if (!type) return 'default';
+    
+    // Map node types to categories
+    const categoryMap: Record<string, string> = {
+      // Trigger nodes
+      'trigger': 'trigger',
+      'schedule_trigger': 'trigger',
+      'webhook': 'trigger',
+      'email_trigger': 'trigger',
+      
+      // AI nodes
+      'text_prompt': 'AI',
+      'prompt_crafter': 'AI',
+      'generate_text': 'AI',
+      'claude': 'AI',
+      'perplexity': 'AI',
+      
+      // Input/Output nodes
+      'text_input': 'input',
+      'output': 'output',
+      'email_send': 'output',
+      'visualize_text': 'output',
+      
+      // Data nodes
+      'transform': 'data',
+      'database_query': 'data',
+      'filter': 'data',
+      'data_transform': 'data',
+      
+      // Processor nodes
+      'processor': 'process',
+      'http_request': 'process',
+    };
+    
+    return categoryMap[type] || 'default';
   }
   
   /**
