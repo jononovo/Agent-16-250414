@@ -26,7 +26,7 @@ const NodeHoverMenu = ({
   onMonkeyAgentModify: () => void;
 }) => {
   return (
-    <div className="absolute z-50 right-0 top-0 translate-x-[calc(100%+4px)] bg-white rounded-md shadow-lg border border-slate-200 p-1 flex flex-col gap-1">
+    <div className="absolute z-50 right-0 top-0 translate-x-[calc(100%)] bg-white rounded-md shadow-lg border border-slate-200 p-1 flex flex-col gap-1">
       <Button 
         variant="ghost" 
         size="icon"
@@ -303,6 +303,8 @@ const ClaudeNode = ({ data, selected, id, xPos, yPos }: NodeProps<NodeData>) => 
       onMouseEnter={handleHoverStart}
       onMouseLeave={handleHoverEnd}
       className="relative"
+      // Extended hoverable area with padding to create a seamless interaction between node and menu
+      style={{ padding: showHoverMenu ? '0 20px 0 0' : '0' }}
     >
       {showHoverMenu && (
         <NodeHoverMenu 

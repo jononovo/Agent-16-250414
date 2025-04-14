@@ -140,6 +140,8 @@ const CustomNode = ({ id, type, data, selected, xPos, yPos }: NodeProps<NodeData
       onMouseEnter={handleHoverStart}
       onMouseLeave={handleHoverEnd}
       className="relative"
+      // Extended hoverable area with padding to create a seamless interaction between node and menu
+      style={{ padding: showHoverMenu ? '0 20px 0 0' : '0' }}
     >
       <Card className={`w-52 transition-all duration-200 ${selected ? 'ring-2 ring-primary' : ''}`}>
         <CardHeader className="flex flex-row items-center justify-between p-3 pb-2">
