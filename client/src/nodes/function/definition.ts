@@ -1,33 +1,27 @@
 /**
  * Function Node Definition
  * 
- * This file defines both the metadata and schema for the Function node.
+ * This file defines the metadata and schema for the Function node.
  */
 
-import { NodeSchema } from '../types';
+import { NodeDefinition } from '../types';
 
-/**
- * Node metadata - describes the node for display in the UI
- */
-export const metadata = {
-  name: "Function",
-  description: "Execute custom JavaScript functions",
-  category: "code",
-  version: "1.0.0",
-  tags: ["code", "function", "javascript", "custom"],
-  color: "#2196F3"
-};
-
-/**
- * Node schema - defines inputs, outputs, and parameters
- */
-export const schema: NodeSchema = {
+// Define node definition
+const definition: NodeDefinition = {
+  type: 'function',
+  name: 'Function',
+  description: 'Execute custom JavaScript functions',
+  category: 'code',
+  version: '1.0.0',
+  icon: 'code',
+  
   inputs: {
     data: {
       type: 'object',
       description: 'Input data to process with the function'
     }
   },
+  
   outputs: {
     result: {
       type: 'any',
@@ -38,16 +32,32 @@ export const schema: NodeSchema = {
       description: 'Error message if function execution failed'
     }
   },
-  parameters: {
-    functionBody: {
+  
+  configOptions: [
+    {
+      key: 'functionBody',
       type: 'string',
       description: 'JavaScript function body (will be wrapped in an async function)',
       default: 'return data;'
     },
-    timeout: {
+    {
+      key: 'timeout',
       type: 'number',
       description: 'Maximum execution time in milliseconds',
       default: 5000
     }
+  ],
+  
+  defaultData: {
+    functionBody: 'return data;',
+    timeout: 5000
   }
 };
+
+// Additional metadata for UI/rendering (optional)
+export const nodeMetadata = {
+  tags: ['code', 'function', 'javascript', 'custom'],
+  color: '#2196F3'
+};
+
+export default definition;

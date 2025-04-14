@@ -22,6 +22,7 @@ export const nodeDefinition: NodeDefinition = {
   category: 'ai',
   version: '1.0.0',
   defaultData,
+  
   inputs: {
     prompt: {
       type: 'string',
@@ -32,6 +33,7 @@ export const nodeDefinition: NodeDefinition = {
       description: 'System instructions for Claude'
     }
   },
+  
   outputs: {
     response: {
       type: 'string',
@@ -41,15 +43,8 @@ export const nodeDefinition: NodeDefinition = {
       type: 'object',
       description: 'Additional metadata about the response'
     }
-  }
-};
-
-// Additional metadata - not part of NodeDefinition interface but used for UI/rendering
-export const nodeMetadata = {
-  version: '1.0.0',
-  tags: ["ai", "text generation", "claude", "llm"],
-  color: "#5646ED",
-  reactIcon: React.createElement(Sparkles, { size: 16 }),
+  },
+  
   configOptions: [
     {
       key: 'model',
@@ -66,9 +61,7 @@ export const nodeMetadata = {
       key: 'temperature',
       type: 'number',
       description: 'Temperature for response generation',
-      default: 0.7,
-      min: 0,
-      max: 1
+      default: 0.7
     },
     {
       key: 'maxTokens',
@@ -77,6 +70,13 @@ export const nodeMetadata = {
       default: 1000
     }
   ]
+};
+
+// Additional metadata - not part of NodeDefinition interface but used for UI/rendering
+export const nodeMetadata = {
+  tags: ["ai", "text generation", "claude", "llm"],
+  color: "#5646ED",
+  reactIcon: React.createElement(Sparkles, { size: 16 })
 };
 
 export default nodeDefinition;
