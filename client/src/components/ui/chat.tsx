@@ -134,6 +134,7 @@ export function Chat({ messages, input, onInputChange, onSubmit, isLoading = fal
             placeholder="Describe your workflow..."
             className="flex-1"
             disabled={isLoading}
+            data-chat-input
           />
           <Button type="submit" size="icon" disabled={isLoading || !input.trim()}>
             {isLoading ? (

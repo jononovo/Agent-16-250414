@@ -16,6 +16,13 @@ interface WorkflowResponse {
   };
 }
 
+interface NodeDetails {
+  id: string;
+  type: string;
+  position: { x: number, y: number };
+  data: any;
+}
+
 interface MonkeyAgentChatOverlayProps {
   onWorkflowGenerated?: (workflowId: number) => void;
   workflow?: Workflow;
@@ -38,6 +45,65 @@ export function MonkeyAgentChatOverlay({
     }
   ]);
   const [chatMinimized, setChatMinimized] = useState(false);
+  
+  // Listen for the monkey-agent-modify-node event
+  useEffect(() => {
+    const handleNodeModifyRequest = (event: CustomEvent<{ nodeDetails: NodeDetails }>) => {
+      const { nodeDetails } = event.detail;
+      
+      // Format the node details for a nice display in the chat
+      const nodeDescription = formatNodeDetails(nodeDetails);
+      
+      // Open the chat panel if it's minimized
+      if (chatMinimized) {
+        setChatMinimized(false);
+      }
+      
+      // Add a system message with the node details
+      const systemMessage: ChatMessage = {
+        id: uuidv4(),
+        role: "system",
+        content: `Please modify the following node:\n\n${nodeDescription}`,
+        createdAt: new Date()
+      };
+      
+      setMessages(prev => [...prev, systemMessage]);
+      
+      // Focus the chat input
+      setTimeout(() => {
+        const chatInputEl = document.querySelector('[data-chat-input]') as HTMLTextAreaElement;
+        if (chatInputEl) {
+          chatInputEl.focus();
+        }
+      }, 100);
+    };
+    
+    // Register the event listener
+    window.addEventListener('monkey-agent-modify-node', handleNodeModifyRequest as EventListener);
+    
+    // Cleanup
+    return () => {
+      window.removeEventListener('monkey-agent-modify-node', handleNodeModifyRequest as EventListener);
+    };
+  }, [chatMinimized]);
+  
+  // Helper function to format node details for display
+  const formatNodeDetails = (nodeDetails: NodeDetails): string => {
+    return `
+Node ID: ${nodeDetails.id}
+Type: ${nodeDetails.type}
+Position: x=${Math.round(nodeDetails.position.x)}, y=${Math.round(nodeDetails.position.y)}
+Label: ${nodeDetails.data.label || 'Unnamed Node'}
+Description: ${nodeDetails.data.description || 'No description'}
+    
+Technical Details:
+\`\`\`json
+${JSON.stringify(nodeDetails, null, 2)}
+\`\`\`
+
+Please provide instructions for how you'd like to modify this node.
+    `.trim();
+  };
   
   // We no longer display workflow context messages in the chat
   // The component internally knows which workflow it's working with
