@@ -31,7 +31,7 @@ export function registerNodeExecutorsFromRegistry(): void {
   FOLDER_BASED_NODE_TYPES.forEach(nodeType => {
     try {
       // Dynamically import the node's executor
-      import(/* @vite-ignore */ `../nodes/${nodeType}/executor.ts`).then(executor => {
+      import(/* @vite-ignore */ `../nodes/${nodeType}/executor`).then(executor => {
         if (executor && executor.execute) {
           console.log(`Registering executor for node type: ${nodeType}`);
           
@@ -49,7 +49,7 @@ export function registerNodeExecutorsFromRegistry(): void {
           });
           
           // Also import the node's definition for enhanced workflow engine registration
-          import(/* @vite-ignore */ `../nodes/${nodeType}/definition.ts`).then(definition => {
+          import(/* @vite-ignore */ `../nodes/${nodeType}/definition`).then(definition => {
             if (definition && definition.default) {
               const nodeDefinition = definition.default;
               

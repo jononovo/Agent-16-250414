@@ -8,7 +8,7 @@
  */
 
 import { MessageSquare } from 'lucide-react';
-import { NodeDefinition } from '../types';
+import { NodeDefinition } from '../../nodes/types';
 
 // Text Prompt Node Data interface
 export interface TextPromptNodeData {

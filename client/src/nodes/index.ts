@@ -28,7 +28,8 @@ import fs from 'fs'; // Not actually used at runtime - just for types
 export async function importNodeDefinition(nodeType: string): Promise<NodeDefinition | null> {
   try {
     // Dynamic import based on node type
-    const module = await import(`./${nodeType}/definition`);
+    // Using @vite-ignore to suppress warnings about dynamic imports
+    const module = await import(/* @vite-ignore */ `./${nodeType}/definition`);
     return module.default || module.nodeDefinition;
   } catch (error) {
     console.warn(`Failed to import node definition for type ${nodeType}:`, error);
@@ -99,7 +100,16 @@ export function getNodeCategories(): string[] {
   // Get unique categories from all nodes
   const nodes = getAllNodes();
   const categories = nodes.map(node => node.category);
-  return [...new Set(categories)];
+  
+  // Use Array.filter instead of Set for compatibility
+  const uniqueCategories: string[] = [];
+  categories.forEach(category => {
+    if (uniqueCategories.indexOf(category) === -1) {
+      uniqueCategories.push(category);
+    }
+  });
+  
+  return uniqueCategories;
 }
 
 /**

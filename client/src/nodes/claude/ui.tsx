@@ -77,8 +77,9 @@ export const component = ({ data, isConnectable }: any) => {
     updateNodeData({ systemPrompt: newValue });
   };
   
-  const handleModelChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const newValue = e.target.value;
+  const handleModelChange = (value: string | React.ChangeEvent<HTMLInputElement>) => {
+    // Handle both direct string values and event objects
+    const newValue = typeof value === 'string' ? value : value.target.value;
     setLocalModel(newValue);
     updateNodeData({ model: newValue });
   };
@@ -150,7 +151,7 @@ export const component = ({ data, isConnectable }: any) => {
             <Input
               id="model"
               value={localModel}
-              onChange={(e) => handleModelChange(e.target.value)}
+              onChange={(e) => handleModelChange(e)}
               placeholder="claude-3-7-sonnet-20250219"
               className="mt-1"
             />

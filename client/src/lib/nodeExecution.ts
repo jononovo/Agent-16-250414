@@ -9,7 +9,8 @@ async function getNodeExecutorByType(nodeType: string) {
   // Attempt to dynamically import the node's executor
   try {
     // Check if the node exists in our folder structure
-    const nodeExecutorModule = await import(`../nodes/${nodeType}/executor`);
+    // Using @vite-ignore to suppress warnings about dynamic imports
+    const nodeExecutorModule = await import(/* @vite-ignore */ `../nodes/${nodeType}/executor`);
     if (nodeExecutorModule && nodeExecutorModule.execute) {
       return {
         executor: {
