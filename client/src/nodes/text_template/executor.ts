@@ -1,111 +1,66 @@
 /**
  * Text Template Node Executor
  * 
- * This file contains the execution logic for the text template node,
- * which processes templates with variable interpolation.
+ * This executor processes text templates with variable substitution.
  */
 
+// Define the shape of the node's data
 export interface TextTemplateNodeData {
   template: string;
-  escapeHTML?: boolean;
-  fallbackValue?: string;
 }
 
 /**
- * Escape HTML special characters
+ * Replace template variables with actual values
+ * Handles mustache-style {{variable}} syntax
  */
-function escapeHTML(text: string): string {
-  return text
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-    .replace(/'/g, '&#039;');
-}
-
-/**
- * Replace template variables with values from the data object
- */
-function replaceTemplateVariables(template: string, data: any, escapeHtml = false, fallbackValue = ''): string {
+function replaceTemplateVariables(template: string, variables: Record<string, any>): string {
   if (!template) return '';
-  if (!data) return template;
+  if (!variables) return template;
   
-  // Replace {{variable}} with the value from data
-  return template.replace(/\{\{([^}]+)\}\}/g, (match, key) => {
-    // Trim any whitespace from the key
-    const trimmedKey = key.trim();
+  // Replace all {{variable}} with their values
+  return template.replace(/{{([^{}]+)}}/g, (match, variableName) => {
+    const trimmedName = variableName.trim();
     
-    // Get the value from the data object
-    const value = data[trimmedKey];
+    // Check if the variable exists in our variables object
+    if (trimmedName in variables) {
+      const value = variables[trimmedName];
+      // Convert value to string if it's an object or array
+      return typeof value === 'object' ? JSON.stringify(value) : String(value);
+    }
     
-    // If value is undefined, return the fallback value
-    if (value === undefined) return fallbackValue;
-    
-    // Convert to string and escape HTML if needed
-    const stringValue = String(value);
-    return escapeHtml ? escapeHTML(stringValue) : stringValue;
+    // If variable doesn't exist, leave the placeholder unchanged
+    return match;
   });
 }
 
 /**
- * Execute the text template node
- * 
- * @param nodeData The node configuration data
- * @param inputs Optional inputs from connected nodes
- * @returns The execution result
+ * Execute the text template node with the provided data and inputs
  */
-export const execute = async (nodeData: TextTemplateNodeData, inputs?: any): Promise<any> => {
+export async function execute(nodeData: TextTemplateNodeData, inputs: Record<string, any> = {}) {
+  const { template } = nodeData;
+  const variables = inputs.variables || {};
+  
   try {
-    const startTime = new Date().toISOString();
+    if (!template) {
+      return {
+        error: 'No template provided'
+      };
+    }
     
-    // Get the template
-    const template = nodeData.template || '';
+    // Process template with variable substitution
+    const processedText = replaceTemplateVariables(template, variables);
     
-    // Process the template with variables
-    const processedText = replaceTemplateVariables(
-      template,
-      inputs?.variables || {},
-      nodeData.escapeHTML,
-      nodeData.fallbackValue
-    );
-    
-    const endTime = new Date().toISOString();
     return {
-      meta: {
-        status: 'success',
-        message: 'Template processed successfully',
-        startTime,
-        endTime
-      },
-      items: [
-        {
-          json: {
-            text: processedText
-          },
-          binary: null
-        }
-      ]
+      text: processedText
     };
-  } catch (error: any) {
+  } catch (error) {
+    console.error('Error executing text template:', error);
     return {
-      meta: {
-        status: 'error',
-        message: error.message || 'Error processing template',
-        startTime: new Date().toISOString(),
-        endTime: new Date().toISOString(),
-        error: {
-          message: error.message,
-          stack: error.stack
-        }
-      },
-      items: [
-        {
-          json: {
-            error: error.message
-          },
-          binary: null
-        }
-      ]
+      error: error instanceof Error ? error.message : String(error)
     };
   }
+}
+
+export const defaultData: TextTemplateNodeData = {
+  template: 'Hello, {{name}}!'
 };

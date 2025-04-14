@@ -1,126 +1,87 @@
 /**
  * JSON Path Node Executor
  * 
- * This file contains the execution logic for the JSON Path node,
- * which extracts data from JSON objects using JSONPath expressions.
+ * This executor extracts data from JSON using JSONPath expressions.
  */
 
-// Note: In a real implementation, we would use a proper JSONPath library
-// This is a simplified version for demonstration purposes
-
+// Define the shape of the node's data
 export interface JSONPathNodeData {
   path: string;
-  returnFirst: boolean;
-  defaultValue: string;
-}
-
-// Helper function to safely traverse a JSON object given a path
-function getValueByPath(obj: any, path: string, defaultValue: any = undefined) {
-  try {
-    // Remove the leading $ if present (JSONPath standard)
-    const normalizedPath = path.replace(/^\$\.?/, '');
-    
-    // Split the path into segments
-    const segments = normalizedPath.split('.');
-    
-    // Traverse the object
-    let current = obj;
-    for (const segment of segments) {
-      // Handle array indices in the path (e.g., items[0])
-      const arrayMatch = segment.match(/^([^\[]+)\[(\d+)\]$/);
-      if (arrayMatch) {
-        const [_, arrayName, indexStr] = arrayMatch;
-        const index = parseInt(indexStr, 10);
-        
-        if (!current[arrayName] || !Array.isArray(current[arrayName]) || current[arrayName].length <= index) {
-          return defaultValue;
-        }
-        
-        current = current[arrayName][index];
-        continue;
-      }
-      
-      // Handle regular object properties
-      if (current === undefined || current === null || !(segment in current)) {
-        return defaultValue;
-      }
-      
-      current = current[segment];
-    }
-    
-    return current;
-  } catch (error) {
-    console.error('Error in getValueByPath:', error);
-    return defaultValue;
-  }
 }
 
 /**
- * Execute the JSON Path node
- * 
- * @param nodeData The node configuration data
- * @param inputs Optional inputs from connected nodes
- * @returns The execution result
+ * A very simple implementation of JSONPath
+ * Note: In a production environment, you'd use a full JSONPath library
  */
-export const execute = async (nodeData: JSONPathNodeData, inputs?: any): Promise<any> => {
+function getValueByPath(obj: any, path: string): any {
+  if (!path) return obj;
+  
+  // Handle root object indicator
+  if (path === '$') return obj;
+  
+  // Remove root indicator if present
+  const normalizedPath = path.startsWith('$.') ? path.slice(2) : path;
+  
+  // Split path into segments
+  const segments = normalizedPath.split('.');
+  
+  // Traverse the object according to the path
+  let current = obj;
+  for (const segment of segments) {
+    // Handle array indexing with [n] notation
+    if (segment.includes('[') && segment.includes(']')) {
+      const bracketStart = segment.indexOf('[');
+      const bracketEnd = segment.indexOf(']');
+      const property = segment.substring(0, bracketStart);
+      const index = parseInt(segment.substring(bracketStart + 1, bracketEnd), 10);
+      
+      current = current[property][index];
+    } else {
+      current = current[segment];
+    }
+    
+    if (current === undefined || current === null) {
+      return undefined;
+    }
+  }
+  
+  return current;
+}
+
+/**
+ * Execute a JSONPath node with the provided data and inputs
+ */
+export async function execute(nodeData: JSONPathNodeData, inputs: Record<string, any> = {}) {
+  const { path } = nodeData;
+  const inputData = inputs.data;
+  
   try {
-    const startTime = new Date().toISOString();
-    
-    // Check if we have data to query
-    if (!inputs?.data) {
-      throw new Error('No data provided for JSONPath query');
+    if (!inputData) {
+      return {
+        error: 'No input data provided'
+      };
     }
     
-    // Get the path and options
-    const path = nodeData.path || '$.data';
-    const returnFirst = nodeData.returnFirst || false;
-    const defaultValue = nodeData.defaultValue || '';
-    
-    // Extract the data using the JSONPath
-    let result = getValueByPath(inputs.data, path, defaultValue);
-    
-    // If result is an array and returnFirst is true, return just the first element
-    if (Array.isArray(result) && returnFirst && result.length > 0) {
-      result = result[0];
+    if (!path) {
+      return {
+        error: 'No JSONPath expression provided'
+      };
     }
     
-    const endTime = new Date().toISOString();
+    // Extract value using JSONPath
+    const extractedValue = getValueByPath(inputData, path);
+    
     return {
-      meta: {
-        status: 'success',
-        message: 'JSONPath query executed successfully',
-        startTime,
-        endTime
-      },
-      items: [
-        {
-          json: {
-            result
-          },
-          binary: null
-        }
-      ]
+      value: extractedValue
     };
-  } catch (error: any) {
+  } catch (error) {
+    console.error('Error executing JSONPath:', error);
     return {
-      meta: {
-        status: 'error',
-        message: error.message || 'Error executing JSONPath query',
-        startTime: new Date().toISOString(),
-        endTime: new Date().toISOString(),
-        error: {
-          message: error.message,
-          stack: error.stack
-        }
-      },
-      items: [
-        {
-          json: {
-            error: error.message
-          },
-          binary: null
-        }
-      ]
+      error: error instanceof Error ? error.message : String(error)
     };
   }
+}
+
+export const defaultData: JSONPathNodeData = {
+  path: '$.data'
 };

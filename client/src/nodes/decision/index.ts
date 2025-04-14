@@ -4,7 +4,7 @@
  * This node allows branching in workflows based on conditions.
  */
 
-import { NodeRegistryEntry } from '../registry';
+import { NodeRegistryEntry } from '../../lib/types';
 import { metadata, schema } from './definition';
 import * as executor from './executor';
 import * as ui from './ui';

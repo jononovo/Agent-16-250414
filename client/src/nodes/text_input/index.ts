@@ -5,7 +5,7 @@
  * It's a fundamental building block for workflows.
  */
 
-import { NodeRegistryEntry } from '../registry';
+import { NodeRegistryEntry } from '../../lib/types';
 import metadata from './metadata.json';
 import schema from './schema';
 import * as executor from './executor';

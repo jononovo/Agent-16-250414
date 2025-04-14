@@ -1,56 +1,48 @@
 /**
  * Data Transform Node Definition
  * 
- * This file defines both the metadata and schema for the Data Transform node.
+ * This file defines the metadata and schema for the Data Transform node.
  */
 
-import { NodeSchema } from '../registry';
-
-/**
- * Node metadata - describes the node for display in the UI
- */
+// Node metadata
 export const metadata = {
   name: "Data Transform",
-  description: "Transform data using mapping expressions and operations",
-  category: "data",
+  description: "Transform data with JavaScript expressions and operations",
+  category: "data", // Embedded category information
   version: "1.0.0",
-  tags: ["data", "transform", "map", "filter"],
-  color: "#FF5722"
+  tags: ["data", "transform", "map", "filter", "javascript"],
+  color: "#FF5722" // Deep Orange color
 };
 
-/**
- * Node schema - defines inputs, outputs, and parameters
- */
-export const schema: NodeSchema = {
+// Node schema
+export const schema = {
   inputs: {
     data: {
-      type: 'object',
-      description: 'Input data to transform'
+      type: "any",
+      description: "Input data to be transformed"
     }
   },
   outputs: {
     result: {
-      type: 'object',
-      description: 'The transformed data'
+      type: "any",
+      description: "The transformed data"
     },
     error: {
-      type: 'string',
-      description: 'Error message if transformation failed'
+      type: "string",
+      description: "Error message if the transformation fails"
     }
   },
   parameters: {
     transformations: {
-      type: 'array',
-      description: 'List of transformations to apply',
+      type: "array",
+      description: "List of transformation operations to apply",
       default: [
-        { field: 'name', operation: 'map', expression: 'data.firstName + " " + data.lastName' },
-        { field: 'age', operation: 'map', expression: 'data.age' }
+        {
+          name: "Default Transform",
+          expression: "data => data",
+          enabled: true
+        }
       ]
-    },
-    outputTemplate: {
-      type: 'object',
-      description: 'Template for the output structure',
-      default: {}
     }
   }
 };

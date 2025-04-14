@@ -1,58 +1,42 @@
 /**
- * JSON Path Node Definition
+ * JSONPath Node Definition
  * 
- * This file defines both the metadata and schema for the JSON Path node.
+ * This file defines the metadata and schema for the JSONPath node.
  */
 
-import { NodeSchema } from '../registry';
-
-/**
- * Node metadata - describes the node for display in the UI
- */
+// Node metadata
 export const metadata = {
-  name: "JSON Path",
-  description: "Extract data from JSON objects using JSONPath expressions",
-  category: "data",
+  name: "JSONPath",
+  description: "Extract data from JSON objects using path expressions",
+  category: "data", // Embedded category information
   version: "1.0.0",
-  tags: ["data", "json", "extract", "query"],
-  color: "#2196F3"
+  tags: ["data", "json", "extract", "query", "path"],
+  color: "#F59E0B" // Amber color
 };
 
-/**
- * Node schema - defines inputs, outputs, and parameters
- */
-export const schema: NodeSchema = {
+// Node schema
+export const schema = {
   inputs: {
     data: {
-      type: 'object',
-      description: 'JSON data to query with JSONPath'
+      type: "object",
+      description: "JSON data to extract from"
     }
   },
   outputs: {
-    result: {
-      type: 'any',
-      description: 'The extracted data from the JSONPath query'
+    value: {
+      type: "any",
+      description: "The extracted value"
     },
     error: {
-      type: 'string',
-      description: 'Error message if JSONPath query failed'
+      type: "string",
+      description: "Error message if the extraction fails"
     }
   },
   parameters: {
     path: {
-      type: 'string',
-      description: 'JSONPath expression to extract data',
-      default: '$.data'
-    },
-    returnFirst: {
-      type: 'boolean',
-      description: 'Return only the first match if multiple results are found',
-      default: false
-    },
-    defaultValue: {
-      type: 'string',
-      description: 'Default value to return if no matches are found',
-      default: ''
+      type: "string",
+      description: "JSONPath expression to extract data (e.g., $.user.name)",
+      default: "$.data"
     }
   }
 };
