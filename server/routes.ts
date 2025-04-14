@@ -1440,6 +1440,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         name: z.string(),
         description: z.string().optional(),
         type: z.string(),
+        category: z.string().default("custom"), // Added required category field with default
         icon: z.string().optional(),
         inputs: z.record(z.any()).optional(),
         outputs: z.record(z.any()).optional(),
@@ -1455,8 +1456,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
       
+      // Create the node with required category
+      const nodeData = {
+        ...result.data,
+        category: result.data.category || "custom" // Ensure category is present
+      };
+      
       // Create the node
-      const node = await storage.createNode(result.data);
+      const node = await storage.createNode(nodeData);
       
       // Return the created node
       res.status(201).json(node);
@@ -1487,6 +1494,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         name: z.string().optional(),
         description: z.string().optional(),
         type: z.string().optional(),
+        category: z.string().optional(), // Add optional category field for updates
         icon: z.string().optional(),
         inputs: z.record(z.any()).optional(),
         outputs: z.record(z.any()).optional(),
