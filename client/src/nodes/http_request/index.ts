@@ -6,7 +6,7 @@
  */
 
 import { NodeRegistryEntry } from '../../lib/types';
-import metadata from './metadata.json';
+import definition from './definition';
 import schema from './schema';
 import * as executor from './executor';
 import * as ui from './ui';
@@ -15,7 +15,7 @@ import React from 'react';
 
 const HttpRequestNode: NodeRegistryEntry = {
   type: 'http_request',
-  metadata,
+  metadata: definition, // Use definition instead of metadata
   schema,
   executor,
   ui: {

@@ -1,8 +1,0 @@
-{
-  "name": "Text Input",
-  "description": "A node that provides text input for workflows",
-  "category": "input",
-  "version": "1.0.0",
-  "tags": ["input", "text", "basic"],
-  "color": "#3b82f6"
-}

@@ -1,8 +1,0 @@
-{
-  "name": "HTTP Request",
-  "description": "Make HTTP requests to external APIs and web services",
-  "category": "integration",
-  "version": "1.0.0",
-  "tags": ["api", "http", "integration", "network"],
-  "color": "#3B82F6"
-}

@@ -1,8 +1,0 @@
-{
-  "name": "Claude AI",
-  "description": "Generate text using Anthropic's Claude AI model",
-  "category": "ai",
-  "version": "1.0.0",
-  "tags": ["ai", "text generation", "claude", "llm"],
-  "color": "#5646ED"
-}

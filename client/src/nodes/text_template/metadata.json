@@ -1,8 +1,0 @@
-{
-  "name": "Text Template",
-  "description": "Create text templates with variable interpolation",
-  "category": "text",
-  "version": "1.0.0",
-  "tags": ["text", "template", "formatting", "interpolation"],
-  "color": "#607D8B"
-}
