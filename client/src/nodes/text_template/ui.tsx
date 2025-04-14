@@ -8,9 +8,9 @@ import React, { useState } from 'react';
 import { Handle, Position } from 'reactflow';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { TextTemplateNodeData } from './executor';
+import { FileText } from 'lucide-react';
 
 export const defaultData: TextTemplateNodeData = {
   template: 'Hello, {{name}}!'
@@ -18,10 +18,12 @@ export const defaultData: TextTemplateNodeData = {
 
 export function component({ 
   data, 
-  onChange 
+  onChange,
+  isConnectable = true
 }: { 
   data: TextTemplateNodeData; 
-  onChange: (data: TextTemplateNodeData) => void; 
+  onChange: (data: TextTemplateNodeData) => void;
+  isConnectable?: boolean; 
 }) {
   const [template, setTemplate] = useState(data.template || defaultData.template);
   
@@ -40,47 +42,58 @@ export function component({
   };
 
   return (
-    <div className="text-template-node">
-      <Handle type="target" position={Position.Left} id="variables" />
+    <div className="p-3 rounded-md bg-background border shadow-sm min-w-[320px]">
+      {/* Input handle */}
+      <Handle
+        type="target"
+        position={Position.Top}
+        id="variables"
+        isConnectable={isConnectable}
+        className="w-2 h-2 bg-blue-500"
+      />
       
-      <Card className="w-[400px]">
-        <CardHeader className="pb-2">
-          <CardTitle className="text-md">Text Template</CardTitle>
-          <CardDescription className="text-xs">Generate text using variable placeholders</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-4">
-            <div>
-              <Label htmlFor="template">Template</Label>
-              <Textarea
-                id="template"
-                value={template}
-                onChange={handleTemplateChange}
-                className="font-mono text-sm min-h-[100px]"
-                placeholder="Enter template with placeholders"
-              />
-              <p className="text-xs text-muted-foreground mt-1">
-                Use &#123;&#123;variableName&#125;&#125; syntax for variable placeholders
-              </p>
+      <div className="flex items-center gap-2 mb-2">
+        <FileText className="h-4 w-4 text-primary" />
+        <h3 className="text-sm font-medium">Text Template</h3>
+      </div>
+      
+      <div className="space-y-3">
+        <div>
+          <Label htmlFor="template" className="text-xs">Template Text</Label>
+          <Textarea
+            id="template"
+            value={template}
+            onChange={handleTemplateChange}
+            className="font-mono text-xs min-h-[80px] mt-1"
+            placeholder="Enter template with placeholders like {{variable}}"
+          />
+          <p className="text-xs text-muted-foreground mt-1">
+            Use &#123;&#123;variableName&#125;&#125; for variables
+          </p>
+        </div>
+        
+        {variables.length > 0 && (
+          <div>
+            <Label className="text-xs">Detected Variables</Label>
+            <div className="flex flex-wrap gap-1 mt-1">
+              {variables.map((variable, index) => (
+                <Badge key={index} variant="outline" className="text-xs">
+                  {variable}
+                </Badge>
+              ))}
             </div>
-            
-            {variables.length > 0 && (
-              <div>
-                <Label className="text-xs">Detected Variables</Label>
-                <div className="flex flex-wrap gap-1 mt-1">
-                  {variables.map((variable, index) => (
-                    <Badge key={index} variant="outline" className="text-xs">
-                      {variable}
-                    </Badge>
-                  ))}
-                </div>
-              </div>
-            )}
           </div>
-        </CardContent>
-      </Card>
+        )}
+      </div>
       
-      <Handle type="source" position={Position.Right} id="text" />
+      {/* Output handle */}
+      <Handle
+        type="source"
+        position={Position.Bottom}
+        id="text"
+        isConnectable={isConnectable}
+        className="w-2 h-2 bg-blue-500"
+      />
     </div>
   );
 };
