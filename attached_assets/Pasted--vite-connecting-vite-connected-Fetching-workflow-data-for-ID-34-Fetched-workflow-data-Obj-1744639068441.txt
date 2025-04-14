@@ -1,0 +1,126 @@
+[vite] connecting...
+[vite] connected.
+Fetching workflow data for ID: 34
+Fetched workflow data: 
+Object {id: 34, name: "Flashcard Creation Workflow", description: "This workflow demonstrates how to create flashcards using the available nodes in the workflow…", type: "generated", icon: null, …}
+Loaded workflow data: Nodes: 1, Edges: 0
+Sample node: {"id":"claude-1744638817820","data":{"icon":{},"label":"Claude API","category":"ai","settings":{"systemPrompt":"You are a bear."},"description":"Generate content with Claude AI"},"type":"claude","widt...
+Loaded workflow data: Nodes: 1, Edges: 0
+Sample node: {"id":"claude-1744638817820","data":{"icon":{},"label":"Claude API","category":"ai","settings":{"systemPrompt":"You are a bear."},"description":"Generate content with Claude AI"},"type":"claude","widt...
+Loaded workflow data: Nodes: 1, Edges: 0
+Sample node: {"id":"claude-1744638817820","data":{"icon":{},"label":"Claude API","category":"ai","settings":{"systemPrompt":"You are a bear."},"description":"Generate content with Claude AI"},"type":"claude","widt...
+Loaded workflow data: Nodes: 1, Edges: 0
+Sample node: {"id":"claude-1744638817820","data":{"icon":{},"label":"Claude API","category":"ai","settings":{"systemPrompt":"You are a bear."},"description":"Generate content with Claude AI"},"type":"claude","widt...
+Processing node edit request: Change system prompt of node to: "You are a monkey."
+Error in AI node editing: 
+Error {}
+
+at t.value (https://adbefb98-368b-4125-b3e1-8bcb930f1092-00-8injw8tfrctr.worf.replit.dev/__replco/static/devtools/eruda/3.2.3/eruda.js:2:17465)
+at new t (https://adbefb98-368b-4125-b3e1-8bcb930f1092-00-8injw8tfrctr.worf.replit.dev/__replco/static/devtools/eruda/3.2.3/eruda.js:2:12630)
+at t.value (https://adbefb98-368b-4125-b3e1-8bcb930f1092-00-8injw8tfrctr.worf.replit.dev/__replco/static/devtools/eruda/3.2.3/eruda.js:2:32766)
+at https://adbefb98-368b-4125-b3e1-8bcb930f1092-00-8injw8tfrctr.worf.replit.dev/__replco/static/devtools/eruda/3.2.3/eruda.js:2:34400
+Back to Builder
+Nodes
+Search nodes...
+All
+AI
+Data
+Triggers
+Actions
+Internal
+AI (10)
+
+
+
+
+
+
+
+
+
+
+Data (4)
+
+
+
+
+Triggers (3)
+
+
+
+Actions (7)
+
+
+
+
+
+
+
+Internal (3)
+
+
+
+Flashcard Creation Workflow
+Edit
+Run Workflow
+Test Workflow
+Save Workflow
+React Flow
+
+Monkey Agent
+Describe your workflow and I'll build it
+
+A
+Describe the workflow you want to create, and I'll help you build it.
+09:57 AM
+A
+Please modify the following node:
+
+Node ID: claude-1744638817820
+Type: claude
+Position: x=330, y=45
+Label: Claude API
+Description: Generate content with Claude AI
+    
+Technical Details:
+```json
+{
+  "id": "claude-1744638817820",
+  "type": "claude",
+  "position": {
+    "x": 330,
+    "y": 45
+  },
+  "data": {
+    "icon": {},
+    "label": "Claude API",
+    "category": "ai",
+    "settings": {
+      "systemPrompt": "You are a bear."
+    },
+    "description": "Generate content with Claude AI"
+  }
+}
+```
+
+Please provide instructions for how you'd like to modify this node.
+
+You can modify the node by describing the changes you want to make:
+
+- "Change the label to 'New Label'"
+- "Update the description to explain that this node processes customer data"
+- "Change the system prompt to be more friendly and conversational"
+- "Set the temperature to 0.7"
+- "Make this node use the claude-3-haiku model"
+- "Update the max tokens to 2000"
+
+I'll understand natural language requests and apply the changes to the node.
+09:57 AM
+U
+Change system prompt of node to: "You are a monkey."
+09:57 AM
+A
+Sorry, I encountered an error while trying to update the node: API returned 500: Internal Server Error. Please try again with different wording.
+09:57 AM
+Describe your workflow...
+Send

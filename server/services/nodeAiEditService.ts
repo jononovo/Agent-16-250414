@@ -71,13 +71,10 @@ Please provide ONLY the updated fields in valid JSON format.
           'anthropic-version': '2023-06-01'
         },
         body: JSON.stringify({
-          model: "claude-3-sonnet-20240229",
+          model: "claude-2",
           max_tokens: 4000,
           temperature: 0.2,
-          system: systemPrompt,
-          messages: [
-            { role: "user", content: userMessage }
-          ]
+          prompt: `${systemPrompt}\n\nHuman: ${userMessage}\n\nAssistant: `
         })
       });
       
@@ -87,10 +84,10 @@ Please provide ONLY the updated fields in valid JSON format.
         throw new Error(`Claude API error: ${response.status} ${response.statusText}`);
       }
       
-      const data = await response.json() as { content: Array<{ text: string }> };
+      const data = await response.json();
       
       // Extract the content from Claude's response
-      const aiResponse = data.content && data.content[0] ? data.content[0].text as string : "";
+      const aiResponse = data.completion || "";
       
       // Extract the JSON from the response (Claude will likely wrap it in ```json and ```)
       const jsonMatch = aiResponse.match(/```(?:json)?([\s\S]+?)```/) || 
