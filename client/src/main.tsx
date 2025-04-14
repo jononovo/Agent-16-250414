@@ -2,10 +2,10 @@ import { createRoot } from "react-dom/client";
 import App from "./App";
 import "./index.css";
 import { ThemeProvider } from "./components/theme-provider";
-import { registerAllNodeExecutors } from "./lib/nodeExecutors";
+import { registerNodeExecutorsFromRegistry } from "./lib/nodeSystem";
 
-// Initialize node systems
-registerAllNodeExecutors();
+// Initialize folder-based node system
+registerNodeExecutorsFromRegistry();
 
 console.log("Folder-based node system initialized");
 

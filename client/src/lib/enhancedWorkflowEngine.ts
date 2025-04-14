@@ -61,9 +61,6 @@ export async function registerAllEnhancedNodeExecutors(): Promise<void> {
       nodeSystem.registerNodeExecutorsFromRegistry();
     });
     
-    // Import the node executor helpers
-    const nodeExecutors = await import('./enhancedNodeExecutors');
-    
     // List of built-in node types we need to ensure are registered
     const criticalNodeTypes = [
       'text_input', 
@@ -74,7 +71,7 @@ export async function registerAllEnhancedNodeExecutors(): Promise<void> {
     
     // Ensure critical node types are registered
     for (const nodeType of criticalNodeTypes) {
-      if (!nodeExecutors.hasExecutor(nodeType)) {
+      if (!nodeRegistry[nodeType]) {
         // Try to directly import the node's executor from folder structure
         try {
           // Dynamically import the executor from the folder structure
@@ -309,12 +306,13 @@ export async function executeEnhancedWorkflow(
       const executor = nodeRegistry[nodeType];
       
       if (!executor) {
-        // Try to get direct executor from enhancedNodeExecutors
+        // Try to directly import from the folder structure
         try {
-          const { executeNode, hasExecutor } = await import('./enhancedNodeExecutors');
+          // Use dynamic imports to get the node executor from its folder
+          const executorModule = await import(/* @vite-ignore */ `../nodes/${nodeType}/executor`);
           
-          if (hasExecutor(nodeType)) {
-            // If we have a direct executor, execute using that
+          if (executorModule && executorModule.execute) {
+            // If we have a folder-based executor, use it
             const executeDirectNode = async (
               nodeData: Record<string, any>, 
               inputs: Record<string, NodeExecutionData>
@@ -333,8 +331,8 @@ export async function executeEnhancedWorkflow(
                 }
               }
                 
-              // Execute using the direct executor
-              const result = await executeNode(nodeType, nodeData, primaryInput);
+              // Execute using the folder-based executor
+              const result = await executorModule.execute(nodeData, primaryInput);
               
               // Wrap result in a workflow item
               return {
@@ -348,9 +346,9 @@ export async function executeEnhancedWorkflow(
               definition: {
                 type: nodeType,
                 displayName: nodeType,
-                description: `Direct executor for ${nodeType}`,
+                description: `Dynamic executor for ${nodeType}`,
                 icon: 'bolt',
-                category: 'Custom',
+                category: 'Dynamic',
                 version: '1.0.0',
                 inputs: { default: { type: 'any', displayName: 'Input', description: 'Input' } },
                 outputs: { default: { type: 'any', displayName: 'Output', description: 'Output' } }
@@ -360,11 +358,13 @@ export async function executeEnhancedWorkflow(
             
             // Use this temporary executor
             nodeRegistry[nodeType] = tempExecutor;
+            console.log(`Dynamically registered executor for node type: ${nodeType}`);
           } else {
-            throw new Error(`No executor registered for node type ${nodeType}`);
+            throw new Error(`No executor found for node type ${nodeType}`);
           }
         } catch (error) {
-          throw new Error(`No executor registered for node type ${nodeType}: ${error instanceof Error ? error.message : String(error)}`);
+          console.error(`Failed to dynamically import executor for ${nodeType}:`, error);
+          throw new Error(`No executor registered for node type ${nodeType}`);
         }
       }
       

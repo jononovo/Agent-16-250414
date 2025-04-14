@@ -5,7 +5,6 @@
  * It automatically discovers and registers node executors using dynamic imports.
  */
 
-import { registerNodeExecutor } from './enhancedNodeExecutors';
 import { registerEnhancedNodeExecutor, createEnhancedNodeExecutor } from './enhancedWorkflowEngine';
 
 // List of known node types that are implemented in the folder-based system
@@ -34,19 +33,6 @@ export function registerNodeExecutorsFromRegistry(): void {
       import(/* @vite-ignore */ `../nodes/${nodeType}/executor`).then(executor => {
         if (executor && executor.execute) {
           console.log(`Registering executor for node type: ${nodeType}`);
-          
-          // Register with enhancedNodeExecutors
-          registerNodeExecutor(nodeType, async (nodeData: any, inputs: any) => {
-            try {
-              // Execute the node's folder-based executor
-              return await executor.execute(nodeData, inputs);
-            } catch (error) {
-              console.error(`Error executing ${nodeType} node:`, error);
-              return {
-                error: error instanceof Error ? error.message : String(error)
-              };
-            }
-          });
           
           // Also import the node's definition for enhanced workflow engine registration
           import(/* @vite-ignore */ `../nodes/${nodeType}/definition`).then(definition => {
