@@ -326,7 +326,7 @@ async function runWorkflow(
     const currentExecPath = executionLog.executionPath || {};
     await storage.updateLog(executionLog.id, {
       status: executionStatus,
-      output: finalOutput,
+      output: typeof finalOutput === 'string' ? { result: finalOutput } : finalOutput,
       error: errors.length > 0 ? JSON.stringify(errors) : null,
       completedAt: new Date(),
       executionPath: {
@@ -516,7 +516,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
       
-      const { name, description, type, icon, status } = result.data;
+      const { name, description, type, icon, status = "active" } = result.data;
       const agentData = { name, description, type, icon, status };
       
       // Create the agent
@@ -856,6 +856,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           name: workflowName,
           description: `Workflow generated from prompt: ${prompt}`,
           type: 'custom',
+          status: 'active',
           agentId: agentId,
           flowData: flowData
         });
@@ -1229,6 +1230,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             name,
             description,
             type,
+            status: 'active',
             agentId,
             flowData
           });
@@ -1265,6 +1267,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         name,
         description,
         type,
+        status: 'active',
         agentId,
         flowData
       });
