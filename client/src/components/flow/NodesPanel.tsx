@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Node } from '@shared/schema';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -27,7 +27,6 @@ import {
   Search as SearchIcon
 } from 'lucide-react';
 import NodeItem from './NodeItem';
-import nodeRegistry from '../../nodes/registry';
 
 // Node categories based on the documentation
 const NODE_CATEGORIES = [
@@ -267,35 +266,47 @@ const NodesPanel = () => {
     }
   });
   
-  // Get nodes from our folder-based registry
-  const folderBasedNodes = nodeRegistry.getAllNodes().map((node: any, index: number) => {
-    // Map node categories to UI categories
-    let category = node.metadata?.category || 'custom';
-    // Map text category to AI for now
-    if (category === 'text') category = 'ai';
-    if (category === 'logic') category = 'data';
-
-    return {
-      id: 1000 + index, // Use a different ID range to avoid conflicts
-      name: node.metadata?.name || node.type || 'Unknown Node',
-      type: node.type || 'unknown',
-      description: node.metadata?.description || '',
-      icon: node.metadata?.icon || undefined,
-      createdAt: new Date(),
-      updatedAt: new Date(),
-      userId: null,
-      category: category,
-      configuration: {}
-    } as Node;
-  });
+  // Use the static node type definitions for our folder-based system
+  const [folderBasedNodes, setFolderBasedNodes] = useState<Node[]>([]);
+  
+  useEffect(() => {
+    // Create nodes from our static NODE_TYPES array
+    // These match the folder-based nodes we have implemented
+    const typesToUse = NODE_TYPES.filter(nodeType => {
+      // Only include node types that we know are implemented in the folder-based system
+      return ['text_input', 'claude', 'http_request', 'text_template', 
+              'data_transform', 'decision', 'function', 'json_path'].includes(nodeType.id);
+    });
+    
+    const nodes = typesToUse.map((nodeType, index) => {
+      return {
+        id: 1000 + index, // Use a different ID range to avoid conflicts
+        name: nodeType.name,
+        type: nodeType.id,
+        description: nodeType.description,
+        icon: nodeType.icon,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+        userId: null,
+        category: nodeType.category,
+        configuration: {}
+      } as Node;
+    });
+    
+    setFolderBasedNodes(nodes);
+  }, []);
   
   // Debug: Log folder-based nodes
-  console.log("Folder-based nodes:", folderBasedNodes.map(node => `${node.name} (${node.type})`));
+  useEffect(() => {
+    if (folderBasedNodes.length > 0) {
+      console.log("Folder-based nodes:", folderBasedNodes.map((node: Node) => `${node.name} (${node.type})`));
+    }
+  }, [folderBasedNodes]);
   
-  // Only use folder-based nodes from our registry
+  // Use only folder-based nodes
   const nodeItems = folderBasedNodes;
   
-  const filteredNodes = nodeItems.filter(node => {
+  const filteredNodes = nodeItems.filter((node: Node) => {
     // First apply category filter if not "all"
     if (activeTab !== 'all' && node.category !== activeTab) {
       return false;
@@ -313,23 +324,27 @@ const NodesPanel = () => {
   });
 
   // Group nodes by category
-  const groupedNodes = filteredNodes.reduce((acc, node) => {
+  const groupedNodes = filteredNodes.reduce<Record<string, Node[]>>((acc, node) => {
     const category = node.category || 'custom';
     if (!acc[category]) {
       acc[category] = [];
     }
     acc[category].push(node);
     return acc;
-  }, {} as Record<string, Node[]>);
+  }, {});
   
   // Debug: Log all nodes in each category
-  console.log("Grouped nodes by category:", 
-    Object.fromEntries(
-      Object.entries(groupedNodes).map(
-        ([category, nodes]) => [category, nodes.map(node => `${node.name} (${node.type})`)]
-      )
-    )
-  );
+  useEffect(() => {
+    if (Object.keys(groupedNodes).length > 0) {
+      console.log("Grouped nodes by category:", 
+        Object.fromEntries(
+          Object.entries(groupedNodes).map(
+            ([category, nodesArray]) => [category, nodesArray.map((node: Node) => `${node.name} (${node.type})`)]
+          )
+        )
+      );
+    }
+  }, [groupedNodes]);
 
   return (
     <div className="flex flex-col h-full">
