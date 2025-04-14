@@ -3,28 +3,27 @@
  * Defines the HTTP request node's properties, appearance, and behavior
  */
 
-import { NodeDefinition } from '../../lib/types/workflow';
 import schema from './schema';
 
-export const nodeDefinition: NodeDefinition = {
+// Use a simplified structure that doesn't depend on external interfaces
+// This will be adapted to the required interface formats in index.ts
+const definition = {
   type: 'http_request',
   name: 'HTTP Request',
   description: 'Make HTTP requests to external APIs and web services',
   category: 'integration',
   version: '1.0.0',
   icon: 'globe',
-  color: '#3B82F6',
-  tags: ['api', 'http', 'integration', 'network'],
   inputs: {
     body: {
       type: 'object',
       description: 'Input data to use as the request body',
-      optional: true
+      required: false
     },
     headers: {
       type: 'object',
       description: 'Headers to merge with the request',
-      optional: true
+      required: false
     }
   },
   outputs: {
@@ -41,52 +40,39 @@ export const nodeDefinition: NodeDefinition = {
       description: 'HTTP status code of the response'
     }
   },
-  parameters: [
+  configOptions: [
     {
-      name: 'url',
-      label: 'URL',
+      key: 'url',
       type: 'string',
-      description: 'URL to send the request to',
-      required: true
+      default: '',
+      description: 'URL to send the request to'
     },
     {
-      name: 'method',
-      label: 'Method',
+      key: 'method',
       type: 'select',
+      default: 'GET',
       description: 'HTTP method to use',
-      options: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'HEAD', 'OPTIONS'],
-      default: 'GET'
+      options: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'HEAD', 'OPTIONS']
     },
     {
-      name: 'headers',
-      label: 'Headers',
+      key: 'headers',
       type: 'json',
-      description: 'Default headers to include with the request',
-      default: { 'Content-Type': 'application/json' }
+      default: { 'Content-Type': 'application/json' },
+      description: 'Default headers to include with the request'
     },
     {
-      name: 'body',
-      label: 'Body',
+      key: 'body',
       type: 'text',
-      description: 'Default request body (JSON string or other format)',
-      default: ''
+      default: '',
+      description: 'Default request body (JSON string or other format)'
     },
     {
-      name: 'timeout',
-      label: 'Timeout (ms)',
+      key: 'timeout',
       type: 'number',
-      description: 'Request timeout in milliseconds',
-      default: 10000
+      default: 10000,
+      description: 'Request timeout in milliseconds'
     }
   ]
 };
 
-// Metadata for node registry
-export const nodeMetadata = {
-  type: 'http_request',
-  name: nodeDefinition.name,
-  description: nodeDefinition.description,
-  category: nodeDefinition.category
-};
-
-export default nodeDefinition;
+export default definition;
