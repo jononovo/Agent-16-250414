@@ -1,20 +1,24 @@
 /**
  * Text Input Node - Main Export File
  */
-import TextInputNode from './TextInputNode';
+import UI from './ui';
 import executor from './executor';
-import metadata from './metadata';
+import definition from './definition';
+import icon from './icon';
 
 // Export everything from this node
 export {
-  TextInputNode,  // UI Component
+  UI,             // UI Component
   executor,       // Execution Logic
-  metadata        // Node Definition
+  definition,     // Node Definition
+  icon            // Node Icon
 };
 
 // Default export for direct import
 export default {
-  component: TextInputNode,
+  type: definition.type,
+  component: UI,
   executor,
-  metadata
+  definition,
+  icon
 };
