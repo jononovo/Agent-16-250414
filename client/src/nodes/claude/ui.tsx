@@ -20,7 +20,8 @@ export const defaultData = {
   model: 'claude-3-haiku-20240307',
   temperature: 0.7,
   maxTokens: 1000,
-  systemPrompt: ''
+  systemPrompt: '',
+  apiKey: '' // Added API key field
 };
 
 // Validator for the node data
@@ -52,6 +53,7 @@ export const component = ({ data, isConnectable }: any) => {
   const [localMaxTokens, setLocalMaxTokens] = useState(data.maxTokens || 1000);
   const [localPrompt, setLocalPrompt] = useState(data.prompt || '');
   const [localSystemPrompt, setLocalSystemPrompt] = useState(data.systemPrompt || '');
+  const [localApiKey, setLocalApiKey] = useState(data.apiKey || '');
   
   // Update the node data when values change
   const updateNodeData = (updates: Record<string, any>) => {
@@ -91,6 +93,12 @@ export const component = ({ data, isConnectable }: any) => {
     updateNodeData({ maxTokens: value });
   };
   
+  const handleApiKeyChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const newValue = e.target.value;
+    setLocalApiKey(newValue);
+    updateNodeData({ apiKey: newValue });
+  };
+  
   return (
     <div className="p-3 rounded-md bg-background border shadow-sm min-w-[320px]">
       {/* Input handle */}
@@ -106,6 +114,7 @@ export const component = ({ data, isConnectable }: any) => {
         <TabsList className="w-full mb-2">
           <TabsTrigger value="prompt" className="flex-1">Prompt</TabsTrigger>
           <TabsTrigger value="settings" className="flex-1">Settings</TabsTrigger>
+          <TabsTrigger value="api" className="flex-1">API</TabsTrigger>
         </TabsList>
         
         <TabsContent value="prompt" className="space-y-2">
@@ -172,6 +181,25 @@ export const component = ({ data, isConnectable }: any) => {
               max={4096}
               className="mt-1"
             />
+          </div>
+        </TabsContent>
+        
+        <TabsContent value="api" className="space-y-3">
+          <div>
+            <Label htmlFor="apiKey">Claude API Key (Optional)</Label>
+            <Input
+              id="apiKey"
+              type="password"
+              value={localApiKey || ''}
+              onChange={handleApiKeyChange}
+              placeholder="Enter your Claude API key for direct access"
+              className="mt-1"
+            />
+            <p className="text-xs text-muted-foreground mt-1">
+              {localApiKey 
+                ? "✓ API key entered - will use direct Claude API access" 
+                : "Leave empty to use the server's environment API key"}
+            </p>
           </div>
         </TabsContent>
       </Tabs>

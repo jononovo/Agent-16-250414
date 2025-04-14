@@ -105,32 +105,37 @@ export const execute = async (nodeData: any, inputs?: any): Promise<any> => {
       };
     }
     
-    // Attempt to get Claude API key from server config
-    let claudeApiKey = '';
+    // Look for API key in this order:
+    // 1. Node data (user entered in UI)
+    // 2. Server environment (via API config endpoint)
+    let claudeApiKey = nodeData.apiKey || '';
+    let useServerProxy = false;
     
-    try {
-      // Fetch the API key from server config
-      const configResponse = await fetch('/api/config');
-      if (configResponse.ok) {
-        const config = await configResponse.json();
-        // The server returns a masked key, but we need to get the actual key for API calls
-        // The actual key is stored in the server environment variables and used by the server to make API calls
-        console.log('Retrieved API config, claudeApiKey exists:', !!config.claudeApiKey);
-        
-        // If config.claudeApiKey exists, the server will proxy our requests correctly
-        if (config.claudeApiKey) {
-          claudeApiKey = 'server-has-key';  // Marker to indicate server has the key
+    // If no API key in node data, try to get from server config
+    if (!claudeApiKey) {
+      try {
+        // Fetch the API key from server config
+        const configResponse = await fetch('/api/config');
+        if (configResponse.ok) {
+          const config = await configResponse.json();
+          console.log('Retrieved API config, claudeApiKey exists:', !!config.claudeApiKey);
+          
+          // If config.claudeApiKey exists, we'll use the server proxy endpoint
+          if (config.claudeApiKey) {
+            useServerProxy = true;
+            claudeApiKey = 'use-server-proxy';  // Marker to indicate we'll use server proxy
+          }
+        } else {
+          console.error('Failed to fetch API config:', configResponse.status);
         }
-      } else {
-        console.error('Failed to fetch API config:', configResponse.status);
+      } catch (error) {
+        console.error('Error fetching API config:', error);
       }
-    } catch (error) {
-      console.error('Error fetching API config:', error);
     }
     
-    // Check if we have an API key
+    // Check if we have an API key (either direct or via server)
     if (!claudeApiKey) {
-      console.warn('No Claude API key available. Using mock response. Please configure the API key in the server environment.');
+      console.warn('No Claude API key available. Using mock response. Please configure the API key in the node settings or server environment.');
       
       // Return a mock response for development
       const mockResponse = {
@@ -176,15 +181,31 @@ export const execute = async (nodeData: any, inputs?: any): Promise<any> => {
     console.log('Sending request to Claude API:', { model, temperature, maxTokens });
     
     try {
-      // Instead of calling the Claude API directly, call our server proxy
-      // which will use the API key from the server's environment variables
-      const response = await fetch('/api/proxy/claude', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(requestBody)
-      });
+      let response;
+      
+      if (useServerProxy) {
+        // Use server proxy when the API key comes from server environment
+        console.log('Using server proxy for Claude API call');
+        response = await fetch('/api/proxy/claude', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify(requestBody)
+        });
+      } else {
+        // Direct API call when user provided an API key in the node
+        console.log('Using direct Claude API call with provided key');
+        response = await fetch('https://api.anthropic.com/v1/messages', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'x-api-key': claudeApiKey,
+            'anthropic-version': '2023-06-01'
+          },
+          body: JSON.stringify(requestBody)
+        });
+      }
       
       if (!response.ok) {
         const errorText = await response.text();
