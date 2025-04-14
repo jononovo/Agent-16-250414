@@ -1,115 +1,117 @@
-import { pgTable, text, serial, integer, boolean, timestamp, jsonb } from "drizzle-orm/pg-core";
-import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
+/**
+ * Schema Definitions
+ * 
+ * This file defines the core data types for the application.
+ * These types are used by both the in-memory storage and the frontend.
+ */
+
 // User schema
-export const users = pgTable("users", {
-  id: serial("id").primaryKey(),
-  username: text("username").notNull().unique(),
-  password: text("password").notNull(),
+export const userSchema = z.object({
+  id: z.number(),
+  username: z.string(),
+  password: z.string()
 });
 
-export const insertUserSchema = createInsertSchema(users).pick({
-  username: true,
-  password: true,
-});
+export const insertUserSchema = userSchema.omit({ id: true });
 
 export type InsertUser = z.infer<typeof insertUserSchema>;
-export type User = typeof users.$inferSelect;
+export type User = z.infer<typeof userSchema>;
 
 // Agent schema
-export const agents = pgTable("agents", {
-  id: serial("id").primaryKey(),
-  name: text("name").notNull(),
-  description: text("description"),
-  type: text("type").notNull(), // "internal", "custom", "template", "optimization"
-  icon: text("icon"),
-  status: text("status").default("active"),
-  createdAt: timestamp("created_at").defaultNow(),
-  updatedAt: timestamp("updated_at").defaultNow(),
-  userId: integer("user_id"),
-  configuration: jsonb("configuration"),
+export const agentSchema = z.object({
+  id: z.number(),
+  name: z.string(),
+  description: z.string().nullable().optional(),
+  type: z.string(), // "internal", "custom", "template", "optimization"
+  icon: z.string().nullable().optional(),
+  status: z.string().default("active"),
+  createdAt: z.date().default(() => new Date()),
+  updatedAt: z.date().default(() => new Date()),
+  userId: z.number().nullable().optional(),
+  configuration: z.record(z.any()).nullable().optional()
 });
 
-export const insertAgentSchema = createInsertSchema(agents).omit({
+export const insertAgentSchema = agentSchema.omit({
   id: true,
   createdAt: true,
-  updatedAt: true,
+  updatedAt: true
 });
 
 export type InsertAgent = z.infer<typeof insertAgentSchema>;
-export type Agent = typeof agents.$inferSelect;
+export type Agent = z.infer<typeof agentSchema>;
 
 // Log schema
-export const logs = pgTable("logs", {
-  id: serial("id").primaryKey(),
-  agentId: integer("agent_id").notNull(),
-  workflowId: integer("workflow_id").notNull(),
-  status: text("status").notNull(), // "success", "error", "running"
-  input: jsonb("input").default({}),
-  output: jsonb("output").default({}),
-  error: text("error"),
-  startedAt: timestamp("started_at").defaultNow(),
-  completedAt: timestamp("completed_at"),
-  executionPath: jsonb("execution_path").default({}), // Store the flow path of execution
+export const logSchema = z.object({
+  id: z.number(),
+  agentId: z.number(),
+  workflowId: z.number(),
+  status: z.string(), // "success", "error", "running"
+  input: z.record(z.any()).default({}),
+  output: z.record(z.any()).default({}),
+  error: z.string().nullable().optional(),
+  startedAt: z.date().default(() => new Date()),
+  completedAt: z.date().nullable().optional(),
+  executionPath: z.record(z.any()).default({}) // Store the flow path of execution
 });
 
-export const insertLogSchema = createInsertSchema(logs).omit({
+export const insertLogSchema = logSchema.omit({
   id: true,
-  startedAt: true,
+  startedAt: true
 });
 
 export type InsertLog = z.infer<typeof insertLogSchema>;
-export type Log = typeof logs.$inferSelect;
+export type Log = z.infer<typeof logSchema>;
 
 // Workflow schema
-export const workflows = pgTable("workflows", {
-  id: serial("id").primaryKey(),
-  name: text("name").notNull(),
-  description: text("description"),
-  type: text("type").notNull(), // "custom", "template"
-  icon: text("icon"),
-  status: text("status").default("draft"),
-  createdAt: timestamp("created_at").defaultNow(),
-  updatedAt: timestamp("updated_at").defaultNow(),
-  userId: integer("user_id"),
-  agentId: integer("agent_id"),
-  flowData: jsonb("flow_data"),
+export const workflowSchema = z.object({
+  id: z.number(),
+  name: z.string(),
+  description: z.string().nullable().optional(),
+  type: z.string(), // "custom", "template"
+  icon: z.string().nullable().optional(),
+  status: z.string().default("draft"),
+  createdAt: z.date().default(() => new Date()),
+  updatedAt: z.date().default(() => new Date()),
+  userId: z.number().nullable().optional(),
+  agentId: z.number().nullable().optional(),
+  flowData: z.record(z.any()).nullable().optional()
 });
 
-export const insertWorkflowSchema = createInsertSchema(workflows).omit({
+export const insertWorkflowSchema = workflowSchema.omit({
   id: true,
   createdAt: true,
-  updatedAt: true,
+  updatedAt: true
 });
 
 export type InsertWorkflow = z.infer<typeof insertWorkflowSchema>;
-export type Workflow = typeof workflows.$inferSelect;
+export type Workflow = z.infer<typeof workflowSchema>;
 
 // Node schema
-export const nodes = pgTable("nodes", {
-  id: serial("id").primaryKey(),
-  name: text("name").notNull(),
-  description: text("description"),
-  type: text("type").notNull(), // "custom", "interface", "workflow", "integration", "internal"
-  icon: text("icon"),
-  category: text("category").notNull().default(""),
-  createdAt: timestamp("created_at").defaultNow(),
-  updatedAt: timestamp("updated_at").defaultNow(),
-  userId: integer("user_id"),
-  configuration: jsonb("configuration"),
+export const nodeSchema = z.object({
+  id: z.number(),
+  name: z.string(),
+  description: z.string().nullable().optional(),
+  type: z.string(), // "custom", "interface", "workflow", "integration", "internal"
+  icon: z.string().nullable().optional(),
+  category: z.string().default(""),
+  createdAt: z.date().default(() => new Date()),
+  updatedAt: z.date().default(() => new Date()),
+  userId: z.number().nullable().optional(),
+  configuration: z.record(z.any()).nullable().optional()
 });
 
-export const insertNodeSchema = createInsertSchema(nodes).omit({
+export const insertNodeSchema = nodeSchema.omit({
   id: true,
   createdAt: true,
-  updatedAt: true,
+  updatedAt: true
 }).extend({
   category: z.string().default("")
 });
 
 export type InsertNode = z.infer<typeof insertNodeSchema>;
-export type Node = typeof nodes.$inferSelect & {
+export type Node = z.infer<typeof nodeSchema> & {
   // Additional fields used by the frontend
   icon?: any;
   category: string;

@@ -6,11 +6,11 @@
  */
 
 import { 
-  users, type User, type InsertUser,
-  agents, type Agent, type InsertAgent,
-  workflows, type Workflow, type InsertWorkflow,
-  nodes, type Node, type InsertNode,
-  logs, type Log, type InsertLog
+  type User, type InsertUser,
+  type Agent, type InsertAgent,
+  type Workflow, type InsertWorkflow,
+  type Node, type InsertNode,
+  type Log, type InsertLog
 } from "@shared/schema";
 
 /**
