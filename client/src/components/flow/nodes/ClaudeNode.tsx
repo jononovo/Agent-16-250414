@@ -26,35 +26,35 @@ const NodeHoverMenu = ({
   onMonkeyAgentModify: () => void;
 }) => {
   return (
-    <div className="absolute z-50 top-0 right-0 -mt-1 -mr-1 bg-white rounded-md shadow-lg border border-slate-200 p-1 flex flex-col gap-1">
+    <div className="absolute z-50 right-0 top-0 translate-x-[calc(100%+4px)] bg-white rounded-md shadow-lg border border-slate-200 p-1 flex flex-col gap-1">
       <Button 
         variant="ghost" 
-        size="sm" 
-        className="flex items-center justify-start px-2 py-1 h-8 hover:bg-slate-100"
+        size="icon"
+        className="h-8 w-8 hover:bg-slate-100"
         onClick={onDuplicate}
+        title="Duplicate node"
       >
-        <Lucide.Copy className="h-4 w-4 mr-2" />
-        <span className="text-xs">Duplicate</span>
+        <Lucide.Copy className="h-4 w-4" />
       </Button>
       
       <Button 
         variant="ghost" 
-        size="sm" 
-        className="flex items-center justify-start px-2 py-1 h-8 hover:bg-slate-100 text-red-500 hover:text-red-600"
+        size="icon"
+        className="h-8 w-8 hover:bg-slate-100 text-red-500 hover:text-red-600"
         onClick={onDelete}
+        title="Delete node"
       >
-        <Lucide.Trash2 className="h-4 w-4 mr-2" />
-        <span className="text-xs">Delete</span>
+        <Lucide.Trash2 className="h-4 w-4" />
       </Button>
       
       <Button 
         variant="ghost" 
-        size="sm" 
-        className="flex items-center justify-start px-2 py-1 h-8 hover:bg-slate-100 text-indigo-500"
+        size="icon"
+        className="h-8 w-8 hover:bg-slate-100 text-indigo-500"
         onClick={onMonkeyAgentModify}
+        title="MonkeyAgent Modify"
       >
-        <Lucide.Bot className="h-4 w-4 mr-2" />
-        <span className="text-xs">MonkeyAgent Modify</span>
+        <Lucide.Bot className="h-4 w-4" />
       </Button>
     </div>
   );
