@@ -6,162 +6,28 @@
  */
 
 import { registerEnhancedNodeExecutor, createEnhancedNodeExecutor } from './enhancedWorkflowEngine';
-import { validateNodeDefinition } from './nodeValidation';
-
-// List of known node types that are implemented in the folder-based system
-const FOLDER_BASED_NODE_TYPES = [
-  'text_input',
-  'claude',
-  'http_request',
-  'text_template',
-  'data_transform',
-  'decision',
-  'function',
-  'json_path'
-];
+import { 
+  FOLDER_BASED_NODE_TYPES, 
+  validateNode, 
+  getNodeExecutorPath, 
+  getNodeDefinitionPath 
+} from './nodeValidator';
 
 /**
  * Register all node executors from the folder-based node registry
- * This dynamically imports node modules from their folders and registers them
  */
 export function registerNodeExecutorsFromRegistry(): void {
   console.log('Registering node executors from folder-based registry...');
   
-  // Track missing node definitions or executors for reporting
+  // Track missing or invalid components
   const missingComponents: Record<string, string[]> = {};
   
-  // Register each node by dynamically importing it
+  // Register each node type
   FOLDER_BASED_NODE_TYPES.forEach(nodeType => {
-    try {
-      // Dynamically import the node's executor
-      import(/* @vite-ignore */ `../nodes/${nodeType}/executor`).then(executor => {
-        if (executor && executor.execute) {
-          // Also import the node's definition for enhanced workflow engine registration
-          import(/* @vite-ignore */ `../nodes/${nodeType}/definition`).then(definition => {
-            if (definition && definition.default) {
-              const nodeDefinition = definition.default;
-              
-              // Validate the node definition
-              const validationResult = validateNodeDefinition(nodeDefinition);
-              
-              if (!validationResult.valid) {
-                console.warn(`Node definition for ${nodeType} has validation errors:`, validationResult.errors);
-                if (missingComponents[nodeType]) {
-                  missingComponents[nodeType].push(...validationResult.errors);
-                } else {
-                  missingComponents[nodeType] = validationResult.errors;
-                }
-              }
-              
-              if (validationResult.warnings.length > 0) {
-                console.warn(`Node definition for ${nodeType} has validation warnings:`, validationResult.warnings);
-              }
-              
-              console.log(`Registering executor for node type: ${nodeType}`);
-              
-              // Register with enhancedWorkflowEngine
-              registerEnhancedNodeExecutor(
-                nodeType,
-                createEnhancedNodeExecutor(
-                  {
-                    type: nodeType,
-                    displayName: nodeDefinition.name || nodeType,
-                    description: nodeDefinition.description || '',
-                    icon: nodeDefinition.icon || 'bolt',
-                    category: nodeDefinition.category || 'general',
-                    version: nodeDefinition.version || '1.0.0',
-                    inputs: Object.fromEntries(
-                      Object.entries(nodeDefinition.inputs || {}).map(([key, value]: [string, any]) => [
-                        key,
-                        {
-                          type: value.type || 'string',
-                          displayName: key,
-                          description: value.description || '',
-                          required: value.optional ? !value.optional : true
-                        }
-                      ])
-                    ),
-                    outputs: Object.fromEntries(
-                      Object.entries(nodeDefinition.outputs || {}).map(([key, value]: [string, any]) => [
-                        key,
-                        {
-                          type: value.type || 'string',
-                          displayName: key,
-                          description: value.description || ''
-                        }
-                      ])
-                    )
-                  },
-                  async (nodeData, inputs) => {
-                    try {
-                      // Execute the node's folder-based executor
-                      const result = await executor.execute(nodeData, inputs);
-                      
-                      // Format the result as a NodeExecutionData object
-                      return {
-                        items: Array.isArray(result) 
-                          ? result.map(item => ({ json: item, text: JSON.stringify(item) }))
-                          : [{ json: result, text: typeof result === 'string' ? result : JSON.stringify(result) }],
-                        meta: { startTime: new Date(), endTime: new Date() }
-                      };
-                    } catch (error) {
-                      console.error(`Error executing ${nodeType} node with enhanced workflow engine:`, error);
-                      return {
-                        items: [{
-                          json: { error: error instanceof Error ? error.message : String(error) },
-                          text: error instanceof Error ? error.message : String(error)
-                        }],
-                        meta: { startTime: new Date(), endTime: new Date(), error: true }
-                      };
-                    }
-                  }
-                )
-              );
-              
-              console.log(`Registered enhanced node executor for type: ${nodeType}`);
-            } else {
-              if (missingComponents[nodeType]) {
-                missingComponents[nodeType].push('Missing default export in definition');
-              } else {
-                missingComponents[nodeType] = ['Missing default export in definition'];
-              }
-              console.warn(`Invalid definition for node type ${nodeType}: Missing default export`);
-            }
-          }).catch(error => {
-            if (missingComponents[nodeType]) {
-              missingComponents[nodeType].push('Definition import error');
-            } else {
-              missingComponents[nodeType] = ['Definition import error'];
-            }
-            console.error(`Error importing definition for node type ${nodeType}:`, error);
-          });
-        } else {
-          if (missingComponents[nodeType]) {
-            missingComponents[nodeType].push('Missing execute function in executor');
-          } else {
-            missingComponents[nodeType] = ['Missing execute function in executor'];
-          }
-          console.warn(`Invalid executor for node type ${nodeType}: Missing execute function`);
-        }
-      }).catch(error => {
-        if (missingComponents[nodeType]) {
-          missingComponents[nodeType].push('Executor import error');
-        } else {
-          missingComponents[nodeType] = ['Executor import error'];
-        }
-        console.error(`Error importing executor for node type ${nodeType}:`, error);
-      });
-    } catch (error) {
-      if (missingComponents[nodeType]) {
-        missingComponents[nodeType].push('Registration error');
-      } else {
-        missingComponents[nodeType] = ['Registration error'];
-      }
-      console.error(`Failed to register node type ${nodeType}:`, error);
-    }
+    registerNodeType(nodeType, missingComponents);
   });
   
-  // Report any missing components after a short delay to allow imports to complete
+  // Report any missing components after imports complete
   setTimeout(() => {
     if (Object.keys(missingComponents).length > 0) {
       console.warn('Some folder-based node components could not be imported:', missingComponents);
@@ -169,4 +35,138 @@ export function registerNodeExecutorsFromRegistry(): void {
   }, 1000);
   
   console.log('Node executors registration complete');
+}
+
+/**
+ * Register a single node type with the workflow engine
+ */
+async function registerNodeType(nodeType: string, missingComponents: Record<string, string[]>): Promise<void> {
+  try {
+    // Import executor
+    const executorPath = getNodeExecutorPath(nodeType);
+    import(/* @vite-ignore */ executorPath).then(executor => {
+      if (!executor || !executor.execute) {
+        recordMissingComponent(missingComponents, nodeType, 'Missing execute function in executor');
+        console.warn(`Invalid executor for node type ${nodeType}: Missing execute function`);
+        return;
+      }
+      
+      // Import definition
+      const definitionPath = getNodeDefinitionPath(nodeType);
+      import(/* @vite-ignore */ definitionPath).then(definition => {
+        if (!definition || !definition.default) {
+          recordMissingComponent(missingComponents, nodeType, 'Missing default export in definition');
+          console.warn(`Invalid definition for node type ${nodeType}: Missing default export`);
+          return;
+        }
+        
+        const nodeDefinition = definition.default;
+        
+        // Validate node definition
+        const validationResult = validateNode(nodeDefinition);
+        if (!validationResult.valid) {
+          validationResult.errors.forEach(error => {
+            recordMissingComponent(missingComponents, nodeType, error);
+          });
+          console.warn(`Node definition for ${nodeType} has validation errors:`, validationResult.errors);
+        }
+        
+        if (validationResult.warnings.length > 0) {
+          console.warn(`Node definition for ${nodeType} has validation warnings:`, validationResult.warnings);
+        }
+        
+        console.log(`Registering executor for node type: ${nodeType}`);
+        
+        // Register with workflow engine
+        registerEnhancedNodeExecutor(
+          nodeType,
+          createEnhancedNodeExecutor(
+            {
+              type: nodeType,
+              displayName: nodeDefinition.name || nodeType,
+              description: nodeDefinition.description || '',
+              icon: nodeDefinition.icon || 'bolt',
+              category: nodeDefinition.category || 'general',
+              version: nodeDefinition.version || '1.0.0',
+              inputs: formatPortDefinitions(nodeDefinition.inputs || {}, true),
+              outputs: formatPortDefinitions(nodeDefinition.outputs || {}, false)
+            },
+            createNodeExecutor(nodeType, executor)
+          )
+        );
+        
+        console.log(`Registered enhanced node executor for type: ${nodeType}`);
+      }).catch(error => {
+        recordMissingComponent(missingComponents, nodeType, 'Definition import error');
+        console.error(`Error importing definition for node type ${nodeType}:`, error);
+      });
+    }).catch(error => {
+      recordMissingComponent(missingComponents, nodeType, 'Executor import error');
+      console.error(`Error importing executor for node type ${nodeType}:`, error);
+    });
+  } catch (error) {
+    recordMissingComponent(missingComponents, nodeType, 'Registration error');
+    console.error(`Failed to register node type ${nodeType}:`, error);
+  }
+}
+
+/**
+ * Format port definitions for the workflow engine
+ */
+function formatPortDefinitions(ports: Record<string, any>, isInput: boolean): Record<string, any> {
+  return Object.fromEntries(
+    Object.entries(ports).map(([key, value]: [string, any]) => [
+      key,
+      {
+        type: value.type || 'string',
+        displayName: key,
+        description: value.description || '',
+        ...(isInput ? { required: value.optional ? !value.optional : true } : {})
+      }
+    ])
+  );
+}
+
+/**
+ * Create a node executor function that handles errors
+ */
+function createNodeExecutor(nodeType: string, executor: any) {
+  return async (nodeData: any, inputs: Record<string, any>) => {
+    try {
+      // Execute the node
+      const result = await executor.execute(nodeData, inputs);
+      
+      // Format the result
+      return {
+        items: Array.isArray(result) 
+          ? result.map(item => ({ json: item, text: JSON.stringify(item) }))
+          : [{ json: result, text: typeof result === 'string' ? result : JSON.stringify(result) }],
+        meta: { startTime: new Date(), endTime: new Date() }
+      };
+    } catch (error) {
+      console.error(`Error executing ${nodeType} node:`, error);
+      return {
+        items: [{
+          json: { error: error instanceof Error ? error.message : String(error) },
+          text: error instanceof Error ? error.message : String(error)
+        }],
+        meta: { startTime: new Date(), endTime: new Date(), error: true }
+      };
+    }
+  };
+}
+
+/**
+ * Record a missing or invalid component
+ */
+function recordMissingComponent(
+  missingComponents: Record<string, string[]>, 
+  nodeType: string, 
+  issue: string
+): void {
+  if (missingComponents[nodeType]) {
+    missingComponents[nodeType].push(issue);
+  } else {
+    missingComponents[nodeType] = [issue];
+  }
 }

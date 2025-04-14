@@ -3,7 +3,7 @@ import App from "./App";
 import "./index.css";
 import { ThemeProvider } from "./components/theme-provider";
 import { registerNodeExecutorsFromRegistry } from "./lib/nodeSystem";
-import validateAllNodes from "./lib/validateAllNodes";
+import { validateAllNodes } from "./lib/nodeValidator";
 
 // Initialize folder-based node system
 registerNodeExecutorsFromRegistry();
