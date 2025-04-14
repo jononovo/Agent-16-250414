@@ -17,7 +17,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 // Default data for the node
 export const defaultData = {
   prompt: '',
-  model: 'claude-3-haiku-20240307',
+  model: 'claude-3-7-sonnet-20250219',
   temperature: 0.7,
   maxTokens: 1000,
   systemPrompt: '',
@@ -48,7 +48,7 @@ export const validator = (data: any) => {
 
 // React component for the node
 export const component = ({ data, isConnectable }: any) => {
-  const [localModel, setLocalModel] = useState(data.model || 'claude-3-haiku-20240307');
+  const [localModel, setLocalModel] = useState(data.model || 'claude-3-7-sonnet-20250219');
   const [localTemperature, setLocalTemperature] = useState(data.temperature !== undefined ? data.temperature : 0.7);
   const [localMaxTokens, setLocalMaxTokens] = useState(data.maxTokens || 1000);
   const [localPrompt, setLocalPrompt] = useState(data.prompt || '');
@@ -77,9 +77,10 @@ export const component = ({ data, isConnectable }: any) => {
     updateNodeData({ systemPrompt: newValue });
   };
   
-  const handleModelChange = (value: string) => {
-    setLocalModel(value);
-    updateNodeData({ model: value });
+  const handleModelChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const newValue = e.target.value;
+    setLocalModel(newValue);
+    updateNodeData({ model: newValue });
   };
   
   const handleTemperatureChange = (value: number[]) => {
@@ -146,16 +147,16 @@ export const component = ({ data, isConnectable }: any) => {
         <TabsContent value="settings" className="space-y-3">
           <div>
             <Label htmlFor="model">Model</Label>
-            <Select value={localModel} onValueChange={handleModelChange}>
-              <SelectTrigger id="model" className="mt-1">
-                <SelectValue placeholder="Select a model" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="claude-3-opus-20240229">Claude 3 Opus</SelectItem>
-                <SelectItem value="claude-3-sonnet-20240229">Claude 3 Sonnet</SelectItem>
-                <SelectItem value="claude-3-haiku-20240307">Claude 3 Haiku</SelectItem>
-              </SelectContent>
-            </Select>
+            <Input
+              id="model"
+              value={localModel}
+              onChange={(e) => handleModelChange(e.target.value)}
+              placeholder="claude-3-7-sonnet-20250219"
+              className="mt-1"
+            />
+            <p className="text-xs text-muted-foreground mt-1">
+              Use the latest model identifier from Anthropic (e.g., claude-3-7-sonnet-20250219)
+            </p>
           </div>
           
           <div>
