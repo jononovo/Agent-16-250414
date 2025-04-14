@@ -7,11 +7,11 @@
 // Node metadata
 export const metadata = {
   name: "Text Template",
-  description: "Create text templates with variable substitution",
+  description: "Generate text using a template with variable placeholders",
   category: "text", // Embedded category information
   version: "1.0.0",
-  tags: ["text", "template", "variables", "formatting"],
-  color: "#3B82F6" // Blue color
+  tags: ["text", "template", "formatting", "variables"],
+  color: "#8B5CF6" // Purple color
 };
 
 // Node schema
@@ -19,23 +19,23 @@ export const schema = {
   inputs: {
     variables: {
       type: "object",
-      description: "Variables to substitute in the template"
+      description: "Variables to use in the template"
     }
   },
   outputs: {
     text: {
       type: "string",
-      description: "The processed template with variable substitutions"
+      description: "Generated text from the template"
     },
     error: {
       type: "string",
-      description: "Error message if the template processing fails"
+      description: "Error message if template processing fails"
     }
   },
   parameters: {
     template: {
       type: "string",
-      description: "Template text with variable placeholders (e.g., {{name}})",
+      description: "Template string with variable placeholders (e.g., {{variableName}})",
       default: "Hello, {{name}}!"
     }
   }

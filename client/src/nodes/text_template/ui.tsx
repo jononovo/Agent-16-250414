@@ -1,7 +1,7 @@
 /**
  * Text Template Node UI Component
  * 
- * This component provides an interface for creating text templates with variable substitution
+ * This component provides an interface for creating text templates with variable placeholders
  */
 
 import React, { useState } from 'react';
@@ -9,65 +9,69 @@ import { Handle, Position } from 'reactflow';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
 import { TextTemplateNodeData } from './executor';
 
 export const defaultData: TextTemplateNodeData = {
   template: 'Hello, {{name}}!'
 };
 
-export const component: React.FC<{
-  data: TextTemplateNodeData;
-  onChange: (data: TextTemplateNodeData) => void;
-}> = ({ data, onChange }) => {
+export function component({ 
+  data, 
+  onChange 
+}: { 
+  data: TextTemplateNodeData; 
+  onChange: (data: TextTemplateNodeData) => void; 
+}) {
   const [template, setTemplate] = useState(data.template || defaultData.template);
-
+  
+  // Extract variables from the template
+  const extractVariables = (templateText: string): string[] => {
+    const matches = templateText.match(/\{\{([^}]+)\}\}/g) || [];
+    return matches.map(match => match.replace(/\{\{|\}\}/g, '').trim());
+  };
+  
+  const variables = extractVariables(template);
+  
   const handleTemplateChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     const newTemplate = e.target.value;
     setTemplate(newTemplate);
     onChange({ ...data, template: newTemplate });
   };
 
-  // Extract variable names from template for display
-  const extractVariables = (template: string): string[] => {
-    if (!template) return [];
-    
-    const matches = template.match(/{{([^{}]+)}}/g) || [];
-    return matches.map(match => match.slice(2, -2).trim())
-      .filter((value, index, self) => self.indexOf(value) === index); // Remove duplicates
-  };
-
-  const variables = extractVariables(template);
-
   return (
     <div className="text-template-node">
-      <Handle type="target" position={Position.Left} id="input" />
+      <Handle type="target" position={Position.Left} id="variables" />
       
       <Card className="w-[400px]">
         <CardHeader className="pb-2">
           <CardTitle className="text-md">Text Template</CardTitle>
-          <CardDescription className="text-xs">Create template with variable substitution</CardDescription>
+          <CardDescription className="text-xs">Generate text using variable placeholders</CardDescription>
         </CardHeader>
         <CardContent>
           <div className="space-y-4">
             <div>
-              <Label htmlFor="template">Template Text</Label>
+              <Label htmlFor="template">Template</Label>
               <Textarea
                 id="template"
                 value={template}
                 onChange={handleTemplateChange}
                 className="font-mono text-sm min-h-[100px]"
-                placeholder="Enter template text with {{variables}}..."
+                placeholder="Enter template with placeholders"
               />
+              <p className="text-xs text-muted-foreground mt-1">
+                Use &#123;&#123;variableName&#125;&#125; syntax for variable placeholders
+              </p>
             </div>
             
             {variables.length > 0 && (
-              <div className="text-xs">
-                <Label>Variables Used</Label>
+              <div>
+                <Label className="text-xs">Detected Variables</Label>
                 <div className="flex flex-wrap gap-1 mt-1">
                   {variables.map((variable, index) => (
-                    <div key={index} className="px-2 py-1 bg-muted rounded-md">
+                    <Badge key={index} variant="outline" className="text-xs">
                       {variable}
-                    </div>
+                    </Badge>
                   ))}
                 </div>
               </div>
@@ -76,7 +80,7 @@ export const component: React.FC<{
         </CardContent>
       </Card>
       
-      <Handle type="source" position={Position.Right} id="output" />
+      <Handle type="source" position={Position.Right} id="text" />
     </div>
   );
 };
@@ -85,7 +89,7 @@ export const validator = (data: TextTemplateNodeData) => {
   const errors: string[] = [];
   
   if (!data.template || data.template.trim() === '') {
-    errors.push('Template text cannot be empty');
+    errors.push('Template cannot be empty');
   }
   
   return {

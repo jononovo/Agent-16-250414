@@ -1,27 +1,25 @@
 /**
  * Text Template Node
  * 
- * This node processes text templates with variable substitution.
+ * This node provides template-based text generation with variable substitution.
  */
 
 import { NodeRegistryEntry } from '../../lib/types';
 import { metadata, schema } from './definition';
 import * as executor from './executor';
 import * as ui from './ui';
-import { FileText } from 'lucide-react';
-import React from 'react';
 
-const TextTemplateNode: NodeRegistryEntry = {
+/**
+ * Text Template Node Registry Entry
+ */
+const entry: NodeRegistryEntry = {
   type: 'text_template',
   metadata,
   schema,
   executor,
-  ui: {
-    component: ui.component,
-    defaultData: ui.defaultData,
-    validator: ui.validator
-  },
-  icon: React.createElement(FileText, { size: 16 })
+  ui: ui.component,
+  defaultData: executor.defaultData,
+  validator: ui.validator
 };
 
-export default TextTemplateNode;
+export default entry;

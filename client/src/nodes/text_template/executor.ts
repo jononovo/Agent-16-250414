@@ -1,7 +1,7 @@
 /**
  * Text Template Node Executor
  * 
- * This executor processes text templates with variable substitution.
+ * This executor processes a template string and replaces variables with provided values.
  */
 
 // Define the shape of the node's data
@@ -10,26 +10,44 @@ export interface TextTemplateNodeData {
 }
 
 /**
- * Replace template variables with actual values
- * Handles mustache-style {{variable}} syntax
+ * Get a property from an object using a path string (e.g., "user.name")
+ * 
+ * @param obj The object to get the property from
+ * @param path The property path (e.g., "user.name")
+ * @returns The property value or undefined if not found
  */
-function replaceTemplateVariables(template: string, variables: Record<string, any>): string {
-  if (!template) return '';
-  if (!variables) return template;
+function getValueByPath(obj: any, path: string): any {
+  const keys = path.split('.');
+  return keys.reduce((acc, key) => {
+    return acc && typeof acc === 'object' ? acc[key] : undefined;
+  }, obj);
+}
+
+/**
+ * Replace template variables in the format {{variableName}} with values from data
+ * 
+ * @param template The template string with {{variableName}} placeholders
+ * @param data The data object containing variable values
+ * @returns The processed template with variables replaced
+ */
+function replaceTemplateVariables(template: string, data: Record<string, any>): string {
+  const variableRegex = /\{\{([^}]+)\}\}/g;
   
-  // Replace all {{variable}} with their values
-  return template.replace(/{{([^{}]+)}}/g, (match, variableName) => {
-    const trimmedName = variableName.trim();
+  return template.replace(variableRegex, (match, variablePath) => {
+    const trimmedPath = variablePath.trim();
+    const value = getValueByPath(data, trimmedPath);
     
-    // Check if the variable exists in our variables object
-    if (trimmedName in variables) {
-      const value = variables[trimmedName];
-      // Convert value to string if it's an object or array
-      return typeof value === 'object' ? JSON.stringify(value) : String(value);
+    // If the value is undefined, keep the placeholder
+    if (value === undefined) {
+      return match;
     }
     
-    // If variable doesn't exist, leave the placeholder unchanged
-    return match;
+    // Convert objects and arrays to JSON string representation
+    if (typeof value === 'object' && value !== null) {
+      return JSON.stringify(value);
+    }
+    
+    return String(value);
   });
 }
 
@@ -41,20 +59,34 @@ export async function execute(nodeData: TextTemplateNodeData, inputs: Record<str
   const variables = inputs.variables || {};
   
   try {
-    if (!template) {
+    if (!template || template.trim() === '') {
       return {
-        error: 'No template provided'
+        error: 'Template is empty'
       };
     }
     
-    // Process template with variable substitution
+    // Process the template and replace variables
     const processedText = replaceTemplateVariables(template, variables);
+    
+    // Check if any variables were not replaced
+    const variableRegex = /\{\{([^}]+)\}\}/g;
+    let match;
+    const unreplacedVariables = [];
+    
+    while ((match = variableRegex.exec(processedText)) !== null) {
+      unreplacedVariables.push(match);
+    }
+    
+    if (unreplacedVariables.length > 0) {
+      const missingVars = unreplacedVariables.map(match => match[1].trim()).join(', ');
+      console.warn(`Some variables were not replaced in template: ${missingVars}`);
+    }
     
     return {
       text: processedText
     };
   } catch (error) {
-    console.error('Error executing text template:', error);
+    console.error('Error executing text template node:', error);
     return {
       error: error instanceof Error ? error.message : String(error)
     };
