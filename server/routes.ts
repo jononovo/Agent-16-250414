@@ -1626,14 +1626,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Create a new log
   app.post("/api/logs", async (req, res) => {
     try {
-      // Validate request body
+      // Validate request body using the newer format
       const logSchema = z.object({
-        agentId: z.number().optional(),
-        type: z.string(),
-        level: z.enum(["debug", "info", "warn", "error"]),
-        message: z.string(),
-        source: z.string(),
-        data: z.record(z.any()).optional()
+        agentId: z.number().optional().default(1),
+        workflowId: z.number().optional().default(1),
+        status: z.string(),
+        input: z.any().optional(),
+        output: z.any().optional(),
+        error: z.string().nullable().optional(),
+        executionPath: z.record(z.any()).optional()
       });
       
       const result = logSchema.safeParse(req.body);
@@ -1645,8 +1646,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
       
+      // Create the log with required fields
+      const logEntry: InsertLog = {
+        agentId: result.data.agentId || 1,
+        workflowId: result.data.workflowId || 1,
+        status: result.data.status,
+        input: result.data.input || {},
+        output: result.data.output || {},
+        error: result.data.error,
+        executionPath: result.data.executionPath || {}
+      };
+      
       // Create the log
-      const log = await storage.createLog(result.data);
+      const log = await storage.createLog(logEntry);
       
       // Return the created log
       res.status(201).json(log);
@@ -1671,13 +1683,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ message: "Log not found" });
       }
       
-      // Validate request body
+      // Validate request body with the new log schema
       const logUpdateSchema = z.object({
-        type: z.string().optional(),
-        level: z.enum(["debug", "info", "warn", "error"]).optional(),
-        message: z.string().optional(),
-        source: z.string().optional(),
-        data: z.record(z.any()).optional()
+        status: z.string().optional(),
+        input: z.any().optional(),
+        output: z.any().optional(),
+        error: z.string().nullable().optional(),
+        completedAt: z.date().optional(),
+        executionPath: z.record(z.any()).optional()
       });
       
       const result = logUpdateSchema.safeParse(req.body);
@@ -1689,7 +1702,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
       
-      // Update the log
+      // Update the log with the new schema fields
       const updatedLog = await storage.updateLog(id, result.data);
       
       // Return the updated log
@@ -1798,17 +1811,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Create a session ID if one wasn't provided
       const session = sessionId || uuidv4();
       
-      // Create a log for this message
+      // Create a log for this message using the new schema
       const messageLog: InsertLog = {
         agentId,
-        type: "message",
-        level: "info",
-        message: prompt,
-        source: "user",
-        data: {
-          session,
+        workflowId: workflowId || 1, // Default to 1 if not provided
+        status: "received",
+        input: {
           prompt,
-          timestamp: new Date().toISOString(),
+          session,
+          timestamp: new Date().toISOString()
+        },
+        executionPath: {
+          type: "message",
+          source: "user",
           metadata: metadata || {}
         }
       };
@@ -1848,13 +1863,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // For now, if there's no workflow, return a mock response from the workflow (a stub)
       const mockResponse = `Mock response from agent: I received your message: "${prompt}"`;
       
-      // Update the log with the response
+      // Update the log with the response using the new schema
       await storage.updateLog(log.id, {
-        data: {
-          ...log.data,
+        status: "completed",
+        output: {
           response: mockResponse,
           responseTimestamp: new Date().toISOString()
-        }
+        },
+        completedAt: new Date()
       });
       
       res.json({
