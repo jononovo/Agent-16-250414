@@ -14,6 +14,7 @@ import fetch from "node-fetch";
 import { fetchWithTimeout } from "./utils/fetch";
 import { log } from "./vite";
 import { workflowGenerationService } from "./services/workflowGenerationService";
+import { handleNodeAiEdit } from "./services/nodeAiEditService";
 
 /**
  * Utility function to execute a workflow
