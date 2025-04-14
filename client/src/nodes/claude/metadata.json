@@ -1,0 +1,11 @@
+{
+  "type": "claude",
+  "name": "Claude AI",
+  "description": "Generate content with Anthropic's Claude AI model",
+  "icon": "sparkles",
+  "category": "ai",
+  "version": "1.0.0",
+  "author": "AI Agent Platform",
+  "license": "MIT",
+  "tags": ["ai", "llm", "text generation", "claude", "anthropic"]
+}

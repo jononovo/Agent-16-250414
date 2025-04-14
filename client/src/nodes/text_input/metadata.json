@@ -1,0 +1,11 @@
+{
+  "type": "text_input",
+  "name": "Text Input",
+  "description": "Captures text input for use in workflows",
+  "icon": "type",
+  "category": "input",
+  "version": "1.0.0",
+  "author": "AI Agent Platform",
+  "license": "MIT",
+  "tags": ["input", "text", "user input"]
+}

@@ -1,24 +1,35 @@
 /**
  * Text Input Node - Main Export File
  */
-import UI from './ui';
+import UIComponent from './ui';
 import executor from './executor';
-import definition from './definition';
-import icon from './icon';
+import schema from './schema';
+// Import metadata from JSON
+import metadata from './metadata.json';
+// For SVG imports, we can use URL import
+import iconUrl from './icon.svg';
 
-// Export everything from this node
+// Node type from metadata
+const TYPE = metadata.type;
+
+// Export individual pieces
 export {
-  UI,             // UI Component
+  UIComponent,    // UI Component
   executor,       // Execution Logic
-  definition,     // Node Definition
-  icon            // Node Icon
+  schema,         // Node Schema
+  metadata,       // Node Metadata
+  iconUrl         // Node Icon URL
 };
 
-// Default export for direct import
-export default {
-  type: definition.type,
-  component: UI,
+// Create the node definition object that follows the registry structure
+const textInputNode = {
+  type: TYPE,
+  component: UIComponent,
   executor,
-  definition,
-  icon
+  schema,
+  metadata,
+  icon: metadata.icon // Using the icon name from metadata for Lucide icons
 };
+
+// Default export for direct import and registration
+export default textInputNode;
