@@ -209,7 +209,7 @@ async function runWorkflow(
         }
         
         // Execute the node based on its type
-        // In the future, this should use a plugin system or node type registry
+        // This should use the folder-based node system to dynamically load executors
         const nodeType = currentNode.type || currentNode.data?.type || "unknown";
         const nodeData = currentNode.data || {};
         

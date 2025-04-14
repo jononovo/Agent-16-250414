@@ -61,6 +61,9 @@ export async function registerAllEnhancedNodeExecutors(): Promise<void> {
       nodeSystem.registerNodeExecutorsFromRegistry();
     });
     
+    // Import the node executor helpers
+    const nodeExecutors = await import('./enhancedNodeExecutors');
+    
     // List of built-in node types we need to ensure are registered
     const criticalNodeTypes = [
       'text_input', 
@@ -71,10 +74,17 @@ export async function registerAllEnhancedNodeExecutors(): Promise<void> {
     
     // Ensure critical node types are registered
     for (const nodeType of criticalNodeTypes) {
-      if (!getNodeExecutor(nodeType)) {
+      if (!nodeExecutors.hasExecutor(nodeType)) {
         // Try to directly import the node's executor from folder structure
         try {
-          const { execute } = await import(/* @vite-ignore */ `../nodes/${nodeType}/executor`);
+          // Dynamically import the executor from the folder structure
+          const executorModule = await import(/* @vite-ignore */ `../nodes/${nodeType}/executor`);
+          const execute = executorModule.execute || executorModule.default;
+          
+          if (typeof execute !== 'function') {
+            console.warn(`Executor for ${nodeType} is not a function, skipping registration`);
+            continue;
+          }
           
           // Convert folder-based executor to enhanced format
           registerEnhancedNodeExecutor(
