@@ -39,62 +39,91 @@ export function MonkeyAgentChatOverlay({
   ]);
   const [chatMinimized, setChatMinimized] = useState(false);
   
-  // Add workflow context information when the component mounts or when the workflow changes
-  useEffect(() => {
-    // Clear any previous workflow context messages
-    setMessages(prevMessages => 
-      prevMessages.filter(msg => msg.id !== "workflow-context")
-    );
-    
-    // Add a new message with the current workflow context
-    if (isNew) {
-      setMessages(prevMessages => [
-        ...prevMessages,
-        {
-          id: "workflow-context",
-          role: "assistant",
-          content: "Please save this workflow before making requests.",
-          createdAt: new Date()
-        }
-      ]);
-    } else if (workflow?.id) {
-      setMessages(prevMessages => [
-        ...prevMessages,
-        {
-          id: "workflow-context",
-          role: "assistant",
-          content: `We are chatting about workflow ID: ${workflow.id}`,
-          createdAt: new Date()
-        }
-      ]);
-    }
-  }, [workflow?.id, isNew]);
+  // We no longer display workflow context messages in the chat
+  // The component internally knows which workflow it's working with
   
-  // Generate workflow mutation
-  const generateWorkflow = useMutation({
-    mutationFn: async (prompt: string) => {
-      const response = await fetch('/api/workflows/generate', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ prompt }),
-      });
-      
-      if (!response.ok) {
-        throw new Error('Failed to generate workflow');
+  // Mutation for workflow operations
+  const workflowMutation = useMutation({
+    mutationFn: async ({ prompt, action }: { prompt: string, action: 'generate' | 'update' }) => {
+      if (action === 'generate') {
+        // Create a new workflow if we're not on a specific workflow page
+        // or if explicitly directed to generate a new one
+        const response = await fetch('/api/workflows/generate', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ prompt }),
+        });
+        
+        if (!response.ok) {
+          throw new Error('Failed to generate workflow');
+        }
+        
+        return { 
+          data: await response.json() as WorkflowResponse,
+          action: 'generate'
+        };
+      } else if (action === 'update' && workflow?.id) {
+        // Update the current workflow with the changes requested via the prompt
+        // This call will go to a different endpoint that updates an existing workflow
+        const response = await fetch(`/api/workflows/update/${workflow.id}`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ 
+            prompt,
+            currentWorkflowId: workflow.id,
+            currentWorkflowName: workflow.name
+          }),
+        });
+        
+        if (!response.ok) {
+          // If updating fails, fall back to generating a new workflow
+          console.warn('Failed to update existing workflow, falling back to generate');
+          const fallbackResponse = await fetch('/api/workflows/generate', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ prompt }),
+          });
+          
+          if (!fallbackResponse.ok) {
+            throw new Error('Failed to generate workflow');
+          }
+          
+          return { 
+            data: await fallbackResponse.json() as WorkflowResponse,
+            action: 'generate'
+          };
+        }
+        
+        return { 
+          data: await response.json() as WorkflowResponse,
+          action: 'update'
+        };
+      } else {
+        throw new Error('Invalid action or missing workflow ID');
       }
-      
-      return response.json() as Promise<WorkflowResponse>;
     },
-    onSuccess: (data) => {
-      // Notify parent about the new workflow
+    onSuccess: (result) => {
+      const { data, action } = result;
+      
+      // Notify parent about the workflow
       if (onWorkflowGenerated) {
         onWorkflowGenerated(data.workflow.id);
       }
       
-      // Add AI response to messages
-      const responseContent = `I've generated a workflow called "${data.workflow.name}" based on your description. You can see it in the editor and make any adjustments as needed.`;
+      // Add different AI responses based on the action taken
+      let responseContent = '';
+      
+      if (action === 'generate') {
+        responseContent = `I've generated a new workflow called "${data.workflow.name}" based on your description. You can see it in the editor and make any adjustments as needed.`;
+      } else {
+        responseContent = `I've updated the current workflow "${data.workflow.name}" with your requested changes. The changes are now visible in the editor.`;
+      }
       
       setMessages(prev => [
         ...prev,
@@ -121,9 +150,15 @@ export function MonkeyAgentChatOverlay({
     setChatInput('');
     setMessages(prev => [...prev, userMessage]);
     
-    // Generate the workflow
-    generateWorkflow.mutate(input);
-  }, [generateWorkflow]);
+    // Determine whether to update existing workflow or generate a new one
+    const action = (!isNew && workflow?.id) ? 'update' : 'generate';
+    
+    // Call the appropriate API
+    workflowMutation.mutate({ 
+      prompt: input, 
+      action 
+    });
+  }, [workflowMutation, workflow, isNew]);
 
   // Toggle chat panel visibility
   const toggleChatPanel = () => {
@@ -148,7 +183,7 @@ export function MonkeyAgentChatOverlay({
           input={chatInput}
           onInputChange={setChatInput}
           onSubmit={handleSubmit}
-          isLoading={generateWorkflow.isPending}
+          isLoading={workflowMutation.isPending}
         />
       </div>
     </>

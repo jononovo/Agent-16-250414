@@ -495,6 +495,74 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
     } catch (error) {
       console.error("Workflow generation error:", error);
+    }
+  });
+  
+  // Update an existing workflow based on a natural language prompt
+  app.post("/api/workflows/update/:id", async (req, res) => {
+    try {
+      // Validate request body
+      const updateSchema = z.object({
+        prompt: z.string(),
+        currentWorkflowId: z.number(),
+        currentWorkflowName: z.string().optional(),
+        options: z.object({
+          apiKey: z.string().optional(),
+          model: z.string().optional(),
+          complexity: z.enum(['simple', 'moderate', 'complex']).optional(),
+          domain: z.string().optional(),
+          maxNodes: z.number().optional(),
+          timeout: z.number().optional(),
+        }).optional(),
+      });
+      
+      const result = updateSchema.safeParse(req.body);
+      if (!result.success) {
+        const validationError = fromZodError(result.error);
+        return res.status(400).json({ 
+          message: "Invalid workflow update request", 
+          details: validationError.message 
+        });
+      }
+      
+      const workflowId = parseInt(req.params.id, 10);
+      if (isNaN(workflowId)) {
+        return res.status(400).json({ message: "Invalid workflow ID" });
+      }
+      
+      // Get the existing workflow
+      const existingWorkflow = await storage.getWorkflow(workflowId);
+      if (!existingWorkflow) {
+        return res.status(404).json({ message: "Workflow not found" });
+      }
+      
+      // Generate updated workflow based on the prompt
+      const { prompt, options } = result.data;
+      
+      console.log(`Updating workflow ${workflowId} from prompt: "${prompt}"`);
+      
+      // Include additional context in the prompt for the AI
+      const contextualizedPrompt = `Update the existing workflow "${existingWorkflow.name}" (ID: ${workflowId}): ${prompt}`;
+      
+      // Generate new workflow structure
+      const updatedWorkflowDefinition = await workflowGenerationService.generateWorkflow(
+        contextualizedPrompt,
+        existingWorkflow.agentId,
+        options
+      );
+      
+      // Preserve the original workflow name and ID
+      updatedWorkflowDefinition.name = existingWorkflow.name;
+      
+      // Update the workflow in the database
+      const updatedWorkflow = await storage.updateWorkflow(workflowId, updatedWorkflowDefinition);
+      
+      res.status(200).json({
+        workflow: updatedWorkflow,
+        message: "Workflow updated successfully"
+      });
+    } catch (error) {
+      console.error("Workflow update error:", error);
       
       // Special handling for API key errors
       if (error instanceof Error && error.message.includes('API key')) {
