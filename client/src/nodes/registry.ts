@@ -8,6 +8,7 @@
 // Import specific node implementations
 import TextInputNode from './text_input';
 import ClaudeNode from './claude';
+import HttpRequestNode from './http_request';
 
 // Node registry interfaces
 export interface NodeSchema {
@@ -127,6 +128,9 @@ function registerBuiltInNodes() {
   
   // Claude node
   registerNode('claude', ClaudeNode);
+  
+  // HTTP request node
+  registerNode('http_request', HttpRequestNode);
   
   // More nodes will be registered here as they are implemented
 }

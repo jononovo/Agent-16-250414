@@ -23,6 +23,7 @@ import {
 // Individual node exports
 import TextInputNode from './text_input';
 import ClaudeNode from './claude';
+import HttpRequestNode from './http_request';
 
 export {
   // Node registry and types
@@ -43,7 +44,8 @@ export {
   
   // Individual nodes
   TextInputNode,
-  ClaudeNode
+  ClaudeNode,
+  HttpRequestNode
 };
 
 // Default export includes everything

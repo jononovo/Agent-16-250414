@@ -76,5 +76,22 @@ export async function testNodeSystem() {
     console.error('Claude Execution Error:', err.message);
   }
   
+  // Execute an HTTP request node
+  console.log('\n🚀 Executing HTTP Request Node...');
+  try {
+    const httpResult = await executeNode('http_request', {
+      url: 'https://jsonplaceholder.typicode.com/todos/1',
+      method: 'GET',
+      headers: { 'Accept': 'application/json' }
+    });
+    console.log('HTTP Request Execution Result:', httpResult.meta);
+    if (httpResult.items.length > 0) {
+      console.log('HTTP Status:', httpResult.items[0].json.status);
+      console.log('HTTP Response Data:', httpResult.items[0].json.data);
+    }
+  } catch (err: any) {
+    console.error('HTTP Request Execution Error:', err.message);
+  }
+  
   console.log('\n✅ Node System Test Complete');
 }
