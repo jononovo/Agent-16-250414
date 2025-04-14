@@ -5,10 +5,12 @@
  * It provides a CLI interface to verify that the node registry and execution works.
  */
 
-// Use ES modules syntax instead of CommonJS
-import { nodeRegistry } from './client/src/nodes/registry.js';
+// Import our nodes for testing
 import textInputNode from './client/src/nodes/text_input/index.js';
 import claudeNode from './client/src/nodes/claude/index.js';
+import textTemplateNode from './client/src/nodes/text_template/index.js';
+import decisionNode from './client/src/nodes/decision/index.js';
+import dataTransformNode from './client/src/nodes/data_transform/index.js';
 
 async function testNewNodeSystem() {
   console.log('=== Testing New Node System ===\n');
@@ -30,31 +32,104 @@ async function testNewNodeSystem() {
   console.log(`   Inputs: ${Object.keys(claudeNode.schema.inputs).join(', ')}`);
   console.log(`   Outputs: ${Object.keys(claudeNode.schema.outputs).join(', ')}`);
   
-  // Execute the text_input node
+  // Display text_template node info
+  console.log(`\n3. ${textTemplateNode.type} - ${textTemplateNode.metadata.name}`);
+  console.log(`   Category: ${textTemplateNode.metadata.category}`);
+  console.log(`   Description: ${textTemplateNode.metadata.description}`);
+  console.log(`   Inputs: ${Object.keys(textTemplateNode.schema.inputs).join(', ')}`);
+  console.log(`   Outputs: ${Object.keys(textTemplateNode.schema.outputs).join(', ')}`);
+  
+  // Display decision node info
+  console.log(`\n4. ${decisionNode.type} - ${decisionNode.metadata.name}`);
+  console.log(`   Category: ${decisionNode.metadata.category}`);
+  console.log(`   Description: ${decisionNode.metadata.description}`);
+  console.log(`   Inputs: ${Object.keys(decisionNode.schema.inputs).join(', ')}`);
+  console.log(`   Outputs: ${Object.keys(decisionNode.schema.outputs).join(', ')}`);
+  
+  // Execute nodes
   console.log('\n=== Executing Nodes ===');
   
-  console.log('\nExecuting text_input node:');
-  const textInputData = {
-    inputText: "Hello, world!"
+  // Test Text Template Node
+  console.log('\nExecuting text_template node:');
+  const templateData = { 
+    template: 'Hello, {{name}}! Welcome to our {{service}}.' 
   };
-  try {
-    const textInputResult = await textInputNode.executor.execute(textInputData);
-    console.log('Result:', JSON.stringify(textInputResult.items[0].json, null, 2));
-  } catch (error) {
-    console.error('Error executing text_input node:', error);
-  }
+  const templateInputs = { 
+    variables: { 
+      name: 'User', 
+      service: 'AI workflow system' 
+    } 
+  };
   
-  console.log('\nExecuting claude node:');
-  const claudeData = {
-    prompt: "What's the capital of France?",
-    model: "claude-3-haiku-20240307",
-    temperature: 0.7
-  };
+  console.log('Input data:', JSON.stringify(templateData));
+  console.log('Input variables:', JSON.stringify(templateInputs));
+  
   try {
-    const claudeResult = await claudeNode.executor.execute(claudeData);
-    console.log('Result:', JSON.stringify(claudeResult.items[0].json, null, 2));
+    const templateResult = await textTemplateNode.executor.execute(templateData, templateInputs);
+    console.log('Result:', JSON.stringify(templateResult, null, 2));
+    
+    // Store result for next node
+    const generatedText = templateResult.text;
+    
+    // Test Decision Node with the template result
+    console.log('\nExecuting decision node:');
+    const decisionData = {
+      conditions: [
+        {
+          field: 'text',
+          operator: 'contains',
+          value: 'workflow',
+          outputPath: 'workflow_path'
+        },
+        {
+          field: 'text',
+          operator: 'contains', 
+          value: 'system',
+          outputPath: 'system_path'
+        }
+      ],
+      defaultPath: 'default_path'
+    };
+    
+    const decisionInputs = { text: generatedText };
+    console.log('Input data:', JSON.stringify(decisionData));
+    console.log('Input text:', JSON.stringify(decisionInputs));
+    
+    try {
+      const decisionResult = await decisionNode.executor.execute(decisionData, decisionInputs);
+      console.log('Result:', JSON.stringify(decisionResult, null, 2));
+      
+      // Test Data Transform Node
+      console.log('\nExecuting data_transform node:');
+      const transformData = {
+        mode: 'custom',
+        transformation: `
+          return {
+            original: data.text,
+            words: data.text.split(' '),
+            wordCount: data.text.split(' ').length,
+            characters: data.text.length
+          };
+        `
+      };
+      
+      const transformInputs = { data: { text: generatedText } };
+      console.log('Input data:', JSON.stringify(transformData));
+      console.log('Input variables:', JSON.stringify(transformInputs));
+      
+      try {
+        const transformResult = await dataTransformNode.executor.execute(transformData, transformInputs);
+        console.log('Result:', JSON.stringify(transformResult, null, 2));
+      } catch (error) {
+        console.error('Error executing data_transform node:', error);
+      }
+      
+    } catch (error) {
+      console.error('Error executing decision node:', error);
+    }
+    
   } catch (error) {
-    console.error('Error executing claude node:', error);
+    console.error('Error executing text_template node:', error);
   }
   
   console.log('\n=== Test Complete ===');
