@@ -87,9 +87,7 @@ export default function WorkflowTestBench() {
         // Register both traditional and folder-based node executors
         await registerAllEnhancedNodeExecutors();
         
-        // Import and register folder-based node executors
-        const { registerNodeExecutorsFromRegistry } = await import('../lib/nodeSystem');
-        registerNodeExecutorsFromRegistry();
+        // Using folder-based node system - no need for legacy registry
         
         console.log('Workflow engine initialized with folder-based node system');
       } catch (err) {

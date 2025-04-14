@@ -4,7 +4,26 @@
  * This file provides utility functions for node execution in workflows.
  */
 
-import { getNodeByType } from '../nodes/registry';
+// Implement folder-based node executor import
+async function getNodeExecutorByType(nodeType: string) {
+  // Attempt to dynamically import the node's executor
+  try {
+    // Check if the node exists in our folder structure
+    const nodeExecutorModule = await import(`../nodes/${nodeType}/executor`);
+    if (nodeExecutorModule && nodeExecutorModule.execute) {
+      return {
+        executor: {
+          execute: nodeExecutorModule.execute,
+        }
+      };
+    }
+    
+    throw new Error(`Node executor not found for type: ${nodeType}`);
+  } catch (error) {
+    console.warn(`Failed to import node executor for type ${nodeType}:`, error);
+    throw new Error(`Node type not supported: ${nodeType}`);
+  }
+}
 
 /**
  * Execute a node with the given data and inputs
@@ -19,15 +38,15 @@ export async function executeNode(
   nodeData: any,
   inputs?: any
 ): Promise<any> {
-  // Get the node from the registry
-  const node = getNodeByType(nodeType);
-  
-  if (!node) {
-    throw new Error(`Node type not found: ${nodeType}`);
-  }
-  
-  // Execute the node using its executor
   try {
+    // Get the node executor dynamically from the folder structure
+    const node = await getNodeExecutorByType(nodeType);
+    
+    if (!node) {
+      throw new Error(`Node type not found: ${nodeType}`);
+    }
+    
+    // Execute the node using its executor
     return await node.executor.execute(nodeData, inputs);
   } catch (error: any) {
     console.error(`Error executing node ${nodeType}:`, error);

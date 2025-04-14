@@ -4,7 +4,7 @@
  * This file defines the inputs, outputs, and parameters for the HTTP request node.
  */
 
-import { NodeSchema } from '../registry';
+import { NodeSchema } from '../types';
 
 const schema: NodeSchema = {
   inputs: {

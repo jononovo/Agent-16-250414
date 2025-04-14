@@ -4,7 +4,7 @@
  * Defines the inputs, outputs, and parameters for the Claude AI node.
  */
 
-import { NodeSchema } from '../registry';
+import { NodeSchema } from '../types';
 
 // Schema definition
 const schema: NodeSchema = {

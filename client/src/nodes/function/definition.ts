@@ -4,7 +4,7 @@
  * This file defines both the metadata and schema for the Function node.
  */
 
-import { NodeSchema } from '../registry';
+import { NodeSchema } from '../types';
 
 /**
  * Node metadata - describes the node for display in the UI

@@ -33,8 +33,7 @@ import NodeSettingsDrawer from './NodeSettingsDrawer';
 // Import basic fallback node for backward compatibility
 import InternalNode from '../flow/nodes/InternalNode';
 
-// Import folder-based node registry and components
-import nodeRegistry from '../../nodes/registry';
+// Import folder-based node components
 import { component as functionNode } from '../../nodes/function/ui';
 import { component as claudeNode } from '../../nodes/claude/ui';
 import { component as textInputNode } from '../../nodes/text_input/ui';
