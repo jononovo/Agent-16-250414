@@ -258,31 +258,47 @@ export async function seedInitialData() {
         // Check if we already have nodes
         const existingNodes = await db.select().from(nodes);
         if (existingNodes.length === 0) {
-          // Add some default nodes
+          // Add some default nodes that match the folder-based node system
           await db.insert(nodes).values([
             {
-              name: 'Text Prompt',
-              type: 'prompt',
+              name: 'Text Input',
+              type: 'text_input',
               category: 'input',
               icon: 'MessageSquare',
-              description: 'A text input node',
-              configuration: { template: '' }
+              description: 'A simple text input node for workflow input',
+              configuration: { defaultText: '' }
             },
             {
-              name: 'API Call',
-              type: 'api',
+              name: 'HTTP Request',
+              type: 'http_request',
               category: 'integration',
               icon: 'Globe',
-              description: 'Make an API request',
-              configuration: { url: '', method: 'GET' }
+              description: 'Make HTTP requests to external APIs and web services',
+              configuration: { url: '', method: 'GET', headers: {} }
+            },
+            {
+              name: 'Claude AI',
+              type: 'claude',
+              category: 'ai',
+              icon: 'Brain',
+              description: 'Generate text using Claude AI model',
+              configuration: { model: 'claude-3-opus-20240229', temperature: 0.7 }
             },
             {
               name: 'Data Transform',
-              type: 'transform',
-              category: 'processing',
-              icon: 'FileJson',
-              description: 'Transform data between nodes',
+              type: 'data_transform',
+              category: 'transformation',
+              icon: 'Sparkles',
+              description: 'Transform data using JavaScript expressions',
               configuration: { transform: 'return input;' }
+            },
+            {
+              name: 'Decision',
+              type: 'decision',
+              category: 'flow',
+              icon: 'GitBranch',
+              description: 'Create conditional branches in your workflow',
+              configuration: { conditions: [] }
             }
           ]);
         }
