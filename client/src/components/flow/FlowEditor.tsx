@@ -27,6 +27,7 @@ import { queryClient } from '@/lib/queryClient';
 import { apiRequest } from '@/lib/queryClient';
 import { ArrowLeft, Save, Play, Settings, TestTube } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import WorkflowGenerationChatOverlay from '@/components/workflows/WorkflowGenerationChatOverlay';
 import NodeSettingsDrawer from './NodeSettingsDrawer';
 
 // Import node components
