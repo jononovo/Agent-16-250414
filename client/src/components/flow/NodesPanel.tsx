@@ -267,18 +267,29 @@ const NodesPanel = () => {
   });
   
   // Get nodes from our folder-based registry
-  const folderBasedNodes = nodeRegistry.getAllNodes().map((node: any, index: number) => ({
-    id: 1000 + index, // Use a different ID range to avoid conflicts
-    name: node.metadata?.displayName || node.type || 'Unknown Node',
-    type: node.type || 'unknown',
-    description: node.metadata?.description || '',
-    icon: node.metadata?.icon || undefined,
-    createdAt: new Date(),
-    updatedAt: new Date(),
-    userId: null,
-    category: node.metadata?.category || 'custom',
-    configuration: {}
-  } as Node));
+  const folderBasedNodes = nodeRegistry.getAllNodes().map((node: any, index: number) => {
+    // Map node categories to UI categories
+    let category = node.metadata?.category || 'custom';
+    // Map text category to AI for now
+    if (category === 'text') category = 'ai';
+    if (category === 'logic') category = 'data';
+
+    return {
+      id: 1000 + index, // Use a different ID range to avoid conflicts
+      name: node.metadata?.name || node.type || 'Unknown Node',
+      type: node.type || 'unknown',
+      description: node.metadata?.description || '',
+      icon: node.metadata?.icon || undefined,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+      userId: null,
+      category: category,
+      configuration: {}
+    } as Node;
+  });
+  
+  // Debug: Log folder-based nodes
+  console.log("Folder-based nodes:", folderBasedNodes.map(node => `${node.name} (${node.type})`));
   
   // Combine both node sets - prefer our folder-based nodes over legacy ones
   const nodeItems = isLoadingDb ? folderBasedNodes : [
@@ -323,6 +334,15 @@ const NodesPanel = () => {
     acc[category].push(node);
     return acc;
   }, {} as Record<string, Node[]>);
+  
+  // Debug: Log all nodes in each category
+  console.log("Grouped nodes by category:", 
+    Object.fromEntries(
+      Object.entries(groupedNodes).map(
+        ([category, nodes]) => [category, nodes.map(node => `${node.name} (${node.type})`)]
+      )
+    )
+  );
 
   return (
     <div className="flex flex-col h-full">
