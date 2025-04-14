@@ -45,6 +45,11 @@ export const nodeRegistry: Record<string, NodeRegistryEntry> = {};
 export function registerNode(nodeEntry: NodeRegistryEntry): void {
   const { type, component } = nodeEntry;
   
+  if (!type) {
+    console.error('Cannot register node without a type');
+    return;
+  }
+  
   // Register the React component for ReactFlow
   nodeTypes[type] = component;
   
@@ -54,21 +59,69 @@ export function registerNode(nodeEntry: NodeRegistryEntry): void {
   console.log(`Node registered: ${type}`);
 }
 
+// Function to get node by type
+export function getNode(type: string): NodeRegistryEntry | undefined {
+  return nodeRegistry[type];
+}
+
+// Function to get nodes by category
+export function getNodesByCategory(category: string): NodeRegistryEntry[] {
+  return Object.values(nodeRegistry).filter(
+    node => node.metadata.category.toLowerCase() === category.toLowerCase()
+  );
+}
+
+// Function to get all available categories
+export function getNodeCategories(): string[] {
+  const categories = new Set<string>();
+  
+  Object.values(nodeRegistry).forEach(node => {
+    if (node.metadata.category) {
+      categories.add(node.metadata.category);
+    }
+  });
+  
+  return Array.from(categories);
+}
+
 // Import and register all nodes
-// This will be populated automatically with dynamic imports
-// for each node in the nodes directory
+// In a production environment, this would be done with a build step
+// that automatically imports all node folders
 
 // Import the text_input node
 import textInputNode from './text_input';
-registerNode(textInputNode as NodeRegistryEntry);
+// Import the claude node
+import claudeNode from './claude';
 
-// Other node imports will be added here
-// The long-term goal is to make this automatic with a build step
-// that scans the directory for node folders
+// Convert node exports to registry entries and register them
+registerNode({
+  type: textInputNode.type,
+  component: textInputNode.component,
+  executor: textInputNode.executor,
+  schema: textInputNode.schema,
+  metadata: textInputNode.metadata,
+  icon: textInputNode.icon
+});
+
+registerNode({
+  type: claudeNode.type,
+  component: claudeNode.component,
+  executor: claudeNode.executor,
+  schema: claudeNode.schema,
+  metadata: claudeNode.metadata,
+  icon: claudeNode.icon
+});
+
+// The long-term goal is to make registration automatic with a build step
+// that scans the directory for node folders. This could be implemented using
+// a Vite plugin or similar for automatic node discovery.
 
 // Export for easy consumption
 export default {
   nodeTypes,
   nodeRegistry,
-  registerNode
+  registerNode,
+  getNode,
+  getNodesByCategory,
+  getNodeCategories
 };
