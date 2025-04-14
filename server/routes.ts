@@ -722,9 +722,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
       
-      // Handle any learning or educational workflow
-      if (prompt.toLowerCase().includes('learn') || prompt.toLowerCase().includes('education') || prompt.toLowerCase().includes('tip')) {
-        console.log("Creating educational/learning workflow nodes");
+      // Handle any learning, educational, or email-related workflow
+      if (prompt.toLowerCase().includes('learn') || 
+          prompt.toLowerCase().includes('education') || 
+          prompt.toLowerCase().includes('tip') || 
+          prompt.toLowerCase().includes('email') || 
+          prompt.toLowerCase().includes('send')) {
+        // Log the specific workflow type we're creating based on the prompt
+        if (prompt.toLowerCase().includes('email') || prompt.toLowerCase().includes('send')) {
+          console.log("Creating email workflow nodes");
+        } else {
+          console.log("Creating educational/learning workflow nodes");
+        }
         
         // Get starting position to ensure visibility
         // Place nodes at the top-left of the canvas to ensure they're visible
@@ -732,15 +741,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const startY = 100;  // Start at Y position 100
         const nodeSpacing = 150;  // Vertical spacing between nodes
         
-        // Create a scheduled trigger node
+        // Create a trigger node - adapting based on context
         const triggerNode = {
           id: `trigger-${Date.now()}`,
           type: 'trigger',  // Use the standard trigger type that's registered
           position: { x: startX, y: startY },
           data: {
-            label: 'Daily Morning Schedule',
+            label: prompt.toLowerCase().includes('email') ? 'Email Trigger' : 'Daily Schedule',
             category: 'trigger',
-            description: 'Triggers workflow every morning at 7 AM',
+            description: prompt.toLowerCase().includes('email') ? 'Starts the email workflow' : 'Triggers workflow every morning at 7 AM',
             type: 'trigger',
             settings: {
               schedule: '0 7 * * *' // 7 AM daily
@@ -748,36 +757,40 @@ export async function registerRoutes(app: Express): Promise<Server> {
           }
         };
         
-        // Create a text generator node - generalized to handle any educational content
+        // Create a content generator node - adapting based on context
         const contentGenNode = {
           id: `content-gen-${Date.now()}`,
           type: 'generate_text',  // Use the registered generate_text type
           position: { x: startX, y: startY + nodeSpacing },
           data: {
-            label: 'Generate Educational Content',
+            label: prompt.toLowerCase().includes('email') ? 'Email Content Generator' : 'Generate Educational Content',
             category: 'AI',
-            description: 'Creates educational content based on the workflow topic',
+            description: prompt.toLowerCase().includes('email') ? 'Creates content for the email body' : 'Creates educational content based on the workflow topic',
             type: 'generate_text',
             settings: {
-              prompt: 'Generate educational content based on the following topic: {{topic}}. Include key points, examples, and learning tips.'
+              prompt: prompt.toLowerCase().includes('email') 
+                ? 'Generate content for the email based on the following context: {{context}}. Make it professional and engaging.'
+                : 'Generate educational content based on the following topic: {{topic}}. Include key points, examples, and learning tips.'
             }
           }
         };
         
-        // Create an email sender node - generalized for any educational content
+        // Create an email sender node - adapting based on context
         const emailNode = {
           id: `email-${Date.now()}`,
           type: 'email_send',  // Use the registered email_send type
           position: { x: startX, y: startY + (nodeSpacing * 2) },
           data: {
-            label: 'Send Educational Email',
+            label: prompt.toLowerCase().includes('email') ? 'Send Email' : 'Send Educational Email',
             category: 'Actions',
-            description: 'Sends email with the generated educational content',
+            description: prompt.toLowerCase().includes('email') ? 'Sends email with the generated content' : 'Sends email with the generated educational content',
             type: 'email_send',
             settings: {
               to: '{{recipient_email}}',
-              subject: 'Your Daily Educational Content',
-              body: 'Hello!\n\nHere is your educational content for today:\n\n{{content_gen.output}}'
+              subject: prompt.toLowerCase().includes('email') ? 'Your Email Message' : 'Your Daily Educational Content',
+              body: prompt.toLowerCase().includes('email')
+                ? 'Hello,\n\n{{content_gen.output}}\n\nBest regards,\nYour Name'
+                : 'Hello!\n\nHere is your educational content for today:\n\n{{content_gen.output}}'
             }
           }
         };
@@ -805,7 +818,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const updatedData = {
           ...existingWorkflow,
           flowData: flowData,
-          description: existingWorkflow.description || 'Educational content delivery workflow'
+          description: existingWorkflow.description || (
+            prompt.toLowerCase().includes('email') 
+              ? 'Email sending workflow' 
+              : 'Educational content delivery workflow'
+          )
         };
         
         // Update the workflow in the database
