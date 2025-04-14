@@ -1,12 +1,65 @@
-import { useState, useEffect, useCallback } from 'react';
-import { Handle, Position, useUpdateNodeInternals } from 'reactflow';
+import { useState, useEffect, useCallback, useRef } from 'react';
+import { Handle, Position, useUpdateNodeInternals, useReactFlow } from 'reactflow';
 import { cn } from '@/lib/utils';
-import { MessageSquare, Settings, Plus } from 'lucide-react';
+import { MessageSquare, Settings, Plus, Copy, Trash2, Bot } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
 import { nanoid } from 'nanoid';
 import { EditableHandle, EditableHandleDialog } from '@/components/ui/flow/editable-handle';
+
+// This component provides a visual submenu for node operations
+const NodeHoverMenu = ({ 
+  nodeId, 
+  nodeType, 
+  nodeData, 
+  position,
+  onDuplicate, 
+  onDelete, 
+  onMonkeyAgentModify 
+}: { 
+  nodeId: string;
+  nodeType: string;
+  nodeData: any;
+  position: { x: number, y: number };
+  onDuplicate: () => void;
+  onDelete: () => void;
+  onMonkeyAgentModify: () => void;
+}) => {
+  return (
+    <div className="absolute z-50 right-0 top-0 -mt-1 -mr-1 bg-white rounded-md shadow-lg border border-slate-200 p-1 flex flex-col gap-1">
+      <Button 
+        variant="ghost" 
+        size="sm" 
+        className="flex items-center justify-start px-2 py-1 h-8 hover:bg-slate-100"
+        onClick={onDuplicate}
+      >
+        <Copy className="h-4 w-4 mr-2" />
+        <span className="text-xs">Duplicate</span>
+      </Button>
+      
+      <Button 
+        variant="ghost" 
+        size="sm" 
+        className="flex items-center justify-start px-2 py-1 h-8 hover:bg-slate-100 text-red-500 hover:text-red-600"
+        onClick={onDelete}
+      >
+        <Trash2 className="h-4 w-4 mr-2" />
+        <span className="text-xs">Delete</span>
+      </Button>
+      
+      <Button 
+        variant="ghost" 
+        size="sm" 
+        className="flex items-center justify-start px-2 py-1 h-8 hover:bg-slate-100 text-blue-500"
+        onClick={onMonkeyAgentModify}
+      >
+        <Bot className="h-4 w-4 mr-2" />
+        <span className="text-xs">MonkeyAgent Modify</span>
+      </Button>
+    </div>
+  );
+};
 
 export interface InputHandle {
   id: string;
@@ -39,9 +92,82 @@ export interface TextPromptNodeProps {
   selected?: boolean;
 }
 
-const TextPromptNode = ({ id, data, isConnectable = true, selected }: TextPromptNodeProps) => {
+const TextPromptNode = ({ id, data, isConnectable = true, selected, xPos, yPos }: TextPromptNodeProps & { xPos?: number, yPos?: number }) => {
   const [localPrompt, setLocalPrompt] = useState(data.prompt || data.settings?.prompt || '');
+  const [showHoverMenu, setShowHoverMenu] = useState(false);
+  const [hoverTimer, setHoverTimer] = useState<NodeJS.Timeout | null>(null);
+  const nodeRef = useRef<HTMLDivElement>(null);
   const updateNodeInternals = useUpdateNodeInternals();
+  const reactFlowInstance = useReactFlow();
+  
+  // Function to handle hover start
+  const handleHoverStart = () => {
+    // Set a timeout to show the menu after hovering for 500ms
+    const timer = setTimeout(() => {
+      setShowHoverMenu(true);
+    }, 500);
+    
+    setHoverTimer(timer);
+  };
+  
+  // Function to handle hover end
+  const handleHoverEnd = () => {
+    // Clear the timeout if the user stops hovering before the menu appears
+    if (hoverTimer) {
+      clearTimeout(hoverTimer);
+      setHoverTimer(null);
+    }
+    setShowHoverMenu(false);
+  };
+  
+  // Cleanup timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (hoverTimer) {
+        clearTimeout(hoverTimer);
+      }
+    };
+  }, [hoverTimer]);
+  
+  // Handle node duplication
+  const handleDuplicate = () => {
+    // Create a new node based on the current one
+    const position = { x: (xPos || 0) + 20, y: (yPos || 0) + 20 };
+    
+    // Clone the node with a new ID
+    const newNode = {
+      id: `text-prompt-${Date.now()}`,
+      type: 'textPrompt',
+      position,
+      data: { ...data }
+    };
+    
+    // Add the new node to the flow
+    reactFlowInstance.addNodes(newNode);
+  };
+  
+  // Handle node deletion
+  const handleDelete = () => {
+    reactFlowInstance.deleteElements({ nodes: [{ id }] });
+  };
+  
+  // Handle MonkeyAgent modification
+  const handleMonkeyAgentModify = () => {
+    // Create an event with all the node details
+    const nodeDetails = {
+      id,
+      type: 'textPrompt',
+      position: { x: xPos, y: yPos },
+      data: { ...data }
+    };
+    
+    // Dispatch a custom event that the MonkeyAgentChatOverlay will listen for
+    const event = new CustomEvent('monkey-agent-modify-node', {
+      detail: { nodeDetails }
+    });
+    
+    window.dispatchEvent(event);
+  };
   
   // Update local state when data changes
   useEffect(() => {
@@ -98,10 +224,27 @@ const TextPromptNode = ({ id, data, isConnectable = true, selected }: TextPrompt
   }, [data.onRemoveInput, id, updateNodeInternals]);
   
   return (
-    <div className={cn(
-      'text-prompt-node relative p-0 rounded-md min-w-[250px] max-w-[350px] bg-background border transition-all shadow-md',
-      selected ? 'border-primary ring-2 ring-primary ring-opacity-20' : 'border-border'
-    )}>
+    <div 
+      ref={nodeRef}
+      onMouseEnter={handleHoverStart}
+      onMouseLeave={handleHoverEnd}
+      className="relative"
+    >
+      {showHoverMenu && (
+        <NodeHoverMenu 
+          nodeId={id}
+          nodeType="textPrompt"
+          nodeData={data}
+          position={{ x: xPos || 0, y: yPos || 0 }}
+          onDuplicate={handleDuplicate}
+          onDelete={handleDelete}
+          onMonkeyAgentModify={handleMonkeyAgentModify}
+        />
+      )}
+      <div className={cn(
+        'text-prompt-node relative p-0 rounded-md min-w-[250px] max-w-[350px] bg-background border transition-all shadow-md',
+        selected ? 'border-primary ring-2 ring-primary ring-opacity-20' : 'border-border'
+      )}>
       {/* Header */}
       <div className="p-3 border-b flex items-center justify-between">
         <div className="font-medium text-sm flex items-center">
