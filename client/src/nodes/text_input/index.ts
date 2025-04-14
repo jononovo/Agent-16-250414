@@ -13,17 +13,26 @@ import * as ui from './ui';
 import { MessageSquare } from 'lucide-react';
 import React from 'react';
 
+// Ensure the definition complies with NodeMetadata interface
+const metadata = {
+  name: definition.name,
+  description: definition.description,
+  category: definition.category,
+  version: definition.version
+  // Add other optional fields if needed
+};
+
 // Text Input Node Implementation
 const TextInputNode: NodeRegistryEntry = {
   type: 'text_input',
-  metadata: definition, // Use definition instead of metadata
+  metadata,
   schema,
-  executor,
-  ui: {
-    component: ui.component,
-    defaultData: ui.defaultData,
-    validator: ui.validator
+  executor: {
+    execute: executor.execute,
+    defaultData: ui.defaultData // Move defaultData from UI to executor as per interface
   },
+  ui: ui.component,
+  validator: ui.validator,
   icon: React.createElement(MessageSquare, { size: 16 })
 };
 

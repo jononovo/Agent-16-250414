@@ -88,4 +88,5 @@ export interface NodeRegistryEntry {
   ui: React.FC<NodeUIComponentProps>;
   validator?: (data: any) => NodeValidationResult;
   defaultData?: any;
+  icon?: React.ReactNode;  // Allow icon to be part of the registry entry
 }

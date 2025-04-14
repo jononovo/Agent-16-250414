@@ -1,56 +1,75 @@
 # Node UI Components
 
-This directory contains reusable UI components for building consistent node-based workflows. These components are organized by functionality to improve maintainability and standardization.
+This folder contains shared UI components for building nodes in the workflow system.
 
-## Folder Structure
+## Overview
 
-```
-components/nodes/
-├── common/    - Core components (NodeContainer, NodeHeader, NodeContent)
-├── handles/   - Connection points (HandleWithLabel, StandardHandle)
-├── controls/  - Input controls (TextControl, SelectControl)
-├── advanced/  - Complex components (Accordion, CodeEditor, JsonEditor)
-├── api/       - API-specific components (HttpMethodSelector, HeadersEditor)
-```
+The node UI component system is organized by feature/functionality:
+
+- `common/` - Basic building blocks and structural components
+- `handles/` - Connection points and handle components
+- `controls/` - Input controls and interactive elements
+- `advanced/` - Complex components with specialized behavior
+- `api/` - Components that interact with external services
 
 ## Core Components
 
-- **NodeContainer**: Base wrapper for all nodes with consistent styling
-- **NodeHeader**: Title bar with icon and optional actions
-- **NodeContent**: Content area with consistent padding and spacing
-- **HandleWithLabel**: Connection point with visible label
-- **TextControl, SelectControl**: Standard form inputs for node configuration
+### Common Components
 
-## Usage Example
+- `NodeContainer.tsx` - Base container for all nodes
+- `NodeHeader.tsx` - Standard header with title, controls and menu
+- `NodeContent.tsx` - Content area with consistent padding and styling
+
+### Handle Components
+
+- `HandleWithLabel.tsx` - Connection handle with attached label for clarity
+
+## Usage Examples
+
+### Basic Node Structure
 
 ```tsx
+import { NodeContainer } from '../components/nodes/common/NodeContainer';
+import { NodeHeader } from '../components/nodes/common/NodeHeader';
+import { NodeContent } from '../components/nodes/common/NodeContent';
+import { HandleWithLabel } from '../components/nodes/handles/HandleWithLabel';
 import { Position } from 'reactflow';
-import { NodeContainer } from '../nodes/common/NodeContainer';
-import { NodeHeader } from '../nodes/common/NodeHeader';
-import { NodeContent } from '../nodes/common/NodeContent';
-import { HandleWithLabel } from '../nodes/handles/HandleWithLabel';
 
-export function MyNodeUI({ data, isConnectable }) {
+function MyCustomNode({ data, isConnectable, selected }) {
   return (
-    <NodeContainer>
-      <NodeHeader title="My Node" icon="settings" />
-      
-      <HandleWithLabel type="target" position={Position.Left} id="input" label="Input" />
-      
+    <NodeContainer selected={selected}>
+      <NodeHeader 
+        title="My Node" 
+        icon={<MyIcon />}
+        onDelete={() => console.log('Delete node')}
+      />
       <NodeContent>
-        {/* Node configuration controls */}
+        <HandleWithLabel
+          type="target"
+          position={Position.Left}
+          id="input"
+          label="Input"
+          isConnectable={isConnectable}
+        />
+        
+        {/* Node content goes here */}
+        
+        <HandleWithLabel
+          type="source"
+          position={Position.Right}
+          id="output"
+          label="Result"
+          isConnectable={isConnectable}
+        />
       </NodeContent>
-      
-      <HandleWithLabel type="source" position={Position.Right} id="output" label="Output" />
     </NodeContainer>
   );
 }
 ```
 
-## Guidelines
+## Design Principles
 
-- Input handles on left, output handles on right
-- Keep nodes focused on a single purpose
-- Provide validation for all inputs
-- Use concise labels and tooltips for clarity
-- Follow shadcn UI patterns for consistency
+1. **Consistency** - All nodes should have a consistent look and feel
+2. **Reusability** - Components should be easily reusable across different node types
+3. **Flexibility** - Components should be configurable for different use cases
+4. **Accessibility** - All components should be accessible and keyboard-navigable
