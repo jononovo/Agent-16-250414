@@ -96,7 +96,7 @@ export class WorkflowGenerationService {
   ): Promise<any> {
     // Default options
     const {
-      model = "gpt-4",
+      model = "claude-3-opus-20240229",
       complexity = "moderate",
       domain = "general",
       maxNodes = 10,
@@ -106,7 +106,7 @@ export class WorkflowGenerationService {
 
     try {
       // Check if we have an API key for the LLM
-      if (!apiKey && !process.env.OPENAI_API_KEY) {
+      if (!apiKey && !process.env.CLAUDE_API_KEY) {
         throw new Error("No API key provided for workflow generation");
       }
 
@@ -119,9 +119,9 @@ export class WorkflowGenerationService {
       const userPrompt = this.createUserPrompt(prompt);
 
       // Check for API key
-      const apiKeyToUse = apiKey || process.env.OPENAI_API_KEY;
+      const apiKeyToUse = apiKey || process.env.CLAUDE_API_KEY;
       if (!apiKeyToUse) {
-        throw new Error("No API key available for the LLM service");
+        throw new Error("No API key available for the Claude service");
       }
 
       // Call the LLM API to generate the workflow
@@ -267,12 +267,19 @@ Ensure that:
     apiKey: string,
     timeout: number,
   ): Promise<string> {
+    // Use the provided API key, or fall back to environment variable
+    const effectiveApiKey = apiKey || process.env.OPENAI_API_KEY;
+    
+    // Ensure we have an API key
+    if (!effectiveApiKey) {
+      throw new Error("No API key provided for LLM service. Please set OPENAI_API_KEY environment variable or provide an API key in the request.");
+    }
     try {
       // Prepare the request to OpenAI API
       const url = "https://api.openai.com/v1/chat/completions";
       const headers = {
         "Content-Type": "application/json",
-        Authorization: `Bearer ${apiKey}`,
+        Authorization: `Bearer ${effectiveApiKey}`,
       };
       const data = {
         model,
