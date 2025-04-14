@@ -457,6 +457,9 @@ Ensure that:
   }
 }
 
+// Import storage
+import { storage } from '../storage';
+
 // Export a function to create the service
 export function createWorkflowGenerationService(storage: IStorage): WorkflowGenerationService {
   const service = new WorkflowGenerationService(storage);
@@ -465,3 +468,6 @@ export function createWorkflowGenerationService(storage: IStorage): WorkflowGene
   });
   return service;
 }
+
+// Create and export the default instance
+export const workflowGenerationService = createWorkflowGenerationService(storage);
