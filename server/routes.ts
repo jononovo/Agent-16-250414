@@ -440,6 +440,43 @@ export async function registerRoutes(app: Express): Promise<Server> {
     res.json({ status: 'ok', timestamp: new Date().toISOString() });
   });
   
+  // Proxy for Claude API
+  app.post('/api/proxy/claude', async (req: Request, res: Response) => {
+    try {
+      const claudeApiKey = process.env.CLAUDE_API_KEY;
+      
+      if (!claudeApiKey) {
+        return res.status(400).json({ 
+          error: true,
+          message: "Claude API key not configured on the server. Please set the CLAUDE_API_KEY environment variable."
+        });
+      }
+      
+      // Forward the request to Claude API
+      const response = await fetch('https://api.anthropic.com/v1/messages', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-api-key': claudeApiKey,
+          'anthropic-version': '2023-06-01'
+        },
+        body: JSON.stringify(req.body)
+      });
+      
+      // Get the response data
+      const data = await response.json();
+      
+      // Return the response to the client
+      return res.status(response.status).json(data);
+    } catch (error) {
+      console.error("Error proxying request to Claude API:", error);
+      return res.status(500).json({ 
+        error: true,
+        message: error instanceof Error ? error.message : "Unknown error proxying to Claude API"
+      });
+    }
+  });
+  
   // API Configuration endpoints
   
   // Get API configuration

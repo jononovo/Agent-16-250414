@@ -14,48 +14,68 @@ export const execute = async (nodeData: any, inputs?: any): Promise<any> => {
     let promptInput = '';
     
     if (inputs?.prompt) {
-      // Handle various possible input formats
-      if (typeof inputs.prompt === 'string') {
-        promptInput = inputs.prompt;
-      } else if (typeof inputs.prompt === 'object') {
-        // Try to extract text from various object structures
-        if (inputs.prompt?.text) {
-          promptInput = inputs.prompt.text;
-        } else if (inputs.prompt?.items && Array.isArray(inputs.prompt.items)) {
-          // Try to extract from items array
-          const item = inputs.prompt.items[0];
-          if (typeof item === 'string') {
-            promptInput = item;
-          } else if (item?.text) {
-            promptInput = item.text;
-          } else if (item?.json) {
-            // Try to find text in the json property
-            if (item.json.text) {
-              promptInput = item.json.text;
-            } else if (item.json.items && Array.isArray(item.json.items) && item.json.items.length > 0) {
-              // Handle deeper nesting
-              const nestedItem = item.json.items[0];
-              if (nestedItem?.json?.text) {
-                promptInput = nestedItem.json.text;
-              }
+      // Handle various possible input formats - simplified approach for reliability
+      console.log('Raw prompt input:', typeof inputs.prompt, inputs.prompt);
+      
+      // Deep search function to extract text from nested structures
+      function extractTextFromData(data: any): string | null {
+        // Direct case - string
+        if (typeof data === 'string') {
+          return data;
+        }
+        
+        // If it's an object, search through common patterns
+        if (data && typeof data === 'object') {
+          // Common patterns
+          if (data.text) return data.text;
+          if (data.content) return data.content;
+          if (data.inputText) return data.inputText;
+          
+          // Check for items array
+          if (data.items && Array.isArray(data.items) && data.items.length > 0) {
+            // Try to extract from each item
+            for (const item of data.items) {
+              const extracted = extractTextFromData(item);
+              if (extracted) return extracted;
+            }
+          }
+          
+          // Check for json property
+          if (data.json) {
+            const extracted = extractTextFromData(data.json);
+            if (extracted) return extracted;
+          }
+          
+          // Try all properties recursively
+          for (const key in data) {
+            if (typeof data[key] === 'object' && data[key] !== null) {
+              const extracted = extractTextFromData(data[key]);
+              if (extracted) return extracted;
             }
           }
         }
+        
+        // If nothing works, return null
+        return null;
       }
       
-      // If the input is still a string and looks like JSON, try to parse it
-      // This handles cases where the output from the previous node was stringified
-      if (typeof promptInput === 'string' && promptInput.startsWith('{') && promptInput.includes('items')) {
+      // Try to extract text from the input
+      const extractedText = extractTextFromData(inputs.prompt);
+      if (extractedText) {
+        promptInput = extractedText;
+      }
+      
+      // As a last resort, try JSON parsing if it looks like a JSON string
+      if (!promptInput && typeof inputs.prompt === 'string' && 
+          (inputs.prompt.startsWith('{') || inputs.prompt.startsWith('['))) {
         try {
-          const parsedJson = JSON.parse(promptInput);
-          if (parsedJson.items && Array.isArray(parsedJson.items) && parsedJson.items.length > 0) {
-            const item = parsedJson.items[0];
-            if (item.json && item.json.text) {
-              promptInput = item.json.text;
-            }
+          const parsed = JSON.parse(inputs.prompt);
+          const extractedFromJson = extractTextFromData(parsed);
+          if (extractedFromJson) {
+            promptInput = extractedFromJson;
           }
         } catch (e) {
-          // Failed to parse as JSON, keep using the string as is
+          // Couldn't parse JSON, that's fine
         }
       }
     }
@@ -85,12 +105,32 @@ export const execute = async (nodeData: any, inputs?: any): Promise<any> => {
       };
     }
     
-    // Attempt to get Claude API key from environment
-    const claudeApiKey = (window as any).CLAUDE_API_KEY || '';
+    // Attempt to get Claude API key from server config
+    let claudeApiKey = '';
+    
+    try {
+      // Fetch the API key from server config
+      const configResponse = await fetch('/api/config');
+      if (configResponse.ok) {
+        const config = await configResponse.json();
+        // The server returns a masked key, but we need to get the actual key for API calls
+        // The actual key is stored in the server environment variables and used by the server to make API calls
+        console.log('Retrieved API config, claudeApiKey exists:', !!config.claudeApiKey);
+        
+        // If config.claudeApiKey exists, the server will proxy our requests correctly
+        if (config.claudeApiKey) {
+          claudeApiKey = 'server-has-key';  // Marker to indicate server has the key
+        }
+      } else {
+        console.error('Failed to fetch API config:', configResponse.status);
+      }
+    } catch (error) {
+      console.error('Error fetching API config:', error);
+    }
     
     // Check if we have an API key
     if (!claudeApiKey) {
-      console.warn('No Claude API key available. Using mock response.');
+      console.warn('No Claude API key available. Using mock response. Please configure the API key in the server environment.');
       
       // Return a mock response for development
       const mockResponse = {
@@ -136,13 +176,12 @@ export const execute = async (nodeData: any, inputs?: any): Promise<any> => {
     console.log('Sending request to Claude API:', { model, temperature, maxTokens });
     
     try {
-      // Send request to Claude API
-      const response = await fetch('https://api.anthropic.com/v1/messages', {
+      // Instead of calling the Claude API directly, call our server proxy
+      // which will use the API key from the server's environment variables
+      const response = await fetch('/api/proxy/claude', {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json',
-          'x-api-key': claudeApiKey,
-          'anthropic-version': '2023-06-01'
+          'Content-Type': 'application/json'
         },
         body: JSON.stringify(requestBody)
       });
