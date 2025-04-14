@@ -1,113 +1,76 @@
 /**
- * Node System Types
+ * Folder-Based Node System Type Definitions
  * 
- * This is the consolidated type definition file for the node system.
- * All types related to node definition, configuration, and execution 
- * should be defined here.
+ * This file provides the core types for the folder-based node architecture.
+ * It defines the structure and interfaces for node definitions, data flow,
+ * and execution within the system.
  */
 
-// ======= Core Node Structure =======
+import { PortDefinition as BasePortDefinition } from '../lib/types';
+
+// ======================================================
+// NODE COMPONENT STRUCTURE
+// ======================================================
 
 /**
- * Node definition interface
- * Used to define the characteristics and behavior of a node
+ * Node Definition
+ * Defines the core attributes and behavior of a node
  */
 export interface NodeDefinition {
-  type: string;               // Unique identifier for this node type
-  name: string;               // Display name in the UI
-  description: string;        // Description of what this node does
-  category: string;           // Category for grouping in the UI
-  icon: any;                  // Icon for this node
-  version?: string;           // Version of this node
-  defaultData?: Record<string, any>; // Default data for the node
-  inputs: Record<string, PortDefinition>;  // Node inputs
-  outputs: Record<string, PortDefinition>; // Node outputs
+  type: string;                        // Unique identifier
+  name: string;                        // Display name
+  description: string;                 // What the node does 
+  category: string;                    // Grouping category
+  version: string;                     // Semantic version
+  icon?: string;                       // Icon identifier
+  inputs: Record<string, PortDefinition>;    // Input ports
+  outputs: Record<string, PortDefinition>;   // Output ports
+  configOptions?: NodeConfigOption[];  // Configuration options
 }
 
-// ======= Connection Interfaces =======
-
 /**
- * Port definition for input/output connection points
+ * Port Definition
+ * Defines a connection point (input/output)
+ * Extends the base port definition to add folder-specific properties
  */
-export interface PortDefinition {
-  type: string;               // Data type (string, number, object, array, etc.)
-  description: string;        // Human-readable description
-  optional?: boolean;         // Whether this port is optional
-  isArray?: boolean;          // Whether this port accepts/produces arrays
+export interface PortDefinition extends BasePortDefinition {
+  optional?: boolean;     // Whether port is optional
+  isArray?: boolean;      // Whether port accepts arrays
 }
 
 /**
- * Input/Output schema for node connections (legacy)
- * @deprecated Use PortDefinition instead
- */
-export interface PortSchema {
-  type: string;
-  description: string;
-  required?: boolean;
-}
-
-// ======= Configuration Types =======
-
-/**
- * Node configuration option
+ * Node Configuration Option
+ * Defines a configurable parameter for a node
  */
 export interface NodeConfigOption {
-  key: string;
+  key: string;            // Unique identifier
   type: 'string' | 'number' | 'boolean' | 'select' | 'multiselect' | 'json';
-  displayName: string;
-  description: string;
-  default?: any;
-  options?: Array<{
+  description: string;    // Human-readable description
+  default?: any;          // Default value
+  options?: Array<{       // For select/multiselect types
     value: string | number | boolean;
     label: string;
   }>;
-  validation?: {
-    required?: boolean;
-    min?: number;
-    max?: number;
-    pattern?: string;
-  };
 }
 
-/**
- * Parameter schema for node parameters (legacy)
- * @deprecated Use NodeConfigOption instead
- */
-export interface ParameterSchema {
-  type: string;
-  description: string;
-  default?: any;
-  required?: boolean;
-  enum?: string[];
-  minimum?: number;
-  maximum?: number;
-  items?: any;
-  properties?: Record<string, ParameterSchema>;
-}
-
-// ======= Node Execution Types =======
+// ======================================================
+// EXECUTION DATA STRUCTURES
+// ======================================================
 
 /**
- * Workflow Item - The basic unit of data passed between nodes
+ * Workflow Item
+ * The basic unit of data passed between nodes
  */
 export interface WorkflowItem {
-  // The actual data
-  json: any;
-  // Text representation (for display)
-  text?: string;
-  // Metadata about this data item
+  json: any;              // The actual data
+  text?: string;          // Text representation
   meta?: {
-    // The source of this data
-    source?: string;
-    // Timestamp when this data was created
-    timestamp?: Date;
-    // The output type, for nodes with multiple output types
-    outputType?: string;
-    // Additional context about this data
-    context?: Record<string, any>;
+    source?: string;      // Data source
+    timestamp?: Date;     // Creation time
+    outputType?: string;  // For multi-output nodes
+    context?: Record<string, any>;  // Additional metadata
   };
-  // Binary data if applicable
-  binary?: {
+  binary?: {              // For binary data (images, files, etc.)
     mimeType: string;
     data: string;
     filename?: string;
@@ -115,90 +78,31 @@ export interface WorkflowItem {
 }
 
 /**
- * Node Execution Data - Data structure for node outputs
+ * Node Execution Data
+ * Output data structure from node execution
  */
 export interface NodeExecutionData {
-  // Array of workflow items produced by this node
-  items: WorkflowItem[];
-  // Metadata about the execution
+  items: WorkflowItem[];  // Output data items
   meta: {
-    // When execution started
-    startTime: Date;
-    // When execution ended
-    endTime?: Date;
-    // Number of items processed
-    itemsProcessed?: number;
-    // Source operation that produced this data
-    sourceOperation?: string;
-    // Error flag
-    error?: boolean;
-    // Additional metadata
-    [key: string]: any;
+    startTime: Date;      // When execution started
+    endTime?: Date;       // When execution completed
+    itemsProcessed?: number;  // Processing count
+    sourceOperation?: string; // Source operation 
+    error?: boolean;      // Whether an error occurred
+    [key: string]: any;   // Additional metadata
   };
 }
 
 /**
- * Node State - Represents the execution state of a node
- */
-export interface NodeState {
-  // Current execution status
-  status: 'pending' | 'running' | 'completed' | 'error' | 'success' | 'waiting';
-  // When execution started
-  startTime: Date;
-  // When execution ended (if completed)
-  endTime: Date | null;
-  // Error message (if status is error)
-  error?: string;
-  // Output data (if status is completed)
-  output?: any;
-  // Input data that was provided to the node
-  input?: any;
-  // Name of the node for display
-  nodeName?: string;
-  // Status or progress message
-  message?: string;
-}
-
-/**
- * Workflow Execution State - Tracks the execution of a workflow
- */
-export interface WorkflowExecutionState {
-  // Overall workflow status
-  status: 'pending' | 'running' | 'completed' | 'error';
-  // Start time of workflow execution
-  startTime: Date;
-  // End time of workflow execution
-  endTime: Date | null;
-  // Error message (if status is error)
-  error?: string;
-  // State of each node
-  nodeStates: Record<string, NodeState>;
-  // Outputs from each node
-  nodeOutputs: Record<string, NodeExecutionData>;
-  // Final output of the workflow (if completed)
-  output?: NodeExecutionData;
-}
-
-/**
- * Enhanced Node Executor - Interface for node executor implementations
+ * Enhanced Node Executor
+ * Interface for node executor implementations
  */
 export interface EnhancedNodeExecutor {
-  // Node definition
-  definition?: any;
-  // Execute function
-  execute: (nodeData: Record<string, any>, inputs: Record<string, NodeExecutionData>) => Promise<NodeExecutionData>;
-}
-
-// ======= Legacy Types (for compatibility) =======
-
-/**
- * Complete schema for a node (legacy)
- * @deprecated Use NodeDefinition instead
- */
-export interface NodeSchema {
-  inputs: Record<string, PortSchema>;
-  outputs: Record<string, PortSchema>;
-  parameters: Record<string, ParameterSchema>;
+  definition?: any;       // Node definition reference
+  execute: (              // Execution function
+    nodeData: Record<string, any>, 
+    inputs: Record<string, NodeExecutionData>
+  ) => Promise<NodeExecutionData>;
 }
 
 /**

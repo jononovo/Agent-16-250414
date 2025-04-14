@@ -1,92 +1,96 @@
 /**
- * Shared type definitions for the node system
+ * Unified Type Definitions for the Node System
  * 
- * This file contains the type definitions used across the node system.
+ * This file contains the core type definitions used across the node system,
+ * focusing on the folder-based architecture implementation.
  */
 
 import { ReactNode } from 'react';
 
+// =======================================================
+// NODE REGISTRATION AND STRUCTURE
+// =======================================================
+
 /**
- * Node Metadata interface
- * 
- * Defines metadata about a node type, including its display properties
+ * Node Metadata
+ * Core display and categorization info for a node type
  */
 export interface NodeMetadata {
-  name: string;
-  description: string;
-  category: string;
-  version: string;
-  tags?: string[];
-  color?: string;
-  icon?: ReactNode;
+  name: string;          // Display name
+  description: string;   // Brief description of functionality
+  category: string;      // Category for grouping in UI
+  version: string;       // Semantic version
+  tags?: string[];       // Tags for filtering/searching
+  color?: string;        // Theme color (optional)
 }
 
 /**
- * Node Schema interface
- * 
- * Defines the schema for a node, including its inputs, outputs, and parameters
+ * Port Definition
+ * Defines an input or output connection point
+ */
+export interface PortDefinition {
+  type: string;          // Data type (string, number, object, etc.)
+  description: string;   // Human-readable description
+  required?: boolean;    // Whether this port is required
+  default?: any;         // Default value if any
+}
+
+/**
+ * Node Schema
+ * Defines the interface and data structure of a node
  */
 export interface NodeSchema {
-  inputs: Record<string, {
-    type: string;
-    description: string;
-    required?: boolean;
-    default?: any;
-  }>;
-  outputs: Record<string, {
-    type: string;
-    description: string;
-  }>;
+  inputs: Record<string, PortDefinition>;
+  outputs: Record<string, PortDefinition>;
   parameters?: Record<string, {
     type: string;
     description: string;
     default?: any;
-    options?: any[];
+    options?: any[];     // For select/enum parameters
   }>;
 }
 
+// =======================================================
+// NODE EXECUTION AND BEHAVIOR
+// =======================================================
+
 /**
- * Node Executor interface
- * 
- * Defines the executor functions for a node
+ * Node Executor
+ * Responsible for runtime execution of a node
  */
 export interface NodeExecutor<T = any> {
   execute: (data: T, inputs?: Record<string, any>) => Promise<Record<string, any>>;
-  defaultData: T;
+  defaultData: T;        // Default configuration data
 }
 
 /**
- * Node Validator Result interface
- * 
- * Defines the result of validating node data
+ * Validation Result
+ * Result of validating node configuration
  */
 export interface NodeValidationResult {
-  valid: boolean;
-  errors: string[];
+  valid: boolean;        // Whether validation passed
+  errors: string[];      // Error messages if invalid
 }
 
 /**
- * Node UI Component Props interface
- * 
- * Defines the props for a node's UI component
+ * UI Component Props
+ * Props passed to node UI components
  */
 export interface NodeUIComponentProps<T = any> {
-  data: T;
-  onChange: (data: T) => void;
+  data: T;               // Node configuration data
+  onChange: (data: T) => void;  // Handler for data changes
 }
 
 /**
- * Node Registry Entry interface
- * 
- * Defines a registry entry for a node type
+ * Node Registry Entry
+ * Complete definition of a node in the registry
  */
 export interface NodeRegistryEntry {
-  type: string;
+  type: string;          // Unique identifier for this node type
   metadata: NodeMetadata;
   schema: NodeSchema;
   executor: NodeExecutor;
   ui: React.FC<NodeUIComponentProps>;
   validator?: (data: any) => NodeValidationResult;
-  defaultData?: any;
-  icon?: React.ReactNode;  // Allow icon to be part of the registry entry
+  icon?: ReactNode;      // Node icon for UI
 }
