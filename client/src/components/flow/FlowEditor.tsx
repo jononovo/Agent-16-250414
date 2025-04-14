@@ -143,10 +143,39 @@ const FlowEditor = ({ workflow, isNew = false }: FlowEditorProps) => {
         };
       }
       
+      // Log the workflow data
       console.log("Loaded workflow data:", 
         `Nodes: ${parsedFlowData.nodes.length}, ` +
         `Edges: ${parsedFlowData.edges.length}`
       );
+      
+      // If we have nodes, log one for debugging
+      if (parsedFlowData.nodes.length > 0) {
+        console.log("Sample node:", JSON.stringify(parsedFlowData.nodes[0]).substring(0, 200) + "...");
+      }
+      
+      // Process nodes to ensure they have all required properties
+      parsedFlowData.nodes = parsedFlowData.nodes.map(node => {
+        // Make sure the node has a proper position
+        if (!node.position || typeof node.position.x !== 'number' || typeof node.position.y !== 'number') {
+          console.log("Fixing position for node:", node.id);
+          return {
+            ...node,
+            position: { x: 100, y: 100 }
+          };
+        }
+        
+        // Make sure data property exists
+        if (!node.data) {
+          console.log("Missing data property for node:", node.id);
+          return {
+            ...node,
+            data: { label: node.id, type: node.type }
+          };
+        }
+        
+        return node;
+      });
     }
   } catch (error) {
     console.error("Error parsing workflow data:", error);

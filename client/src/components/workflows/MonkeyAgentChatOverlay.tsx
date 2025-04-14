@@ -185,8 +185,9 @@ export function MonkeyAgentChatOverlay({
       
       console.log(`Workflow ${action} successful:`, data);
       
-      // Notify parent about the workflow
+      // Notify parent about the workflow for both generate and update actions
       if (onWorkflowGenerated) {
+        console.log(`Calling onWorkflowGenerated with id: ${data.workflow.id}`);
         onWorkflowGenerated(data.workflow.id);
       }
       
@@ -196,7 +197,7 @@ export function MonkeyAgentChatOverlay({
       if (action === 'generate') {
         responseContent = `I've generated a new workflow called "${data.workflow.name}" based on your description. You can see it in the editor and make any adjustments as needed.`;
       } else {
-        responseContent = `I've received your request regarding the current workflow "${data.workflow.name}". I'm working on implementing your suggestions.`;
+        responseContent = `I've updated the workflow "${data.workflow.name}" with your suggestions. The changes should now be visible in the editor. Please let me know if you'd like me to make any additional modifications.`;
       }
       
       setMessages(prev => [
