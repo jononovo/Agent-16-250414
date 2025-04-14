@@ -1,60 +1,35 @@
 /**
- * Nodes Index
+ * Nodes Exporter
  * 
- * This file exports all available nodes in the application.
- * It re-exports everything from the registry for convenience.
+ * This file exports all available nodes for use throughout the application.
  */
 
-import { 
-  nodeTypes, 
-  nodeRegistry, 
-  registerNode, 
-  getAllCategories, 
-  getNodesInCategory, 
-  getNodeByType, 
-  getAllNodes,
-  NodeSchema,
-  NodeMetadata,
-  NodeExecutor,
-  NodeUI,
-  NodeRegistryEntry
+import registry, { 
+  getAllNodes, 
+  getNode, 
+  getNodesByCategory, 
+  getNodeCategories,
+  getNodesInCategory 
 } from './registry';
 
-// Individual node exports
-import TextInputNode from './text_input';
-import ClaudeNode from './claude';
-import HttpRequestNode from './http_request';
+// Export individual nodes by name
+export { default as TextInputNode } from './text_input';
+export { default as ClaudeNode } from './claude';
+export { default as HttpRequestNode } from './http_request';
+export { default as TextTemplateNode } from './text_template';
+export { default as DataTransformNode } from './data_transform';
+export { default as DecisionNode } from './decision';
+export { default as FunctionNode } from './function';
+export { default as JSONPathNode } from './json_path';
 
+// Export registry and helper functions
 export {
-  // Node registry and types
-  nodeTypes,
-  nodeRegistry,
-  registerNode,
-  getAllCategories,
-  getNodesInCategory,
-  getNodeByType,
   getAllNodes,
-  
-  // Node interfaces
-  NodeSchema,
-  NodeMetadata,
-  NodeExecutor,
-  NodeUI,
-  NodeRegistryEntry,
-  
-  // Individual nodes
-  TextInputNode,
-  ClaudeNode,
-  HttpRequestNode
+  getNode,
+  getNodesByCategory,
+  getNodeCategories,
+  getNodesInCategory,
 };
 
-// Default export includes everything
-export default {
-  nodeTypes,
-  nodeRegistry,
-  registerNode,
-  getAllCategories,
-  getNodesInCategory,
-  getNodeByType,
-  getAllNodes
-};
+// Export the full registry as default
+export default registry;

@@ -1,139 +1,86 @@
 /**
  * Node Registry
  * 
- * This file defines the node registry system that manages all available nodes
- * in the application. It provides functions to register, retrieve, and manage nodes.
+ * This file contains the registry for node types, facilitating discovery and loading.
  */
 
-// Import specific node implementations
+import { NodeRegistryEntry } from '../lib/types';
+
+// Import all node types from their respective directories
 import TextInputNode from './text_input';
 import ClaudeNode from './claude';
 import HttpRequestNode from './http_request';
+import TextTemplateNode from './text_template';
+import DataTransformNode from './data_transform';
+import DecisionNode from './decision';
+import FunctionNode from './function';
+import JSONPathNode from './json_path';
 
-// Node registry interfaces
+// Node schema type
 export interface NodeSchema {
   inputs: Record<string, any>;
   outputs: Record<string, any>;
   parameters: Record<string, any>;
 }
 
-export interface NodeMetadata {
-  name: string;
-  description: string;
-  category: string;
-  version: string;
-  icon?: string;
-  color?: string;
-  tags?: string[];
-}
-
-export interface NodeExecutor {
-  execute: (nodeData: any, inputs?: any) => Promise<any>;
-}
-
-export interface NodeUI {
-  component: any; // React component
-  defaultData?: any;
-  validator?: (data: any) => { valid: boolean; errors?: string[] };
-}
-
-export interface NodeRegistryEntry {
-  type: string;
-  metadata: NodeMetadata;
-  schema: NodeSchema;
-  executor: NodeExecutor;
-  ui: NodeUI;
-  icon?: any;
-}
-
-// Internal node registry storage
-const registry: Record<string, NodeRegistryEntry> = {};
+// Registry of all available nodes
+const registry: Record<string, NodeRegistryEntry> = {
+  text_input: TextInputNode,
+  claude: ClaudeNode,
+  http_request: HttpRequestNode,
+  text_template: TextTemplateNode,
+  data_transform: DataTransformNode,
+  decision: DecisionNode,
+  function: FunctionNode,
+  json_path: JSONPathNode,
+};
 
 /**
- * Register a node with the registry
- * 
- * @param nodeType The unique type identifier for the node
- * @param node The node implementation
+ * Get all registered node types
  */
-export function registerNode(nodeType: string, node: NodeRegistryEntry): void {
-  if (registry[nodeType]) {
-    console.warn(`Node type '${nodeType}' is already registered. Overwriting...`);
+export const getAllNodes = (): NodeRegistryEntry[] => {
+  return Object.values(registry);
+};
+
+/**
+ * Get a specific node by type
+ */
+export const getNode = (type: string): NodeRegistryEntry | undefined => {
+  return registry[type];
+};
+
+/**
+ * Get nodes grouped by category
+ */
+export const getNodesByCategory = (): Record<string, NodeRegistryEntry[]> => {
+  const categories: Record<string, NodeRegistryEntry[]> = {};
+  
+  for (const node of getAllNodes()) {
+    const category = node.metadata.category || 'other';
+    
+    if (!categories[category]) {
+      categories[category] = [];
+    }
+    
+    categories[category].push(node);
   }
   
-  registry[nodeType] = node;
-  console.log(`Registered node: ${nodeType} (${node.metadata.name})`);
-}
+  return categories;
+};
 
 /**
- * Get all node types for use with ReactFlow
+ * Get all available node categories
  */
-export function nodeTypes(): Record<string, any> {
-  return Object.entries(registry).reduce((acc, [type, node]) => {
-    if (node.ui && node.ui.component) {
-      acc[type] = node.ui.component;
-    }
-    return acc;
-  }, {} as Record<string, any>);
-}
+export const getNodeCategories = (): string[] => {
+  return Object.keys(getNodesByCategory());
+};
 
 /**
- * Get the node registry (all registered nodes)
+ * Get nodes in a specific category
  */
-export function nodeRegistry(): Record<string, NodeRegistryEntry> {
-  return { ...registry };
-}
+export const getNodesInCategory = (category: string): NodeRegistryEntry[] => {
+  const nodesByCategory = getNodesByCategory();
+  return nodesByCategory[category] || [];
+};
 
-/**
- * Get all categories of registered nodes
- */
-export function getAllCategories(): string[] {
-  const categories = new Set<string>();
-  
-  Object.values(registry).forEach(node => {
-    if (node.metadata && node.metadata.category) {
-      categories.add(node.metadata.category);
-    }
-  });
-  
-  return Array.from(categories).sort();
-}
-
-/**
- * Get all nodes in a specific category
- */
-export function getNodesInCategory(category: string): NodeRegistryEntry[] {
-  return Object.values(registry)
-    .filter(node => node.metadata && node.metadata.category === category)
-    .sort((a, b) => a.metadata.name.localeCompare(b.metadata.name));
-}
-
-/**
- * Get a node by its type
- */
-export function getNodeByType(type: string): NodeRegistryEntry | undefined {
-  return registry[type];
-}
-
-/**
- * Get all registered nodes
- */
-export function getAllNodes(): NodeRegistryEntry[] {
-  return Object.values(registry);
-}
-
-// Register all built-in nodes
-function registerBuiltInNodes() {
-  // Text input node
-  registerNode('text_input', TextInputNode);
-  
-  // Claude node
-  registerNode('claude', ClaudeNode);
-  
-  // HTTP request node
-  registerNode('http_request', HttpRequestNode);
-  
-  // More nodes will be registered here as they are implemented
-}
-
-// Initialize the registry with built-in nodes
-registerBuiltInNodes();
+export default registry;

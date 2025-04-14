@@ -2,53 +2,12 @@
  * Function Node Executor
  * 
  * This file contains the execution logic for the function node,
- * which evaluates custom JavaScript code.
+ * which allows executing custom JavaScript code.
  */
 
 export interface FunctionNodeData {
-  code: string;
-  timeout?: number;
-}
-
-/**
- * Safely evaluate JavaScript code with a timeout
- * 
- * @param code The JavaScript code to evaluate
- * @param context The context object to provide to the code
- * @param timeout Maximum execution time in milliseconds
- * @returns The result of the evaluation
- */
-async function safeEval(code: string, context: any, timeout: number = 5000): Promise<any> {
-  return new Promise((resolve, reject) => {
-    try {
-      // Create a function from the code
-      const fn = new Function('inputs', 'console', code);
-      
-      // Set a timeout to prevent infinite loops
-      const timeoutId = setTimeout(() => {
-        reject(new Error(`Function execution timed out after ${timeout}ms`));
-      }, timeout);
-      
-      // Create a safe console object
-      const safeConsole = {
-        log: (...args: any[]) => console.log('[Function Node]', ...args),
-        error: (...args: any[]) => console.error('[Function Node]', ...args),
-        warn: (...args: any[]) => console.warn('[Function Node]', ...args),
-        info: (...args: any[]) => console.info('[Function Node]', ...args)
-      };
-      
-      // Execute the function
-      const result = fn(context, safeConsole);
-      
-      // Clear the timeout
-      clearTimeout(timeoutId);
-      
-      // Resolve with the result
-      resolve(result);
-    } catch (error: any) {
-      reject(error);
-    }
-  });
+  functionBody: string;
+  timeout: number;
 }
 
 /**
@@ -62,11 +21,46 @@ export const execute = async (nodeData: FunctionNodeData, inputs?: any): Promise
   try {
     const startTime = new Date().toISOString();
     
-    // Set default timeout if not provided
+    // Get the function body and timeout
+    const functionBody = nodeData.functionBody || 'return data;';
     const timeout = nodeData.timeout || 5000;
     
-    // Execute the code
-    const result = await safeEval(nodeData.code, { ...inputs }, timeout);
+    // Create a promise that resolves with the result of the function or rejects after timeout
+    const functionPromise = new Promise((resolve, reject) => {
+      try {
+        // Create a function from the function body
+        const fn = new Function('data', 'context', `
+          try {
+            ${functionBody}
+          } catch (error) {
+            throw error;
+          }
+        `);
+        
+        // Execute the function with the input data
+        const result = fn(inputs?.data || {}, {
+          // Add any context variables here that should be available to the function
+          currentTime: new Date().toISOString(),
+          timestamp: Date.now(),
+        });
+        
+        // Resolve with the result
+        resolve(result);
+      } catch (error) {
+        // Reject with the error
+        reject(error);
+      }
+    });
+    
+    // Create a timeout promise
+    const timeoutPromise = new Promise((_, reject) => {
+      setTimeout(() => {
+        reject(new Error(`Function execution timed out after ${timeout}ms`));
+      }, timeout);
+    });
+    
+    // Race the function promise against the timeout
+    const result = await Promise.race([functionPromise, timeoutPromise]);
     
     const endTime = new Date().toISOString();
     return {
