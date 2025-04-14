@@ -4,6 +4,7 @@
  */
 
 import { NodeDefinition } from '../types';
+import { PortDefinition } from '@shared/nodeTypes';
 import { Sparkles } from 'lucide-react';
 import React from 'react';
 
@@ -20,22 +21,27 @@ export const nodeDefinition: NodeDefinition = {
   inputs: {
     prompt: {
       type: 'string',
-      description: 'Input prompt to send to Claude'
+      description: 'Input prompt to send to Claude',
+      isArray: false,
+      optional: false
     },
     systemPrompt: {
       type: 'string',
       description: 'System instructions for Claude',
+      isArray: false,
       optional: true
     }
   },
   outputs: {
     response: {
       type: 'string',
-      description: 'Generated response from Claude'
+      description: 'Generated response from Claude',
+      isArray: false
     },
     metadata: {
       type: 'object',
-      description: 'Additional metadata about the response'
+      description: 'Additional metadata about the response',
+      isArray: false
     }
   },
   configOptions: [
