@@ -4,6 +4,7 @@ import { useMutation } from "@tanstack/react-query";
 import { ChevronLeft, MinusCircle } from "lucide-react";
 import { Workflow } from '@shared/schema';
 import { Chat, type ChatMessage } from "@/components/ui/chat";
+import { useLocation } from "wouter";
 
 interface WorkflowResponse {
   workflow: {
@@ -15,11 +16,18 @@ interface WorkflowResponse {
   };
 }
 
-interface WorkflowGenerationChatOverlayProps {
+interface MonkeyAgentChatOverlayProps {
   onWorkflowGenerated?: (workflowId: number) => void;
+  workflow?: Workflow;
+  isNew?: boolean;
 }
 
-export function WorkflowGenerationChatOverlay({ onWorkflowGenerated }: WorkflowGenerationChatOverlayProps) {
+export function MonkeyAgentChatOverlay({ 
+  onWorkflowGenerated, 
+  workflow, 
+  isNew = false 
+}: MonkeyAgentChatOverlayProps) {
+  const [, params] = useLocation();
   const [chatInput, setChatInput] = useState("");
   const [messages, setMessages] = useState<ChatMessage[]>([
     {
@@ -30,6 +38,37 @@ export function WorkflowGenerationChatOverlay({ onWorkflowGenerated }: WorkflowG
     }
   ]);
   const [chatMinimized, setChatMinimized] = useState(false);
+  
+  // Add workflow context information when the component mounts or when the workflow changes
+  useEffect(() => {
+    // Clear any previous workflow context messages
+    setMessages(prevMessages => 
+      prevMessages.filter(msg => msg.id !== "workflow-context")
+    );
+    
+    // Add a new message with the current workflow context
+    if (isNew) {
+      setMessages(prevMessages => [
+        ...prevMessages,
+        {
+          id: "workflow-context",
+          role: "assistant",
+          content: "Please save this workflow before making requests.",
+          createdAt: new Date()
+        }
+      ]);
+    } else if (workflow?.id) {
+      setMessages(prevMessages => [
+        ...prevMessages,
+        {
+          id: "workflow-context",
+          role: "assistant",
+          content: `We are chatting about workflow ID: ${workflow.id}`,
+          createdAt: new Date()
+        }
+      ]);
+    }
+  }, [workflow?.id, isNew]);
   
   // Generate workflow mutation
   const generateWorkflow = useMutation({
@@ -116,4 +155,4 @@ export function WorkflowGenerationChatOverlay({ onWorkflowGenerated }: WorkflowG
   );
 }
 
-export default WorkflowGenerationChatOverlay;
+export default MonkeyAgentChatOverlay;
