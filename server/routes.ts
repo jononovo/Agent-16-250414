@@ -85,6 +85,7 @@ async function runWorkflow(
     workflowId: workflowId,
     status: "running",
     input: input,
+    output: {}, // Initialize with empty object
     executionPath: {
       execution_type: "workflow_execution", 
       source: "workflow_engine",
@@ -123,7 +124,7 @@ async function runWorkflow(
       
       await storage.updateLog(executionLog.id, {
         status: "completed",
-        output: result.output,
+        output: typeof result.output === 'string' ? { result: result.output } : result.output,
         completedAt: new Date(),
         executionPath: {
           ...currentExecutionPath,
@@ -1839,6 +1840,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           session,
           timestamp: new Date().toISOString()
         },
+        output: {}, // Initialize with empty object
         executionPath: {
           type: "message",
           source: "user",
