@@ -458,11 +458,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
         perplexityApiKey: perplexityApiKey ? '****' + perplexityApiKey.slice(-4) : null
       });
       
+      // Actually set the environment variables
+      if (openaiApiKey) process.env.OPENAI_API_KEY = openaiApiKey;
+      if (claudeApiKey) process.env.CLAUDE_API_KEY = claudeApiKey;
+      if (perplexityApiKey) process.env.PERPLEXITY_API_KEY = perplexityApiKey;
+      
       // Return the masked config to confirm receipt
       const config = {
-        openaiApiKey: openaiApiKey ? '****' + openaiApiKey.slice(-4) : null,
-        claudeApiKey: claudeApiKey ? '****' + claudeApiKey.slice(-4) : null,
-        perplexityApiKey: perplexityApiKey ? '****' + perplexityApiKey.slice(-4) : null
+        openaiApiKey: process.env.OPENAI_API_KEY ? '****' + process.env.OPENAI_API_KEY.slice(-4) : null,
+        claudeApiKey: process.env.CLAUDE_API_KEY ? '****' + process.env.CLAUDE_API_KEY.slice(-4) : null,
+        perplexityApiKey: process.env.PERPLEXITY_API_KEY ? '****' + process.env.PERPLEXITY_API_KEY.slice(-4) : null
       };
       
       res.json(config);
