@@ -27,7 +27,7 @@ export const ChatToggle = () => {
         <MessageSquare className="h-5 w-5" />
       </Button>
       
-      <ChatSidebar isOpen={isChatOpen} />
+      <ChatSidebar isOpen={isChatOpen} onClose={() => setIsChatOpen(false)} />
     </>
   );
 };

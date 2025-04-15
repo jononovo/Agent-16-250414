@@ -51,9 +51,44 @@ const generateId = () => `msg_${Math.random().toString(36).substring(2, 9)}`;
 export const ChatProvider = ({ children }: ChatProviderProps) => {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [isLoading, setIsLoading] = useState(false);
-
-  // Initialize with welcome message
+  
+  // Save messages to localStorage whenever they change
   useEffect(() => {
+    if (messages.length > 0) {
+      localStorage.setItem('chatMessages', JSON.stringify(messages));
+    }
+  }, [messages]);
+
+  // Initialize and load messages from local storage
+  useEffect(() => {
+    // Try to load messages from localStorage
+    const savedMessages = localStorage.getItem('chatMessages');
+    
+    if (savedMessages) {
+      try {
+        // Parse the saved messages
+        const parsedMessages = JSON.parse(savedMessages);
+        
+        // Convert timestamp strings back to Date objects
+        const messagesWithDates = parsedMessages.map((msg: any) => ({
+          ...msg,
+          timestamp: new Date(msg.timestamp)
+        }));
+        
+        setMessages(messagesWithDates);
+      } catch (error) {
+        console.error('Error loading chat messages from localStorage:', error);
+        // Initialize with welcome message if there's an error
+        initializeWithWelcomeMessage();
+      }
+    } else {
+      // Initialize with welcome message if no saved messages
+      initializeWithWelcomeMessage();
+    }
+  }, []);
+  
+  // Helper function to initialize with welcome message
+  const initializeWithWelcomeMessage = () => {
     const welcomeMessage: ChatMessage = {
       id: generateId(),
       content: "Hello! I'm your AI assistant. How can I help you with your workflow today?",
@@ -61,7 +96,7 @@ export const ChatProvider = ({ children }: ChatProviderProps) => {
       timestamp: new Date(),
     };
     setMessages([welcomeMessage]);
-  }, []);
+  };
 
   // Send a message to the agent
   const sendMessage = async (content: string) => {
@@ -154,6 +189,9 @@ export const ChatProvider = ({ children }: ChatProviderProps) => {
       timestamp: new Date(),
     };
     setMessages([welcomeMessage]);
+    
+    // Also clear the localStorage (except for the welcome message)
+    localStorage.setItem('chatMessages', JSON.stringify([welcomeMessage]));
   };
 
   return (

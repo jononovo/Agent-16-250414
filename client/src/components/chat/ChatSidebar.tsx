@@ -15,9 +15,10 @@ import { Send, Trash2, Loader2 } from 'lucide-react';
 
 interface ChatSidebarProps {
   isOpen: boolean;
+  onClose: () => void;
 }
 
-export const ChatSidebar = ({ isOpen }: ChatSidebarProps) => {
+export const ChatSidebar = ({ isOpen, onClose }: ChatSidebarProps) => {
   const { messages, sendMessage, isLoading, clearMessages } = useChat();
   const [input, setInput] = useState('');
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -99,14 +100,24 @@ export const ChatSidebar = ({ isOpen }: ChatSidebarProps) => {
     >
       <div className="p-4 border-b flex justify-between items-center">
         <h2 className="text-lg font-medium">AI Assistant</h2>
-        <Button 
-          variant="ghost" 
-          size="sm" 
-          onClick={clearMessages}
-          title="Clear conversation"
-        >
-          <Trash2 className="h-4 w-4" />
-        </Button>
+        <div className="flex gap-2">
+          <Button 
+            variant="ghost" 
+            size="sm" 
+            onClick={clearMessages}
+            title="Clear conversation"
+          >
+            <Trash2 className="h-4 w-4" />
+          </Button>
+          <Button 
+            variant="outline" 
+            size="sm" 
+            onClick={() => isOpen && onClose()}
+            title="Close assistant"
+          >
+            Close
+          </Button>
+        </div>
       </div>
       
       <ScrollArea className="flex-1 p-4">
