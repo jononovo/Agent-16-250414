@@ -40,14 +40,21 @@ const loadNodeComponent = (nodeType: string) => {
     return import(/* @vite-ignore */ `../../nodes/Custom/${nodeType}/ui`)
       .then(module => module.component)
       .catch(customError => {
-        console.log(`Node ${nodeType} not found in Custom directory, trying root path`);
+        console.log(`Node ${nodeType} not found in Custom directory, trying System directory`);
         
-        // If not found in Custom directory, try the root directory
-        return import(/* @vite-ignore */ `../../nodes/${nodeType}/ui`)
+        // If not found in Custom directory, try the System directory
+        return import(/* @vite-ignore */ `../../nodes/System/${nodeType}/ui`)
           .then(module => module.component)
-          .catch(rootError => {
-            console.warn(`Failed to load component for node type ${nodeType}:`, rootError);
-            return InternalNode;
+          .catch(systemError => {
+            console.log(`Node ${nodeType} not found in System directory, trying root path`);
+            
+            // Finally try the root directory as a fallback
+            return import(/* @vite-ignore */ `../../nodes/${nodeType}/ui`)
+              .then(module => module.component)
+              .catch(rootError => {
+                console.warn(`Failed to load component for node type ${nodeType}:`, rootError);
+                return InternalNode;
+              });
           });
       });
   } catch (error) {
@@ -264,8 +271,25 @@ const FlowEditor = ({
           return;
         }
       } catch (customError) {
-        // If not in Custom directory, try the root directory
-        console.log(`Node ${type} not found in Custom directory, trying root path`);
+        // If not in Custom directory, try the System directory
+        console.log(`Node ${type} not found in Custom directory, trying System directory`);
+      }
+      
+      // Try the System directory
+      try {
+        const systemModule = await import(/* @vite-ignore */ `../../nodes/System/${type}/ui`);
+        if (systemModule && systemModule.component) {
+          // Update the nodeTypes with the loaded component
+          setDynamicNodeTypes(prev => ({
+            ...prev,
+            [type]: systemModule.component
+          }));
+          console.log(`Successfully loaded component for ${type} from System directory`);
+          return;
+        }
+      } catch (systemError) {
+        // If not in System directory, try the root directory
+        console.log(`Node ${type} not found in System directory, trying root path`);
       }
       
       // Try the standard directory as fallback
