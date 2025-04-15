@@ -4,7 +4,7 @@
  * Simple utility functions for creating standardized node outputs
  */
 
-import { WorkflowItem, NodeExecutionData } from '@shared/nodeTypes';
+import { WorkflowItem, NodeExecutionData } from './types/workflow';
 
 /**
  * Options for createNodeOutput function
