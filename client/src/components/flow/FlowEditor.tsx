@@ -32,6 +32,8 @@ import NodeSettingsDrawer from './NodeSettingsDrawer';
 
 // Import basic fallback node for backward compatibility
 import InternalNode from '../flow/nodes/InternalNode';
+// Import loading placeholder node
+import LoadingNode from '../flow/nodes/LoadingNode';
 
 // Define a dynamic import function for node components
 const loadNodeComponent = (nodeType: string) => {
@@ -88,6 +90,9 @@ const getNodeComponent = async (nodeType: string) => {
 // Initially only load the InternalNode for all types
 const createNodeTypes = () => {
   const baseNodeTypes: NodeTypes = {
+    // Special loading node type
+    loading: LoadingNode,
+    
     // Start with internal fallback for all types
     internal_new_agent: InternalNode,
     internal_ai_chat_agent: InternalNode,
@@ -468,7 +473,7 @@ const FlowEditor = ({
   }, []);
 
   const onDrop = useCallback(
-    (event: React.DragEvent) => {
+    async (event: React.DragEvent) => {
       event.preventDefault();
 
       if (!reactFlowWrapper.current || !reactFlowInstance) return;
@@ -500,21 +505,51 @@ const FlowEditor = ({
           }
         } : {})
       };
+      
+      // Generate a unique ID for the new node
+      const nodeId = `${type}-${Date.now()}`;
 
-      const newNode = {
-        id: `${type}-${Date.now()}`,
-        type,
+      // Add a temporary loading node first
+      const tempNodeId = `loading-${nodeId}`;
+      const tempNode = {
+        id: tempNodeId,
+        type: 'loading', // Special type that will use our loading component
         position,
-        data: nodeDataWithHandlers,
+        data: {
+          label: nodeData.label || type,
+          description: nodeData.description || 'Loading...',
+          icon: nodeData.icon || 'loader',
+          actualType: type, // Store the actual node type for later
+          actualData: nodeDataWithHandlers // Store the actual node data for later
+        },
       };
-
+      
+      // Add the loading node to the canvas
+      setNodes((nds) => nds.concat(tempNode));
+      
       // Dynamically load the component for this node type if not already loaded
       if (type && !loadedNodeTypes[type]) {
         console.log(`Node dropped - dynamically loading component for type: ${type}`);
-        loadNodeComponent(type);
+        await loadNodeComponent(type);
       }
-
-      setNodes((nds) => nds.concat(newNode));
+      
+      // Now that the component is loaded (or was already loaded),
+      // replace the loading node with the actual node
+      setNodes((nds) => {
+        // Find and remove the loading node
+        const updatedNodes = nds.filter(node => node.id !== tempNodeId);
+        
+        // Create the actual node
+        const actualNode = {
+          id: nodeId,
+          type,
+          position,
+          data: nodeDataWithHandlers,
+        };
+        
+        // Add the actual node
+        return updatedNodes.concat(actualNode);
+      });
     },
     [reactFlowInstance, setNodes, loadedNodeTypes, loadNodeComponent]
   );
