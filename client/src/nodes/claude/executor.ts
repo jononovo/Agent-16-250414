@@ -90,7 +90,26 @@ export const execute = async (nodeData: ClaudeNodeData, inputs?: any): Promise<N
       if (inputs.prompt.items && inputs.prompt.items.length > 0) {
         // Get the first item's json content
         const firstItem = inputs.prompt.items[0];
-        if (typeof firstItem.json === 'string') {
+        
+        // Check for nested items in our standardized format
+        if (firstItem.json && firstItem.json.items && Array.isArray(firstItem.json.items) && firstItem.json.items.length > 0) {
+          // Handle nested items array - extract from the first item's json
+          const nestedItem = firstItem.json.items[0];
+          if (nestedItem.json) {
+            if (nestedItem.json.text) {
+              // Found direct text field
+              promptInput = nestedItem.json.text;
+              console.log('Extracted text from nested items:', promptInput);
+            } else {
+              // Try deep extraction from nested json
+              const extractedText = extractTextFromData(nestedItem.json);
+              if (extractedText) {
+                promptInput = extractedText;
+                console.log('Deep extracted text from nested items:', promptInput);
+              }
+            }
+          }
+        } else if (typeof firstItem.json === 'string') {
           promptInput = firstItem.json;
         } else if (firstItem.json && typeof firstItem.json === 'object') {
           // Try to find text in the object
