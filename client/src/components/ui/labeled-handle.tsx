@@ -2,6 +2,7 @@
  * Labeled Handle Component
  * 
  * A custom ReactFlow handle that includes a label for better usability
+ * Labels are positioned outside the node to avoid overlapping with content
  */
 import React from 'react';
 import { Handle, Position } from 'reactflow';
@@ -33,40 +34,26 @@ export const LabeledHandle: React.FC<LabeledHandleProps> = ({
   
   return (
     <div 
-      className={`absolute flex items-center ${isRight ? 'right-0 justify-end' : 'left-0 justify-start'}`}
-      style={{ top: `${handlePosition * 100}%`, transform: 'translateY(-50%)' }}
+      className="absolute"
+      style={{ top: `${handlePosition * 100}%`, transform: 'translateY(-50%)', 
+               [isRight ? 'right' : 'left']: '-1px' }}
     >
-      {!isRight && (
-        <div className={`${isConnectable ? 'opacity-100' : 'opacity-50'}`}>
-          <Handle
-            type={type}
-            position={position}
-            id={id}
-            isConnectable={isConnectable}
-            className={`w-2 h-6 rounded-sm ${bgColor} -ml-0.5 ${className}`}
-            style={style}
-          />
-        </div>
-      )}
-      
+      {/* Label positioned above the handle */}
       <div 
-        className={`text-xs ${isRight ? 'mr-3' : 'ml-3'} text-muted-foreground px-1 select-none`}
+        className={`absolute text-[9px] ${isRight ? 'right-2' : 'left-2'} text-muted-foreground px-0.5 bg-background/90 rounded select-none whitespace-nowrap border border-muted/40 -top-5`}
       >
         {label}
       </div>
       
-      {isRight && (
-        <div className={`${isConnectable ? 'opacity-100' : 'opacity-50'}`}>
-          <Handle
-            type={type}
-            position={position}
-            id={id}
-            isConnectable={isConnectable}
-            className={`w-2 h-6 rounded-sm ${bgColor} -mr-0.5 ${className}`}
-            style={style}
-          />
-        </div>
-      )}
+      {/* Handle */}
+      <Handle
+        type={type}
+        position={position}
+        id={id}
+        isConnectable={isConnectable}
+        className={`w-2 h-6 rounded-sm ${bgColor} ${isRight ? '-mr-0.5' : '-ml-0.5'} ${className}`}
+        style={style}
+      />
     </div>
   );
 };
