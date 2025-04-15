@@ -69,64 +69,12 @@ export async function registerAllEnhancedNodeExecutors(): Promise<void> {
       'http_request'
     ];
     
-    // Ensure critical node types are registered
+    // Verify critical node types are registered
     for (const nodeType of criticalNodeTypes) {
       if (!nodeRegistry[nodeType]) {
-        // Try to directly import the node's executor from folder structure
-        try {
-          // Dynamically import the executor from the folder structure
-          const executorModule = await import(/* @vite-ignore */ `../nodes/${nodeType}/executor`);
-          const execute = executorModule.execute || executorModule.default;
-          
-          if (typeof execute !== 'function') {
-            console.warn(`Executor for ${nodeType} is not a function, skipping registration`);
-            continue;
-          }
-          
-          // Convert folder-based executor to enhanced format
-          registerEnhancedNodeExecutor(
-            nodeType,
-            createEnhancedNodeExecutor(
-              {
-                type: nodeType,
-                displayName: nodeType.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase()),
-                description: `${nodeType} node`,
-                icon: 'box',
-                category: 'general',
-                version: '1.0.0',
-                inputs: {},
-                outputs: {}
-              },
-              async (nodeData, inputs) => {
-                try {
-                  // Execute the node's folder-based executor
-                  const result = await execute(nodeData, inputs);
-                  
-                  // Format the result as a NodeExecutionData object
-                  return {
-                    items: Array.isArray(result) 
-                      ? result.map(item => ({ json: item, text: JSON.stringify(item) }))
-                      : [{ json: result, text: typeof result === 'string' ? result : JSON.stringify(result) }],
-                    meta: { startTime: new Date(), endTime: new Date() }
-                  };
-                } catch (error) {
-                  console.error(`Error executing ${nodeType} node with enhanced workflow engine:`, error);
-                  return {
-                    items: [{
-                      json: { error: error instanceof Error ? error.message : String(error) },
-                      text: error instanceof Error ? error.message : String(error)
-                    }],
-                    meta: { startTime: new Date(), endTime: new Date(), error: true }
-                  };
-                }
-              }
-            )
-          );
-          
-          console.log(`Registered executor for node type: ${nodeType}`);
-        } catch (error) {
-          console.error(`Error registering executor for ${nodeType}:`, error);
-        }
+        console.warn(`Critical node ${nodeType} not found in registry. Make sure it exists in the System folder.`);
+      } else {
+        console.log(`Verified critical node type ${nodeType} is registered`);
       }
     }
     
@@ -306,66 +254,8 @@ export async function executeEnhancedWorkflow(
       const executor = nodeRegistry[nodeType];
       
       if (!executor) {
-        // Try to directly import from the folder structure
-        try {
-          // Use dynamic imports to get the node executor from its folder
-          const executorModule = await import(/* @vite-ignore */ `../nodes/${nodeType}/executor`);
-          
-          if (executorModule && executorModule.execute) {
-            // If we have a folder-based executor, use it
-            const executeDirectNode = async (
-              nodeData: Record<string, any>, 
-              inputs: Record<string, NodeExecutionData>
-            ): Promise<NodeExecutionData> => {
-              // Extract the primary input value if available
-              let primaryInput = undefined;
-              if (inputs.default) {
-                if (inputs.default.items && inputs.default.items.length > 0) {
-                  // Try to extract value from the first item
-                  const firstItem = inputs.default.items[0];
-                  // Extract the actual data from the workflow item
-                  primaryInput = firstItem.json;
-                } else {
-                  // If no items, use the whole input
-                  primaryInput = inputs.default;
-                }
-              }
-                
-              // Execute using the folder-based executor 
-              const result = await executorModule.execute(nodeData, primaryInput);
-              
-              // Wrap result in a workflow item
-              return {
-                items: [createWorkflowItem(result, 'computed')],
-                meta: { startTime: new Date(), endTime: new Date() }
-              };
-            };
-            
-            // Create a temporary enhanced executor
-            const tempExecutor: EnhancedNodeExecutor = {
-              definition: {
-                type: nodeType,
-                displayName: nodeType,
-                description: `Dynamic executor for ${nodeType}`,
-                icon: 'bolt',
-                category: 'Dynamic',
-                version: '1.0.0',
-                inputs: { default: { type: 'any', displayName: 'Input', description: 'Input' } },
-                outputs: { default: { type: 'any', displayName: 'Output', description: 'Output' } }
-              },
-              execute: executeDirectNode
-            };
-            
-            // Use this temporary executor
-            nodeRegistry[nodeType] = tempExecutor;
-            console.log(`Dynamically registered executor for node type: ${nodeType}`);
-          } else {
-            throw new Error(`No executor found for node type ${nodeType}`);
-          }
-        } catch (error) {
-          console.error(`Failed to dynamically import executor for ${nodeType}:`, error);
-          throw new Error(`No executor registered for node type ${nodeType}`);
-        }
+        // Cannot find executor for this node type
+        throw new Error(`No executor registered for node type "${nodeType}". Make sure this node type is properly registered in the System or Custom folder.`);
       }
       
       // Prepare node state in execution state

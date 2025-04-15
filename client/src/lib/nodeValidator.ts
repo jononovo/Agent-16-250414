@@ -254,8 +254,9 @@ export function getNodeExecutorPath(nodeType: string): string {
     return `../nodes/Custom/${nodeType}/executor`;
   }
   
-  // Fallback to root folder for backward compatibility
-  return `../nodes/${nodeType}/executor`;
+  // Node is missing from both System and Custom folders
+  console.warn(`Could not find node type "${nodeType}" in System or Custom folders`);
+  return `../nodes/System/${nodeType}/executor`;
 }
 
 /**
@@ -273,6 +274,7 @@ export function getNodeDefinitionPath(nodeType: string): string {
     return `../nodes/Custom/${nodeType}/definition`;
   }
   
-  // Fallback to root folder for backward compatibility
-  return `../nodes/${nodeType}/definition`;
+  // Node is missing from both System and Custom folders
+  console.warn(`Could not find node type "${nodeType}" in System or Custom folders`);
+  return `../nodes/System/${nodeType}/definition`;
 }
