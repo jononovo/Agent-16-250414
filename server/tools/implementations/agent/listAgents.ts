@@ -1,74 +1,54 @@
 /**
  * List Agents Tool
  * 
- * This tool lists all agents or filters them by type or status.
+ * This tool lists agents from the system based on filter criteria.
  */
-
 import { Tool, ToolResult } from '../../toolTypes';
-import { toolRegistry } from '../../registry';
 import { storage } from '../../../storage';
 
-/**
- * Tool implementation for listing agents
- */
 const listAgentsTool: Tool = {
   name: 'listAgents',
-  description: 'Lists all agents or agents of a specific type or status',
+  description: 'Lists agents in the system, optionally filtered by type',
   category: 'agent',
   parameters: {
     type: 'object',
     properties: {
       type: {
         type: 'string',
-        description: 'Optional type of agents to filter by'
+        description: 'Filter agents by type (e.g., "assistant", "workflow", "custom")',
       },
-      status: {
-        type: 'string',
-        description: 'Optional status to filter by (active, inactive, draft)'
-      }
+      includeInactive: {
+        type: 'boolean',
+        description: 'Whether to include inactive agents in the results',
+      },
     },
-    required: []
   },
+  
   async execute(params: any): Promise<ToolResult> {
     try {
-      // Get all agents, optionally filtered by type
-      const agents = await storage.getAgents(params.type);
+      const { type, includeInactive = false } = params;
       
-      // Filter by status if provided
-      let filteredAgents = agents;
-      if (params.status) {
-        filteredAgents = agents.filter(agent => 
-          agent.status === params.status
-        );
-      }
+      // Get agents from storage
+      let agents = await storage.getAgents(type);
       
-      // Generate a human-readable message
-      let message = `Found ${filteredAgents.length} agent(s)`;
-      if (params.type && params.status) {
-        message += ` of type "${params.type}" with status "${params.status}"`;
-      } else if (params.type) {
-        message += ` of type "${params.type}"`;
-      } else if (params.status) {
-        message += ` with status "${params.status}"`;
+      // Filter out inactive agents if not explicitly requested
+      if (!includeInactive) {
+        agents = agents.filter(agent => agent.status !== 'inactive');
       }
       
       return {
         success: true,
-        agents: filteredAgents,
-        count: filteredAgents.length,
-        message
+        message: `Found ${agents.length} agents${type ? ` of type "${type}"` : ''}`,
+        data: agents,
       };
     } catch (error) {
+      console.error('Error listing agents:', error);
       return {
         success: false,
-        error: error instanceof Error ? error.message : 'Unknown error listing agents'
+        error: error instanceof Error ? error.message : 'Unknown error listing agents',
       };
     }
-  }
+  },
 };
 
-// Register the tool with the registry
-toolRegistry.register(listAgentsTool);
-
-// Export the tool for testing or individual usage
 export default listAgentsTool;

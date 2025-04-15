@@ -1,27 +1,41 @@
 /**
  * Tool Types
  * 
- * This file defines the interfaces for the tool registry system.
+ * This file defines the core types used by the tools system.
  */
 
-/**
- * Tool interface - represents a function that the agent can call
- */
-export interface Tool {
-  name: string;
-  description: string;
-  category: string; // For organization: 'agent', 'workflow', 'node', 'platform'
-  parameters: Record<string, unknown>; // JSON Schema format
-  execute: (params: any) => Promise<any>;
-  active?: boolean; // To easily enable/disable tools
+// Tool parameter schema (using JSON Schema format)
+export interface ParameterSchema {
+  type: string;
+  properties?: Record<string, any>;
+  required?: string[];
+  additionalProperties?: boolean;
 }
 
-/**
- * Tool result interface - the expected format for tool execution results
- */
+// Result from tool execution
 export interface ToolResult {
   success: boolean;
   message?: string;
+  data?: any;
   error?: string;
-  [key: string]: any; // Additional data can be included
+}
+
+// Core tool interface
+export interface Tool {
+  name: string;
+  description: string;
+  category: string;
+  parameters?: ParameterSchema;
+  execute: (params: any) => Promise<ToolResult>;
+}
+
+// Tool with context (for OpenAI function calling)
+export interface ToolWithContext extends Tool {
+  contexts?: string[];    // Defines where this tool can be used (e.g., "home", "canvas")
+}
+
+// Tool registry configuration
+export interface ToolRegistryConfig {
+  allowDuplicates?: boolean;   // Whether to allow duplicate tool names
+  validateTools?: boolean;     // Whether to validate tools on registration
 }

@@ -45,8 +45,8 @@ export type Agent = z.infer<typeof agentSchema>;
 // Log schema
 export const logSchema = z.object({
   id: z.number(),
-  agentId: z.number(),
-  workflowId: z.number(),
+  agentId: z.number().optional(),
+  workflowId: z.number().optional(),
   status: z.string(), // "success", "error", "running"
   input: z.record(z.any()).default({}),
   output: z.record(z.any()).default({}),

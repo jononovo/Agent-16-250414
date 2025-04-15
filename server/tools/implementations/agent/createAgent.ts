@@ -1,78 +1,69 @@
 /**
  * Create Agent Tool
  * 
- * This tool creates a new agent in the platform.
+ * This tool creates a new agent in the system.
  */
-
 import { Tool, ToolResult } from '../../toolTypes';
-import { toolRegistry } from '../../registry';
 import { storage } from '../../../storage';
-import { InsertAgent } from '@shared/schema';
 
-/**
- * Tool implementation for creating an agent
- */
 const createAgentTool: Tool = {
   name: 'createAgent',
-  description: 'Creates a new agent in the platform',
+  description: 'Creates a new agent with the specified name and properties',
   category: 'agent',
   parameters: {
     type: 'object',
     properties: {
       name: {
         type: 'string',
-        description: 'Name of the agent'
+        description: 'The name of the agent',
       },
       description: {
         type: 'string',
-        description: 'Description of the agent (optional)'
+        description: 'A description of the agent',
       },
       type: {
         type: 'string',
-        description: 'Type of the agent (default: custom)'
+        description: 'The type of agent (e.g., "assistant", "workflow", "custom")',
       },
       icon: {
         type: 'string',
-        description: 'Icon for the agent (default: brain)'
+        description: 'An icon identifier for the agent (optional)',
       },
       status: {
         type: 'string',
-        description: 'Initial status of the agent (default: active)',
-        enum: ['active', 'inactive', 'draft']
-      }
+        description: 'The status of the agent (active, inactive, draft)',
+        enum: ['active', 'inactive', 'draft'],
+      },
     },
-    required: ['name']
+    required: ['name'],
   },
+  
   async execute(params: any): Promise<ToolResult> {
     try {
-      // Prepare the agent data
-      const agentData: InsertAgent = {
-        name: params.name,
-        description: params.description || '',
-        type: params.type || 'custom',
-        icon: params.icon || 'brain',
-        status: params.status || 'active'
-      };
+      const { name, description, type = 'assistant', icon, status = 'active' } = params;
       
       // Create the agent
-      const agent = await storage.createAgent(agentData);
+      const agent = await storage.createAgent({
+        name,
+        description,
+        type,
+        icon,
+        status,
+      });
       
       return {
         success: true,
-        agent,
-        message: `Created agent "${params.name}" successfully`
+        message: `Agent "${name}" created successfully with ID ${agent.id}`,
+        data: agent,
       };
     } catch (error) {
+      console.error('Error creating agent:', error);
       return {
         success: false,
-        error: error instanceof Error ? error.message : 'Unknown error creating agent'
+        error: error instanceof Error ? error.message : 'Unknown error creating agent',
       };
     }
-  }
+  },
 };
 
-// Register the tool with the registry
-toolRegistry.register(createAgentTool);
-
-// Export the tool for testing or individual usage
 export default createAgentTool;

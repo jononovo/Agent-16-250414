@@ -3,67 +3,55 @@
  * 
  * This tool retrieves platform configuration information.
  */
-
 import { Tool, ToolResult } from '../../toolTypes';
-import { toolRegistry } from '../../registry';
 
-/**
- * Tool implementation for getting platform configuration
- */
 const getConfigTool: Tool = {
   name: 'getConfig',
-  description: 'Retrieves platform configuration information',
+  description: 'Gets platform configuration information',
   category: 'platform',
-  parameters: {
-    type: 'object',
-    properties: {
-      includeApiStatus: {
-        type: 'boolean',
-        description: 'Whether to include API connection status (default: true)'
-      }
-    },
-    required: []
-  },
+  
   async execute(params: any): Promise<ToolResult> {
     try {
-      const includeApiStatus = params.includeApiStatus !== false;
-      
-      // Generate configuration information
+      // Get API keys (masked for security)
       const config = {
-        platform: {
-          version: '1.0.0',
-          name: 'AI Agent Builder Platform',
-          environment: process.env.NODE_ENV || 'development'
-        }
+        // Check for environment variables and create masked versions
+        openaiApiKey: process.env.OPENAI_API_KEY ? '****' + process.env.OPENAI_API_KEY.slice(-4) : null,
+        claudeApiKey: process.env.CLAUDE_API_KEY ? '****' + process.env.CLAUDE_API_KEY.slice(-4) : null,
+        perplexityApiKey: process.env.PERPLEXITY_API_KEY ? '****' + process.env.PERPLEXITY_API_KEY.slice(-4) : null,
       };
       
-      // Add API status if requested
-      if (includeApiStatus) {
-        const apiStatus = {
-          openai: !!process.env.OPENAI_API_KEY,
-          claude: !!process.env.CLAUDE_API_KEY,
-          perplexity: !!process.env.PERPLEXITY_API_KEY
-        };
-        
-        Object.assign(config, { apiStatus });
+      // Check for API keys to determine status
+      const hasOpenAI = !!process.env.OPENAI_API_KEY;
+      const hasClaude = !!process.env.CLAUDE_API_KEY;
+      const hasPerplexity = !!process.env.PERPLEXITY_API_KEY;
+      
+      // Generate message based on available APIs
+      let message = 'Platform configuration:';
+      if (hasOpenAI) message += ' OpenAI API configured.';
+      if (hasClaude) message += ' Claude API configured.';
+      if (hasPerplexity) message += ' Perplexity API configured.';
+      if (!hasOpenAI && !hasClaude && !hasPerplexity) {
+        message += ' No API keys configured.';
       }
       
       return {
         success: true,
-        config,
-        message: 'Platform configuration retrieved successfully'
+        message,
+        data: {
+          config,
+          hasOpenAI,
+          hasClaude,
+          hasPerplexity
+        },
       };
     } catch (error) {
+      console.error('Error getting configuration:', error);
       return {
         success: false,
-        error: error instanceof Error ? error.message : 'Unknown error getting configuration'
+        error: error instanceof Error ? error.message : 'Unknown error getting configuration',
       };
     }
-  }
+  },
 };
 
-// Register the tool with the registry
-toolRegistry.register(getConfigTool);
-
-// Export the tool for testing or individual usage
 export default getConfigTool;

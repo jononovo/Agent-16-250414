@@ -4,11 +4,10 @@
  * This service coordinates the interaction between user inputs and the appropriate tools.
  * It uses OpenAI's function calling to determine which tools to execute.
  */
-
 import OpenAI from 'openai';
 import { toolRegistry } from '../tools/registry';
 import { storage } from '../storage';
-import { InsertLog } from '@shared/schema';
+import { InsertLog } from '../../shared/schema';
 
 interface ProcessOptions {
   context?: string;
@@ -22,13 +21,19 @@ interface ProcessOptions {
  */
 export class AgentCoordinator {
   private openai: OpenAI;
+  private model: string;
   
   /**
    * Create a new agent coordinator
    * @param apiKey OpenAI API key
    */
   constructor(apiKey: string) {
-    this.openai = new OpenAI({ apiKey });
+    this.openai = new OpenAI({
+      apiKey: apiKey || process.env.OPENAI_API_KEY,
+    });
+    
+    // Use GPT-4 if available, otherwise fall back to GPT-3.5-turbo
+    this.model = process.env.OPENAI_MODEL || 'gpt-3.5-turbo';
   }
   
   /**
@@ -40,179 +45,138 @@ export class AgentCoordinator {
   async processUserInput(
     input: string, 
     options: ProcessOptions = {}
-  ): Promise<any> {
-    const { context = 'general', agentId, userId, sessionId } = options;
-    
-    // Create log entry
-    const logEntry: InsertLog = {
-      agentId: agentId || 1, // Default agent ID
-      workflowId: 0, // No specific workflow
-      status: "running",
-      input: { message: input }, // Store input as object
-      output: {}, // Will be filled later
-      executionPath: {
-        execution_type: "agent_chat", 
-        source: "user_input",
-        message: `Processing user input: ${input.substring(0, 50)}${input.length > 50 ? '...' : ''}`,
-        status: "in_progress"
-      }
-    };
-    
-    const executionLog = await storage.createLog(logEntry);
-    
+  ): Promise<{
+    response: string;
+    action?: string;
+    toolName?: string;
+    toolParams?: any;
+    toolResult?: any;
+  }> {
     try {
-      // Get tool definitions based on context
-      const toolDefinitions = toolRegistry.getToolDefinitions(context);
+      const { context = 'default', agentId, userId, sessionId } = options;
       
-      // Create the messages array with system instructions
-      const messages = [
-        {
-          role: 'system',
-          content: `You are a helpful assistant that helps users interact with the AI Agent Builder platform. 
-                   You have access to various tools to help manage agents, workflows, and platform settings.
-                   
-                   Before using a tool, make sure you understand what the user wants.
-                   If you're unclear, ask for clarification instead of guessing.
-                   After using a tool, provide a brief explanation of what you did.
-                   
-                   Current context: ${context}`
-        },
-        { role: 'user', content: input }
-      ] as Array<{ role: 'system' | 'user' | 'assistant', content: string }>;
+      // Log the incoming message
+      const logEntry: InsertLog = {
+        agentId: agentId || undefined,
+        type: 'user_message',
+        level: 'info',
+        message: input,
+        source: 'agent_coordinator',
+        timestamp: new Date(),
+        metadata: {
+          userId,
+          sessionId,
+        }
+      };
       
-      // Call the OpenAI API with function calling
+      await storage.createLog(logEntry);
+      
+      // Get available tools for this context
+      const tools = toolRegistry.getToolsAsOpenAIFunctions(context);
+      
+      if (tools.length === 0) {
+        return {
+          response: "I'm sorry, but there are no tools available for me to help with your request."
+        };
+      }
+      
+      // Create the system prompt
+      const systemPrompt = `You are an AI assistant that helps users with workflow automation tasks.
+Your job is to understand what the user wants and use the appropriate tools to help them.
+When users ask questions, answer directly if you can. If they want you to perform an action, use the available tools.
+Always be helpful, clear, and concise in your responses.
+Provide suggestions when the user's request is unclear, and once they confirm, take action and report back what you did.`;
+      
+      // First, ask the model what to do
       const response = await this.openai.chat.completions.create({
-        model: 'gpt-4-turbo',
-        messages: messages as any,
-        functions: toolDefinitions,
-        function_call: 'auto'
+        model: this.model,
+        messages: [
+          { role: 'system', content: systemPrompt },
+          { role: 'user', content: input }
+        ],
+        functions: tools,
+        function_call: 'auto',
       });
       
-      // Get the response message
-      const responseMessage = response.choices[0]?.message;
+      const message = response.choices[0].message;
       
-      if (responseMessage.function_call) {
-        // Tool was called
-        const functionName = responseMessage.function_call.name;
-        const functionArgs = JSON.parse(responseMessage.function_call.arguments);
+      // If the model chose to call a function
+      if (message.function_call) {
+        const functionName = message.function_call.name;
+        const functionParams = JSON.parse(message.function_call.arguments);
         
-        // Find the tool
+        // Look up the tool and execute it
         const tool = toolRegistry.getTool(functionName);
         
-        if (tool) {
-          try {
-            // Execute the tool
-            const result = await tool.execute(functionArgs);
-            
-            // Update log with success
-            await storage.updateLog(executionLog.id, {
-              status: "completed",
-              output: result,
-              completedAt: new Date(),
-              executionPath: {
-                message: `Successfully executed tool: ${functionName}`,
-                status: "completed",
-                result: result
-              }
-            });
-            
-            // Create a user-friendly response
-            let finalResponse = '';
-            
-            if (result.success) {
-              finalResponse = `✅ ${result.message || 'Operation completed successfully'}`;
-            } else {
-              finalResponse = `❌ Error: ${result.error || 'Unknown error occurred'}`;
-            }
-            
-            return {
-              success: true,
-              action: functionName,
-              result: result,
-              message: finalResponse,
-              logId: executionLog.id
-            };
-          } catch (error) {
-            // Handle execution error
-            const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-            
-            // Update log with error
-            await storage.updateLog(executionLog.id, {
-              status: "error",
-              error: errorMessage,
-              completedAt: new Date(),
-              executionPath: {
-                message: `Error executing tool: ${functionName}`,
-                status: "error",
-                error: errorMessage
-              }
-            });
-            
-            return {
-              success: false,
-              action: functionName,
-              error: errorMessage,
-              message: `Error executing ${functionName}: ${errorMessage}`,
-              logId: executionLog.id
-            };
-          }
-        } else {
-          // Tool not found
-          await storage.updateLog(executionLog.id, {
-            status: "error",
-            error: `Tool not found: ${functionName}`,
-            completedAt: new Date(),
-            executionPath: {
-              message: `Tool not found: ${functionName}`,
-              status: "error"
-            }
-          });
-          
+        if (!tool) {
           return {
-            success: false,
-            error: `Tool not found: ${functionName}`,
-            message: `I'm sorry, I tried to use a tool that doesn't exist: ${functionName}`,
-            logId: executionLog.id
+            response: `I tried to use the ${functionName} tool, but it seems unavailable. Please try again with a different request.`
           };
         }
-      } else {
-        // Direct response (no tool call)
-        await storage.updateLog(executionLog.id, {
-          status: "completed",
-          output: { response: responseMessage.content },
-          completedAt: new Date(),
-          executionPath: {
-            message: `Direct response provided`,
-            status: "completed"
+        
+        // Execute the tool
+        const result = await tool.execute(functionParams);
+        
+        // Log the tool execution
+        const toolLogEntry: InsertLog = {
+          agentId: agentId || undefined,
+          type: 'tool_execution',
+          level: result.success ? 'info' : 'error',
+          message: `Tool ${functionName} execution: ${result.success ? 'success' : 'failed'}`,
+          source: 'agent_coordinator',
+          timestamp: new Date(),
+          metadata: {
+            userId,
+            sessionId,
+            toolName: functionName,
+            toolParams: functionParams,
+            toolResult: result
           }
+        };
+        
+        await storage.createLog(toolLogEntry);
+        
+        // Generate a response based on the tool execution
+        const secondResponse = await this.openai.chat.completions.create({
+          model: this.model,
+          messages: [
+            { role: 'system', content: systemPrompt },
+            { role: 'user', content: input },
+            { 
+              role: 'function', 
+              name: functionName, 
+              content: JSON.stringify(result)
+            },
+            { 
+              role: 'system', 
+              content: `The ${functionName} tool was executed. Please respond to the user with the results in a natural, conversational way.`
+            }
+          ],
         });
         
         return {
-          success: true,
-          message: responseMessage.content,
-          logId: executionLog.id
+          response: secondResponse.choices[0].message.content || "I've completed your request.",
+          action: 'tool_execution',
+          toolName: functionName,
+          toolParams: functionParams,
+          toolResult: result
         };
       }
-    } catch (error) {
-      // Handle overall processing error
-      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
       
-      await storage.updateLog(executionLog.id, {
-        status: "error",
-        error: errorMessage,
-        completedAt: new Date(),
-        executionPath: {
-          message: `Error processing user input`,
-          status: "error",
-          error: errorMessage
-        }
-      });
-      
+      // If the model chose to respond directly
       return {
-        success: false,
-        error: errorMessage,
-        message: `I'm sorry, an error occurred: ${errorMessage}`,
-        logId: executionLog.id
+        response: message.content || "I'm not sure how to respond to that. Could you rephrase your request?"
+      };
+      
+    } catch (error) {
+      console.error('Error in agent coordinator:', error);
+      return {
+        response: "I'm sorry, but I encountered an error processing your request. Please try again later.",
+        action: 'error',
+        toolResult: {
+          success: false,
+          error: error instanceof Error ? error.message : 'Unknown error'
+        }
       };
     }
   }
