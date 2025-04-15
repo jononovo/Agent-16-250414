@@ -37,13 +37,12 @@ async function discoverAndRegisterNodeExecutors(): Promise<void> {
   // Track missing or invalid components
   const missingComponents: Record<string, string[]> = {};
   
-  // Use the predefined lists from nodeValidator
-  // First register the static list of nodes (backward compatibility)
+  // Register the standard node types first
   FOLDER_BASED_NODE_TYPES.forEach(nodeType => {
     registerNodeType(nodeType, missingComponents);
   });
   
-  // Then discover any additional nodes in the folders
+  // Then discover any additional nodes in the System and Custom folders
   try {
     // Dynamically import all definition files from System and Custom folders
     const systemDefinitionModules = import.meta.glob('../nodes/System/*/definition.ts', { eager: true });
@@ -55,6 +54,11 @@ async function discoverAndRegisterNodeExecutors(): Promise<void> {
       const nodeDef = module.default as any;
       
       if (nodeDef && nodeDef.type && !FOLDER_BASED_NODE_TYPES.includes(nodeDef.type)) {
+        // Add to CUSTOM_NODE_TYPES if it's not already there
+        if (!CUSTOM_NODE_TYPES.includes(nodeDef.type)) {
+          CUSTOM_NODE_TYPES.push(nodeDef.type);
+        }
+        
         // Register this node type
         registerNodeType(nodeDef.type, missingComponents);
       }
@@ -66,6 +70,11 @@ async function discoverAndRegisterNodeExecutors(): Promise<void> {
       const nodeDef = module.default as any;
       
       if (nodeDef && nodeDef.type && !FOLDER_BASED_NODE_TYPES.includes(nodeDef.type)) {
+        // Add to CUSTOM_NODE_TYPES if it's not already there
+        if (!CUSTOM_NODE_TYPES.includes(nodeDef.type)) {
+          CUSTOM_NODE_TYPES.push(nodeDef.type);
+        }
+        
         // Register this node type
         registerNodeType(nodeDef.type, missingComponents);
       }
@@ -86,23 +95,11 @@ async function discoverAndRegisterNodeExecutors(): Promise<void> {
 
 /**
  * Register all node executors from the folder-based node registry
- * Legacy method maintained for backward compatibility
  */
 export function registerNodeExecutorsFromRegistry(): void {
-  // Track missing or invalid components
-  const missingComponents: Record<string, string[]> = {};
-  
-  // Register each node type from the static list
-  FOLDER_BASED_NODE_TYPES.forEach(nodeType => {
-    registerNodeType(nodeType, missingComponents);
-  });
-  
-  // Report any missing components after imports complete
-  setTimeout(() => {
-    if (Object.keys(missingComponents).length > 0) {
-      console.warn('Some folder-based node components could not be imported:', missingComponents);
-    }
-  }, 1000);
+  console.log('Starting node executor registration from folder-based registry...');
+  // Call the new discovery and registration function
+  discoverAndRegisterNodeExecutors();
 }
 
 /**

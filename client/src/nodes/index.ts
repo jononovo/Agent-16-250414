@@ -4,22 +4,18 @@
  * This file exports all node-related functionality as a single module.
  * It provides the public API for accessing nodes and node registry functions.
  * 
- * Note: This is the new folder-based implementation that replaces the legacy registry.
+ * This file implements the folder-based node system, where each node is
+ * defined in its own folder with definition.ts and executor.ts files.
  */
 
 import { NodeDefinition } from './types';
-import fs from 'fs'; // Not actually used at runtime - just for types
 
 /**
  * Dynamic folder-based node system
  * 
- * Instead of using a static registry, we now dynamically load nodes
- * from their folders. This makes the system more maintainable and
- * allows for easier addition of new nodes.
+ * Nodes are dynamically loaded from their folders in the System and Custom directories.
+ * This makes the system more maintainable and allows for easier addition of new nodes.
  */
-
-// These functions provide a compatibility layer with the old registry
-// but implement the functionality using the folder structure.
 
 /**
  * Dynamically import a node definition at runtime
@@ -179,7 +175,7 @@ export function getNodesByCategory(category: string): any[] {
   return nodes.filter(node => node.category === category);
 }
 
-// Default export is a compatibility object with the main functions
+// Default export provides the main API functions
 export default {
   getNode,
   getAllNodes,

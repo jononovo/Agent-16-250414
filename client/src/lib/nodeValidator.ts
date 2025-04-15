@@ -143,11 +143,9 @@ export async function validateAllNodes(verbose = true): Promise<boolean> {
   // Import all node definitions dynamically from both System and Custom folders
   const systemNodeModules = import.meta.glob('../nodes/System/*/definition.ts', { eager: true });
   const customNodeModules = import.meta.glob('../nodes/Custom/*/definition.ts', { eager: true });
-  // Also look in the root nodes folder for backward compatibility
-  const rootNodeModules = import.meta.glob('../nodes/*/definition.ts', { eager: true });
-  
+  // Only look in System and Custom folders for node definitions
   // Combine all modules
-  const nodeModules = { ...systemNodeModules, ...customNodeModules, ...rootNodeModules };
+  const nodeModules = { ...systemNodeModules, ...customNodeModules };
   const nodeDefinitions: Record<string, NodeDefinition> = {};
   const validationResults: Record<string, ValidationResult> = {};
   
@@ -242,7 +240,7 @@ export function registerCustomNodeTypes(nodeTypes: string[]): void {
 
 /**
  * Gets the path to a node's executor
- * Attempts to find the node in System, Custom, or root folders
+ * Finds the node in either System or Custom folders
  */
 export function getNodeExecutorPath(nodeType: string): string {
   // Check System folder first for system node types
@@ -250,18 +248,13 @@ export function getNodeExecutorPath(nodeType: string): string {
     return `../nodes/System/${nodeType}/executor`;
   }
   
-  // Then check Custom folder for custom node types
-  if (CUSTOM_NODE_TYPES.includes(nodeType)) {
-    return `../nodes/Custom/${nodeType}/executor`;
-  }
-  
-  // Fallback to root folder for backward compatibility
-  return `../nodes/${nodeType}/executor`;
+  // Then use Custom folder for all other node types
+  return `../nodes/Custom/${nodeType}/executor`;
 }
 
 /**
  * Gets the path to a node's definition
- * Attempts to find the node in System, Custom, or root folders
+ * Finds the node in either System or Custom folders
  */
 export function getNodeDefinitionPath(nodeType: string): string {
   // Check System folder first for system node types
@@ -269,11 +262,6 @@ export function getNodeDefinitionPath(nodeType: string): string {
     return `../nodes/System/${nodeType}/definition`;
   }
   
-  // Then check Custom folder for custom node types
-  if (CUSTOM_NODE_TYPES.includes(nodeType)) {
-    return `../nodes/Custom/${nodeType}/definition`;
-  }
-  
-  // Fallback to root folder for backward compatibility
-  return `../nodes/${nodeType}/definition`;
+  // Then use Custom folder for all other node types
+  return `../nodes/Custom/${nodeType}/definition`;
 }
