@@ -218,8 +218,55 @@ const FlowEditor = ({
   
   const [nodes, setNodes] = useNodesState(initialNodes);
   const [edges, setEdges] = useEdgesState(initialEdges);
+  const [loadedNodeTypes, setLoadedNodeTypes] = useState<Record<string, boolean>>({});
   const reactFlowWrapper = useRef<HTMLDivElement>(null);
   const [reactFlowInstance, setReactFlowInstance] = useState<any>(null);
+  
+  // Dynamic nodeTypes state that will be updated when components are loaded
+  const [dynamicNodeTypes, setDynamicNodeTypes] = useState<NodeTypes>(nodeTypes);
+  
+  // Helper function to load node components for a specific type
+  const loadNodeComponent = async (type: string): Promise<void> => {
+    // Skip if this node type is already loaded or being loaded
+    if (loadedNodeTypes[type]) return;
+    
+    console.log(`Loading component for node type: ${type}`);
+    
+    // Mark as being loaded to prevent duplicate loading attempts
+    setLoadedNodeTypes(prev => ({ ...prev, [type]: true }));
+    
+    try {
+      // Attempt to dynamically import the UI component
+      const module = await import(/* @vite-ignore */ `../../nodes/${type}/ui`);
+      
+      if (module && module.component) {
+        // Update the nodeTypes with the loaded component
+        setDynamicNodeTypes(prev => ({
+          ...prev,
+          [type]: module.component
+        }));
+        console.log(`Successfully loaded component for ${type}`);
+      }
+    } catch (error) {
+      console.warn(`Failed to load component for ${type}:`, error);
+      // Even if loading fails, mark as attempted to prevent continuous retries
+    }
+  };
+  
+  // Load node components for all node types in the current workflow
+  useEffect(() => {
+    if (initialNodes.length > 0) {
+      console.log("Loading components for initial nodes in workflow");
+      
+      // Get unique node types
+      const uniqueTypes = Array.from(new Set(initialNodes.map(node => node.type)));
+      
+      // Load components for each unique type
+      uniqueTypes.forEach(type => {
+        if (type) loadNodeComponent(type);
+      });
+    }
+  }, [initialNodes]);
 
   const saveMutation = useMutation({
     mutationFn: async (data: { name: string, data: { nodes: Node[], edges: Edge[] } }) => {
@@ -405,9 +452,15 @@ const FlowEditor = ({
         data: nodeDataWithHandlers,
       };
 
+      // Dynamically load the component for this node type if not already loaded
+      if (type && !loadedNodeTypes[type]) {
+        console.log(`Node dropped - dynamically loading component for type: ${type}`);
+        loadNodeComponent(type);
+      }
+
       setNodes((nds) => nds.concat(newNode));
     },
-    [reactFlowInstance, setNodes]
+    [reactFlowInstance, setNodes, loadedNodeTypes, loadNodeComponent]
   );
 
   const { toast } = useToast();
@@ -660,6 +713,20 @@ const FlowEditor = ({
     setIsRunning(true);
     
     try {
+      // Ensure all node components are loaded before running
+      const nodeTypes = Array.from(new Set(nodes.map(node => node.type)));
+      
+      // Load UI components if not already loaded (runs in parallel)
+      const loadComponentPromises = nodeTypes.map(type => {
+        if (type && !loadedNodeTypes[type]) {
+          return loadNodeComponent(type);
+        }
+        return Promise.resolve();
+      });
+      
+      // Wait for all UI components to load
+      await Promise.all(loadComponentPromises);
+      
       // Import the enhanced workflow engine
       const { executeEnhancedWorkflow, registerAllEnhancedNodeExecutors } = await import('@/lib/enhancedWorkflowEngine');
       
@@ -867,7 +934,7 @@ const FlowEditor = ({
               onInit={setReactFlowInstance}
               onDrop={onDrop}
               onDragOver={onDragOver}
-              nodeTypes={nodeTypes}
+              nodeTypes={dynamicNodeTypes}
               onNodeClick={handleNodeClick}
               fitView
               snapToGrid
