@@ -292,54 +292,26 @@ export const component = ({ data, isConnectable, selected }: any) => {
         </Tabs>
       </div>
       
-      {/* Input Handles */}
-      <Handle
+      {/* Input Handles - Simplified to just 1 */}
+      <LabeledHandle
         type="target"
         position={Position.Left}
         id="markdown"
+        label="Markdown Input"
         isConnectable={isConnectable}
-        className="w-2 h-6 rounded-sm bg-blue-500 -ml-0.5 top-1/3"
+        handlePosition={0.5}
+        bgColor="bg-blue-500"
       />
       
-      <Handle
-        type="target"
-        position={Position.Left}
-        id="variables"
-        isConnectable={isConnectable}
-        className="w-2 h-6 rounded-sm bg-purple-500 -ml-0.5 top-2/3"
-      />
-      
-      {/* Output Handles */}
-      <Handle
+      {/* Output Handles - Simplified to just 1 */}
+      <LabeledHandle
         type="source"
         position={Position.Right}
         id="html"
+        label="HTML Output"
         isConnectable={isConnectable}
-        className="w-2 h-6 rounded-sm bg-green-500 -mr-0.5 top-1/5"
-      />
-      
-      <Handle
-        type="source"
-        position={Position.Right}
-        id="plainText"
-        isConnectable={isConnectable}
-        className="w-2 h-6 rounded-sm bg-yellow-500 -mr-0.5 top-2/5"
-      />
-      
-      <Handle
-        type="source"
-        position={Position.Right}
-        id="wordCount"
-        isConnectable={isConnectable}
-        className="w-2 h-6 rounded-sm bg-orange-500 -mr-0.5 top-3/5"
-      />
-      
-      <Handle
-        type="source"
-        position={Position.Right}
-        id="metadata"
-        isConnectable={isConnectable}
-        className="w-2 h-6 rounded-sm bg-pink-500 -mr-0.5 top-4/5"
+        handlePosition={0.5}
+        bgColor="bg-green-500"
       />
     </div>
   );
