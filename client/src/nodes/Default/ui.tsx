@@ -114,9 +114,9 @@ function DefaultNode({ data, id, selected }: NodeProps<DefaultNodeData>) {
             <Button 
               variant="ghost" 
               size="icon" 
-              className="h-7 w-7"
+              className="h-7 w-7 hover:bg-gray-100 rounded-full"
             >
-              <Settings className="h-3.5 w-3.5 text-muted-foreground" />
+              <Settings className="h-4 w-4 text-gray-500" />
             </Button>
           </TooltipTrigger>
           <TooltipContent side="top">
@@ -129,8 +129,8 @@ function DefaultNode({ data, id, selected }: NodeProps<DefaultNodeData>) {
   
   // Create icon element for the header
   const iconElement = (
-    <div className="bg-primary/10 p-1.5 rounded-md">
-      <DynamicIcon icon={icon} className="h-4 w-4 text-primary" />
+    <div className="bg-gray-50 p-2 rounded-md flex items-center justify-center">
+      <DynamicIcon icon={icon} className="h-5 w-5 text-gray-700" />
     </div>
   );
   
@@ -152,14 +152,14 @@ function DefaultNode({ data, id, selected }: NodeProps<DefaultNodeData>) {
       
       <NodeContent padding="normal">
         {/* Node Type Badge */}
-        <div className="flex justify-between items-center">
-          <Badge variant="outline" className="text-xs px-2 py-0.5 bg-slate-100/50 dark:bg-slate-800/50">
-            {category}
+        <div className="flex justify-between items-center mb-1">
+          <Badge variant="outline" className="text-xs px-2 py-0.5 bg-gray-100 text-gray-600 border-gray-200 rounded-md">
+            {type}
           </Badge>
           
           {/* Settings Summary */}
           {settingsSummary && (
-            <div className="flex items-center text-xs text-muted-foreground">
+            <div className="flex items-center text-xs text-gray-500">
               <Settings className="h-3 w-3 mr-1 inline" />
               <span className="truncate">{settingsSummary}</span>
             </div>
@@ -168,7 +168,7 @@ function DefaultNode({ data, id, selected }: NodeProps<DefaultNodeData>) {
         
         {/* Status messages and errors */}
         {hasError && errorMessage && (
-          <div className="p-2 text-xs bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 rounded border border-red-200 dark:border-red-800">
+          <div className="p-2 mt-1 text-xs bg-red-50 text-red-600 rounded-md border border-red-200">
             <div className="flex items-center gap-1 mb-1">
               <AlertTriangle className="h-3 w-3" />
               <span className="font-medium">Error</span>
@@ -184,15 +184,17 @@ function DefaultNode({ data, id, selected }: NodeProps<DefaultNodeData>) {
         position={Position.Left}
         id="input"
         style={{ 
-          top: 50, 
-          width: '12px', 
-          height: '12px', 
+          top: 32, 
+          width: '10px', 
+          height: '10px', 
           background: 'white',
-          border: '2px solid #3b82f6'
+          border: '2px solid #4f46e5',
+          borderRadius: '50%',
+          boxShadow: '0 0 0 2px rgba(79, 70, 229, 0.2)'
         }}
         isConnectable={true}
       />
-      <div className="absolute left-2 top-[46px] text-xs text-muted-foreground">
+      <div className="absolute left-1 top-[28px] text-xs text-gray-400 text-left">
         In
       </div>
 
@@ -202,15 +204,17 @@ function DefaultNode({ data, id, selected }: NodeProps<DefaultNodeData>) {
         position={Position.Right}
         id="output"
         style={{ 
-          top: 50, 
-          width: '12px', 
-          height: '12px', 
+          top: 32, 
+          width: '10px', 
+          height: '10px', 
           background: 'white',
-          border: '2px solid #10b981'
+          border: '2px solid #4f46e5',
+          borderRadius: '50%',
+          boxShadow: '0 0 0 2px rgba(79, 70, 229, 0.2)'
         }}
         isConnectable={true}
       />
-      <div className="absolute right-2 top-[46px] text-xs text-muted-foreground text-right">
+      <div className="absolute right-1 top-[28px] text-xs text-gray-400 text-right">
         Out
       </div>
     </NodeContainer>

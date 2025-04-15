@@ -28,7 +28,7 @@ export function NodeContent({
   return (
     <div className={cn(
       paddingClass,
-      'flex flex-col gap-2',
+      'flex flex-col gap-3 bg-white rounded-b-md',
       className
     )}>
       {children}
