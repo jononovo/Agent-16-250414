@@ -1,0 +1,214 @@
+{
+  "status": "completed",
+  "nodeStates": {
+    "text_input-1744684901602": {
+      "status": "completed",
+      "startTime": "2025-04-15T02:56:01.170Z",
+      "endTime": "2025-04-15T02:56:01.178Z",
+      "output": {
+        "items": [
+          {
+            "json": {
+              "meta": {
+                "status": "success",
+                "message": "Text input processed successfully",
+                "startTime": "2025-04-15T02:56:01.178Z",
+                "endTime": "2025-04-15T02:56:01.178Z"
+              },
+              "items": [
+                {
+                  "json": {
+                    "text": "{\n  \"name\": \"Test Agent\",\n  \"description\": \"poem about a horse\",\n  \"type\": \"custom\",\n  \"icon\": \"sparkles\",\n  \"source\": \"ui_form\",\n  \"metadata\": {\n    \"source\": \"ui_form\",\n    \"test_execution\": true,\n    \"debug_mode\": false,\n    \"clientExecuted\": true\n  }\n}"
+                  },
+                  "binary": null
+                }
+              ]
+            },
+            "text": "{\"meta\":{\"status\":\"success\",\"message\":\"Text input processed successfully\",\"startTime\":\"2025-04-15T02:56:01.178Z\",\"endTime\":\"2025-04-15T02:56:01.178Z\"},\"items\":[{\"json\":{\"text\":\"{\\n  \\\"name\\\": \\\"Test Agent\\\",\\n  \\\"description\\\": \\\"poem about a horse\\\",\\n  \\\"type\\\": \\\"custom\\\",\\n  \\\"icon\\\": \\\"sparkles\\\",\\n  \\\"source\\\": \\\"ui_form\\\",\\n  \\\"metadata\\\": {\\n    \\\"source\\\": \\\"ui_form\\\",\\n    \\\"test_execution\\\": true,\\n    \\\"debug_mode\\\": false,\\n    \\\"clientExecuted\\\": true\\n  }\\n}\"},\"binary\":null}]}"
+          }
+        ],
+        "meta": {
+          "startTime": "2025-04-15T02:56:01.178Z",
+          "endTime": "2025-04-15T02:56:01.178Z"
+        }
+      }
+    },
+    "claude-1744684906072": {
+      "status": "completed",
+      "startTime": "2025-04-15T02:56:01.178Z",
+      "endTime": "2025-04-15T02:56:02.764Z",
+      "output": {
+        "items": [
+          {
+            "json": {
+              "meta": {
+                "status": "success",
+                "message": "Successfully generated text with Claude",
+                "startTime": "2025-04-15T02:56:01.187Z",
+                "endTime": "2025-04-15T02:56:02.764Z"
+              },
+              "items": [
+                {
+                  "json": {
+                    "response": "The provided JSON data appears to be a response from some kind of service or API. It contains information about a \"Test Agent\" with the following details:\n\n1. **Name**: \"Test Agent\"\n2. **Description**: \"poem about a horse\"\n3. **Type**: \"custom\"\n4. **Icon**: \"sparkles\"\n5. **Source**: \"ui_form\"\n6. **Metadata**:\n   - **Source**: \"ui_form\"\n   - **Test_execution**: true\n   - **Debug_mode**: false\n   - **ClientExecuted**: true\n\nThe response also includes some meta information, such as the status, message, and start/end times of the processing.\n\nOverall, this data seems to be related to the creation or configuration of a custom agent or entity within some kind of application or system.",
+                    "fullResponse": {
+                      "id": "msg_017bXk9xq9hbRvAuXuYcFVBG",
+                      "type": "message",
+                      "role": "assistant",
+                      "model": "claude-3-haiku-20240307",
+                      "content": [
+                        {
+                          "type": "text",
+                          "text": "The provided JSON data appears to be a response from some kind of service or API. It contains information about a \"Test Agent\" with the following details:\n\n1. **Name**: \"Test Agent\"\n2. **Description**: \"poem about a horse\"\n3. **Type**: \"custom\"\n4. **Icon**: \"sparkles\"\n5. **Source**: \"ui_form\"\n6. **Metadata**:\n   - **Source**: \"ui_form\"\n   - **Test_execution**: true\n   - **Debug_mode**: false\n   - **ClientExecuted**: true\n\nThe response also includes some meta information, such as the status, message, and start/end times of the processing.\n\nOverall, this data seems to be related to the creation or configuration of a custom agent or entity within some kind of application or system."
+                        }
+                      ],
+                      "stop_reason": "end_turn",
+                      "stop_sequence": null,
+                      "usage": {
+                        "input_tokens": 511,
+                        "cache_creation_input_tokens": 0,
+                        "cache_read_input_tokens": 0,
+                        "output_tokens": 185
+                      }
+                    }
+                  },
+                  "binary": null
+                }
+              ]
+            },
+            "text": "{\"meta\":{\"status\":\"success\",\"message\":\"Successfully generated text with Claude\",\"startTime\":\"2025-04-15T02:56:01.187Z\",\"endTime\":\"2025-04-15T02:56:02.764Z\"},\"items\":[{\"json\":{\"response\":\"The provided JSON data appears to be a response from some kind of service or API. It contains information about a \\\"Test Agent\\\" with the following details:\\n\\n1. **Name**: \\\"Test Agent\\\"\\n2. **Description**: \\\"poem about a horse\\\"\\n3. **Type**: \\\"custom\\\"\\n4. **Icon**: \\\"sparkles\\\"\\n5. **Source**: \\\"ui_form\\\"\\n6. **Metadata**:\\n   - **Source**: \\\"ui_form\\\"\\n   - **Test_execution**: true\\n   - **Debug_mode**: false\\n   - **ClientExecuted**: true\\n\\nThe response also includes some meta information, such as the status, message, and start/end times of the processing.\\n\\nOverall, this data seems to be related to the creation or configuration of a custom agent or entity within some kind of application or system.\",\"fullResponse\":{\"id\":\"msg_017bXk9xq9hbRvAuXuYcFVBG\",\"type\":\"message\",\"role\":\"assistant\",\"model\":\"claude-3-haiku-20240307\",\"content\":[{\"type\":\"text\",\"text\":\"The provided JSON data appears to be a response from some kind of service or API. It contains information about a \\\"Test Agent\\\" with the following details:\\n\\n1. **Name**: \\\"Test Agent\\\"\\n2. **Description**: \\\"poem about a horse\\\"\\n3. **Type**: \\\"custom\\\"\\n4. **Icon**: \\\"sparkles\\\"\\n5. **Source**: \\\"ui_form\\\"\\n6. **Metadata**:\\n   - **Source**: \\\"ui_form\\\"\\n   - **Test_execution**: true\\n   - **Debug_mode**: false\\n   - **ClientExecuted**: true\\n\\nThe response also includes some meta information, such as the status, message, and start/end times of the processing.\\n\\nOverall, this data seems to be related to the creation or configuration of a custom agent or entity within some kind of application or system.\"}],\"stop_reason\":\"end_turn\",\"stop_sequence\":null,\"usage\":{\"input_tokens\":511,\"cache_creation_input_tokens\":0,\"cache_read_input_tokens\":0,\"output_tokens\":185}}},\"binary\":null}]}"
+          }
+        ],
+        "meta": {
+          "startTime": "2025-04-15T02:56:02.764Z",
+          "endTime": "2025-04-15T02:56:02.764Z"
+        }
+      }
+    }
+  },
+  "startTime": "2025-04-15T02:56:01.170Z",
+  "endTime": "2025-04-15T02:56:02.764Z",
+  "nodeOutputs": {
+    "text_input-1744684901602": {
+      "items": [
+        {
+          "json": {
+            "meta": {
+              "status": "success",
+              "message": "Text input processed successfully",
+              "startTime": "2025-04-15T02:56:01.178Z",
+              "endTime": "2025-04-15T02:56:01.178Z"
+            },
+            "items": [
+              {
+                "json": {
+                  "text": "{\n  \"name\": \"Test Agent\",\n  \"description\": \"poem about a horse\",\n  \"type\": \"custom\",\n  \"icon\": \"sparkles\",\n  \"source\": \"ui_form\",\n  \"metadata\": {\n    \"source\": \"ui_form\",\n    \"test_execution\": true,\n    \"debug_mode\": false,\n    \"clientExecuted\": true\n  }\n}"
+                },
+                "binary": null
+              }
+            ]
+          },
+          "text": "{\"meta\":{\"status\":\"success\",\"message\":\"Text input processed successfully\",\"startTime\":\"2025-04-15T02:56:01.178Z\",\"endTime\":\"2025-04-15T02:56:01.178Z\"},\"items\":[{\"json\":{\"text\":\"{\\n  \\\"name\\\": \\\"Test Agent\\\",\\n  \\\"description\\\": \\\"poem about a horse\\\",\\n  \\\"type\\\": \\\"custom\\\",\\n  \\\"icon\\\": \\\"sparkles\\\",\\n  \\\"source\\\": \\\"ui_form\\\",\\n  \\\"metadata\\\": {\\n    \\\"source\\\": \\\"ui_form\\\",\\n    \\\"test_execution\\\": true,\\n    \\\"debug_mode\\\": false,\\n    \\\"clientExecuted\\\": true\\n  }\\n}\"},\"binary\":null}]}"
+        }
+      ],
+      "meta": {
+        "startTime": "2025-04-15T02:56:01.178Z",
+        "endTime": "2025-04-15T02:56:01.178Z"
+      }
+    },
+    "claude-1744684906072": {
+      "items": [
+        {
+          "json": {
+            "meta": {
+              "status": "success",
+              "message": "Successfully generated text with Claude",
+              "startTime": "2025-04-15T02:56:01.187Z",
+              "endTime": "2025-04-15T02:56:02.764Z"
+            },
+            "items": [
+              {
+                "json": {
+                  "response": "The provided JSON data appears to be a response from some kind of service or API. It contains information about a \"Test Agent\" with the following details:\n\n1. **Name**: \"Test Agent\"\n2. **Description**: \"poem about a horse\"\n3. **Type**: \"custom\"\n4. **Icon**: \"sparkles\"\n5. **Source**: \"ui_form\"\n6. **Metadata**:\n   - **Source**: \"ui_form\"\n   - **Test_execution**: true\n   - **Debug_mode**: false\n   - **ClientExecuted**: true\n\nThe response also includes some meta information, such as the status, message, and start/end times of the processing.\n\nOverall, this data seems to be related to the creation or configuration of a custom agent or entity within some kind of application or system.",
+                  "fullResponse": {
+                    "id": "msg_017bXk9xq9hbRvAuXuYcFVBG",
+                    "type": "message",
+                    "role": "assistant",
+                    "model": "claude-3-haiku-20240307",
+                    "content": [
+                      {
+                        "type": "text",
+                        "text": "The provided JSON data appears to be a response from some kind of service or API. It contains information about a \"Test Agent\" with the following details:\n\n1. **Name**: \"Test Agent\"\n2. **Description**: \"poem about a horse\"\n3. **Type**: \"custom\"\n4. **Icon**: \"sparkles\"\n5. **Source**: \"ui_form\"\n6. **Metadata**:\n   - **Source**: \"ui_form\"\n   - **Test_execution**: true\n   - **Debug_mode**: false\n   - **ClientExecuted**: true\n\nThe response also includes some meta information, such as the status, message, and start/end times of the processing.\n\nOverall, this data seems to be related to the creation or configuration of a custom agent or entity within some kind of application or system."
+                      }
+                    ],
+                    "stop_reason": "end_turn",
+                    "stop_sequence": null,
+                    "usage": {
+                      "input_tokens": 511,
+                      "cache_creation_input_tokens": 0,
+                      "cache_read_input_tokens": 0,
+                      "output_tokens": 185
+                    }
+                  }
+                },
+                "binary": null
+              }
+            ]
+          },
+          "text": "{\"meta\":{\"status\":\"success\",\"message\":\"Successfully generated text with Claude\",\"startTime\":\"2025-04-15T02:56:01.187Z\",\"endTime\":\"2025-04-15T02:56:02.764Z\"},\"items\":[{\"json\":{\"response\":\"The provided JSON data appears to be a response from some kind of service or API. It contains information about a \\\"Test Agent\\\" with the following details:\\n\\n1. **Name**: \\\"Test Agent\\\"\\n2. **Description**: \\\"poem about a horse\\\"\\n3. **Type**: \\\"custom\\\"\\n4. **Icon**: \\\"sparkles\\\"\\n5. **Source**: \\\"ui_form\\\"\\n6. **Metadata**:\\n   - **Source**: \\\"ui_form\\\"\\n   - **Test_execution**: true\\n   - **Debug_mode**: false\\n   - **ClientExecuted**: true\\n\\nThe response also includes some meta information, such as the status, message, and start/end times of the processing.\\n\\nOverall, this data seems to be related to the creation or configuration of a custom agent or entity within some kind of application or system.\",\"fullResponse\":{\"id\":\"msg_017bXk9xq9hbRvAuXuYcFVBG\",\"type\":\"message\",\"role\":\"assistant\",\"model\":\"claude-3-haiku-20240307\",\"content\":[{\"type\":\"text\",\"text\":\"The provided JSON data appears to be a response from some kind of service or API. It contains information about a \\\"Test Agent\\\" with the following details:\\n\\n1. **Name**: \\\"Test Agent\\\"\\n2. **Description**: \\\"poem about a horse\\\"\\n3. **Type**: \\\"custom\\\"\\n4. **Icon**: \\\"sparkles\\\"\\n5. **Source**: \\\"ui_form\\\"\\n6. **Metadata**:\\n   - **Source**: \\\"ui_form\\\"\\n   - **Test_execution**: true\\n   - **Debug_mode**: false\\n   - **ClientExecuted**: true\\n\\nThe response also includes some meta information, such as the status, message, and start/end times of the processing.\\n\\nOverall, this data seems to be related to the creation or configuration of a custom agent or entity within some kind of application or system.\"}],\"stop_reason\":\"end_turn\",\"stop_sequence\":null,\"usage\":{\"input_tokens\":511,\"cache_creation_input_tokens\":0,\"cache_read_input_tokens\":0,\"output_tokens\":185}}},\"binary\":null}]}"
+        }
+      ],
+      "meta": {
+        "startTime": "2025-04-15T02:56:02.764Z",
+        "endTime": "2025-04-15T02:56:02.764Z"
+      }
+    }
+  },
+  "output": {
+    "items": [
+      {
+        "json": {
+          "meta": {
+            "status": "success",
+            "message": "Successfully generated text with Claude",
+            "startTime": "2025-04-15T02:56:01.187Z",
+            "endTime": "2025-04-15T02:56:02.764Z"
+          },
+          "items": [
+            {
+              "json": {
+                "response": "The provided JSON data appears to be a response from some kind of service or API. It contains information about a \"Test Agent\" with the following details:\n\n1. **Name**: \"Test Agent\"\n2. **Description**: \"poem about a horse\"\n3. **Type**: \"custom\"\n4. **Icon**: \"sparkles\"\n5. **Source**: \"ui_form\"\n6. **Metadata**:\n   - **Source**: \"ui_form\"\n   - **Test_execution**: true\n   - **Debug_mode**: false\n   - **ClientExecuted**: true\n\nThe response also includes some meta information, such as the status, message, and start/end times of the processing.\n\nOverall, this data seems to be related to the creation or configuration of a custom agent or entity within some kind of application or system.",
+                "fullResponse": {
+                  "id": "msg_017bXk9xq9hbRvAuXuYcFVBG",
+                  "type": "message",
+                  "role": "assistant",
+                  "model": "claude-3-haiku-20240307",
+                  "content": [
+                    {
+                      "type": "text",
+                      "text": "The provided JSON data appears to be a response from some kind of service or API. It contains information about a \"Test Agent\" with the following details:\n\n1. **Name**: \"Test Agent\"\n2. **Description**: \"poem about a horse\"\n3. **Type**: \"custom\"\n4. **Icon**: \"sparkles\"\n5. **Source**: \"ui_form\"\n6. **Metadata**:\n   - **Source**: \"ui_form\"\n   - **Test_execution**: true\n   - **Debug_mode**: false\n   - **ClientExecuted**: true\n\nThe response also includes some meta information, such as the status, message, and start/end times of the processing.\n\nOverall, this data seems to be related to the creation or configuration of a custom agent or entity within some kind of application or system."
+                    }
+                  ],
+                  "stop_reason": "end_turn",
+                  "stop_sequence": null,
+                  "usage": {
+                    "input_tokens": 511,
+                    "cache_creation_input_tokens": 0,
+                    "cache_read_input_tokens": 0,
+                    "output_tokens": 185
+                  }
+                }
+              },
+              "binary": null
+            }
+          ]
+        },
+        "text": "{\"meta\":{\"status\":\"success\",\"message\":\"Successfully generated text with Claude\",\"startTime\":\"2025-04-15T02:56:01.187Z\",\"endTime\":\"2025-04-15T02:56:02.764Z\"},\"items\":[{\"json\":{\"response\":\"The provided JSON data appears to be a response from some kind of service or API. It contains information about a \\\"Test Agent\\\" with the following details:\\n\\n1. **Name**: \\\"Test Agent\\\"\\n2. **Description**: \\\"poem about a horse\\\"\\n3. **Type**: \\\"custom\\\"\\n4. **Icon**: \\\"sparkles\\\"\\n5. **Source**: \\\"ui_form\\\"\\n6. **Metadata**:\\n   - **Source**: \\\"ui_form\\\"\\n   - **Test_execution**: true\\n   - **Debug_mode**: false\\n   - **ClientExecuted**: true\\n\\nThe response also includes some meta information, such as the status, message, and start/end times of the processing.\\n\\nOverall, this data seems to be related to the creation or configuration of a custom agent or entity within some kind of application or system.\",\"fullResponse\":{\"id\":\"msg_017bXk9xq9hbRvAuXuYcFVBG\",\"type\":\"message\",\"role\":\"assistant\",\"model\":\"claude-3-haiku-20240307\",\"content\":[{\"type\":\"text\",\"text\":\"The provided JSON data appears to be a response from some kind of service or API. It contains information about a \\\"Test Agent\\\" with the following details:\\n\\n1. **Name**: \\\"Test Agent\\\"\\n2. **Description**: \\\"poem about a horse\\\"\\n3. **Type**: \\\"custom\\\"\\n4. **Icon**: \\\"sparkles\\\"\\n5. **Source**: \\\"ui_form\\\"\\n6. **Metadata**:\\n   - **Source**: \\\"ui_form\\\"\\n   - **Test_execution**: true\\n   - **Debug_mode**: false\\n   - **ClientExecuted**: true\\n\\nThe response also includes some meta information, such as the status, message, and start/end times of the processing.\\n\\nOverall, this data seems to be related to the creation or configuration of a custom agent or entity within some kind of application or system.\"}],\"stop_reason\":\"end_turn\",\"stop_sequence\":null,\"usage\":{\"input_tokens\":511,\"cache_creation_input_tokens\":0,\"cache_read_input_tokens\":0,\"output_tokens\":185}}},\"binary\":null}]}"
+      }
+    ],
+    "meta": {
+      "startTime": "2025-04-15T02:56:02.764Z",
+      "endTime": "2025-04-15T02:56:02.764Z"
+    }
+  }
+}
