@@ -26,7 +26,10 @@ import {
   AlertCircle,
   Search as SearchIcon,
   Hash,
-  ToggleLeft
+  ToggleLeft,
+  CheckSquare,
+  Table,
+  FileText
 } from 'lucide-react';
 import NodeItem from './NodeItem';
 
@@ -239,6 +242,27 @@ const NODE_TYPES = [
     category: 'input',
     icon: ToggleLeft
   },
+  { 
+    id: 'json_schema_validator', 
+    name: 'JSON Schema Validator', 
+    description: 'Validates JSON data against a schema',
+    category: 'data',
+    icon: CheckSquare
+  },
+  { 
+    id: 'csv_processor', 
+    name: 'CSV Processor', 
+    description: 'Processes CSV data with column mapping and filtering',
+    category: 'data',
+    icon: Table
+  },
+  { 
+    id: 'markdown_renderer', 
+    name: 'Markdown Renderer', 
+    description: 'Renders markdown text with live preview',
+    category: 'content',
+    icon: FileText
+  },
   
   // Internal Nodes
   {
@@ -300,7 +324,8 @@ const NodesPanel = () => {
       // Only include node types that we know are implemented in the folder-based system
       return ['text_input', 'claude', 'http_request', 'text_template', 
               'data_transform', 'decision', 'function', 'json_path',
-              'text_formatter', 'number_input', 'toggle_switch'].includes(nodeType.id);
+              'text_formatter', 'number_input', 'toggle_switch',
+              'json_schema_validator', 'csv_processor', 'markdown_renderer'].includes(nodeType.id);
     });
     
     const nodes = typesToUse.map((nodeType, index) => {
