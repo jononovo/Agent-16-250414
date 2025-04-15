@@ -164,6 +164,18 @@ export class MemStorage implements IStorage {
     if (!data) return null;
     
     // Handle different data types that might be returned
+    console.log('Parsing data type:', typeof data);
+    
+    // Handle Replit Database format: { ok: true, value: "..." }
+    if (typeof data === 'object' && data !== null) {
+      const anyData = data as any;
+      if (anyData.ok === true && anyData.value !== undefined) {
+        console.log('Found Replit DB format with ok and value');
+        // Use the value property which contains the actual data
+        data = anyData.value;
+      }
+    }
+    
     let dataStr: string;
     
     if (typeof data === 'string') {
@@ -187,10 +199,23 @@ export class MemStorage implements IStorage {
     try {
       let hasData = false;
       
+      // Output current database keys to help diagnose issues
+      try {
+        const keys = await this.db.list();
+        console.log('Available Replit Database keys:', keys);
+      } catch (error) {
+        console.error('Error listing Replit Database keys:', error);
+      }
+      
       // Load workflows
+      console.log('Attempting to load workflows from database...');
       const workflowsData = await this.db.get('workflows') as unknown;
+      console.log('Raw workflows data:', workflowsData);
+      
       if (workflowsData) {
+        console.log('Parsing workflows data type:', typeof workflowsData);
         const workflows = this.parseDbResult(workflowsData);
+        console.log('Parsed workflows:', workflows && Array.isArray(workflows) ? workflows.length : 'not an array');
         
         if (Array.isArray(workflows)) {
           workflows.forEach((workflow: Workflow) => {
@@ -202,7 +227,11 @@ export class MemStorage implements IStorage {
           });
           console.log(`Loaded ${workflows.length} workflows from Replit Database`);
           hasData = true;
+        } else {
+          console.error('Workflows data is not an array:', workflows);
         }
+      } else {
+        console.log('No workflows data found in database');
       }
       
       // Load agents
@@ -465,11 +494,37 @@ export class MemStorage implements IStorage {
    */
   private async saveData(key: string, data: any) {
     // Skip saving during initialization
-    if (this.initializing) return;
+    if (this.initializing) {
+      console.log(`Skipping save of ${key} during initialization`);
+      return;
+    }
     
     try {
-      await this.db.set(key, JSON.stringify(data));
-      console.log(`Saved data to Replit Database: ${key}`);
+      // Log what we're about to save
+      console.log(`Saving ${key} to Replit Database, data length: ${Array.isArray(data) ? data.length : 'not array'}`);
+      
+      const jsonData = JSON.stringify(data);
+      console.log(`Data serialized, JSON length: ${jsonData.length}`);
+      
+      // Directly set data in database with timeout handling
+      const savePromise = this.db.set(key, jsonData);
+      
+      // Add a timeout to avoid hanging indefinitely
+      const timeoutPromise = new Promise((_, reject) => {
+        setTimeout(() => reject(new Error(`Timeout saving ${key} to Replit Database`)), 5000);
+      });
+      
+      await Promise.race([savePromise, timeoutPromise]);
+      
+      // Verify data was saved by reading it back
+      try {
+        const verifyData = await this.db.get(key) as unknown;
+        console.log(`Verified ${key} was saved, data exists: ${verifyData ? 'yes' : 'no'}`);
+      } catch (verifyError) {
+        console.warn(`Could not verify ${key} was saved:`, verifyError);
+      }
+      
+      console.log(`Successfully saved data to Replit Database: ${key}`);
       return true;
     } catch (error) {
       console.error(`Error saving data to Replit Database (${key}):`, error);
