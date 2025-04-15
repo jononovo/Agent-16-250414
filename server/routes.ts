@@ -487,6 +487,78 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Register all tools during server startup
   registerAllTools();
   
+  // Get all available tools for testing
+  app.get('/api/tools', (req: Request, res: Response) => {
+    try {
+      const { context } = req.query;
+      
+      // Get tools from the registry
+      const toolRegistry = require('./tools/registry').toolRegistry;
+      const tools = context ? 
+        toolRegistry.getToolsByContext(context as string) : 
+        toolRegistry.getAllTools();
+      
+      // Convert to a format suitable for the client
+      const formattedTools = tools.map(tool => ({
+        name: tool.name,
+        description: tool.description,
+        category: tool.category,
+        parameters: tool.parameters || { type: 'object', properties: {} },
+        contexts: tool.contexts || []
+      }));
+      
+      res.json(formattedTools);
+    } catch (error) {
+      res.status(500).json({ 
+        error: 'Failed to get tools', 
+        details: error instanceof Error ? error.message : String(error) 
+      });
+    }
+  });
+  
+  // Execute a tool directly (for testing)
+  app.post('/api/tools/execute', async (req: Request, res: Response) => {
+    try {
+      const { tool: toolName, parameters } = req.body;
+      
+      if (!toolName) {
+        return res.status(400).json({ error: 'Tool name is required' });
+      }
+      
+      // Get the tool from the registry
+      const toolRegistry = require('./tools/registry').toolRegistry;
+      const tool = toolRegistry.getTool(toolName);
+      
+      if (!tool) {
+        return res.status(404).json({ error: `Tool "${toolName}" not found` });
+      }
+      
+      // Execute the tool
+      const result = await tool.execute(parameters || {});
+      
+      // Create a log entry
+      const logEntry: InsertLog = {
+        agentId: null,
+        workflowId: null,
+        status: result.success ? 'success' : 'error',
+        input: { tool: toolName, parameters },
+        output: result,
+        error: result.success ? null : result.error,
+        completedAt: new Date(),
+        executionPath: { source: 'direct-tool-execution' }
+      };
+      
+      await storage.createLog(logEntry);
+      
+      res.json(result);
+    } catch (error) {
+      res.status(500).json({
+        error: 'Failed to execute tool',
+        details: error instanceof Error ? error.message : String(error)
+      });
+    }
+  });
+  
   // Unified agent chat endpoint
   app.post('/api/agent/chat', async (req: Request, res: Response) => {
     try {
