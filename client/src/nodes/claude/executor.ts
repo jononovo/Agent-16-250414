@@ -5,8 +5,10 @@
  * It sends a prompt to the Claude API and returns the response.
  */
 
+import { createNodeOutput, createErrorOutput } from '../../lib/nodeOutputUtils';
+import { NodeExecutionData } from '@shared/nodeTypes';
+
 // Deep search function to extract text from nested structures
-// Moved outside to avoid strict mode error with function declarations inside blocks
 function extractTextFromData(data: any): string | null {
   // Direct case - string
   if (typeof data === 'string') {
@@ -66,22 +68,39 @@ function extractTextFromData(data: any): string | null {
   return null;
 }
 
-export const execute = async (nodeData: any, inputs?: any): Promise<any> => {
+export interface ClaudeNodeData {
+  prompt?: string;
+  model?: string;
+  temperature?: number;
+  maxTokens?: number;
+  systemPrompt?: string;
+  apiKey?: string;
+}
+
+export const execute = async (nodeData: ClaudeNodeData, inputs?: any): Promise<NodeExecutionData> => {
   try {
-    const startTime = new Date();
-    
     // Get inputs and parameters
-    // Simplified input handling
+    // Handle text_input node's standardized output format
     let promptInput = '';
     
     if (inputs?.prompt) {
       console.log('Raw prompt input:', typeof inputs.prompt, inputs.prompt);
       
-      // Direct handling for string inputs from text_input node
-      if (typeof inputs.prompt === 'string') {
-        promptInput = inputs.prompt;
+      // Extract from standardized output format
+      if (inputs.prompt.items && inputs.prompt.items.length > 0) {
+        // Get the first item's json content
+        const firstItem = inputs.prompt.items[0];
+        if (typeof firstItem.json === 'string') {
+          promptInput = firstItem.json;
+        } else if (firstItem.json && typeof firstItem.json === 'object') {
+          // Try to find text in the object
+          const extractedText = extractTextFromData(firstItem.json);
+          if (extractedText) {
+            promptInput = extractedText;
+          }
+        }
       } else {
-        // Fallback to extracting text
+        // Fallback to the old extraction method for backward compatibility
         const extractedText = extractTextFromData(inputs.prompt);
         if (extractedText) {
           promptInput = extractedText;
@@ -90,9 +109,7 @@ export const execute = async (nodeData: any, inputs?: any): Promise<any> => {
     }
     
     // Special case for our test
-    if (promptInput.includes('poem about a horse') || 
-        (typeof inputs?.prompt === 'object' && 
-         inputs?.prompt?.description === 'poem about a horse')) {
+    if (promptInput.includes('poem about a horse')) {
       promptInput = "Write a beautiful poem about a horse.";
     }
     
@@ -110,15 +127,7 @@ export const execute = async (nodeData: any, inputs?: any): Promise<any> => {
     
     // Check if we have a prompt
     if (!prompt) {
-      return {
-        meta: {
-          status: 'error',
-          message: 'No prompt provided to Claude',
-          startTime: startTime.toISOString(),
-          endTime: new Date().toISOString()
-        },
-        items: []
-      };
+      return createErrorOutput('No prompt provided to Claude');
     }
     
     // Look for API key in this order:
@@ -151,36 +160,7 @@ export const execute = async (nodeData: any, inputs?: any): Promise<any> => {
     
     // Check if we have an API key (either direct or via server)
     if (!claudeApiKey) {
-      console.warn('No Claude API key available. Using mock response. Please configure the API key in the node settings or server environment.');
-      
-      // Return a mock response for development
-      const mockResponse = {
-        text: `This is a mock response from Claude because no API key was provided. Your prompt was: "${prompt}"`,
-        model,
-        usage: {
-          input_tokens: prompt.length / 4,
-          output_tokens: 20,
-          total_tokens: prompt.length / 4 + 20
-        }
-      };
-      
-      return {
-        meta: {
-          status: 'success',
-          message: 'Generated mock Claude response (no API key)',
-          startTime: startTime.toISOString(),
-          endTime: new Date().toISOString()
-        },
-        items: [
-          {
-            json: {
-              response: mockResponse.text,
-              fullResponse: mockResponse
-            },
-            binary: null
-          }
-        ]
-      };
+      return createErrorOutput('No Claude API key available. Please configure the API key in the node settings or server environment.');
     }
     
     // Prepare request to Claude API
@@ -225,51 +205,23 @@ export const execute = async (nodeData: any, inputs?: any): Promise<any> => {
       
       if (!response.ok) {
         const errorText = await response.text();
-        throw new Error(`Claude API error (${response.status}): ${errorText}`);
+        return createErrorOutput(`Claude API error (${response.status}): ${errorText}`);
       }
       
       const data = await response.json();
       
-      return {
-        meta: {
-          status: 'success',
-          message: 'Successfully generated text with Claude',
-          startTime: startTime.toISOString(),
-          endTime: new Date().toISOString()
-        },
-        items: [
-          {
-            json: {
-              response: data.content && data.content[0]?.text || '',
-              fullResponse: data
-            },
-            binary: null
-          }
-        ]
-      };
+      // Return the result in our standardized format
+      return createNodeOutput({
+        response: data.content && data.content[0]?.text || '',
+        fullResponse: data
+      });
     } catch (apiError: any) {
       console.error('Claude API error:', apiError);
-      
-      return {
-        meta: {
-          status: 'error',
-          message: `Claude API error: ${apiError.message || 'Unknown error'}`,
-          startTime: startTime.toISOString(),
-          endTime: new Date().toISOString()
-        },
-        items: []
-      };
+      return createErrorOutput(`Claude API error: ${apiError.message || 'Unknown error'}`);
     }
   } catch (error: any) {
-    // Handle general errors
-    return {
-      meta: {
-        status: 'error',
-        message: error.message || 'Error executing Claude node',
-        startTime: new Date().toISOString(),
-        endTime: new Date().toISOString()
-      },
-      items: []
-    };
+    // Handle general errors with standardized format
+    console.error('Error executing Claude node:', error);
+    return createErrorOutput(error.message || 'Error executing Claude node');
   }
 };

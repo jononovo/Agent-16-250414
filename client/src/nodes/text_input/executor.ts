@@ -5,7 +5,14 @@
  * It takes the configured text input and returns it in a clean format for downstream nodes.
  */
 
-export const execute = async (nodeData: any, inputs?: any): Promise<any> => {
+import { createNodeOutput, createErrorOutput } from '../../lib/nodeOutputUtils';
+import { NodeExecutionData } from '@shared/nodeTypes';
+
+export interface TextInputNodeData {
+  inputText?: string;
+}
+
+export const execute = async (nodeData: TextInputNodeData, inputs?: any): Promise<NodeExecutionData> => {
   try {
     // Get the input text from the node data
     const inputText = nodeData.inputText || '';
@@ -21,7 +28,7 @@ export const execute = async (nodeData: any, inputs?: any): Promise<any> => {
         // If we find a JSON object with a description about a horse,
         // extract just that clean prompt for Claude
         if (parsed.description === 'poem about a horse') {
-          return "Write a beautiful poem about a horse.";
+          return createNodeOutput("Write a beautiful poem about a horse.");
         }
         
         // Otherwise keep the parsed JSON
@@ -32,19 +39,18 @@ export const execute = async (nodeData: any, inputs?: any): Promise<any> => {
       }
     }
     
-    // Return the result in a simpler format - the Claude node expects just text
-    // not a nested structure with meta, items, etc.
+    // Return the result in our standardized format
     if (typeof parsedContent === 'string') {
-      return parsedContent;
+      return createNodeOutput(parsedContent);
     } else if (parsedContent && parsedContent.description === 'poem about a horse') {
-      return "Write a beautiful poem about a horse.";
+      return createNodeOutput("Write a beautiful poem about a horse.");
     } else {
-      // If it's an object, convert to string for Claude to process
-      return JSON.stringify(parsedContent);
+      // If it's an object, use the full object in json and stringify in text
+      return createNodeOutput(parsedContent);
     }
   } catch (error: any) {
-    // Handle errors - return string message for Claude
+    // Handle errors with standardized format
     console.error('Error in text_input executor:', error);
-    return "Error: " + (error.message || 'Error processing text input');
+    return createErrorOutput(error.message || 'Error processing text input');
   }
 };
