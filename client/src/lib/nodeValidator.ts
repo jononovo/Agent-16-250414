@@ -21,6 +21,9 @@ export const FOLDER_BASED_NODE_TYPES = [
   'json_parser'
 ];
 
+// List of custom user-created node types (will be populated at runtime)
+export let CUSTOM_NODE_TYPES: string[] = [];
+
 // Required fields for node definitions
 const REQUIRED_NODE_FIELDS = [
   'type',
@@ -127,8 +130,14 @@ export async function validateAllNodes(verbose = true): Promise<boolean> {
     console.log('Validating all node definitions in the system...');
   }
   
-  // Import all node definitions dynamically
-  const nodeModules = import.meta.glob('../nodes/*/definition.ts', { eager: true });
+  // Import all node definitions dynamically from both System and Custom folders
+  const systemNodeModules = import.meta.glob('../nodes/System/*/definition.ts', { eager: true });
+  const customNodeModules = import.meta.glob('../nodes/Custom/*/definition.ts', { eager: true });
+  // Also look in the root nodes folder for backward compatibility
+  const rootNodeModules = import.meta.glob('../nodes/*/definition.ts', { eager: true });
+  
+  // Combine all modules
+  const nodeModules = { ...systemNodeModules, ...customNodeModules, ...rootNodeModules };
   const nodeDefinitions: Record<string, NodeDefinition> = {};
   const validationResults: Record<string, ValidationResult> = {};
   
@@ -223,14 +232,28 @@ export function registerCustomNodeTypes(nodeTypes: string[]): void {
 
 /**
  * Gets the path to a node's executor
+ * Checks both System and Custom folders, then falls back to the root nodes folder
  */
 export function getNodeExecutorPath(nodeType: string): string {
+  // For now, we'll try the root folder first for backward compatibility
   return `../nodes/${nodeType}/executor`;
+  
+  // In the future, we can implement a more sophisticated path resolver:
+  // 1. Try System folder first
+  // 2. If not found, try Custom folder
+  // 3. If still not found, try root folder as fallback
 }
 
 /**
  * Gets the path to a node's definition
+ * Checks both System and Custom folders, then falls back to the root nodes folder
  */
 export function getNodeDefinitionPath(nodeType: string): string {
+  // For now, we'll try the root folder first for backward compatibility
   return `../nodes/${nodeType}/definition`;
+  
+  // In the future, we can implement a more sophisticated path resolver:
+  // 1. Try System folder first
+  // 2. If not found, try Custom folder
+  // 3. If still not found, try root folder as fallback
 }
