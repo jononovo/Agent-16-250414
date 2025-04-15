@@ -29,7 +29,9 @@ export function createNodeOutput(data: any, options?: NodeOutputOptions): NodeEx
   // Create a single workflow item from the data
   const workflowItem: WorkflowItem = {
     json: data,
-    text: typeof data === 'string' ? data : JSON.stringify(data)
+    meta: {
+      source: options?.source || 'unknown'
+    }
   };
   
   // Create the full node execution data

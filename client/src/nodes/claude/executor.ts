@@ -6,7 +6,7 @@
  */
 
 import { createNodeOutput, createErrorOutput } from '../../lib/nodeOutputUtils';
-import { NodeExecutionData } from '@shared/nodeTypes';
+import { NodeExecutionData } from '../../../lib/types/workflow';
 
 // Deep search function to extract text from nested structures
 function extractTextFromData(data: any): string | null {
