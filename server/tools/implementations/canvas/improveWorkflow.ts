@@ -3,9 +3,11 @@
  * 
  * This tool suggests improvements to an existing workflow by identifying 
  * specific nodes that can be modified to enhance the overall output.
+ * It only works with valid node types from the system.
  */
 import { Tool, ToolResult } from '../../toolTypes';
 import { storage } from '../../../storage';
+import { AVAILABLE_NODE_TYPES } from '../../../services/workflowGenerationService';
 
 const improveWorkflowTool: Tool = {
   name: 'improveWorkflow',
