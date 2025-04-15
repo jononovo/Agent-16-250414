@@ -1,22 +1,20 @@
 /**
- * IMPORTANT: This file is deprecated. 
- * These types have been consolidated in client/src/lib/types/workflow.ts.
+ * Node Type Definitions - For Folder-Based Node System
  * 
- * Please import node types from '../lib/types/workflow' instead.
- * 
- * This file is kept for backward compatibility but will be removed in a future update.
+ * This file contains necessary types for the modern folder-based node system.
+ * All execution-related types are imported from '../lib/types/workflow'.
  */
 
-import { PortDefinition as BasePortDefinition } from '../lib/types';
-import { 
-  NodeDefinition as ClientNodeDefinition,
+import {
   WorkflowItem,
   NodeExecutionData,
   EnhancedNodeExecutor,
   createWorkflowItem
 } from '../lib/types/workflow';
 
-// Define interfaces needed by node definition files
+/**
+ * Node Schema - Describes the structure of a node for registration
+ */
 export interface NodeSchema {
   inputs: Record<string, {
     type: string;
@@ -42,6 +40,19 @@ export interface NodeSchema {
   }>;
 }
 
+/**
+ * Port Definition - For node inputs/outputs
+ */
+export interface PortDefinition {
+  type: string;
+  description: string;
+  optional?: boolean;
+  isArray?: boolean;
+}
+
+/**
+ * Node Definition - Core structure for node registration
+ */
 export interface NodeDefinition {
   type: string;
   name: string;
@@ -55,13 +66,9 @@ export interface NodeDefinition {
   defaultData?: Record<string, any>;
 }
 
-export interface PortDefinition {
-  type: string;
-  description: string;
-  optional?: boolean;
-  isArray?: boolean;
-}
-
+/**
+ * Node Configuration Option
+ */
 export interface NodeConfigOption {
   key: string;
   type: 'string' | 'number' | 'boolean' | 'select' | 'multiselect' | 'json';
@@ -73,5 +80,5 @@ export interface NodeConfigOption {
   }>;
 }
 
-// Re-export the execution types from workflow.ts
+// Re-export execution types from workflow.ts
 export { WorkflowItem, NodeExecutionData, EnhancedNodeExecutor, createWorkflowItem };
