@@ -38,6 +38,7 @@ const NODE_CATEGORIES = [
   { id: 'ai', name: 'AI', description: 'AI model interactions, prompt engineering, and text generation' },
   { id: 'data', name: 'Data', description: 'Data visualization, transformation, and filtering' },
   { id: 'input', name: 'Input', description: 'Basic input nodes for data entry and user interactions' },
+  { id: 'content', name: 'Content', description: 'Content creation, formatting, and rendering' },
   { id: 'code', name: 'Code', description: 'Custom code and function execution' },
   { id: 'triggers', name: 'Triggers', description: 'Nodes that initiate workflows based on events or schedules' },
   { id: 'actions', name: 'Actions', description: 'Nodes that perform operations such as API requests or database queries' },
@@ -417,6 +418,7 @@ const NodesPanel = () => {
             <TabsTrigger value="ai" className="px-4">AI</TabsTrigger>
             <TabsTrigger value="input" className="px-4">Input</TabsTrigger>
             <TabsTrigger value="data" className="px-4">Data</TabsTrigger>
+            <TabsTrigger value="content" className="px-4">Content</TabsTrigger>
             <TabsTrigger value="code" className="px-4">Code</TabsTrigger>
             <TabsTrigger value="triggers" className="px-4">Triggers</TabsTrigger>
             <TabsTrigger value="actions" className="px-4">Actions</TabsTrigger>
