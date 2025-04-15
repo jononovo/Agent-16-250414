@@ -5,6 +5,8 @@
  */
 
 import axios, { AxiosRequestConfig, AxiosResponse, Method } from 'axios';
+import { createNodeOutput, createErrorOutput } from '../../lib/nodeOutputUtils';
+import { NodeExecutionData } from '@shared/nodeTypes';
 
 export interface HttpRequestNodeData {
   url: string;
@@ -21,13 +23,11 @@ export interface HttpRequestNodeData {
  * @param inputs Optional inputs from connected nodes
  * @returns The execution result
  */
-export const execute = async (nodeData: HttpRequestNodeData, inputs?: any): Promise<any> => {
+export const execute = async (nodeData: HttpRequestNodeData, inputs?: any): Promise<NodeExecutionData> => {
   try {
-    const startTime = new Date().toISOString();
-    
     // Validate required parameters
     if (!nodeData.url) {
-      throw new Error('URL is required');
+      return createErrorOutput('URL is required');
     }
     
     // Merge headers from node data and inputs
@@ -74,46 +74,28 @@ export const execute = async (nodeData: HttpRequestNodeData, inputs?: any): Prom
     // Execute the request
     const response: AxiosResponse = await axios(requestConfig);
     
-    // Process the response
-    const endTime = new Date().toISOString();
-    return {
-      meta: {
-        status: 'success',
-        message: `HTTP ${requestConfig.method} request completed successfully`,
-        startTime,
-        endTime
-      },
-      items: [
-        {
-          json: {
-            response: response,
-            data: response.data,
-            status: response.status,
-            headers: response.headers
-          },
-          binary: null
-        }
-      ]
-    };
+    // Process the response using standardized format
+    return createNodeOutput({
+      response: response,
+      data: response.data,
+      status: response.status,
+      headers: response.headers
+    });
   } catch (error: any) {
-    // Handle errors
-    return {
-      meta: {
-        status: 'error',
-        message: error.message || 'Error executing HTTP request',
-        startTime: new Date().toISOString(),
-        endTime: new Date().toISOString(),
-        error: {
-          message: error.message,
-          stack: error.stack,
-          response: error.response ? {
-            status: error.response.status,
-            statusText: error.response.statusText,
-            data: error.response.data
-          } : null
-        }
-      },
-      items: []
+    // Handle errors with standardized format
+    const errorMessage = error.message || 'Error executing HTTP request';
+    console.error('HTTP request error:', errorMessage);
+    
+    // Create detailed error data
+    const errorData = {
+      message: errorMessage,
+      response: error.response ? {
+        status: error.response.status,
+        statusText: error.response.statusText,
+        data: error.response.data
+      } : null
     };
+    
+    return createErrorOutput(errorMessage);
   }
 };

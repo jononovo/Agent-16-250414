@@ -4,6 +4,9 @@
  * This executor applies JavaScript transformations to data.
  */
 
+import { createNodeOutput, createErrorOutput } from '../../lib/nodeOutputUtils';
+import { NodeExecutionData } from '@shared/nodeTypes';
+
 // Define the shape of a transformation
 export interface Transformation {
   name: string;
@@ -19,22 +22,32 @@ export interface DataTransformNodeData {
 /**
  * Execute the data transform node with the provided data and inputs
  */
-export async function execute(nodeData: DataTransformNodeData, inputs: Record<string, any> = {}) {
+export async function execute(
+  nodeData: DataTransformNodeData, 
+  inputs: Record<string, NodeExecutionData> = {}
+): Promise<NodeExecutionData> {
   const { transformations } = nodeData;
-  let inputData = inputs.data;
   
   try {
+    // Extract input data from standardized format
+    let inputData;
+    
+    // If input exists and follows our standardized format
+    if (inputs.data && inputs.data.items && inputs.data.items.length > 0) {
+      // Get the first item's json content
+      inputData = inputs.data.items[0].json;
+    } else {
+      // Fallback for compatibility
+      inputData = inputs.data;
+    }
+    
     if (inputData === undefined) {
-      return {
-        error: 'No input data provided'
-      };
+      return createErrorOutput('No input data provided');
     }
     
     if (!transformations || transformations.length === 0) {
-      return {
-        result: inputData,
-        warning: 'No transformations defined'
-      };
+      // Return the input data with a warning
+      return createNodeOutput(inputData);
     }
     
     // Apply each enabled transformation in sequence
@@ -50,23 +63,22 @@ export async function execute(nodeData: DataTransformNodeData, inputs: Record<st
         currentData = transformFunction(currentData);
         
       } catch (transformError) {
-        return {
-          error: `Error in transformation "${transform.name}": ${
+        // Return error with data up to the point of failure
+        return createErrorOutput(
+          `Error in transformation "${transform.name}": ${
             transformError instanceof Error ? transformError.message : String(transformError)
-          }`,
-          result: currentData // Return data up to the point of failure
-        };
+          }`
+        );
       }
     }
     
-    return {
-      result: currentData
-    };
+    // Return the transformed data in standardized format
+    return createNodeOutput(currentData);
   } catch (error) {
     console.error('Error executing data transform:', error);
-    return {
-      error: error instanceof Error ? error.message : String(error)
-    };
+    return createErrorOutput(
+      error instanceof Error ? error.message : String(error)
+    );
   }
 }
 
