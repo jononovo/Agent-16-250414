@@ -42,7 +42,12 @@ export interface WorkflowItem {
 export interface NodeExecutionData {
   items: WorkflowItem[];  // Output data items
   meta: {
-    startTime: Date;      // When execution started
-    endTime: Date;        // When execution completed
+    startTime: Date;           // When execution started
+    endTime: Date;             // When execution completed
+    source?: string;           // Source node identifier
+    error?: boolean;           // Whether execution resulted in an error
+    errorMessage?: string;     // Error message if error is true
+    warning?: string;          // Non-critical warning message
+    [key: string]: any;        // Additional metadata properties
   };
 }

@@ -4,6 +4,9 @@
  * This executor processes a template string and replaces variables with provided values.
  */
 
+import { createNodeOutput, createErrorOutput } from '../../lib/nodeOutputUtils';
+import { NodeExecutionData } from '@shared/nodeTypes';
+
 // Define the shape of the node's data
 export interface TextTemplateNodeData {
   template: string;
@@ -51,18 +54,27 @@ function replaceTemplateVariables(template: string, data: Record<string, any>): 
   });
 }
 
-/**
- * Execute the text template node with the provided data and inputs
- */
-export async function execute(nodeData: TextTemplateNodeData, inputs: Record<string, any> = {}) {
+export async function execute(
+  nodeData: TextTemplateNodeData, 
+  inputs: Record<string, NodeExecutionData> = {}
+): Promise<NodeExecutionData> {
   const { template } = nodeData;
-  const variables = inputs.variables || {};
   
   try {
     if (!template || template.trim() === '') {
-      return {
-        error: 'Template is empty'
-      };
+      return createErrorOutput('Template is empty');
+    }
+    
+    // Extract variables from standardized format
+    let variables: Record<string, any> = {};
+    
+    // Try to get variables from standardized input format
+    if (inputs.variables && inputs.variables.items && inputs.variables.items.length > 0) {
+      // Get variables from the first item's json content
+      variables = inputs.variables.items[0].json;
+    } else if (inputs.variables) {
+      // Fallback for compatibility
+      variables = inputs.variables;
     }
     
     // Process the template and replace variables
@@ -82,14 +94,15 @@ export async function execute(nodeData: TextTemplateNodeData, inputs: Record<str
       console.warn(`Some variables were not replaced in template: ${missingVars}`);
     }
     
-    return {
-      text: processedText
-    };
+    // Return standardized output
+    return createNodeOutput(processedText, {
+      additionalMeta: unreplacedVariables.length > 0 ? {
+        warning: `Missing variables: ${unreplacedVariables.map(match => match[1].trim()).join(', ')}`
+      } : undefined
+    });
   } catch (error) {
     console.error('Error executing text template node:', error);
-    return {
-      error: error instanceof Error ? error.message : String(error)
-    };
+    return createErrorOutput(error instanceof Error ? error.message : String(error));
   }
 }
 
