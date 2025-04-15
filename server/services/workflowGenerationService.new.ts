@@ -460,13 +460,11 @@ Ensure that:
         const unsupportedNodes = workflow.flowData.nodes.filter(
           (node: any) => {
             const nodeType = node.type;
-            // If the node type is in our mapping, it will be converted to a valid type
-            const willBeMapped = nodeType && nodeTypeMapping[nodeType];
-            // If the node type is already in our available types, it's valid
+            // Only nodes with type explicitly in our available types list are valid
             const isAvailable = nodeType && AVAILABLE_NODE_TYPES.includes(nodeType);
             
-            // Node is unsupported if it's neither mappable nor already available
-            return nodeType && !willBeMapped && !isAvailable;
+            // Any node not in the approved list is unsupported
+            return nodeType && !isAvailable;
           }
         );
         

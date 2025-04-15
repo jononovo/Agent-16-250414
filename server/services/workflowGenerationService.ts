@@ -451,17 +451,8 @@ Ensure that:
         throw new Error("Workflow edges must be an array");
       }
 
-      // Map node types to the ones supported by the FlowEditor component
-      // Only keeping essential mappings for standard node types
-      const nodeTypeMapping: Record<string, string> = {
-        transform: "data_transform",
-        output: "api_response",
-        database: "database_query",
-        email: "email_send",
-        trigger: "text_input",
-        process: "function",
-        filter: "decision",
-      };
+      // No type mapping - only use explicit approved node types
+      // All nodes must use exact types from the AVAILABLE_NODE_TYPES list
 
       // Update node types and positions in the workflow
       if (workflow.flowData.nodes) {
@@ -469,13 +460,11 @@ Ensure that:
         const unsupportedNodes = workflow.flowData.nodes.filter(
           (node: any) => {
             const nodeType = node.type;
-            // If the node type is in our mapping, it will be converted to a valid type
-            const willBeMapped = nodeType && nodeTypeMapping[nodeType];
-            // If the node type is already in our available types, it's valid
+            // Only nodes with type explicitly in our available types list are valid
             const isAvailable = nodeType && AVAILABLE_NODE_TYPES.includes(nodeType);
             
-            // Node is unsupported if it's neither mappable nor already available
-            return nodeType && !willBeMapped && !isAvailable;
+            // Any node not in the approved list is unsupported
+            return nodeType && !isAvailable;
           }
         );
         
