@@ -24,7 +24,12 @@ import {
   Repeat,
   GitBranch,
   AlertCircle,
-  Search as SearchIcon
+  Search as SearchIcon,
+  Hash,
+  ToggleLeft,
+  CheckSquare,
+  Table,
+  FileText
 } from 'lucide-react';
 import NodeItem from './NodeItem';
 
@@ -32,6 +37,8 @@ import NodeItem from './NodeItem';
 const NODE_CATEGORIES = [
   { id: 'ai', name: 'AI', description: 'AI model interactions, prompt engineering, and text generation' },
   { id: 'data', name: 'Data', description: 'Data visualization, transformation, and filtering' },
+  { id: 'input', name: 'Input', description: 'Basic input nodes for data entry and user interactions' },
+  { id: 'content', name: 'Content', description: 'Content creation, formatting, and rendering' },
   { id: 'code', name: 'Code', description: 'Custom code and function execution' },
   { id: 'triggers', name: 'Triggers', description: 'Nodes that initiate workflows based on events or schedules' },
   { id: 'actions', name: 'Actions', description: 'Nodes that perform operations such as API requests or database queries' },
@@ -215,6 +222,48 @@ const NODE_TYPES = [
     category: 'data',
     icon: Filter
   },
+  { 
+    id: 'text_formatter', 
+    name: 'Text Formatter', 
+    description: 'Formats text with various transformations',
+    category: 'data',
+    icon: Type
+  },
+  { 
+    id: 'number_input', 
+    name: 'Number Input', 
+    description: 'Provides numeric input with slider visualization',
+    category: 'input',
+    icon: Hash
+  },
+  { 
+    id: 'toggle_switch', 
+    name: 'Toggle Switch', 
+    description: 'A simple boolean toggle switch',
+    category: 'input',
+    icon: ToggleLeft
+  },
+  { 
+    id: 'json_schema_validator', 
+    name: 'JSON Schema Validator', 
+    description: 'Validates JSON data against a schema',
+    category: 'data',
+    icon: CheckSquare
+  },
+  { 
+    id: 'csv_processor', 
+    name: 'CSV Processor', 
+    description: 'Processes CSV data with column mapping and filtering',
+    category: 'data',
+    icon: Table
+  },
+  { 
+    id: 'markdown_renderer', 
+    name: 'Markdown Renderer', 
+    description: 'Renders markdown text with live preview',
+    category: 'content',
+    icon: FileText
+  },
   
   // Internal Nodes
   {
@@ -274,8 +323,15 @@ const NodesPanel = () => {
     // These match the folder-based nodes we have implemented
     const typesToUse = NODE_TYPES.filter(nodeType => {
       // Only include node types that we know are implemented in the folder-based system
-      return ['text_input', 'claude', 'http_request', 'text_template', 
-              'data_transform', 'decision', 'function', 'json_path'].includes(nodeType.id);
+      // First wave of implementations
+      const implementedNodeTypes = [
+        'text_input', 'claude', 'http_request', 'text_template', 
+        'data_transform', 'decision', 'function', 'json_path',
+        // New custom nodes
+        'text_formatter', 'number_input', 'toggle_switch',
+        'json_schema_validator', 'csv_processor', 'markdown_renderer'
+      ];
+      return implementedNodeTypes.includes(nodeType.id);
     });
     
     const nodes = typesToUse.map((nodeType, index) => {
@@ -365,7 +421,9 @@ const NodesPanel = () => {
           <TabsList className="w-auto inline-flex">
             <TabsTrigger value="all" className="px-4">All</TabsTrigger>
             <TabsTrigger value="ai" className="px-4">AI</TabsTrigger>
+            <TabsTrigger value="input" className="px-4">Input</TabsTrigger>
             <TabsTrigger value="data" className="px-4">Data</TabsTrigger>
+            <TabsTrigger value="content" className="px-4">Content</TabsTrigger>
             <TabsTrigger value="code" className="px-4">Code</TabsTrigger>
             <TabsTrigger value="triggers" className="px-4">Triggers</TabsTrigger>
             <TabsTrigger value="actions" className="px-4">Actions</TabsTrigger>

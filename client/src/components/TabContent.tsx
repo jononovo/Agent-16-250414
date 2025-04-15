@@ -1,8 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import { Agent, Workflow, Node } from '@shared/schema';
-import AgentCard from './agents/AgentCard';
-import WorkflowCard from './workflows/WorkflowCard';
-import NodeCard from './nodes/NodeCard';
+import { AgentCard, WorkflowCard, NodeCard } from './Cards';
 import Flow from './ui/flow';
 import { useBuilderContext } from '@/contexts/BuilderContext';
 import { nodeCategories } from '@/lib/data';

@@ -36,12 +36,19 @@ import InternalNode from '../flow/nodes/InternalNode';
 // Define a dynamic import function for node components
 const loadNodeComponent = (nodeType: string) => {
   try {
-    // This returns a promise that will resolve to the component
-    return import(/* @vite-ignore */ `../../nodes/${nodeType}/ui`)
+    // First try loading from the Custom directory
+    return import(/* @vite-ignore */ `../../nodes/Custom/${nodeType}/ui`)
       .then(module => module.component)
-      .catch(error => {
-        console.warn(`Failed to load component for node type ${nodeType}:`, error);
-        return InternalNode;
+      .catch(customError => {
+        console.log(`Node ${nodeType} not found in Custom directory, trying root path`);
+        
+        // If not found in Custom directory, try the root directory
+        return import(/* @vite-ignore */ `../../nodes/${nodeType}/ui`)
+          .then(module => module.component)
+          .catch(rootError => {
+            console.warn(`Failed to load component for node type ${nodeType}:`, rootError);
+            return InternalNode;
+          });
       });
   } catch (error) {
     console.warn(`Error importing component for node type ${nodeType}:`, error);
@@ -92,6 +99,14 @@ const createNodeTypes = () => {
     decision: InternalNode,
     function: InternalNode,
     json_path: InternalNode,
+    
+    // New custom nodes
+    text_formatter: InternalNode,
+    json_schema_validator: InternalNode,
+    csv_processor: InternalNode,
+    markdown_renderer: InternalNode,
+    number_input: InternalNode,
+    toggle_switch: InternalNode,
     
     // Legacy mappings
     textInput: InternalNode,
@@ -236,7 +251,24 @@ const FlowEditor = ({
     setLoadedNodeTypes(prev => ({ ...prev, [type]: true }));
     
     try {
-      // Attempt to dynamically import the UI component
+      // First try loading from the Custom directory
+      try {
+        const customModule = await import(/* @vite-ignore */ `../../nodes/Custom/${type}/ui`);
+        if (customModule && customModule.component) {
+          // Update the nodeTypes with the loaded component
+          setDynamicNodeTypes(prev => ({
+            ...prev,
+            [type]: customModule.component
+          }));
+          console.log(`Successfully loaded component for ${type} from Custom directory`);
+          return;
+        }
+      } catch (customError) {
+        // If not in Custom directory, try the root directory
+        console.log(`Node ${type} not found in Custom directory, trying root path`);
+      }
+      
+      // Try the standard directory as fallback
       const module = await import(/* @vite-ignore */ `../../nodes/${type}/ui`);
       
       if (module && module.component) {
@@ -245,7 +277,7 @@ const FlowEditor = ({
           ...prev,
           [type]: module.component
         }));
-        console.log(`Successfully loaded component for ${type}`);
+        console.log(`Successfully loaded component for ${type} from root directory`);
       }
     } catch (error) {
       console.warn(`Failed to load component for ${type}:`, error);

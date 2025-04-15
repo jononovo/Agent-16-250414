@@ -300,72 +300,9 @@ export class MemStorage implements IStorage {
   }
 
   private initializeDefaultData() {
-    // Sample agents
-    this.createAgent({
-      name: "Coordinator Agent",
-      description: "Handles user requests and orchestrates other agents to fulfill tasks",
-      type: "internal",
-      icon: "robot",
-      status: "active",
-      userId: 0,
-      configuration: {}
-    });
-    
-    this.createAgent({
-      name: "Customer Support Agent",
-      description: "Handles customer inquiries using knowledge base and escalates when needed",
-      type: "custom",
-      icon: "headset",
-      status: "deployed",
-      userId: 0,
-      configuration: {}
-    });
-    
-    // Sample nodes for the folder-based node system
-    this.createNode({
-      name: "Text Input",
-      type: "text_input",
-      category: "input",
-      icon: "MessageSquare",
-      description: "A simple text input node for workflow input",
-      configuration: { defaultText: '' },
-      isCustom: false,
-      version: "1.0.0"
-    });
-    
-    this.createNode({
-      name: "HTTP Request",
-      type: "http_request",
-      category: "integration",
-      icon: "Globe",
-      description: "Make HTTP requests to external APIs and web services",
-      configuration: { url: '', method: 'GET', headers: {} },
-      isCustom: false,
-      version: "1.0.0"
-    });
-    
-    this.createNode({
-      name: "Claude AI",
-      type: "claude",
-      category: "ai",
-      icon: "Brain",
-      description: "Generate text using Claude AI model",
-      configuration: { model: 'claude-3-opus-20240229', temperature: 0.7 },
-      isCustom: false,
-      version: "1.0.0"
-    });
-    
-    // Sample workflow with minimal structure
-    this.createWorkflow({
-      name: "Content Generation Workflow",
-      description: "Creates blog posts and social media content based on prompts",
-      type: "generation",
-      icon: "file-text",
-      status: "draft",
-      userId: 0,
-      agentId: null,
-      flowData: { nodes: [], edges: [] }
-    });
+    // This method deliberately left empty
+    // No default data will be created to avoid hardcoded examples
+    console.log('Initializing with empty data store');
   }
 
   // User methods
