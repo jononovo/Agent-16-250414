@@ -33,85 +33,102 @@ import NodeSettingsDrawer from './NodeSettingsDrawer';
 // Import basic fallback node for backward compatibility
 import InternalNode from '../flow/nodes/InternalNode';
 
-// Import folder-based node components
-import { component as functionNode } from '../../nodes/function/ui';
-import { component as claudeNode } from '../../nodes/claude/ui';
-import { component as textInputNode } from '../../nodes/text_input/ui';
-import { component as httpRequestNode } from '../../nodes/http_request/ui';
-
-// Wrap imports with defensive code to handle potential incompatibility issues
-let textTemplateNode = InternalNode;
-let dataTransformNode = InternalNode;
-let decisionNode = InternalNode;
-let jsonPathNode = InternalNode;
-
-// Import other components and use try/catch to handle import errors safely
-try {
-  // These imports might fail if the components don't match ReactFlow's expected interface
-  const textTemplate = require('../../nodes/text_template/ui');
-  const dataTransform = require('../../nodes/data_transform/ui');
-  const decision = require('../../nodes/decision/ui');
-  const jsonPath = require('../../nodes/json_path/ui');
-  
-  textTemplateNode = textTemplate.component;
-  dataTransformNode = dataTransform.component;
-  decisionNode = decision.component;
-  jsonPathNode = jsonPath.component;
-} catch (error) {
-  console.warn('Some folder-based node components could not be imported:', error);
-}
-
-// Register node types with folder-based implementations
-const nodeTypes: NodeTypes = {
-  // Folder-based node implementations
-  text_input: textInputNode,
-  claude: claudeNode,
-  http_request: httpRequestNode,
-  text_template: textTemplateNode,
-  data_transform: dataTransformNode,
-  decision: decisionNode,
-  function: functionNode,
-  json_path: jsonPathNode,
-  
-  // Internal node types for backward compatibility - fallback to InternalNode for all legacy node types
-  internal_new_agent: InternalNode,
-  internal_ai_chat_agent: InternalNode,
-  internal: InternalNode,
-  custom: InternalNode,
-  trigger: InternalNode,
-  processor: InternalNode,
-  output: InternalNode,
-  
-  // Legacy mappings to folder-based versions where available
-  textInput: textInputNode,
-  
-  // Fallback types for other legacy nodes
-  webhook: InternalNode,
-  scheduler: InternalNode,
-  email_trigger: InternalNode,
-  email_send: InternalNode,
-  database_query: InternalNode,
-  filter: InternalNode,
-  
-  // Other legacy types we need to handle
-  text_prompt: InternalNode,
-  visualize_text: InternalNode,
-  transform: InternalNode,
-  chat_interface: InternalNode,
-  generate_text: InternalNode,
-  prompt_crafter: InternalNode,
-  valid_response: InternalNode,
-  perplexity: InternalNode,
-  agent_trigger: InternalNode,
-  workflow_trigger: InternalNode,
-  response_message: InternalNode,
-  api_response_message: InternalNode,
-  generateText: InternalNode,
-  visualizeText: InternalNode,
-  routing: InternalNode,
-  promptCrafter: InternalNode,
-  validResponse: InternalNode
+// Define a dynamic import function for node components
+const loadNodeComponent = (nodeType: string) => {
+  try {
+    // This returns a promise that will resolve to the component
+    return import(/* @vite-ignore */ `../../nodes/${nodeType}/ui`)
+      .then(module => module.component)
+      .catch(error => {
+        console.warn(`Failed to load component for node type ${nodeType}:`, error);
+        return InternalNode;
+      });
+  } catch (error) {
+    console.warn(`Error importing component for node type ${nodeType}:`, error);
+    return Promise.resolve(InternalNode);
+  }
 };
+
+// Map to store loaded components - will be filled lazily
+const loadedComponents: Record<string, any> = {};
+
+// Function to get a node component, loading it if needed
+const getNodeComponent = async (nodeType: string) => {
+  // If already loaded, return from cache
+  if (loadedComponents[nodeType]) {
+    return loadedComponents[nodeType];
+  }
+  
+  try {
+    // Load the component
+    const component = await loadNodeComponent(nodeType);
+    // Cache it for future use
+    loadedComponents[nodeType] = component;
+    return component;
+  } catch (error) {
+    console.warn(`Failed to load component for ${nodeType}:`, error);
+    return InternalNode;
+  }
+};
+
+// Initially only load the InternalNode for all types
+const createNodeTypes = () => {
+  const baseNodeTypes: NodeTypes = {
+    // Start with internal fallback for all types
+    internal_new_agent: InternalNode,
+    internal_ai_chat_agent: InternalNode,
+    internal: InternalNode,
+    custom: InternalNode,
+    trigger: InternalNode,
+    processor: InternalNode,
+    output: InternalNode,
+    
+    // Fallback for common node types
+    text_input: InternalNode,
+    claude: InternalNode,
+    http_request: InternalNode,
+    text_template: InternalNode,
+    data_transform: InternalNode, 
+    decision: InternalNode,
+    function: InternalNode,
+    json_path: InternalNode,
+    
+    // Legacy mappings
+    textInput: InternalNode,
+    
+    // Fallbacks for other legacy nodes
+    webhook: InternalNode,
+    scheduler: InternalNode,
+    email_trigger: InternalNode,
+    email_send: InternalNode,
+    database_query: InternalNode,
+    filter: InternalNode,
+    
+    // Other legacy types we need to handle
+    text_prompt: InternalNode,
+    visualize_text: InternalNode,
+    transform: InternalNode,
+    chat_interface: InternalNode,
+    generate_text: InternalNode,
+    prompt_crafter: InternalNode,
+    valid_response: InternalNode,
+    perplexity: InternalNode,
+    agent_trigger: InternalNode,
+    workflow_trigger: InternalNode,
+    response_message: InternalNode,
+    api_response_message: InternalNode,
+    generateText: InternalNode,
+    visualizeText: InternalNode,
+    routing: InternalNode,
+    promptCrafter: InternalNode,
+    validResponse: InternalNode
+  };
+  
+  return baseNodeTypes;
+};
+
+// Create initial nodeTypes with fallbacks
+const nodeTypes: NodeTypes = createNodeTypes();
 
 interface FlowEditorProps {
   workflow?: Workflow;

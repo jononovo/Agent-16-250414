@@ -9,9 +9,11 @@ import { NodeRegistryEntry } from '../../lib/types';
 import definition from './definition';
 import schema from './schema';
 import * as executor from './executor';
-import * as ui from './ui';
 import { MessageSquare } from 'lucide-react';
 import React from 'react';
+
+// Import the component directly to fix type issues
+import { component as UIComponent } from './ui';
 
 // Ensure the definition complies with NodeMetadata interface
 const metadata = {
@@ -30,7 +32,7 @@ const TextPromptNode: NodeRegistryEntry = {
     execute: executor.execute,
     defaultData: definition.defaultData
   },
-  ui: ui.component,
+  ui: UIComponent,
   icon: React.createElement(MessageSquare, { size: 16 })
 };
 
