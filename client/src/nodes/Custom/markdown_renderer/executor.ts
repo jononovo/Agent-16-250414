@@ -136,7 +136,7 @@ function extractFrontmatter(markdown: string): Record<string, any> {
 }
 
 // Extract metadata from markdown
-function extractMetadata(markdown: string, extractFrontmatter: boolean): Record<string, any> {
+function extractMetadata(markdown: string, shouldExtractFrontmatter: boolean): Record<string, any> {
   const metadata: Record<string, any> = {
     headings: [],
     links: [],
@@ -144,26 +144,44 @@ function extractMetadata(markdown: string, extractFrontmatter: boolean): Record<
   };
   
   // Extract frontmatter if enabled
-  if (extractFrontmatter) {
+  if (shouldExtractFrontmatter) {
     metadata.frontmatter = extractFrontmatter(markdown);
   }
   
   // Extract headings
-  const headingMatches = [...markdown.matchAll(/^(#+)\s+(.*$)/gm)];
+  const headingRegex = /^(#+)\s+(.*$)/gm;
+  const headingMatches: RegExpExecArray[] = [];
+  let headingMatch: RegExpExecArray | null;
+  while ((headingMatch = headingRegex.exec(markdown)) !== null) {
+    headingMatches.push(headingMatch);
+  }
+  
   metadata.headings = headingMatches.map(match => ({
     level: match[1].length,
     text: match[2].trim()
   }));
   
   // Extract links
-  const linkMatches = [...markdown.matchAll(/\[([^\]]+)\]\(([^)]+)\)/g)];
+  const linkRegex = /\[([^\]]+)\]\(([^)]+)\)/g;
+  const linkMatches: RegExpExecArray[] = [];
+  let linkMatch: RegExpExecArray | null;
+  while ((linkMatch = linkRegex.exec(markdown)) !== null) {
+    linkMatches.push(linkMatch);
+  }
+  
   metadata.links = linkMatches.map(match => ({
     text: match[1],
     url: match[2]
   }));
   
   // Extract images
-  const imageMatches = [...markdown.matchAll(/!\[([^\]]+)\]\(([^)]+)\)/g)];
+  const imageRegex = /!\[([^\]]+)\]\(([^)]+)\)/g;
+  const imageMatches: RegExpExecArray[] = [];
+  let imageMatch: RegExpExecArray | null;
+  while ((imageMatch = imageRegex.exec(markdown)) !== null) {
+    imageMatches.push(imageMatch);
+  }
+  
   metadata.images = imageMatches.map(match => ({
     alt: match[1],
     src: match[2]
@@ -195,7 +213,7 @@ export const execute = async (
       // Simple variable interpolation with {{varName}} syntax
       processedMarkdown = markdownContent.replace(
         /\{\{([^}]+)\}\}/g,
-        (match, varName) => {
+        (match: string, varName: string) => {
           const name = varName.trim();
           return inputs.variables[name] !== undefined 
             ? String(inputs.variables[name]) 

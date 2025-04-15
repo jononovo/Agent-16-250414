@@ -154,7 +154,7 @@ export const component = ({ data, isConnectable, selected }: any) => {
               id="strict-mode"
               checked={strictMode}
               onCheckedChange={handleStrictModeToggle}
-              size="sm"
+              className="scale-75"
             />
           </div>
           
@@ -166,7 +166,7 @@ export const component = ({ data, isConnectable, selected }: any) => {
               id="additional-props"
               checked={allowAdditionalProperties}
               onCheckedChange={handleAdditionalPropertiesToggle}
-              size="sm"
+              className="scale-75"
             />
           </div>
         </div>
