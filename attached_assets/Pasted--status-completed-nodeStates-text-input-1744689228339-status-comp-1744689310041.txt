@@ -1,0 +1,214 @@
+{
+  "status": "completed",
+  "nodeStates": {
+    "text_input-1744689228339": {
+      "status": "completed",
+      "startTime": "2025-04-15T03:55:01.189Z",
+      "endTime": "2025-04-15T03:55:01.195Z",
+      "output": {
+        "items": [
+          {
+            "json": {
+              "meta": {
+                "status": "success",
+                "message": "Text input processed successfully",
+                "startTime": "2025-04-15T03:55:01.195Z",
+                "endTime": "2025-04-15T03:55:01.195Z"
+              },
+              "items": [
+                {
+                  "json": {
+                    "text": ""
+                  },
+                  "binary": null
+                }
+              ]
+            },
+            "text": "{\"meta\":{\"status\":\"success\",\"message\":\"Text input processed successfully\",\"startTime\":\"2025-04-15T03:55:01.195Z\",\"endTime\":\"2025-04-15T03:55:01.195Z\"},\"items\":[{\"json\":{\"text\":\"\"},\"binary\":null}]}"
+          }
+        ],
+        "meta": {
+          "startTime": "2025-04-15T03:55:01.195Z",
+          "endTime": "2025-04-15T03:55:01.195Z"
+        }
+      }
+    },
+    "claude-1744689232553": {
+      "status": "completed",
+      "startTime": "2025-04-15T03:55:01.195Z",
+      "endTime": "2025-04-15T03:55:02.993Z",
+      "output": {
+        "items": [
+          {
+            "json": {
+              "meta": {
+                "status": "success",
+                "message": "Successfully generated text with Claude",
+                "startTime": "2025-04-15T03:55:01.199Z",
+                "endTime": "2025-04-15T03:55:02.992Z"
+              },
+              "items": [
+                {
+                  "json": {
+                    "response": "This appears to be a JSON object with a nested structure. Let's break it down:\n\n1. The outer object has two main properties:\n   - `items`: an array of objects\n   - `meta`: an object with two properties (`startTime` and `endTime`)\n\n2. The `items` array contains a single object, which has two properties:\n   - `json`: an object with another nested `meta` and `items` properties\n   - `text`: a string that is a JSON-encoded version of the `json` object\n\n3. The nested `json` object has the following structure:\n   - `meta`: an object with four properties (`status`, `message`, `startTime`, and `endTime`)\n   - `items`: an array with a single object, which has two properties:\n     - `json`: an object with a single `text` property (which is an empty string)\n     - `binary`: `null`\n\nIn summary, this JSON object represents a response from some kind of processing or analysis task, with a nested structure to represent the various components of the response.",
+                    "fullResponse": {
+                      "id": "msg_01MWFYYsWWggYnerSjiD1Boq",
+                      "type": "message",
+                      "role": "assistant",
+                      "model": "claude-3-haiku-20240307",
+                      "content": [
+                        {
+                          "type": "text",
+                          "text": "This appears to be a JSON object with a nested structure. Let's break it down:\n\n1. The outer object has two main properties:\n   - `items`: an array of objects\n   - `meta`: an object with two properties (`startTime` and `endTime`)\n\n2. The `items` array contains a single object, which has two properties:\n   - `json`: an object with another nested `meta` and `items` properties\n   - `text`: a string that is a JSON-encoded version of the `json` object\n\n3. The nested `json` object has the following structure:\n   - `meta`: an object with four properties (`status`, `message`, `startTime`, and `endTime`)\n   - `items`: an array with a single object, which has two properties:\n     - `json`: an object with a single `text` property (which is an empty string)\n     - `binary`: `null`\n\nIn summary, this JSON object represents a response from some kind of processing or analysis task, with a nested structure to represent the various components of the response."
+                        }
+                      ],
+                      "stop_reason": "end_turn",
+                      "stop_sequence": null,
+                      "usage": {
+                        "input_tokens": 219,
+                        "cache_creation_input_tokens": 0,
+                        "cache_read_input_tokens": 0,
+                        "output_tokens": 241
+                      }
+                    }
+                  },
+                  "binary": null
+                }
+              ]
+            },
+            "text": "{\"meta\":{\"status\":\"success\",\"message\":\"Successfully generated text with Claude\",\"startTime\":\"2025-04-15T03:55:01.199Z\",\"endTime\":\"2025-04-15T03:55:02.992Z\"},\"items\":[{\"json\":{\"response\":\"This appears to be a JSON object with a nested structure. Let's break it down:\\n\\n1. The outer object has two main properties:\\n   - `items`: an array of objects\\n   - `meta`: an object with two properties (`startTime` and `endTime`)\\n\\n2. The `items` array contains a single object, which has two properties:\\n   - `json`: an object with another nested `meta` and `items` properties\\n   - `text`: a string that is a JSON-encoded version of the `json` object\\n\\n3. The nested `json` object has the following structure:\\n   - `meta`: an object with four properties (`status`, `message`, `startTime`, and `endTime`)\\n   - `items`: an array with a single object, which has two properties:\\n     - `json`: an object with a single `text` property (which is an empty string)\\n     - `binary`: `null`\\n\\nIn summary, this JSON object represents a response from some kind of processing or analysis task, with a nested structure to represent the various components of the response.\",\"fullResponse\":{\"id\":\"msg_01MWFYYsWWggYnerSjiD1Boq\",\"type\":\"message\",\"role\":\"assistant\",\"model\":\"claude-3-haiku-20240307\",\"content\":[{\"type\":\"text\",\"text\":\"This appears to be a JSON object with a nested structure. Let's break it down:\\n\\n1. The outer object has two main properties:\\n   - `items`: an array of objects\\n   - `meta`: an object with two properties (`startTime` and `endTime`)\\n\\n2. The `items` array contains a single object, which has two properties:\\n   - `json`: an object with another nested `meta` and `items` properties\\n   - `text`: a string that is a JSON-encoded version of the `json` object\\n\\n3. The nested `json` object has the following structure:\\n   - `meta`: an object with four properties (`status`, `message`, `startTime`, and `endTime`)\\n   - `items`: an array with a single object, which has two properties:\\n     - `json`: an object with a single `text` property (which is an empty string)\\n     - `binary`: `null`\\n\\nIn summary, this JSON object represents a response from some kind of processing or analysis task, with a nested structure to represent the various components of the response.\"}],\"stop_reason\":\"end_turn\",\"stop_sequence\":null,\"usage\":{\"input_tokens\":219,\"cache_creation_input_tokens\":0,\"cache_read_input_tokens\":0,\"output_tokens\":241}}},\"binary\":null}]}"
+          }
+        ],
+        "meta": {
+          "startTime": "2025-04-15T03:55:02.993Z",
+          "endTime": "2025-04-15T03:55:02.993Z"
+        }
+      }
+    }
+  },
+  "startTime": "2025-04-15T03:55:01.189Z",
+  "endTime": "2025-04-15T03:55:02.993Z",
+  "nodeOutputs": {
+    "text_input-1744689228339": {
+      "items": [
+        {
+          "json": {
+            "meta": {
+              "status": "success",
+              "message": "Text input processed successfully",
+              "startTime": "2025-04-15T03:55:01.195Z",
+              "endTime": "2025-04-15T03:55:01.195Z"
+            },
+            "items": [
+              {
+                "json": {
+                  "text": ""
+                },
+                "binary": null
+              }
+            ]
+          },
+          "text": "{\"meta\":{\"status\":\"success\",\"message\":\"Text input processed successfully\",\"startTime\":\"2025-04-15T03:55:01.195Z\",\"endTime\":\"2025-04-15T03:55:01.195Z\"},\"items\":[{\"json\":{\"text\":\"\"},\"binary\":null}]}"
+        }
+      ],
+      "meta": {
+        "startTime": "2025-04-15T03:55:01.195Z",
+        "endTime": "2025-04-15T03:55:01.195Z"
+      }
+    },
+    "claude-1744689232553": {
+      "items": [
+        {
+          "json": {
+            "meta": {
+              "status": "success",
+              "message": "Successfully generated text with Claude",
+              "startTime": "2025-04-15T03:55:01.199Z",
+              "endTime": "2025-04-15T03:55:02.992Z"
+            },
+            "items": [
+              {
+                "json": {
+                  "response": "This appears to be a JSON object with a nested structure. Let's break it down:\n\n1. The outer object has two main properties:\n   - `items`: an array of objects\n   - `meta`: an object with two properties (`startTime` and `endTime`)\n\n2. The `items` array contains a single object, which has two properties:\n   - `json`: an object with another nested `meta` and `items` properties\n   - `text`: a string that is a JSON-encoded version of the `json` object\n\n3. The nested `json` object has the following structure:\n   - `meta`: an object with four properties (`status`, `message`, `startTime`, and `endTime`)\n   - `items`: an array with a single object, which has two properties:\n     - `json`: an object with a single `text` property (which is an empty string)\n     - `binary`: `null`\n\nIn summary, this JSON object represents a response from some kind of processing or analysis task, with a nested structure to represent the various components of the response.",
+                  "fullResponse": {
+                    "id": "msg_01MWFYYsWWggYnerSjiD1Boq",
+                    "type": "message",
+                    "role": "assistant",
+                    "model": "claude-3-haiku-20240307",
+                    "content": [
+                      {
+                        "type": "text",
+                        "text": "This appears to be a JSON object with a nested structure. Let's break it down:\n\n1. The outer object has two main properties:\n   - `items`: an array of objects\n   - `meta`: an object with two properties (`startTime` and `endTime`)\n\n2. The `items` array contains a single object, which has two properties:\n   - `json`: an object with another nested `meta` and `items` properties\n   - `text`: a string that is a JSON-encoded version of the `json` object\n\n3. The nested `json` object has the following structure:\n   - `meta`: an object with four properties (`status`, `message`, `startTime`, and `endTime`)\n   - `items`: an array with a single object, which has two properties:\n     - `json`: an object with a single `text` property (which is an empty string)\n     - `binary`: `null`\n\nIn summary, this JSON object represents a response from some kind of processing or analysis task, with a nested structure to represent the various components of the response."
+                      }
+                    ],
+                    "stop_reason": "end_turn",
+                    "stop_sequence": null,
+                    "usage": {
+                      "input_tokens": 219,
+                      "cache_creation_input_tokens": 0,
+                      "cache_read_input_tokens": 0,
+                      "output_tokens": 241
+                    }
+                  }
+                },
+                "binary": null
+              }
+            ]
+          },
+          "text": "{\"meta\":{\"status\":\"success\",\"message\":\"Successfully generated text with Claude\",\"startTime\":\"2025-04-15T03:55:01.199Z\",\"endTime\":\"2025-04-15T03:55:02.992Z\"},\"items\":[{\"json\":{\"response\":\"This appears to be a JSON object with a nested structure. Let's break it down:\\n\\n1. The outer object has two main properties:\\n   - `items`: an array of objects\\n   - `meta`: an object with two properties (`startTime` and `endTime`)\\n\\n2. The `items` array contains a single object, which has two properties:\\n   - `json`: an object with another nested `meta` and `items` properties\\n   - `text`: a string that is a JSON-encoded version of the `json` object\\n\\n3. The nested `json` object has the following structure:\\n   - `meta`: an object with four properties (`status`, `message`, `startTime`, and `endTime`)\\n   - `items`: an array with a single object, which has two properties:\\n     - `json`: an object with a single `text` property (which is an empty string)\\n     - `binary`: `null`\\n\\nIn summary, this JSON object represents a response from some kind of processing or analysis task, with a nested structure to represent the various components of the response.\",\"fullResponse\":{\"id\":\"msg_01MWFYYsWWggYnerSjiD1Boq\",\"type\":\"message\",\"role\":\"assistant\",\"model\":\"claude-3-haiku-20240307\",\"content\":[{\"type\":\"text\",\"text\":\"This appears to be a JSON object with a nested structure. Let's break it down:\\n\\n1. The outer object has two main properties:\\n   - `items`: an array of objects\\n   - `meta`: an object with two properties (`startTime` and `endTime`)\\n\\n2. The `items` array contains a single object, which has two properties:\\n   - `json`: an object with another nested `meta` and `items` properties\\n   - `text`: a string that is a JSON-encoded version of the `json` object\\n\\n3. The nested `json` object has the following structure:\\n   - `meta`: an object with four properties (`status`, `message`, `startTime`, and `endTime`)\\n   - `items`: an array with a single object, which has two properties:\\n     - `json`: an object with a single `text` property (which is an empty string)\\n     - `binary`: `null`\\n\\nIn summary, this JSON object represents a response from some kind of processing or analysis task, with a nested structure to represent the various components of the response.\"}],\"stop_reason\":\"end_turn\",\"stop_sequence\":null,\"usage\":{\"input_tokens\":219,\"cache_creation_input_tokens\":0,\"cache_read_input_tokens\":0,\"output_tokens\":241}}},\"binary\":null}]}"
+        }
+      ],
+      "meta": {
+        "startTime": "2025-04-15T03:55:02.993Z",
+        "endTime": "2025-04-15T03:55:02.993Z"
+      }
+    }
+  },
+  "output": {
+    "items": [
+      {
+        "json": {
+          "meta": {
+            "status": "success",
+            "message": "Successfully generated text with Claude",
+            "startTime": "2025-04-15T03:55:01.199Z",
+            "endTime": "2025-04-15T03:55:02.992Z"
+          },
+          "items": [
+            {
+              "json": {
+                "response": "This appears to be a JSON object with a nested structure. Let's break it down:\n\n1. The outer object has two main properties:\n   - `items`: an array of objects\n   - `meta`: an object with two properties (`startTime` and `endTime`)\n\n2. The `items` array contains a single object, which has two properties:\n   - `json`: an object with another nested `meta` and `items` properties\n   - `text`: a string that is a JSON-encoded version of the `json` object\n\n3. The nested `json` object has the following structure:\n   - `meta`: an object with four properties (`status`, `message`, `startTime`, and `endTime`)\n   - `items`: an array with a single object, which has two properties:\n     - `json`: an object with a single `text` property (which is an empty string)\n     - `binary`: `null`\n\nIn summary, this JSON object represents a response from some kind of processing or analysis task, with a nested structure to represent the various components of the response.",
+                "fullResponse": {
+                  "id": "msg_01MWFYYsWWggYnerSjiD1Boq",
+                  "type": "message",
+                  "role": "assistant",
+                  "model": "claude-3-haiku-20240307",
+                  "content": [
+                    {
+                      "type": "text",
+                      "text": "This appears to be a JSON object with a nested structure. Let's break it down:\n\n1. The outer object has two main properties:\n   - `items`: an array of objects\n   - `meta`: an object with two properties (`startTime` and `endTime`)\n\n2. The `items` array contains a single object, which has two properties:\n   - `json`: an object with another nested `meta` and `items` properties\n   - `text`: a string that is a JSON-encoded version of the `json` object\n\n3. The nested `json` object has the following structure:\n   - `meta`: an object with four properties (`status`, `message`, `startTime`, and `endTime`)\n   - `items`: an array with a single object, which has two properties:\n     - `json`: an object with a single `text` property (which is an empty string)\n     - `binary`: `null`\n\nIn summary, this JSON object represents a response from some kind of processing or analysis task, with a nested structure to represent the various components of the response."
+                    }
+                  ],
+                  "stop_reason": "end_turn",
+                  "stop_sequence": null,
+                  "usage": {
+                    "input_tokens": 219,
+                    "cache_creation_input_tokens": 0,
+                    "cache_read_input_tokens": 0,
+                    "output_tokens": 241
+                  }
+                }
+              },
+              "binary": null
+            }
+          ]
+        },
+        "text": "{\"meta\":{\"status\":\"success\",\"message\":\"Successfully generated text with Claude\",\"startTime\":\"2025-04-15T03:55:01.199Z\",\"endTime\":\"2025-04-15T03:55:02.992Z\"},\"items\":[{\"json\":{\"response\":\"This appears to be a JSON object with a nested structure. Let's break it down:\\n\\n1. The outer object has two main properties:\\n   - `items`: an array of objects\\n   - `meta`: an object with two properties (`startTime` and `endTime`)\\n\\n2. The `items` array contains a single object, which has two properties:\\n   - `json`: an object with another nested `meta` and `items` properties\\n   - `text`: a string that is a JSON-encoded version of the `json` object\\n\\n3. The nested `json` object has the following structure:\\n   - `meta`: an object with four properties (`status`, `message`, `startTime`, and `endTime`)\\n   - `items`: an array with a single object, which has two properties:\\n     - `json`: an object with a single `text` property (which is an empty string)\\n     - `binary`: `null`\\n\\nIn summary, this JSON object represents a response from some kind of processing or analysis task, with a nested structure to represent the various components of the response.\",\"fullResponse\":{\"id\":\"msg_01MWFYYsWWggYnerSjiD1Boq\",\"type\":\"message\",\"role\":\"assistant\",\"model\":\"claude-3-haiku-20240307\",\"content\":[{\"type\":\"text\",\"text\":\"This appears to be a JSON object with a nested structure. Let's break it down:\\n\\n1. The outer object has two main properties:\\n   - `items`: an array of objects\\n   - `meta`: an object with two properties (`startTime` and `endTime`)\\n\\n2. The `items` array contains a single object, which has two properties:\\n   - `json`: an object with another nested `meta` and `items` properties\\n   - `text`: a string that is a JSON-encoded version of the `json` object\\n\\n3. The nested `json` object has the following structure:\\n   - `meta`: an object with four properties (`status`, `message`, `startTime`, and `endTime`)\\n   - `items`: an array with a single object, which has two properties:\\n     - `json`: an object with a single `text` property (which is an empty string)\\n     - `binary`: `null`\\n\\nIn summary, this JSON object represents a response from some kind of processing or analysis task, with a nested structure to represent the various components of the response.\"}],\"stop_reason\":\"end_turn\",\"stop_sequence\":null,\"usage\":{\"input_tokens\":219,\"cache_creation_input_tokens\":0,\"cache_read_input_tokens\":0,\"output_tokens\":241}}},\"binary\":null}]}"
+      }
+    ],
+    "meta": {
+      "startTime": "2025-04-15T03:55:02.993Z",
+      "endTime": "2025-04-15T03:55:02.993Z"
+    }
+  }
+}

@@ -52,7 +52,7 @@ const inputTemplates = {
     source: "ui_form"
   },
   'default': {
-    text: "Hello from test"
+    inputText: "Write a poem about a pig"
   }
 };
 
@@ -65,7 +65,7 @@ export default function WorkflowTestBench() {
   // State
   const [workflowId, setWorkflowId] = useState<string>(params.id || '15'); // Default to workflow 15 or URL param
   const [inputData, setInputData] = useState<string>(''); 
-  const [jsonInput, setJsonInput] = useState<string>('{\n  "text": "Hello from test"\n}');
+  const [jsonInput, setJsonInput] = useState<string>('{\n  "inputText": "Write a poem about a pig"\n}');
   const [workflowData, setWorkflowData] = useState<any>(null);
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [isExecuting, setIsExecuting] = useState<boolean>(false);
