@@ -94,3 +94,15 @@ export interface NodeRegistryEntry {
   validator?: (data: any) => NodeValidationResult;
   icon?: ReactNode;      // Node icon for UI
 }
+
+/**
+ * Node Category
+ * Used for grouping nodes in the UI
+ */
+export interface NodeCategory {
+  id: string;
+  name: string;
+  description: string;
+  icon?: string;
+  nodeCount: number;
+}
