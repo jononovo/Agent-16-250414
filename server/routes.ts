@@ -1532,6 +1532,51 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
+  // Get custom node types
+  app.get("/api/nodes/custom-types", async (req, res) => {
+    try {
+      // Fetch customNodeTypes from the database
+      const customNodeTypes = await (async () => {
+        try {
+          const data = await storage.db.get('customNodeTypes');
+          
+          // Handle the database result by converting to appropriate type
+          if (data) {
+            // Handle different data types
+            let dataStr: string;
+            
+            if (typeof data === 'string') {
+              dataStr = data;
+            } else if (typeof data === 'object') {
+              dataStr = JSON.stringify(data);
+            } else {
+              console.warn('Unexpected data type from database:', typeof data);
+              dataStr = String(data);
+            }
+            
+            try {
+              return JSON.parse(dataStr) as string[];
+            } catch (e) {
+              console.error('Error parsing custom node types:', e);
+              return [];
+            }
+          }
+          return [];
+        } catch (error) {
+          console.warn('Error fetching custom node types:', error);
+          return [];
+        }
+      })();
+      
+      res.json({ customNodeTypes });
+    } catch (error) {
+      res.status(500).json({ 
+        message: "Error fetching custom node types", 
+        details: error instanceof Error ? error.message : String(error) 
+      });
+    }
+  });
+  
   // Get a specific node
   app.get("/api/nodes/:id", async (req, res) => {
     try {
@@ -1563,7 +1608,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
         icon: z.string().optional(),
         inputs: z.record(z.any()).optional(),
         outputs: z.record(z.any()).optional(),
-        settings: z.record(z.any()).optional()
+        settings: z.record(z.any()).optional(),
+        isCustom: z.boolean().default(true),
+        version: z.string().default("1.0.0"),
+        implementation: z.string().optional()
       });
       
       const result = nodeSchema.safeParse(req.body);

@@ -17,6 +17,9 @@ import {
  * Storage interface for all data access
  */
 export interface IStorage {
+  // Database access for low-level operations
+  db: Database;
+  
   // User methods
   getUsers(): Promise<User[]>;
   getUser(id: number): Promise<User | undefined>;
@@ -70,7 +73,8 @@ export class MemStorage implements IStorage {
   private nodeId: number;
   private logId: number;
   
-  private db: Database;
+  // Public db property to allow access to the database
+  public db: Database;
   private initializing: boolean;
 
   constructor() {
