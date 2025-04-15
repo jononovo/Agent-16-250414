@@ -91,38 +91,85 @@ export class MemStorage implements IStorage {
     this.db = new Database();
     
     // Load persisted data or initialize with sample data
-    this.loadPersistedData().then(() => {
-      this.initializing = false;
+    this.initialize();
+  }
+  
+  /**
+   * Initialize the storage system and load persisted data
+   */
+  async initialize(): Promise<void> {
+    try {
+      await this.loadPersistedData();
       console.log('Storage system initialized');
-    }).catch(error => {
-      console.error('Error initializing storage:', error);
+      this.initializing = false;
+    } catch (error) {
+      console.error('Error initializing storage system:', error);
       // Initialize with sample data as fallback
       this.initializeDefaultData();
       this.initializing = false;
-    });
+    }
+  }
+  
+  /**
+   * Save all data to Replit Database (useful for application shutdown or maintenance)
+   */
+  async saveAllData(): Promise<void> {
+    try {
+      // Set initializing to false to ensure data is saved
+      const wasInitializing = this.initializing;
+      this.initializing = false;
+      
+      await Promise.all([
+        this.saveWorkflows(),
+        this.saveAgents(),
+        this.saveNodes(),
+        this.saveLogs()
+      ]);
+      
+      console.log('All data saved to Replit Database');
+      
+      // Restore initializing state
+      this.initializing = wasInitializing;
+    } catch (error) {
+      console.error('Error saving all data:', error);
+    }
+  }
+  
+  /**
+   * Helper to convert database result to usable data
+   */
+  private parseDbResult(data: unknown): any {
+    if (!data) return null;
+    
+    // Handle different data types that might be returned
+    let dataStr: string;
+    
+    if (typeof data === 'string') {
+      dataStr = data;
+    } else if (typeof data === 'object') {
+      dataStr = JSON.stringify(data);
+    } else {
+      console.warn('Unexpected data type from database:', typeof data);
+      dataStr = String(data);
+    }
+    
+    try {
+      return JSON.parse(dataStr);
+    } catch (error) {
+      console.error('Error parsing database result:', error);
+      return null;
+    }
   }
   
   private async loadPersistedData() {
     try {
+      let hasData = false;
+      
       // Load workflows
       const workflowsData = await this.db.get('workflows') as unknown;
-      
       if (workflowsData) {
-        // Handle different data types that might be returned
-        let workflowsStr: string;
+        const workflows = this.parseDbResult(workflowsData);
         
-        if (typeof workflowsData === 'string') {
-          workflowsStr = workflowsData;
-        } else if (typeof workflowsData === 'object') {
-          workflowsStr = JSON.stringify(workflowsData);
-        } else {
-          console.warn('Unexpected data type from database:', typeof workflowsData);
-          workflowsStr = String(workflowsData);
-        }
-        
-        const workflows = JSON.parse(workflowsStr);
-        
-        // Restore workflows
         if (Array.isArray(workflows)) {
           workflows.forEach((workflow: Workflow) => {
             this.workflows.set(workflow.id, workflow);
@@ -132,9 +179,67 @@ export class MemStorage implements IStorage {
             }
           });
           console.log(`Loaded ${workflows.length} workflows from Replit Database`);
+          hasData = true;
         }
-      } else {
-        // Initialize with sample data if no persisted data
+      }
+      
+      // Load agents
+      const agentsData = await this.db.get('agents') as unknown;
+      if (agentsData) {
+        const agents = this.parseDbResult(agentsData);
+        
+        if (Array.isArray(agents)) {
+          agents.forEach((agent: Agent) => {
+            this.agents.set(agent.id, agent);
+            // Update agentId counter to be higher than any existing agent ID
+            if (agent.id >= this.agentId) {
+              this.agentId = agent.id + 1;
+            }
+          });
+          console.log(`Loaded ${agents.length} agents from Replit Database`);
+          hasData = true;
+        }
+      }
+      
+      // Load nodes
+      const nodesData = await this.db.get('nodes') as unknown;
+      if (nodesData) {
+        const nodes = this.parseDbResult(nodesData);
+        
+        if (Array.isArray(nodes)) {
+          nodes.forEach((node: Node) => {
+            this.nodes.set(node.id, node);
+            // Update nodeId counter to be higher than any existing node ID
+            if (node.id >= this.nodeId) {
+              this.nodeId = node.id + 1;
+            }
+          });
+          console.log(`Loaded ${nodes.length} nodes from Replit Database`);
+          hasData = true;
+        }
+      }
+      
+      // Load logs
+      const logsData = await this.db.get('logs') as unknown;
+      if (logsData) {
+        const logs = this.parseDbResult(logsData);
+        
+        if (Array.isArray(logs)) {
+          logs.forEach((log: Log) => {
+            this.logs.set(log.id, log);
+            // Update logId counter to be higher than any existing log ID
+            if (log.id >= this.logId) {
+              this.logId = log.id + 1;
+            }
+          });
+          console.log(`Loaded ${logs.length} logs from Replit Database`);
+          hasData = true;
+        }
+      }
+      
+      // Initialize with sample data if no persisted data was found
+      if (!hasData) {
+        console.log('No persisted data found, initializing with default data');
         this.initializeDefaultData();
       }
     } catch (error) {
@@ -255,6 +360,10 @@ export class MemStorage implements IStorage {
       updatedAt: now
     };
     this.agents.set(id, agent);
+    
+    // Persist agents
+    this.saveAgents();
+    
     return agent;
   }
   
@@ -270,11 +379,22 @@ export class MemStorage implements IStorage {
       updatedAt: now
     };
     this.agents.set(id, updatedAgent);
+    
+    // Persist agents
+    this.saveAgents();
+    
     return updatedAgent;
   }
   
   async deleteAgent(id: number): Promise<boolean> {
-    return this.agents.delete(id);
+    const result = this.agents.delete(id);
+    
+    // Persist agents if deletion was successful
+    if (result) {
+      this.saveAgents();
+    }
+    
+    return result;
   }
   
   // Workflow methods
@@ -297,19 +417,64 @@ export class MemStorage implements IStorage {
   }
   
   /**
-   * Save workflows to Replit Database for persistence
+   * Save data to Replit Database for persistence
    */
-  private async saveWorkflows() {
+  private async saveData(key: string, data: any) {
     // Skip saving during initialization
     if (this.initializing) return;
     
     try {
-      const workflows = Array.from(this.workflows.values());
-      await this.db.set('workflows', JSON.stringify(workflows));
-      console.log(`Saved ${this.workflows.size} workflows to Replit Database`);
+      await this.db.set(key, JSON.stringify(data));
+      console.log(`Saved data to Replit Database: ${key}`);
+      return true;
     } catch (error) {
-      console.error('Error saving workflows to Replit Database:', error);
+      console.error(`Error saving data to Replit Database (${key}):`, error);
+      return false;
     }
+  }
+  
+  /**
+   * Save workflows to Replit Database
+   */
+  private async saveWorkflows() {
+    if (this.initializing) return;
+    const workflows = Array.from(this.workflows.values());
+    return this.saveData('workflows', workflows);
+  }
+  
+  /**
+   * Save agents to Replit Database
+   */
+  private async saveAgents() {
+    if (this.initializing) return;
+    const agents = Array.from(this.agents.values());
+    return this.saveData('agents', agents);
+  }
+  
+  /**
+   * Save nodes to Replit Database
+   */
+  private async saveNodes() {
+    if (this.initializing) return;
+    const nodes = Array.from(this.nodes.values());
+    return this.saveData('nodes', nodes);
+  }
+  
+  /**
+   * Save logs to Replit Database
+   */
+  private async saveLogs() {
+    if (this.initializing) return;
+    // Only save the most recent logs (e.g., last 100) to avoid excessive storage usage
+    const logs = Array.from(this.logs.values())
+      .sort((a, b) => {
+        const dateA = a.startedAt || new Date(0);
+        const dateB = b.startedAt || new Date(0);
+        return dateB.getTime() - dateA.getTime();
+      })
+      .slice(0, 100); // Keep only the most recent 100 logs
+    
+    return this.saveData('logs', logs);
   }
 
   async createWorkflow(insertWorkflow: InsertWorkflow): Promise<Workflow> {
@@ -425,6 +590,10 @@ export class MemStorage implements IStorage {
       updatedAt: now
     };
     this.nodes.set(id, node);
+    
+    // Persist nodes
+    this.saveNodes();
+    
     return node;
   }
   
@@ -440,11 +609,22 @@ export class MemStorage implements IStorage {
       updatedAt: now
     };
     this.nodes.set(id, updatedNode);
+    
+    // Persist nodes
+    this.saveNodes();
+    
     return updatedNode;
   }
   
   async deleteNode(id: number): Promise<boolean> {
-    return this.nodes.delete(id);
+    const result = this.nodes.delete(id);
+    
+    // Persist nodes if deletion was successful
+    if (result) {
+      this.saveNodes();
+    }
+    
+    return result;
   }
   
   // Log methods
@@ -489,6 +669,10 @@ export class MemStorage implements IStorage {
     };
     
     this.logs.set(id, log);
+    
+    // Persist logs
+    this.saveLogs();
+    
     return log;
   }
   
@@ -502,6 +686,12 @@ export class MemStorage implements IStorage {
       id
     };
     this.logs.set(id, updatedLog);
+    
+    // Persist logs if this update completes the log (status is completed or error)
+    if (logUpdate.status === 'completed' || logUpdate.status === 'error') {
+      this.saveLogs();
+    }
+    
     return updatedLog;
   }
 }
