@@ -68,7 +68,10 @@ export function getAllNodes(): any[] {
     'data_transform',
     'decision',
     'function',
-    'json_path'
+    'json_path',
+    'text_formatter',
+    'number_input',
+    'toggle_switch'
   ];
   
   // Map the node types to their basic information
@@ -97,13 +100,18 @@ function getCategoryForNodeType(type: string): string {
   }
   
   // Data processing nodes
-  if (['data_transform', 'json_path', 'function'].includes(type)) {
+  if (['data_transform', 'json_path', 'function', 'text_formatter'].includes(type)) {
     return 'data';
   }
   
   // Action/integration nodes
   if (['http_request', 'decision'].includes(type)) {
     return 'actions';
+  }
+  
+  // Input nodes
+  if (['number_input', 'toggle_switch'].includes(type)) {
+    return 'input';
   }
   
   // Default category
@@ -122,7 +130,10 @@ function getIconForNodeType(type: string): string {
     'data_transform': 'repeat',
     'decision': 'git-branch',
     'function': 'code',
-    'json_path': 'filter'
+    'json_path': 'filter',
+    'text_formatter': 'text',
+    'number_input': 'hash',
+    'toggle_switch': 'toggle-left'
   };
   
   return iconMap[type] || 'box';
