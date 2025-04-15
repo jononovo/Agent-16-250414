@@ -83,7 +83,8 @@ const NodeCard = ({ node, isCategory = false }: NodeCardProps) => {
         </p>
         <div className="flex items-center text-xs text-slate-500">
           <span className="flex items-center">
-            <i className="fas fa-cube mr-1"></i> {node.type || 'Custom'}
+            <i className="fas fa-cube mr-1"></i> 
+            {isCategory ? 'Category' : 'type' in node ? node.type : 'Custom'}
           </span>
         </div>
       </div>
