@@ -52,8 +52,7 @@ const inputTemplates = {
     source: "ui_form"
   },
   'default': {
-    text: "Sample input text",
-    source: "ui_form"
+    text: "Hello from test"
   }
 };
 
@@ -66,7 +65,7 @@ export default function WorkflowTestBench() {
   // State
   const [workflowId, setWorkflowId] = useState<string>(params.id || '15'); // Default to workflow 15 or URL param
   const [inputData, setInputData] = useState<string>(''); 
-  const [jsonInput, setJsonInput] = useState<string>('{\n  "name": "Test Agent",\n  "description": "A test agent created from the workflow tester",\n  "type": "custom",\n  "icon": "sparkles",\n  "source": "ui_form"\n}');
+  const [jsonInput, setJsonInput] = useState<string>('{\n  "text": "Hello from test"\n}');
   const [workflowData, setWorkflowData] = useState<any>(null);
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [isExecuting, setIsExecuting] = useState<boolean>(false);
