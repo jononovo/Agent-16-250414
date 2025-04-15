@@ -3,7 +3,7 @@
  * Defines the Claude node's properties, appearance, and behavior
  */
 
-import { NodeDefinition } from '../types';
+import { NodeDefinition } from '../../../nodes/types';
 import { Sparkles } from 'lucide-react';
 import React from 'react';
 

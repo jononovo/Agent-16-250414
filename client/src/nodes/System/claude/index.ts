@@ -4,7 +4,7 @@
  * This node provides integration with the Claude AI API for text generation.
  */
 
-import { NodeDefinition } from '../types';
+import { NodeDefinition } from '../../../nodes/types';
 import nodeDefinition, { nodeMetadata } from './definition';
 import schema from './schema';
 import * as executor from './executor';
