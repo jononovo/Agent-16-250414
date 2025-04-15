@@ -33,8 +33,6 @@ Nodes are organized in two primary directories:
    - User-defined or project-specific nodes
    - Examples: perplexity_api, openai_api, webhook
 
-Each node itself is a template that can be customized within a workflow. This approach allows users to configure nodes for their specific needs without requiring separate node templates.
-
 This organization helps with:
 - Clear separation between core and domain-specific functionality
 - Easier maintenance and updates to system nodes
