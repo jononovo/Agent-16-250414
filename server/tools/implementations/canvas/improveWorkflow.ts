@@ -86,8 +86,31 @@ const improveWorkflowTool: Tool = {
       
       // Analyze workflow for each node type and suggest improvements
       workflowNodes.forEach(node => {
+        // First verify the node type is in our allowed list, or provide general improvements
+        if (!AVAILABLE_NODE_TYPES.includes(node.type)) {
+          // For legacy or custom node types, suggest migration to supported types
+          suggestedImprovements.push({
+            nodeId: node.id,
+            nodeType: node.type,
+            currentConfig: node.data || {},
+            suggestedChanges: {
+              migrateToSupportedType: true,
+              recommendedType: AVAILABLE_NODE_TYPES.find(type => 
+                type.toLowerCase().includes(node.type.toLowerCase().replace(/([A-Z])/g, '_$1').toLowerCase())
+              ) || 'text_template'
+            },
+            reason: `Migrate from unsupported node type "${node.type}" to a supported node type`,
+            benefitArea: 'compatibility',
+            implementationDifficulty: 'medium'
+          });
+          return; // Skip to next node
+        }
+        
+        // Now provide specific improvements for each of our approved node types
         switch (node.type) {
-          case 'textInput':
+          // Input nodes
+          case 'text_input':
+          case 'textInput': // For backward compatibility
             suggestedImprovements.push({
               nodeId: node.id,
               nodeType: node.type,
@@ -95,7 +118,8 @@ const improveWorkflowTool: Tool = {
               suggestedChanges: {
                 validation: true,
                 placeholder: 'Enter specific instructions...',
-                helpText: 'Provide clear instructions for best results'
+                helpText: 'Provide clear instructions for best results',
+                required: true
               },
               reason: 'Enhance user input guidance',
               benefitArea: 'usability',
@@ -103,7 +127,26 @@ const improveWorkflowTool: Tool = {
             });
             break;
             
-          case 'httpRequest':
+          case 'file_input':
+            suggestedImprovements.push({
+              nodeId: node.id,
+              nodeType: node.type,
+              currentConfig: node.data || {},
+              suggestedChanges: {
+                acceptedTypes: '.json,.csv,.txt',
+                maxSize: 10,
+                validation: true,
+                helpText: 'Upload a file (10MB max)'
+              },
+              reason: 'Improve file input constraints and user guidance',
+              benefitArea: 'usability',
+              implementationDifficulty: 'low'
+            });
+            break;
+          
+          // API nodes
+          case 'http_request':
+          case 'httpRequest': // For backward compatibility
             suggestedImprovements.push({
               nodeId: node.id,
               nodeType: node.type,
@@ -114,7 +157,8 @@ const improveWorkflowTool: Tool = {
                   maxRetries: 3,
                   backoffFactor: 2
                 },
-                timeout: 10000
+                timeout: 10000,
+                errorHandling: 'graceful'
               },
               reason: 'Improve reliability and performance of API calls',
               benefitArea: 'performance',
@@ -122,61 +166,135 @@ const improveWorkflowTool: Tool = {
             });
             break;
             
-          case 'openAiCompletion':
+          // AI nodes  
+          case 'claude':
             suggestedImprovements.push({
               nodeId: node.id,
               nodeType: node.type,
               currentConfig: node.data || {},
               suggestedChanges: {
-                model: 'gpt-4-1106-preview', // Suggest the latest model
+                model: 'claude-3-opus-20240229', // Use latest model
                 temperature: 0.5, // Suggest a balanced temperature
-                systemMessage: 'You are a helpful AI assistant focused on providing clear, accurate responses.'
+                systemPrompt: 'You are a helpful AI assistant focused on providing clear, accurate responses.',
+                maxTokens: 2000
               },
-              reason: 'Optimize AI model parameters for better responses',
+              reason: 'Optimize Claude AI model parameters for better responses',
               benefitArea: 'accuracy',
               implementationDifficulty: 'low'
             });
             break;
             
-          case 'textTransformation':
+          // Transformation nodes  
+          case 'data_transform':
             suggestedImprovements.push({
               nodeId: node.id,
               nodeType: node.type,
               currentConfig: node.data || {},
               suggestedChanges: {
                 preserveFormatting: true,
-                errorHandling: 'graceful'
+                errorHandling: 'graceful',
+                transformationCode: 'return data.map(item => ({ ...item, processed: true }));'
               },
-              reason: 'Enhance text processing robustness',
+              reason: 'Enhance data transformation robustness',
               benefitArea: 'reliability',
               implementationDifficulty: 'low'
             });
             break;
             
-          case 'conditionalLogic':
+          case 'text_template':
             suggestedImprovements.push({
               nodeId: node.id,
               nodeType: node.type,
               currentConfig: node.data || {},
               suggestedChanges: {
-                defaultPath: 'true',
-                logicDisplay: 'visual'
+                template: '{{ #if data }}\n  Result: {{ data }}\n{{ else }}\n  No data available\n{{ /if }}',
+                fallbackValue: 'Error processing template'
               },
-              reason: 'Improve conditional logic clarity and default behavior',
+              reason: 'Add conditional logic and error handling to template',
+              benefitArea: 'reliability',
+              implementationDifficulty: 'low'
+            });
+            break;
+            
+          // Logic nodes  
+          case 'decision':
+            suggestedImprovements.push({
+              nodeId: node.id,
+              nodeType: node.type,
+              currentConfig: node.data || {},
+              suggestedChanges: {
+                defaultPath: 'false',
+                condition: 'value != null && value.length > 0',
+                description: 'Check if value exists and is not empty'
+              },
+              reason: 'Improve decision logic with better condition and documentation',
               benefitArea: 'usability',
               implementationDifficulty: 'medium'
             });
             break;
             
+          // Parser nodes
+          case 'json_parser':
+            suggestedImprovements.push({
+              nodeId: node.id,
+              nodeType: node.type,
+              currentConfig: node.data || {},
+              suggestedChanges: {
+                strictMode: false,
+                fallbackValue: '{}',
+                errorHandling: 'graceful'
+              },
+              reason: 'Add error handling for malformed JSON input',
+              benefitArea: 'reliability',
+              implementationDifficulty: 'low'
+            });
+            break;
+            
+          case 'csv_parser':
+            suggestedImprovements.push({
+              nodeId: node.id,
+              nodeType: node.type,
+              currentConfig: node.data || {},
+              suggestedChanges: {
+                delimiter: ',',
+                hasHeader: true,
+                skipEmptyLines: true,
+                trimValues: true
+              },
+              reason: 'Improve CSV parsing with better defaults and error handling',
+              benefitArea: 'reliability',
+              implementationDifficulty: 'low'
+            });
+            break;
+          
+          // Output nodes  
+          case 'api_response':
+            suggestedImprovements.push({
+              nodeId: node.id,
+              nodeType: node.type,
+              currentConfig: node.data || {},
+              suggestedChanges: {
+                statusCode: 200,
+                headers: { 'Content-Type': 'application/json' },
+                formatOutput: true
+              },
+              reason: 'Improve API response formatting and headers',
+              benefitArea: 'compatibility',
+              implementationDifficulty: 'low'
+            });
+            break;
+            
+          // Default case for all other node types
           default:
-            // For any other node type, suggest general improvements
+            // For any other validated node type, suggest general improvements
             suggestedImprovements.push({
               nodeId: node.id,
               nodeType: node.type,
               currentConfig: node.data || {},
               suggestedChanges: {
                 documentation: true,
-                logging: 'detailed'
+                logging: 'detailed',
+                errorHandling: 'graceful'
               },
               reason: `General improvements for ${node.type} node`,
               benefitArea: 'maintainability',
