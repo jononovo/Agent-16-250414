@@ -2,7 +2,7 @@ import { memo } from 'react';
 import { Handle, Position, NodeProps } from 'reactflow';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Settings, AlertTriangle, Info } from 'lucide-react';
+import { Settings, AlertTriangle } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import DynamicIcon from '../DynamicIcon';
 
@@ -10,6 +10,12 @@ import DynamicIcon from '../DynamicIcon';
 import { NodeContainer } from '@/components/nodes/common/NodeContainer';
 import { NodeHeader } from '@/components/nodes/common/NodeHeader';
 import { NodeContent } from '@/components/nodes/common/NodeContent';
+import { 
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger 
+} from '@/components/ui/tooltip';
 
 interface InternalNodeData {
   label: string;
