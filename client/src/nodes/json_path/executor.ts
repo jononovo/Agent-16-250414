@@ -4,6 +4,9 @@
  * This executor extracts data from JSON using JSONPath expressions.
  */
 
+import { createNodeOutput, createErrorOutput } from '../../lib/nodeOutputUtils';
+import { NodeExecutionData } from '@shared/nodeTypes';
+
 // Define the shape of the node's data
 export interface JSONPathNodeData {
   path: string;
@@ -49,36 +52,56 @@ function getValueByPath(obj: any, path: string): any {
 }
 
 /**
+ * Extract data from standardized input format
+ */
+function extractInputData(input: NodeExecutionData | any): any {
+  // If input follows standardized format
+  if (input && input.items && input.items.length > 0) {
+    return input.items[0].json;
+  }
+  // Return the input itself for backward compatibility
+  return input;
+}
+
+/**
  * Execute a JSONPath node with the provided data and inputs
  */
-export async function execute(nodeData: JSONPathNodeData, inputs: Record<string, any> = {}) {
+export async function execute(
+  nodeData: JSONPathNodeData, 
+  inputs: Record<string, NodeExecutionData | any> = {}
+): Promise<NodeExecutionData> {
   const { path } = nodeData;
-  const inputData = inputs.data;
   
   try {
+    // Extract input data using standardized format
+    const rawInputData = inputs.data;
+    const inputData = extractInputData(rawInputData);
+    
     if (!inputData) {
-      return {
-        error: 'No input data provided'
-      };
+      return createErrorOutput('No input data provided');
     }
     
     if (!path) {
-      return {
-        error: 'No JSONPath expression provided'
-      };
+      return createErrorOutput('No JSONPath expression provided');
     }
     
     // Extract value using JSONPath
     const extractedValue = getValueByPath(inputData, path);
     
-    return {
-      value: extractedValue
-    };
+    // If value is undefined, it might mean the path doesn't exist
+    if (extractedValue === undefined) {
+      return createNodeOutput(null, {
+        additionalMeta: {
+          warning: `Path "${path}" did not match any element in the input data`
+        }
+      });
+    }
+    
+    // Return the extracted value in standardized format
+    return createNodeOutput(extractedValue);
   } catch (error) {
     console.error('Error executing JSONPath:', error);
-    return {
-      error: error instanceof Error ? error.message : String(error)
-    };
+    return createErrorOutput(error instanceof Error ? error.message : String(error));
   }
 }
 
