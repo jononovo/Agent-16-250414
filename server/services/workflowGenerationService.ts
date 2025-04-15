@@ -436,43 +436,22 @@ Ensure that:
 
   /**
    * Get the appropriate category for a node type
+   * 
+   * Note: This method is simplified to use default categories since node types
+   * now define their own categories in the client-side folder structure
    */
   private getCategoryForNodeType(type: string | undefined): string {
     if (!type) return "default";
-
-    // Map node types to categories
-    const categoryMap: Record<string, string> = {
-      // Trigger nodes
-      trigger: "trigger",
-      schedule_trigger: "trigger",
-      webhook: "trigger",
-      email_trigger: "trigger",
-
-      // AI nodes
-      text_prompt: "AI",
-      prompt_crafter: "AI",
-      generate_text: "AI",
-      claude: "AI",
-      perplexity: "AI",
-
-      // Input/Output nodes
-      text_input: "input",
-      output: "output",
-      email_send: "output",
-      visualize_text: "output",
-
-      // Data nodes
-      transform: "data",
-      database_query: "data",
-      filter: "data",
-      data_transform: "data",
-
-      // Processor nodes
-      processor: "process",
-      http_request: "process",
+    
+    // Simple mapping for common types - in production, this should be
+    // retrieved from client-side node definitions
+    const defaultCategories: Record<string, string> = {
+      "text_input": "Input",
+      "claude": "AI",
+      "http_request": "API"
     };
-
-    return categoryMap[type] || "default";
+    
+    return defaultCategories[type] || "default";
   }
 
   /**
