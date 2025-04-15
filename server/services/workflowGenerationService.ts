@@ -183,6 +183,23 @@ export class WorkflowGenerationService {
       {},
     );
 
+    // If no nodes were found in the database, use the hardcoded list of available node types
+    if (Object.keys(this.nodeTypesCatalog).length === 0) {
+      AVAILABLE_NODE_TYPES.forEach(nodeType => {
+        this.nodeTypesCatalog[nodeType] = {
+          type: nodeType,
+          displayName: nodeType.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase()),
+          description: getNodeDescription(nodeType),
+          category: getCategoryForNodeType(nodeType),
+          icon: "square",
+          inputs: {},
+          outputs: {},
+          settings: {},
+        };
+      });
+      console.log(`Using default node types: ${AVAILABLE_NODE_TYPES.join(', ')}`);
+    }
+
     console.log(
       `Workflow Generation Service initialized with ${Object.keys(this.nodeTypesCatalog).length} node types`,
     );

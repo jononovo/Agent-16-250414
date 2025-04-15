@@ -3,9 +3,11 @@
  * 
  * This tool suggests specific fixes for workflow issues, including which nodes
  * to modify and what specific parameters to update.
+ * It only works with valid node types from the system.
  */
 import { Tool, ToolResult } from '../../toolTypes';
 import { storage } from '../../../storage';
+import { AVAILABLE_NODE_TYPES } from '../../../services/workflowGenerationService';
 
 const suggestWorkflowFixesTool: Tool = {
   name: 'suggestWorkflowFixes',
@@ -64,13 +66,16 @@ const suggestWorkflowFixesTool: Tool = {
       const workflowNodes = nodes.filter(node => node.workflowId === workflowId);
       
       if (workflowNodes.length === 0) {
+        // Use text_input which is in our AVAILABLE_NODE_TYPES list
+        const inputNodeType = 'text_input';
+        
         return {
           success: true,
           message: 'This workflow has no nodes to fix',
           data: {
             suggestedFixes: [{
               action: 'add_node',
-              nodeType: 'textInput',
+              nodeType: inputNodeType,
               reason: 'Add an initial input node to start the workflow',
               details: 'Every workflow needs a starting point. A text input node allows users to provide initial data.'
             }],
