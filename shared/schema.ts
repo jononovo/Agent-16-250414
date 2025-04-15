@@ -76,7 +76,7 @@ export const workflowSchema = z.object({
   updatedAt: z.date().default(() => new Date()),
   userId: z.number().nullable().optional(),
   agentId: z.number().nullable().optional(),
-  flowData: z.union([z.record(z.any()), z.null()]).optional()
+  flowData: z.union([z.record(z.any()), z.string(), z.null()]).optional()
 });
 
 export const insertWorkflowSchema = workflowSchema.omit({
