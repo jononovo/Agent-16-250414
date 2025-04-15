@@ -99,6 +99,7 @@ export const nodeSchema = z.object({
   createdAt: z.date().default(() => new Date()),
   updatedAt: z.date().default(() => new Date()),
   userId: z.number().nullable().optional(),
+  workflowId: z.number().nullable().optional(), // Link to parent workflow
   configuration: z.record(z.any()).nullable().optional(),
   // Additional fields for custom nodes
   isCustom: z.boolean().optional().default(false),
@@ -106,7 +107,14 @@ export const nodeSchema = z.object({
   outputs: z.record(z.any()).optional(),
   defaultData: z.record(z.any()).optional(),
   version: z.string().optional().default("1.0.0"),
-  implementation: z.string().optional() // Stores executable code for custom nodes
+  implementation: z.string().optional(), // Stores executable code for custom nodes
+  // Canvas-specific fields
+  position: z.object({
+    x: z.number(),
+    y: z.number()
+  }).optional(),
+  data: z.record(z.any()).default({}), // Node configuration data
+  connections: z.array(z.any()).default([]) // Connections to other nodes
 });
 
 export const insertNodeSchema = nodeSchema.omit({
@@ -122,4 +130,8 @@ export type Node = z.infer<typeof nodeSchema> & {
   // Additional fields used by the frontend
   icon?: any;
   category: string;
+  workflowId?: number; // Link to parent workflow
+  position?: { x: number, y: number };
+  data?: Record<string, any>;
+  connections?: any[];
 };

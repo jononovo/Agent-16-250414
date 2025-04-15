@@ -26,13 +26,12 @@ export interface Tool {
   description: string;
   category: string;
   parameters?: ParameterSchema;
+  contexts?: string[];    // Defines where this tool can be used (e.g., "home", "canvas")
   execute: (params: any) => Promise<ToolResult>;
 }
 
-// Tool with context (for OpenAI function calling)
-export interface ToolWithContext extends Tool {
-  contexts?: string[];    // Defines where this tool can be used (e.g., "home", "canvas")
-}
+// Keeping this for backwards compatibility
+export interface ToolWithContext extends Tool {}
 
 // Tool registry configuration
 export interface ToolRegistryConfig {

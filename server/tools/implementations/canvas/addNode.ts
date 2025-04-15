@@ -60,7 +60,11 @@ const addNodeTool: Tool = {
       // Create a new node
       const newNode = await storage.createNode({
         workflowId,
+        name: `${nodeType}_${Date.now()}`, // Generate a name using the nodeType and timestamp
         type: nodeType,
+        category: 'workflow', // Default category
+        isCustom: false,
+        version: '1.0.0',
         position: position || { x: 100, y: 100 }, // Default position if not provided
         data: data || {},
         connections: [],

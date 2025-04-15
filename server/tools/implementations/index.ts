@@ -24,6 +24,14 @@ import executeWorkflowTool from './workflow/executeWorkflow';
 import getConfigTool from './platform/getConfig';
 import getToolsTool from './platform/getTools';
 
+// Import canvas tools
+import addNodeTool from './canvas/addNode';
+import updateNodeParametersTool from './canvas/updateNodeParameters';
+import analyzeWorkflowIssuesTool from './canvas/analyzeWorkflowIssues';
+import suggestWorkflowFixesTool from './canvas/suggestWorkflowFixes';
+import improveWorkflowTool from './canvas/improveWorkflow';
+import analyzeWorkflowCriteriaTool from './canvas/analyzeWorkflowCriteria';
+
 // All available tools
 export const tools: Tool[] = [
   // Agent tools
@@ -42,7 +50,15 @@ export const tools: Tool[] = [
   
   // Platform tools
   getConfigTool,
-  getToolsTool
+  getToolsTool,
+  
+  // Canvas tools
+  addNodeTool,
+  updateNodeParametersTool,
+  analyzeWorkflowIssuesTool,
+  suggestWorkflowFixesTool,
+  improveWorkflowTool,
+  analyzeWorkflowCriteriaTool
 ];
 
 /**
