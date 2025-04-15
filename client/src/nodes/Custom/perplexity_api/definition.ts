@@ -34,5 +34,3 @@ export const definition = {
     }
   }
 };
-
-export default definition;

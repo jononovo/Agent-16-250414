@@ -6,17 +6,16 @@
  */
 
 import React, { useState } from 'react';
-import { Handle, Position, NodeProps } from 'reactflow';
+import { Handle, Position } from 'reactflow';
 import { Brain, Settings, Lock, Info } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { Slider } from '@/components/ui/slider';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { NodeValidationResult } from '@/lib/types';
+import { NodeUIComponentProps, NodeValidationResult } from '@/lib/types';
 import { cn } from '@/lib/utils';
 import { PerplexityApiNodeData } from './executor';
 
@@ -58,25 +57,26 @@ export const validator = (data: PerplexityApiNodeData): NodeValidationResult => 
 };
 
 // UI component for the Perplexity node
-export const component: React.FC<NodeProps> = ({ 
+export const component: React.FC<NodeUIComponentProps<PerplexityApiNodeData>> = ({ 
   data, 
-  isConnectable,
-  selected,
+  onChange
 }) => {
   const [activeTab, setActiveTab] = useState('settings');
   
   // Handler for data changes
   const handleDataChange = (key: string, value: any) => {
-    if (data.onChange) {
-      data.onChange({
-        ...data,
-        [key]: value
-      });
-    }
+    onChange({
+      ...data,
+      [key]: value
+    });
   };
   
   // Format temperature value for display
   const formatTemperature = (temp: number) => temp.toFixed(1);
+  
+  // Determine if node is selected based on wrapper props
+  const selected = false; // This would come from wrapper component
+  const isConnectable = true; // This would come from wrapper component
   
   return (
     <div className={cn(

@@ -26,7 +26,8 @@ export let CUSTOM_NODE_TYPES: string[] = [
   'json_parser',
   'text_formatter',
   'number_input',
-  'toggle_switch'
+  'toggle_switch',
+  'perplexity_api'
 ];
 
 // Combined list of all folder-based node types

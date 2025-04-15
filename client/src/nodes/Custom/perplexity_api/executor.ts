@@ -5,6 +5,7 @@
  */
 
 import { createNodeOutput, createErrorOutput } from '@/lib/nodeOutputUtils';
+import { NodeExecutionData } from '@/nodes/types';
 
 // Define configuration data interface for this node
 export interface PerplexityApiNodeData {
@@ -32,7 +33,7 @@ export const defaultData: PerplexityApiNodeData = {
 export const execute = async (
   data: PerplexityApiNodeData, 
   inputs: Record<string, any>
-) => {
+): Promise<Record<string, any>> => {
   try {
     // Extract inputs
     const prompt = inputs.prompt;
@@ -82,15 +83,18 @@ export const execute = async (
     // Extract text from response
     const responseText = responseData.choices?.[0]?.message?.content || '';
     
-    // Return output with response text and metadata
-    return createNodeOutput({
+    // Create response object with the expected format
+    const result = {
       response: responseText,
       metadata: {
         model: data.model,
         tokenUsage: responseData.usage || {},
         finishReason: responseData.choices?.[0]?.finish_reason
       }
-    });
+    };
+    
+    // Return output with response text and metadata
+    return createNodeOutput(result);
   } catch (error: unknown) {
     console.error('Perplexity API error:', error);
     const errorMessage = error instanceof Error 
