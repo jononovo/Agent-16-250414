@@ -419,7 +419,8 @@ const NodesPanel = () => {
                                 description: node.description || '',
                                 icon: node.icon || 'circle',
                                 configuration: node.configuration || {},
-                                category: node.category
+                                category: node.category,
+                                defaultData: {}
                               }
                             }} 
                           />

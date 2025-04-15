@@ -1166,7 +1166,79 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ message: "Workflow not found" });
       }
       
-      res.json(workflow);
+      // Ensure flowData is properly formatted as an object
+      let processedWorkflow = { ...workflow };
+      
+      if (typeof processedWorkflow.flowData === 'string') {
+        try {
+          processedWorkflow.flowData = JSON.parse(processedWorkflow.flowData);
+        } catch (e) {
+          processedWorkflow.flowData = { nodes: [], edges: [] };
+        }
+      }
+      
+      // Ensure nodes and edges exist
+      if (!processedWorkflow.flowData) {
+        processedWorkflow.flowData = { nodes: [], edges: [] };
+      } else if (!processedWorkflow.flowData.nodes) {
+        processedWorkflow.flowData.nodes = [];
+      } else if (!processedWorkflow.flowData.edges) {
+        processedWorkflow.flowData.edges = [];
+      }
+      
+      // Ensure each node has the appropriate data structure for the new node system
+      if (Array.isArray(processedWorkflow.flowData.nodes)) {
+        processedWorkflow.flowData.nodes = processedWorkflow.flowData.nodes.map(node => {
+          // Skip if node is already properly formatted
+          if (node.data && node.data.defaultData) {
+            return node;
+          }
+          
+          // Create a migrated node with required fields
+          const migratedNode = {
+            ...node,
+            type: node.type || 'unknown',
+            data: {
+              ...node.data,
+              label: node.data?.label || node.label || node.type || 'Unknown Node',
+              description: node.data?.description || node.description || '',
+              icon: node.data?.icon || node.icon || null,
+              category: node.data?.category || 'general',
+              defaultData: {}
+            }
+          };
+          
+          // Add defaultData based on node type
+          switch (migratedNode.type) {
+            case 'claude':
+              migratedNode.data.defaultData = {
+                model: 'claude-3-haiku-20240307',
+                temperature: 0.7,
+                maxTokens: 1000
+              };
+              break;
+            case 'text_input':
+              migratedNode.data.defaultData = {};
+              break;
+            case 'text_template':
+              migratedNode.data.defaultData = {
+                template: migratedNode.data.template || '{{input}}'
+              };
+              break;
+            case 'http_request':
+              migratedNode.data.defaultData = {
+                url: migratedNode.data.url || 'https://example.com',
+                method: migratedNode.data.method || 'GET',
+                headers: migratedNode.data.headers || {}
+              };
+              break;
+          }
+          
+          return migratedNode;
+        });
+      }
+      
+      res.json(processedWorkflow);
     } catch (error) {
       res.status(500).json({ message: "Error fetching workflow" });
     }
@@ -1243,7 +1315,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
             type,
             status: 'active',
             agentId,
-            flowData: processedFlowData
+            flowData: typeof processedFlowData === 'string' ? 
+              { nodes: [], edges: [] } : processedFlowData
           });
           
           // Return the created workflow
@@ -1290,7 +1363,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         type,
         status: 'active',
         agentId,
-        flowData: processedFlowData
+        flowData: typeof processedFlowData === 'string' ? 
+          { nodes: [], edges: [] } : processedFlowData
       });
       
       // Return the created workflow
@@ -1349,6 +1423,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
             updateData.flowData = { nodes: [], edges: [] };
           }
         }
+      }
+      
+      // Ensure flowData is a proper object if it exists in the update
+      if (updateData.flowData !== undefined) {
+        updateData.flowData = typeof updateData.flowData === 'string' ? 
+          { nodes: [], edges: [] } : updateData.flowData;
       }
       
       // Update the workflow
