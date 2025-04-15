@@ -53,8 +53,10 @@ export interface IStorage {
 }
 
 /**
- * In-memory storage implementation
+ * In-memory storage implementation with Replit Database persistence
  */
+import Database from '@replit/database';
+
 export class MemStorage implements IStorage {
   private users: Map<number, User>;
   private agents: Map<number, Agent>;
@@ -67,8 +69,12 @@ export class MemStorage implements IStorage {
   private workflowId: number;
   private nodeId: number;
   private logId: number;
+  
+  private db: Database;
+  private initializing: boolean;
 
   constructor() {
+    this.initializing = true;
     this.users = new Map();
     this.agents = new Map();
     this.workflows = new Map();
@@ -81,8 +87,61 @@ export class MemStorage implements IStorage {
     this.nodeId = 1;
     this.logId = 1;
     
-    // Initialize with sample data
-    this.initializeDefaultData();
+    // Initialize Replit Database
+    this.db = new Database();
+    
+    // Load persisted data or initialize with sample data
+    this.loadPersistedData().then(() => {
+      this.initializing = false;
+      console.log('Storage system initialized');
+    }).catch(error => {
+      console.error('Error initializing storage:', error);
+      // Initialize with sample data as fallback
+      this.initializeDefaultData();
+      this.initializing = false;
+    });
+  }
+  
+  private async loadPersistedData() {
+    try {
+      // Load workflows
+      const workflowsData = await this.db.get('workflows') as unknown;
+      
+      if (workflowsData) {
+        // Handle different data types that might be returned
+        let workflowsStr: string;
+        
+        if (typeof workflowsData === 'string') {
+          workflowsStr = workflowsData;
+        } else if (typeof workflowsData === 'object') {
+          workflowsStr = JSON.stringify(workflowsData);
+        } else {
+          console.warn('Unexpected data type from database:', typeof workflowsData);
+          workflowsStr = String(workflowsData);
+        }
+        
+        const workflows = JSON.parse(workflowsStr);
+        
+        // Restore workflows
+        if (Array.isArray(workflows)) {
+          workflows.forEach((workflow: Workflow) => {
+            this.workflows.set(workflow.id, workflow);
+            // Update workflowId counter to be higher than any existing workflow ID
+            if (workflow.id >= this.workflowId) {
+              this.workflowId = workflow.id + 1;
+            }
+          });
+          console.log(`Loaded ${workflows.length} workflows from Replit Database`);
+        }
+      } else {
+        // Initialize with sample data if no persisted data
+        this.initializeDefaultData();
+      }
+    } catch (error) {
+      console.error('Error loading persisted data:', error);
+      // Initialize with sample data as fallback
+      this.initializeDefaultData();
+    }
   }
 
   private initializeDefaultData() {
@@ -237,6 +296,22 @@ export class MemStorage implements IStorage {
     return this.workflows.get(id);
   }
   
+  /**
+   * Save workflows to Replit Database for persistence
+   */
+  private async saveWorkflows() {
+    // Skip saving during initialization
+    if (this.initializing) return;
+    
+    try {
+      const workflows = Array.from(this.workflows.values());
+      await this.db.set('workflows', JSON.stringify(workflows));
+      console.log(`Saved ${this.workflows.size} workflows to Replit Database`);
+    } catch (error) {
+      console.error('Error saving workflows to Replit Database:', error);
+    }
+  }
+
   async createWorkflow(insertWorkflow: InsertWorkflow): Promise<Workflow> {
     const id = this.workflowId++;
     const now = new Date();
@@ -267,6 +342,10 @@ export class MemStorage implements IStorage {
       updatedAt: now
     };
     this.workflows.set(id, workflow);
+    
+    // Persist the workflows
+    this.saveWorkflows();
+    
     return workflow;
   }
   
@@ -294,11 +373,22 @@ export class MemStorage implements IStorage {
       updatedAt: now
     };
     this.workflows.set(id, updatedWorkflow);
+    
+    // Persist the workflows
+    this.saveWorkflows();
+    
     return updatedWorkflow;
   }
   
   async deleteWorkflow(id: number): Promise<boolean> {
-    return this.workflows.delete(id);
+    const result = this.workflows.delete(id);
+    
+    // Persist the workflows if deletion was successful
+    if (result) {
+      this.saveWorkflows();
+    }
+    
+    return result;
   }
   
   // Node methods
