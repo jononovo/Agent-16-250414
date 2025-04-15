@@ -1253,7 +1253,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         description: z.string().optional(),
         type: z.string(),
         agentId: z.number().optional(),
-        flowData: z.union([z.record(z.any()), z.string()]).optional(),
+        flowData: z.union([z.record(z.any()), z.string(), z.null()]).optional(),
         prompt: z.string().optional(),
         options: z.object({
           apiKey: z.string().optional(),
@@ -1397,7 +1397,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         description: z.string().optional(),
         type: z.string().optional(),
         agentId: z.number().optional(),
-        flowData: z.union([z.record(z.any()), z.string()]).optional(),
+        flowData: z.union([z.record(z.any()), z.string(), z.null()]).optional(),
         status: z.enum(["active", "inactive", "draft"]).optional(),
         metadata: z.record(z.any()).optional()
       });
