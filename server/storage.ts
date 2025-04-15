@@ -123,19 +123,37 @@ export class MemStorage implements IStorage {
       const wasInitializing = this.initializing;
       this.initializing = false;
       
-      await Promise.all([
-        this.saveWorkflows(),
-        this.saveAgents(),
-        this.saveNodes(),
-        this.saveLogs()
-      ]);
+      console.log('Starting saveAllData operation...');
+      console.log(`Current state: ${this.workflows.size} workflows, ${this.agents.size} agents, ${this.nodes.size} nodes, ${this.logs.size} logs`);
       
-      console.log('All data saved to Replit Database');
+      // Save each data type sequentially for more reliable saving
+      console.log('Saving workflows...');
+      await this.saveWorkflows();
+      
+      console.log('Saving agents...');
+      await this.saveAgents();
+      
+      console.log('Saving nodes...');
+      await this.saveNodes();
+      
+      console.log('Saving logs...');
+      await this.saveLogs();
+      
+      console.log('All data successfully saved to Replit Database');
+      
+      // Force a specific save of workflow data again to ensure it's properly persisted
+      if (this.workflows.size > 0) {
+        const workflowData = Array.from(this.workflows.values());
+        console.log(`Ensuring ${workflowData.length} workflows are saved...`);
+        await this.db.set('workflows', JSON.stringify(workflowData));
+        console.log('Workflows explicitly saved');
+      }
       
       // Restore initializing state
       this.initializing = wasInitializing;
     } catch (error) {
       console.error('Error saving all data:', error);
+      throw error; // Re-throw to allow calling code to handle the error
     }
   }
   

@@ -3,6 +3,7 @@ import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
 import session from 'express-session';
 import { sessionOptions } from './session';
+import { storage } from "./storage";
 
 const app = express();
 app.use(express.json());
@@ -76,6 +77,23 @@ app.use((req, res, next) => {
     }, () => {
       log(`serving on port 5000`);
     });
+    
+    // Add shutdown handlers to ensure data is saved
+    const shutdownHandler = async () => {
+      log('Server shutting down, saving all data...');
+      try {
+        await storage.saveAllData();
+        log('All data saved successfully before shutdown');
+      } catch (error) {
+        log(`Error saving data during shutdown: ${error}`);
+      }
+      process.exit(0);
+    };
+    
+    // Handle various termination signals
+    process.on('SIGINT', shutdownHandler);
+    process.on('SIGTERM', shutdownHandler);
+    process.on('SIGUSR2', shutdownHandler); // For nodemon restarts
   } catch (error) {
     log(`Error initializing application: ${error}`);
     
