@@ -41,7 +41,8 @@ const analyzeWorkflowCriteriaTool: Tool = {
       
       // Analyze the workflow structure to determine its purpose
       const nodeTypes = workflowNodes.map(node => node.type);
-      const uniqueNodeTypes = [...new Set(nodeTypes)];
+      // Filter for unique values directly
+      const uniqueNodeTypes = nodeTypes.filter((value, index, self) => self.indexOf(value) === index);
       
       // Determine workflow type based on node composition
       let workflowType = 'general';
@@ -49,22 +50,22 @@ const analyzeWorkflowCriteriaTool: Tool = {
       let criteria = ['functionality'];
       
       // Look for patterns in the node types to determine workflow category
-      if (uniqueNodeTypes.includes('openAiCompletion') || uniqueNodeTypes.includes('openAiChat')) {
+      if (uniqueNodeTypes.includes('claude')) {
         workflowType = 'ai_generation';
         primaryObjective = 'generate AI content or responses';
         criteria = ['accuracy', 'relevance', 'quality'];
       } 
-      else if (uniqueNodeTypes.includes('httpRequest') && uniqueNodeTypes.includes('jsonTransform')) {
+      else if (uniqueNodeTypes.includes('http_request') && uniqueNodeTypes.includes('data_transform')) {
         workflowType = 'api_integration';
         primaryObjective = 'integrate with external APIs and process data';
         criteria = ['reliability', 'error handling', 'data validation'];
       }
-      else if (uniqueNodeTypes.includes('textInput') && uniqueNodeTypes.includes('textOutput')) {
+      else if (uniqueNodeTypes.includes('text_input') && uniqueNodeTypes.includes('text_template')) {
         workflowType = 'text_processing';
         primaryObjective = 'process and transform text input';
         criteria = ['text processing quality', 'output formatting'];
       }
-      else if (uniqueNodeTypes.includes('formInput') || uniqueNodeTypes.includes('userInterface')) {
+      else if (uniqueNodeTypes.includes('text_input') || uniqueNodeTypes.includes('file_input')) {
         workflowType = 'user_interaction';
         primaryObjective = 'collect and process user input';
         criteria = ['usability', 'input validation', 'user experience'];
@@ -74,13 +75,13 @@ const analyzeWorkflowCriteriaTool: Tool = {
       const complexity = workflowNodes.length <= 3 ? 'simple' : 
                           workflowNodes.length <= 10 ? 'moderate' : 'complex';
       
-      // Determine completeness
+      // Determine completeness using only approved node types
       const hasInputNode = workflowNodes.some(node => 
-        ['textInput', 'fileInput', 'formInput', 'httpRequest'].includes(node.type)
+        ['text_input', 'file_input', 'http_request'].includes(node.type)
       );
       
       const hasOutputNode = workflowNodes.some(node => 
-        ['textOutput', 'visualization', 'fileOutput', 'emailSender'].includes(node.type)
+        ['text_template', 'api_response', 'logger'].includes(node.type)
       );
       
       const completeness = hasInputNode && hasOutputNode ? 'complete' : 
