@@ -5,7 +5,7 @@
  * It simply passes through input data to the output.
  */
 
-import { NodeExecutionData, WorkflowItem } from '@/shared/nodeTypes';
+import { NodeExecutionData, WorkflowItem } from '../../../shared/nodeTypes';
 
 /**
  * Execute the default node
@@ -23,7 +23,7 @@ export async function executeDefaultNode(
   const inputData = inputs.input?.items || [];
   
   // For a default node, we just pass through the data
-  const items: WorkflowItem[] = inputData.map(item => ({
+  const items: WorkflowItem[] = inputData.map((item: WorkflowItem) => ({
     ...item
   }));
   

@@ -5,7 +5,7 @@
  * and basic functionality.
  */
 
-import { NodeInterfaceDefinition } from '@/shared/nodeTypes';
+import { NodeInterfaceDefinition } from '../../../shared/nodeTypes';
 
 /**
  * Default node interface definition

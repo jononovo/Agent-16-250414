@@ -30,10 +30,10 @@ import { useToast } from '@/hooks/use-toast';
 import MonkeyAgentChatOverlay from '@/components/workflows/MonkeyAgentChatOverlay';
 import NodeSettingsDrawer from './NodeSettingsDrawer';
 
-// Import basic fallback node for backward compatibility
-import InternalNode from '../flow/nodes/InternalNode';
 // Import loading placeholder node
 import LoadingNode from '../flow/nodes/LoadingNode';
+// Import default node component as the fallback
+import DefaultNode from '../../nodes/Default';
 
 // Define a dynamic import function for node components
 const loadNodeComponent = (nodeType: string) => {
@@ -55,13 +55,13 @@ const loadNodeComponent = (nodeType: string) => {
               .then(module => module.component)
               .catch(rootError => {
                 console.warn(`Failed to load component for node type ${nodeType}:`, rootError);
-                return InternalNode;
+                return DefaultNode;
               });
           });
       });
   } catch (error) {
     console.warn(`Error importing component for node type ${nodeType}:`, error);
-    return Promise.resolve(InternalNode);
+    return Promise.resolve(DefaultNode);
   }
 };
 
@@ -83,72 +83,72 @@ const getNodeComponent = async (nodeType: string) => {
     return component;
   } catch (error) {
     console.warn(`Failed to load component for ${nodeType}:`, error);
-    return InternalNode;
+    return DefaultNode;
   }
 };
 
-// Initially only load the InternalNode for all types
+// Initially only load the DefaultNode for all types
 const createNodeTypes = () => {
   const baseNodeTypes: NodeTypes = {
     // Special loading node type
     loading: LoadingNode,
     
     // Start with internal fallback for all types
-    internal_new_agent: InternalNode,
-    internal_ai_chat_agent: InternalNode,
-    internal: InternalNode,
-    custom: InternalNode,
-    trigger: InternalNode,
-    processor: InternalNode,
-    output: InternalNode,
+    internal_new_agent: DefaultNode,
+    internal_ai_chat_agent: DefaultNode,
+    internal: DefaultNode,
+    custom: DefaultNode,
+    trigger: DefaultNode,
+    processor: DefaultNode,
+    output: DefaultNode,
     
     // Fallback for common node types
-    text_input: InternalNode,
-    claude: InternalNode,
-    http_request: InternalNode,
-    text_template: InternalNode,
-    data_transform: InternalNode, 
-    decision: InternalNode,
-    function: InternalNode,
-    json_path: InternalNode,
+    text_input: DefaultNode,
+    claude: DefaultNode,
+    http_request: DefaultNode,
+    text_template: DefaultNode,
+    data_transform: DefaultNode, 
+    decision: DefaultNode,
+    function: DefaultNode,
+    json_path: DefaultNode,
     
     // New custom nodes
-    text_formatter: InternalNode,
-    json_schema_validator: InternalNode,
-    csv_processor: InternalNode,
-    markdown_renderer: InternalNode,
-    number_input: InternalNode,
-    toggle_switch: InternalNode,
+    text_formatter: DefaultNode,
+    json_schema_validator: DefaultNode,
+    csv_processor: DefaultNode,
+    markdown_renderer: DefaultNode,
+    number_input: DefaultNode,
+    toggle_switch: DefaultNode,
     
     // Legacy mappings
-    textInput: InternalNode,
+    textInput: DefaultNode,
     
     // Fallbacks for other legacy nodes
-    webhook: InternalNode,
-    scheduler: InternalNode,
-    email_trigger: InternalNode,
-    email_send: InternalNode,
-    database_query: InternalNode,
-    filter: InternalNode,
+    webhook: DefaultNode,
+    scheduler: DefaultNode,
+    email_trigger: DefaultNode,
+    email_send: DefaultNode,
+    database_query: DefaultNode,
+    filter: DefaultNode,
     
     // Other legacy types we need to handle
-    text_prompt: InternalNode,
-    visualize_text: InternalNode,
-    transform: InternalNode,
-    chat_interface: InternalNode,
-    generate_text: InternalNode,
-    prompt_crafter: InternalNode,
-    valid_response: InternalNode,
-    perplexity: InternalNode,
-    agent_trigger: InternalNode,
-    workflow_trigger: InternalNode,
-    response_message: InternalNode,
-    api_response_message: InternalNode,
-    generateText: InternalNode,
-    visualizeText: InternalNode,
-    routing: InternalNode,
-    promptCrafter: InternalNode,
-    validResponse: InternalNode
+    text_prompt: DefaultNode,
+    visualize_text: DefaultNode,
+    transform: DefaultNode,
+    chat_interface: DefaultNode,
+    generate_text: DefaultNode,
+    prompt_crafter: DefaultNode,
+    valid_response: DefaultNode,
+    perplexity: DefaultNode,
+    agent_trigger: DefaultNode,
+    workflow_trigger: DefaultNode,
+    response_message: DefaultNode,
+    api_response_message: DefaultNode,
+    generateText: DefaultNode,
+    visualizeText: DefaultNode,
+    routing: DefaultNode,
+    promptCrafter: DefaultNode,
+    validResponse: DefaultNode
   };
   
   return baseNodeTypes;
