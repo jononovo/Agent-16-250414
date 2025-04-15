@@ -50,6 +50,7 @@ const AgentTestPage: React.FC = () => {
   const [toolParameters, setToolParameters] = useState<string>('{}');
   const [directResult, setDirectResult] = useState<string>('');
   const [isExecuting, setIsExecuting] = useState(false);
+  const [directContext, setDirectContext] = useState<string>('general');
   
   // State for natural language testing
   const [prompt, setPrompt] = useState<string>('');
