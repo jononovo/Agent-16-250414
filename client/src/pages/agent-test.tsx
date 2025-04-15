@@ -14,6 +14,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Label } from '@/components/ui/label';
 import { Separator } from '@/components/ui/separator';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { Switch } from '@/components/ui/switch';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2, Play, Send, Code, MessageSquare, PanelLeft, SplitSquareVertical } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
@@ -45,6 +46,7 @@ const AgentTestPage: React.FC = () => {
   
   // State for direct tool execution
   const [selectedTool, setSelectedTool] = useState<Tool | null>(null);
+  const [selectedCategory, setSelectedCategory] = useState<string>('');
   const [toolParameters, setToolParameters] = useState<string>('{}');
   const [directResult, setDirectResult] = useState<string>('');
   const [isExecuting, setIsExecuting] = useState(false);
@@ -52,9 +54,11 @@ const AgentTestPage: React.FC = () => {
   // State for natural language testing
   const [prompt, setPrompt] = useState<string>('');
   const [context, setContext] = useState<string>('general');
+  const [systemPrompt, setSystemPrompt] = useState<string>('');
   const [nlResult, setNlResult] = useState<AgentResponse | null>(null);
   const [nlHistory, setNlHistory] = useState<Array<{prompt: string, result: AgentResponse}>>([]);
   const [isSending, setIsSending] = useState(false);
+  const [showDebug, setShowDebug] = useState(false);
   const [sessionId, setSessionId] = useState(`session_${Math.random().toString(36).substring(2, 9)}`);
   
   // Get available tools
@@ -164,7 +168,8 @@ const AgentTestPage: React.FC = () => {
           message: prompt,
           context,
           sessionId,
-          debug: true // Request debug information
+          systemPrompt: systemPrompt || undefined,
+          debug: showDebug
         }),
       });
       
@@ -249,36 +254,68 @@ const AgentTestPage: React.FC = () => {
                 <CardDescription>Select a tool to execute directly</CardDescription>
               </CardHeader>
               <CardContent>
-                <ScrollArea className="h-[500px] pr-4">
-                  {isLoadingTools ? (
-                    <div className="flex items-center justify-center h-20">
-                      <Loader2 className="h-6 w-6 animate-spin" />
+                {isLoadingTools ? (
+                  <div className="flex items-center justify-center h-20">
+                    <Loader2 className="h-6 w-6 animate-spin" />
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    <div>
+                      <Label htmlFor="category">Category:</Label>
+                      <Select 
+                        value={selectedCategory} 
+                        onValueChange={(value) => {
+                          setSelectedCategory(value);
+                          setSelectedTool(null);
+                        }}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select a category" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {Object.keys(toolsByCategory).map(category => (
+                            <SelectItem key={category} value={category}>
+                              {category}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
                     </div>
-                  ) : (
-                    <div className="space-y-6">
-                      {Object.entries(toolsByCategory).map(([category, categoryTools]) => (
-                        <div key={category} className="space-y-2">
-                          <h3 className="font-medium text-sm uppercase text-muted-foreground">
-                            {category}
-                          </h3>
-                          <div className="space-y-1">
-                            {categoryTools.map(tool => (
-                              <Button
-                                key={tool.name}
-                                variant={selectedTool?.name === tool.name ? "default" : "ghost"}
-                                className="w-full justify-start"
-                                onClick={() => setSelectedTool(tool)}
-                              >
+                    
+                    {selectedCategory && (
+                      <div>
+                        <Label htmlFor="tool">Tool:</Label>
+                        <Select 
+                          value={selectedTool?.name || ''} 
+                          onValueChange={(value) => {
+                            const tool = tools?.find(t => t.name === value);
+                            if (tool) setSelectedTool(tool);
+                          }}
+                        >
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select a tool" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {toolsByCategory[selectedCategory]?.map(tool => (
+                              <SelectItem key={tool.name} value={tool.name}>
                                 {tool.name}
-                              </Button>
+                              </SelectItem>
                             ))}
-                          </div>
-                          <Separator className="my-2" />
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </ScrollArea>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    )}
+                    
+                    {selectedTool && (
+                      <div className="mt-4 space-y-2">
+                        <h3 className="font-medium text-sm">Description:</h3>
+                        <p className="text-sm text-muted-foreground">
+                          {selectedTool.description}
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                )}
               </CardContent>
             </Card>
             
@@ -383,6 +420,20 @@ const AgentTestPage: React.FC = () => {
                   </div>
                   
                   <div>
+                    <Label htmlFor="systemPrompt" className="mb-2 block">System Prompt (optional):</Label>
+                    <Textarea
+                      id="systemPrompt"
+                      value={systemPrompt}
+                      onChange={(e) => setSystemPrompt(e.target.value)}
+                      className="h-24 resize-none"
+                      placeholder="Enter a custom system prompt to override the default..."
+                    />
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Customize how the agent behaves by providing a system prompt.
+                    </p>
+                  </div>
+                  
+                  <div>
                     <Label htmlFor="prompt" className="mb-2 block">Prompt:</Label>
                     <Textarea
                       id="prompt"
@@ -393,23 +444,43 @@ const AgentTestPage: React.FC = () => {
                     />
                   </div>
                   
-                  <Button 
-                    onClick={testNaturalLanguage} 
-                    disabled={isSending}
-                    className="w-full"
-                  >
-                    {isSending ? (
-                      <>
-                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                        Processing...
-                      </>
-                    ) : (
-                      <>
-                        <Send className="mr-2 h-4 w-4" />
-                        Send to Agent
-                      </>
-                    )}
-                  </Button>
+                  <div className="flex items-center space-x-2 mb-4">
+                    <Switch 
+                      id="debug-mode" 
+                      checked={showDebug}
+                      onCheckedChange={setShowDebug}
+                    />
+                    <Label htmlFor="debug-mode">Include Debug Information</Label>
+                  </div>
+                  
+                  <div className="flex gap-2">
+                    <Button 
+                      variant="outline"
+                      onClick={() => {
+                        setPrompt('');
+                        setSystemPrompt('');
+                      }}
+                    >
+                      Clear
+                    </Button>
+                    <Button 
+                      onClick={testNaturalLanguage} 
+                      disabled={isSending}
+                      className="flex-1"
+                    >
+                      {isSending ? (
+                        <>
+                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                          Processing...
+                        </>
+                      ) : (
+                        <>
+                          <Send className="mr-2 h-4 w-4" />
+                          Send Prompt
+                        </>
+                      )}
+                    </Button>
+                  </div>
                   
                   {nlHistory.length > 0 && (
                     <div className="mt-4">
