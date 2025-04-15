@@ -54,7 +54,7 @@ export const LabeledHandle: React.FC<LabeledHandleProps> = ({
       {/* Label positioned as requested - only visible on hover */}
       {isHovered && (
         <div 
-          className={`absolute text-[9px] text-muted-foreground bg-background/80 z-10 select-none whitespace-nowrap rounded-sm`}
+          className={`absolute text-[10px] text-foreground bg-background/80 z-10 select-none whitespace-nowrap rounded-sm`}
           style={{ 
             top: '-16px',
             [isRight ? 'right' : 'left']: '-20px',
