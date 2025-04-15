@@ -14,6 +14,8 @@ import fetch from "node-fetch";
 import { fetchWithTimeout } from "./utils/fetch";
 import { log } from "./vite";
 import { workflowGenerationService } from "./services/workflowGenerationService";
+import { createAgentCoordinator } from "./services/agentCoordinator";
+import { registerAllTools } from "./tools/implementations";
 
 /**
  * Utility function to execute a workflow
@@ -476,6 +478,54 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ 
         error: true, 
         message: "Failed to update API configuration" 
+      });
+    }
+  });
+  
+  // ===== Agent Tools and Coordination =====
+
+  // Register all tools during server startup
+  registerAllTools();
+  
+  // Unified agent chat endpoint
+  app.post('/api/agent/chat', async (req: Request, res: Response) => {
+    try {
+      const { message, context, agentId, sessionId } = req.body;
+      
+      if (!message) {
+        return res.status(400).json({ 
+          success: false, 
+          message: 'No message provided' 
+        });
+      }
+      
+      // Get OpenAI API key
+      const openaiApiKey = process.env.OPENAI_API_KEY;
+      
+      if (!openaiApiKey) {
+        return res.status(400).json({ 
+          success: false, 
+          message: 'OpenAI API key not configured. Please set OPENAI_API_KEY environment variable.' 
+        });
+      }
+      
+      // Create agent coordinator
+      const coordinator = createAgentCoordinator(openaiApiKey);
+      
+      // Process the message
+      const result = await coordinator.processUserInput(message, {
+        context,
+        agentId,
+        sessionId
+      });
+      
+      // Return the result
+      return res.json(result);
+    } catch (error) {
+      console.error('Error in agent chat:', error);
+      return res.status(500).json({
+        success: false,
+        message: error instanceof Error ? error.message : 'Unknown error processing request'
       });
     }
   });

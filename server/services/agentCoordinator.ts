@@ -48,7 +48,7 @@ export class AgentCoordinator {
       agentId: agentId || 1, // Default agent ID
       workflowId: 0, // No specific workflow
       status: "running",
-      input: input,
+      input: { message: input }, // Store input as object
       output: {}, // Will be filled later
       executionPath: {
         execution_type: "agent_chat", 
@@ -78,7 +78,7 @@ export class AgentCoordinator {
                    Current context: ${context}`
         },
         { role: 'user', content: input }
-      ];
+      ] as Array<{ role: 'system' | 'user' | 'assistant', content: string }>;
       
       // Call the OpenAI API with function calling
       const response = await this.openai.chat.completions.create({
