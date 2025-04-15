@@ -1,9 +1,10 @@
 import { memo } from 'react';
 import { Handle, Position, NodeProps } from 'reactflow';
 import { Badge } from '@/components/ui/badge';
-import { Card } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { Info, Settings, Check, AlertTriangle } from 'lucide-react';
+import { cn } from '@/lib/utils';
 import DynamicIcon from '../DynamicIcon';
 
 interface InternalNodeData {
@@ -148,89 +149,117 @@ function InternalNode({ data, id, selected }: NodeProps<InternalNodeData>) {
   
   const settingsSummary = getSettingsSummary();
 
+  // Get the status badge based on execution state
+  const getStatusBadge = () => {
+    if (isProcessing) return <Badge variant="outline" className="bg-blue-500/10 text-blue-500 border-blue-500/20">Running</Badge>;
+    if (isComplete) return <Badge variant="outline" className="bg-green-500/10 text-green-500 border-green-500/20">Completed</Badge>;
+    if (hasError) return <Badge variant="outline" className="bg-red-500/10 text-red-500 border-red-500/20">Error</Badge>;
+    return null;
+  };
+  
   return (
-    <Card
-      className={`w-64 p-3 shadow border-2 ${nodeStateStyle} transition-all duration-200`}
-    >
+    <div className={cn(
+      'bg-background rounded-xl border transition-all duration-200',
+      'min-w-[280px] max-w-[320px]',
+      isProcessing && 'animate-pulse',
+      isComplete && 'border-green-500/30',
+      hasError && 'border-red-500/30',
+      selected ? 'border-primary shadow-md' : 'border-border/40'
+    )}>
+      {/* Node Header */}
+      <div className="flex items-center justify-between px-4 py-2 border-b border-border/50">
+        <div className="flex items-center gap-2">
+          <div className="bg-primary/10 p-1.5 rounded-md">
+            <DynamicIcon icon={icon} className="h-4 w-4 text-primary" />
+          </div>
+          <div>
+            <h3 className="text-sm font-medium">{label}</h3>
+            <p className="text-xs text-muted-foreground line-clamp-1">{description}</p>
+          </div>
+        </div>
+        <div className="flex items-center gap-1.5">
+          {getStatusBadge()}
+          
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button variant="ghost" size="icon" className="h-7 w-7">
+                  <Info className="h-3.5 w-3.5 text-muted-foreground" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent side="top" className="max-w-xs">
+                <p className="text-xs">{nodeInfo.infoText}</p>
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
+        </div>
+      </div>
+      
+      {/* Node Content */}
+      <div className="p-4 space-y-4">
+        {/* Node Type Badge */}
+        <div className="flex justify-between items-center">
+          <Badge variant="outline" className="text-xs px-2 py-0.5 bg-slate-100/50 dark:bg-slate-800/50">
+            {nodeInfo.title}
+          </Badge>
+          
+          {/* Settings Summary */}
+          {settingsSummary && (
+            <div className="flex items-center text-xs text-muted-foreground">
+              <Settings className="h-3 w-3 mr-1 inline" />
+              <span className="truncate">{settingsSummary}</span>
+            </div>
+          )}
+        </div>
+        
+        {/* Status messages and errors */}
+        {hasError && errorMessage && (
+          <div className="p-2 text-xs bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 rounded border border-red-200 dark:border-red-800">
+            <div className="flex items-center gap-1 mb-1">
+              <AlertTriangle className="h-3 w-3" />
+              <span className="font-medium">Error</span>
+            </div>
+            {errorMessage}
+          </div>
+        )}
+      </div>
+      
       {/* Input handle for triggering the node */}
       <Handle
         type="target"
         position={Position.Left}
-        className="w-3 h-3 rounded-full border-2 bg-slate-50 border-slate-500"
+        id="input"
+        style={{ 
+          top: 50, 
+          width: '12px', 
+          height: '12px', 
+          background: 'white',
+          border: '2px solid #3b82f6'
+        }}
+        isConnectable={true}
       />
-
-      <div className="flex items-center gap-2">
-        <div className="p-2 rounded-md bg-slate-100 dark:bg-slate-800">
-          <DynamicIcon icon={icon} className="h-5 w-5 text-primary" />
-        </div>
-        <div className="flex-1">
-          <div className="flex justify-between items-center">
-            <h3 className="text-sm font-medium">{label}</h3>
-            <div className="flex items-center gap-1">
-              <Badge variant="outline" className="text-xs px-1 bg-slate-100 dark:bg-slate-800">
-                {nodeInfo.title}
-              </Badge>
-              
-              <TooltipProvider>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <div className="p-1 cursor-help">
-                      <Info className="h-3 w-3 text-muted-foreground" />
-                    </div>
-                  </TooltipTrigger>
-                  <TooltipContent side="top" className="max-w-xs">
-                    <p className="text-xs">{nodeInfo.infoText}</p>
-                  </TooltipContent>
-                </Tooltip>
-              </TooltipProvider>
-            </div>
-          </div>
-          <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 line-clamp-2">
-            {description}
-          </p>
-        </div>
+      <div className="absolute left-2 top-[46px] text-xs text-muted-foreground">
+        In
       </div>
-      
-      {/* Display settings summary if available */}
-      {settingsSummary && (
-        <div className="mt-2 flex items-center text-xs text-slate-500">
-          <Settings className="h-3 w-3 mr-1 inline" />
-          <span className="truncate">{settingsSummary}</span>
-        </div>
-      )}
-      
-      {/* Status indicators */}
-      {(isComplete || hasError) && (
-        <div className="mt-2 flex items-center gap-1 text-xs">
-          {isComplete && !hasError && (
-            <div className="flex items-center text-green-600 dark:text-green-500">
-              <Check className="h-3 w-3 mr-1" />
-              <span>Execution complete</span>
-            </div>
-          )}
-          {hasError && (
-            <div className="flex items-center text-red-600 dark:text-red-500">
-              <AlertTriangle className="h-3 w-3 mr-1" />
-              <span className="truncate">{errorMessage || 'Execution error'}</span>
-            </div>
-          )}
-        </div>
-      )}
-
-      {/* Show error message if node has an error */}
-      {hasError && errorMessage && (
-        <div className="mt-2 p-2 text-xs bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 rounded border border-red-200 dark:border-red-800">
-          {errorMessage}
-        </div>
-      )}
 
       {/* Output handle for continuing to the next node */}
       <Handle
         type="source"
         position={Position.Right}
-        className="w-3 h-3 rounded-full border-2 bg-slate-50 border-slate-500"
+        id="output"
+        style={{ 
+          top: 50, 
+          width: '12px', 
+          height: '12px', 
+          background: 'white',
+          border: '2px solid #10b981'
+        }}
+        isConnectable={true}
       />
-    </Card>
+      <div className="absolute right-2 top-[46px] text-xs text-muted-foreground text-right">
+        Out
+      </div>
+    </div>
   );
 }
 
