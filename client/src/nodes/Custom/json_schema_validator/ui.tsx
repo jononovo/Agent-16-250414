@@ -6,12 +6,13 @@
  */
 
 import React, { useState, useEffect } from 'react';
-import { Handle, Position } from 'reactflow';
+import { Position } from 'reactflow';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { CheckSquare, AlertCircle } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
+import { LabeledHandle } from '@/components/ui/labeled-handle';
 
 // Default data for the node
 export const defaultData = {
@@ -190,46 +191,36 @@ export const component = ({ data, isConnectable, selected }: any) => {
         )}
       </div>
       
-      {/* Input Handles */}
-      <Handle
+      {/* Input Handles - Reduced to just 2 */}
+      <LabeledHandle
         type="target"
         position={Position.Left}
-        id="json"
+        id="data"
+        label="Data Input"
         isConnectable={isConnectable}
-        className="w-2 h-6 rounded-sm bg-blue-500 -ml-0.5 top-1/3"
+        handlePosition={0.3}
+        bgColor="bg-blue-500"
       />
       
-      <Handle
+      <LabeledHandle
         type="target"
         position={Position.Left}
         id="schema"
+        label="Schema"
         isConnectable={isConnectable}
-        className="w-2 h-6 rounded-sm bg-purple-500 -ml-0.5 top-2/3"
+        handlePosition={0.7}
+        bgColor="bg-purple-500"
       />
       
-      {/* Output Handles */}
-      <Handle
+      {/* Output Handles - Reduced to just 1 */}
+      <LabeledHandle
         type="source"
         position={Position.Right}
-        id="validJson"
+        id="validation"
+        label="Validation Result"
         isConnectable={isConnectable}
-        className="w-2 h-6 rounded-sm bg-green-500 -mr-0.5 top-1/4"
-      />
-      
-      <Handle
-        type="source"
-        position={Position.Right}
-        id="isValid"
-        isConnectable={isConnectable}
-        className="w-2 h-6 rounded-sm bg-yellow-500 -mr-0.5 top-2/4"
-      />
-      
-      <Handle
-        type="source"
-        position={Position.Right}
-        id="errors"
-        isConnectable={isConnectable}
-        className="w-2 h-6 rounded-sm bg-red-500 -mr-0.5 top-3/4"
+        handlePosition={0.5}
+        bgColor="bg-green-500"
       />
     </div>
   );
