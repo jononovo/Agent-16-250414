@@ -1535,41 +1535,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Get custom node types
   app.get("/api/nodes/custom-types", async (req, res) => {
     try {
-      // Fetch customNodeTypes from the database
-      const customNodeTypes = await (async () => {
-        try {
-          const data = await storage.db.get('customNodeTypes');
-          
-          // Handle the database result by converting to appropriate type
-          if (data) {
-            // Handle different data types
-            let dataStr: string;
-            
-            if (typeof data === 'string') {
-              dataStr = data;
-            } else if (typeof data === 'object') {
-              dataStr = JSON.stringify(data);
-            } else {
-              console.warn('Unexpected data type from database:', typeof data);
-              dataStr = String(data);
-            }
-            
-            try {
-              return JSON.parse(dataStr) as string[];
-            } catch (e) {
-              console.error('Error parsing custom node types:', e);
-              return [];
-            }
-          }
-          return [];
-        } catch (error) {
-          console.warn('Error fetching custom node types:', error);
-          return [];
-        }
-      })();
+      // Find all nodes with isCustom=true and extract their types
+      const nodes = await storage.getNodes();
+      const customNodes = nodes.filter(node => node.isCustom === true);
+      const customNodeTypes = customNodes.map(node => node.type);
+      
+      // Store the updated custom node types in the database for future use
+      if (customNodeTypes.length > 0) {
+        await storage.db.set('customNodeTypes', JSON.stringify(customNodeTypes));
+        console.log('Updated custom node types in database:', customNodeTypes);
+      }
       
       res.json({ customNodeTypes });
     } catch (error) {
+      console.error('Error fetching custom node types:', error);
       res.status(500).json({ 
         message: "Error fetching custom node types", 
         details: error instanceof Error ? error.message : String(error) 
@@ -1631,6 +1610,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Create the node
       const node = await storage.createNode(nodeData);
+      
+      // If this is a custom node, update the customNodeTypes collection
+      if (node.isCustom) {
+        try {
+          // Get current custom node types
+          const nodes = await storage.getNodes();
+          const customNodes = nodes.filter(n => n.isCustom === true);
+          const customNodeTypes = customNodes.map(n => n.type);
+          
+          // Save the updated list to the database
+          await storage.db.set('customNodeTypes', JSON.stringify(customNodeTypes));
+          console.log('Updated custom node types with new node:', node.type);
+        } catch (error) {
+          console.warn('Failed to update custom node types:', error);
+          // This is non-critical so we continue
+        }
+      }
       
       // Return the created node
       res.status(201).json(node);
@@ -1705,8 +1701,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ message: "Node not found" });
       }
       
+      // Store if this node is custom before deleting
+      const isCustomNode = node.isCustom === true;
+      const nodeType = node.type;
+      
       // Delete the node
       const success = await storage.deleteNode(id);
+      
+      // If it was a custom node, update the custom node types list
+      if (success && isCustomNode) {
+        try {
+          // Get current custom node types after deletion
+          const remainingNodes = await storage.getNodes();
+          const customNodes = remainingNodes.filter(n => n.isCustom === true);
+          const customNodeTypes = customNodes.map(n => n.type);
+          
+          // Save the updated list to the database
+          await storage.db.set('customNodeTypes', JSON.stringify(customNodeTypes));
+          console.log('Updated custom node types after deleting:', nodeType);
+        } catch (error) {
+          console.warn('Failed to update custom node types after deletion:', error);
+          // This is non-critical so we continue
+        }
+      }
       
       if (success) {
         res.status(204).send();
