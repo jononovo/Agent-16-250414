@@ -233,7 +233,7 @@ export const component = ({ data, isConnectable, selected }: any) => {
                   id="render-headings"
                   checked={renderHeadings}
                   onCheckedChange={(checked) => handleOptionToggle('renderHeadings', checked)}
-                  size="sm"
+                  className="scale-75"
                 />
               </div>
               
@@ -245,7 +245,7 @@ export const component = ({ data, isConnectable, selected }: any) => {
                   id="render-lists"
                   checked={renderLists}
                   onCheckedChange={(checked) => handleOptionToggle('renderLists', checked)}
-                  size="sm"
+                  className="scale-75"
                 />
               </div>
               
@@ -257,7 +257,7 @@ export const component = ({ data, isConnectable, selected }: any) => {
                   id="render-links"
                   checked={renderLinks}
                   onCheckedChange={(checked) => handleOptionToggle('renderLinks', checked)}
-                  size="sm"
+                  className="scale-75"
                 />
               </div>
               
@@ -269,7 +269,7 @@ export const component = ({ data, isConnectable, selected }: any) => {
                   id="render-images"
                   checked={renderImages}
                   onCheckedChange={(checked) => handleOptionToggle('renderImages', checked)}
-                  size="sm"
+                  className="scale-75"
                 />
               </div>
               
@@ -283,7 +283,7 @@ export const component = ({ data, isConnectable, selected }: any) => {
                   id="extract-frontmatter"
                   checked={extractFrontmatter}
                   onCheckedChange={(checked) => handleOptionToggle('extractFrontmatter', checked)}
-                  size="sm"
+                  className="scale-75"
                 />
               </div>
             </div>

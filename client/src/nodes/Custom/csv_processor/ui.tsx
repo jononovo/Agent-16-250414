@@ -187,7 +187,7 @@ export const component = ({ data, isConnectable, selected }: any) => {
                   id="has-header"
                   checked={hasHeader}
                   onCheckedChange={handleHeaderToggle}
-                  size="sm"
+                  className="scale-75"
                 />
               </div>
               
@@ -199,7 +199,7 @@ export const component = ({ data, isConnectable, selected }: any) => {
                   id="trim-values"
                   checked={trimValues}
                   onCheckedChange={handleTrimToggle}
-                  size="sm"
+                  className="scale-75"
                 />
               </div>
               
