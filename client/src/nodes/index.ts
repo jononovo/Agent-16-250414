@@ -23,9 +23,20 @@ import { NodeDefinition } from './types';
  */
 export async function importNodeDefinition(nodeType: string): Promise<NodeDefinition | null> {
   try {
-    // Dynamic import based on node type
+    // Determine if this is a system or custom node
+    const isSystemNode = [
+      'text_input', 'claude', 'http_request', 'text_template', 
+      'data_transform', 'decision', 'function', 'json_path', 
+      'text_prompt', 'api_response', 'delay', 'file_input', 'logger'
+    ].includes(nodeType);
+    
+    // Dynamic import based on node type from the appropriate folder
+    const modulePath = isSystemNode 
+      ? `./System/${nodeType}/definition`
+      : `./Custom/${nodeType}/definition`;
+      
     // Using @vite-ignore to suppress warnings about dynamic imports
-    const module = await import(/* @vite-ignore */ `./${nodeType}/definition`);
+    const module = await import(/* @vite-ignore */ modulePath);
     return module.default || module.nodeDefinition;
   } catch (error) {
     console.warn(`Failed to import node definition for type ${nodeType}:`, error);
