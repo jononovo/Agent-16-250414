@@ -23,7 +23,10 @@ export const SYSTEM_NODE_TYPES = [
 
 // List of custom user-created node types (default + dynamically populated at runtime)
 export let CUSTOM_NODE_TYPES: string[] = [
-  'json_parser'
+  'json_parser',
+  'text_formatter',
+  'number_input',
+  'toggle_switch'
 ];
 
 // Combined list of all folder-based node types
