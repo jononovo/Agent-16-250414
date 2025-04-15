@@ -493,21 +493,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const { context } = req.query;
       
       // Get tools from the registry
-      const toolRegistry = require('./tools/registry').toolRegistry;
-      const tools = context ? 
-        toolRegistry.getToolsByContext(context as string) : 
-        toolRegistry.getAllTools();
-      
-      // Convert to a format suitable for the client
-      const formattedTools = tools.map(tool => ({
-        name: tool.name,
-        description: tool.description,
-        category: tool.category,
-        parameters: tool.parameters || { type: 'object', properties: {} },
-        contexts: tool.contexts || []
-      }));
-      
-      res.json(formattedTools);
+      import('./tools/registry').then(({ toolRegistry }) => {
+        const tools = context ? 
+          toolRegistry.getToolsByContext(context as string) : 
+          toolRegistry.getAllTools();
+        
+        // Convert to a format suitable for the client
+        const formattedTools = tools.map(tool => ({
+          name: tool.name,
+          description: tool.description,
+          category: tool.category,
+          parameters: tool.parameters || { type: 'object', properties: {} },
+          contexts: tool.contexts || []
+        }));
+        
+        res.json(formattedTools);
+      }).catch(error => {
+        console.error('Error importing tool registry:', error);
+        res.status(500).json({ 
+          error: 'Failed to import tool registry', 
+          details: error instanceof Error ? error.message : String(error) 
+        });
+      });
     } catch (error) {
       res.status(500).json({ 
         error: 'Failed to get tools', 
@@ -526,7 +533,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       // Get the tool from the registry
-      const toolRegistry = require('./tools/registry').toolRegistry;
+      const { toolRegistry } = await import('./tools/registry');
       const tool = toolRegistry.getTool(toolName);
       
       if (!tool) {
@@ -538,8 +545,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Create a log entry
       const logEntry: InsertLog = {
-        agentId: null,
-        workflowId: null,
+        agentId: 0,
+        workflowId: 0,
         status: result.success ? 'success' : 'error',
         input: { tool: toolName, parameters },
         output: result,
