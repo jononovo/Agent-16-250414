@@ -1,0 +1,214 @@
+{
+  "status": "completed",
+  "nodeStates": {
+    "text_input-1744688530540": {
+      "status": "completed",
+      "startTime": "2025-04-15T03:51:05.524Z",
+      "endTime": "2025-04-15T03:51:05.532Z",
+      "output": {
+        "items": [
+          {
+            "json": {
+              "meta": {
+                "status": "success",
+                "message": "Text input processed successfully",
+                "startTime": "2025-04-15T03:51:05.532Z",
+                "endTime": "2025-04-15T03:51:05.532Z"
+              },
+              "items": [
+                {
+                  "json": {
+                    "text": ""
+                  },
+                  "binary": null
+                }
+              ]
+            },
+            "text": "{\"meta\":{\"status\":\"success\",\"message\":\"Text input processed successfully\",\"startTime\":\"2025-04-15T03:51:05.532Z\",\"endTime\":\"2025-04-15T03:51:05.532Z\"},\"items\":[{\"json\":{\"text\":\"\"},\"binary\":null}]}"
+          }
+        ],
+        "meta": {
+          "startTime": "2025-04-15T03:51:05.532Z",
+          "endTime": "2025-04-15T03:51:05.532Z"
+        }
+      }
+    },
+    "claude-1744688534844": {
+      "status": "completed",
+      "startTime": "2025-04-15T03:51:05.532Z",
+      "endTime": "2025-04-15T03:51:08.189Z",
+      "output": {
+        "items": [
+          {
+            "json": {
+              "meta": {
+                "status": "success",
+                "message": "Successfully generated text with Claude",
+                "startTime": "2025-04-15T03:51:05.541Z",
+                "endTime": "2025-04-15T03:51:08.189Z"
+              },
+              "items": [
+                {
+                  "json": {
+                    "response": "This appears to be a JSON object with a nested structure. Let's break it down:\n\n1. The outermost object has a single key-value pair:\n   - \"items\": an array of one object\n\n2. The object in the \"items\" array has two key-value pairs:\n   - \"json\": another object\n   - \"text\": a string that is a JSON-encoded version of the \"json\" object\n\n3. The \"json\" object has two key-value pairs:\n   - \"meta\": an object with four key-value pairs\n     - \"status\": \"success\"\n     - \"message\": \"Text input processed successfully\"\n     - \"startTime\": \"2025-04-15T03:51:05.532Z\"\n     - \"endTime\": \"2025-04-15T03:51:05.532Z\"\n   - \"items\": an array of one object\n     - This inner object has two key-value pairs:\n       - \"json\": an object with one key-value pair\n         - \"text\": an empty string\n       - \"binary\": null\n\n4. The outermost object also has a \"meta\" object with two key-value pairs:\n   - \"startTime\": \"2025-04-15T03:51:05.532Z\"\n   - \"endTime\": \"2025-04-15T03:51:05.532Z\"\n\nIn summary, this JSON object represents a processing result with some metadata and a single item that has an empty text field.",
+                    "fullResponse": {
+                      "id": "msg_011NPt4L6kKX47kfZisGdxnM",
+                      "type": "message",
+                      "role": "assistant",
+                      "model": "claude-3-haiku-20240307",
+                      "content": [
+                        {
+                          "type": "text",
+                          "text": "This appears to be a JSON object with a nested structure. Let's break it down:\n\n1. The outermost object has a single key-value pair:\n   - \"items\": an array of one object\n\n2. The object in the \"items\" array has two key-value pairs:\n   - \"json\": another object\n   - \"text\": a string that is a JSON-encoded version of the \"json\" object\n\n3. The \"json\" object has two key-value pairs:\n   - \"meta\": an object with four key-value pairs\n     - \"status\": \"success\"\n     - \"message\": \"Text input processed successfully\"\n     - \"startTime\": \"2025-04-15T03:51:05.532Z\"\n     - \"endTime\": \"2025-04-15T03:51:05.532Z\"\n   - \"items\": an array of one object\n     - This inner object has two key-value pairs:\n       - \"json\": an object with one key-value pair\n         - \"text\": an empty string\n       - \"binary\": null\n\n4. The outermost object also has a \"meta\" object with two key-value pairs:\n   - \"startTime\": \"2025-04-15T03:51:05.532Z\"\n   - \"endTime\": \"2025-04-15T03:51:05.532Z\"\n\nIn summary, this JSON object represents a processing result with some metadata and a single item that has an empty text field."
+                        }
+                      ],
+                      "stop_reason": "end_turn",
+                      "stop_sequence": null,
+                      "usage": {
+                        "input_tokens": 219,
+                        "cache_creation_input_tokens": 0,
+                        "cache_read_input_tokens": 0,
+                        "output_tokens": 342
+                      }
+                    }
+                  },
+                  "binary": null
+                }
+              ]
+            },
+            "text": "{\"meta\":{\"status\":\"success\",\"message\":\"Successfully generated text with Claude\",\"startTime\":\"2025-04-15T03:51:05.541Z\",\"endTime\":\"2025-04-15T03:51:08.189Z\"},\"items\":[{\"json\":{\"response\":\"This appears to be a JSON object with a nested structure. Let's break it down:\\n\\n1. The outermost object has a single key-value pair:\\n   - \\\"items\\\": an array of one object\\n\\n2. The object in the \\\"items\\\" array has two key-value pairs:\\n   - \\\"json\\\": another object\\n   - \\\"text\\\": a string that is a JSON-encoded version of the \\\"json\\\" object\\n\\n3. The \\\"json\\\" object has two key-value pairs:\\n   - \\\"meta\\\": an object with four key-value pairs\\n     - \\\"status\\\": \\\"success\\\"\\n     - \\\"message\\\": \\\"Text input processed successfully\\\"\\n     - \\\"startTime\\\": \\\"2025-04-15T03:51:05.532Z\\\"\\n     - \\\"endTime\\\": \\\"2025-04-15T03:51:05.532Z\\\"\\n   - \\\"items\\\": an array of one object\\n     - This inner object has two key-value pairs:\\n       - \\\"json\\\": an object with one key-value pair\\n         - \\\"text\\\": an empty string\\n       - \\\"binary\\\": null\\n\\n4. The outermost object also has a \\\"meta\\\" object with two key-value pairs:\\n   - \\\"startTime\\\": \\\"2025-04-15T03:51:05.532Z\\\"\\n   - \\\"endTime\\\": \\\"2025-04-15T03:51:05.532Z\\\"\\n\\nIn summary, this JSON object represents a processing result with some metadata and a single item that has an empty text field.\",\"fullResponse\":{\"id\":\"msg_011NPt4L6kKX47kfZisGdxnM\",\"type\":\"message\",\"role\":\"assistant\",\"model\":\"claude-3-haiku-20240307\",\"content\":[{\"type\":\"text\",\"text\":\"This appears to be a JSON object with a nested structure. Let's break it down:\\n\\n1. The outermost object has a single key-value pair:\\n   - \\\"items\\\": an array of one object\\n\\n2. The object in the \\\"items\\\" array has two key-value pairs:\\n   - \\\"json\\\": another object\\n   - \\\"text\\\": a string that is a JSON-encoded version of the \\\"json\\\" object\\n\\n3. The \\\"json\\\" object has two key-value pairs:\\n   - \\\"meta\\\": an object with four key-value pairs\\n     - \\\"status\\\": \\\"success\\\"\\n     - \\\"message\\\": \\\"Text input processed successfully\\\"\\n     - \\\"startTime\\\": \\\"2025-04-15T03:51:05.532Z\\\"\\n     - \\\"endTime\\\": \\\"2025-04-15T03:51:05.532Z\\\"\\n   - \\\"items\\\": an array of one object\\n     - This inner object has two key-value pairs:\\n       - \\\"json\\\": an object with one key-value pair\\n         - \\\"text\\\": an empty string\\n       - \\\"binary\\\": null\\n\\n4. The outermost object also has a \\\"meta\\\" object with two key-value pairs:\\n   - \\\"startTime\\\": \\\"2025-04-15T03:51:05.532Z\\\"\\n   - \\\"endTime\\\": \\\"2025-04-15T03:51:05.532Z\\\"\\n\\nIn summary, this JSON object represents a processing result with some metadata and a single item that has an empty text field.\"}],\"stop_reason\":\"end_turn\",\"stop_sequence\":null,\"usage\":{\"input_tokens\":219,\"cache_creation_input_tokens\":0,\"cache_read_input_tokens\":0,\"output_tokens\":342}}},\"binary\":null}]}"
+          }
+        ],
+        "meta": {
+          "startTime": "2025-04-15T03:51:08.189Z",
+          "endTime": "2025-04-15T03:51:08.189Z"
+        }
+      }
+    }
+  },
+  "startTime": "2025-04-15T03:51:05.524Z",
+  "endTime": "2025-04-15T03:51:08.189Z",
+  "nodeOutputs": {
+    "text_input-1744688530540": {
+      "items": [
+        {
+          "json": {
+            "meta": {
+              "status": "success",
+              "message": "Text input processed successfully",
+              "startTime": "2025-04-15T03:51:05.532Z",
+              "endTime": "2025-04-15T03:51:05.532Z"
+            },
+            "items": [
+              {
+                "json": {
+                  "text": ""
+                },
+                "binary": null
+              }
+            ]
+          },
+          "text": "{\"meta\":{\"status\":\"success\",\"message\":\"Text input processed successfully\",\"startTime\":\"2025-04-15T03:51:05.532Z\",\"endTime\":\"2025-04-15T03:51:05.532Z\"},\"items\":[{\"json\":{\"text\":\"\"},\"binary\":null}]}"
+        }
+      ],
+      "meta": {
+        "startTime": "2025-04-15T03:51:05.532Z",
+        "endTime": "2025-04-15T03:51:05.532Z"
+      }
+    },
+    "claude-1744688534844": {
+      "items": [
+        {
+          "json": {
+            "meta": {
+              "status": "success",
+              "message": "Successfully generated text with Claude",
+              "startTime": "2025-04-15T03:51:05.541Z",
+              "endTime": "2025-04-15T03:51:08.189Z"
+            },
+            "items": [
+              {
+                "json": {
+                  "response": "This appears to be a JSON object with a nested structure. Let's break it down:\n\n1. The outermost object has a single key-value pair:\n   - \"items\": an array of one object\n\n2. The object in the \"items\" array has two key-value pairs:\n   - \"json\": another object\n   - \"text\": a string that is a JSON-encoded version of the \"json\" object\n\n3. The \"json\" object has two key-value pairs:\n   - \"meta\": an object with four key-value pairs\n     - \"status\": \"success\"\n     - \"message\": \"Text input processed successfully\"\n     - \"startTime\": \"2025-04-15T03:51:05.532Z\"\n     - \"endTime\": \"2025-04-15T03:51:05.532Z\"\n   - \"items\": an array of one object\n     - This inner object has two key-value pairs:\n       - \"json\": an object with one key-value pair\n         - \"text\": an empty string\n       - \"binary\": null\n\n4. The outermost object also has a \"meta\" object with two key-value pairs:\n   - \"startTime\": \"2025-04-15T03:51:05.532Z\"\n   - \"endTime\": \"2025-04-15T03:51:05.532Z\"\n\nIn summary, this JSON object represents a processing result with some metadata and a single item that has an empty text field.",
+                  "fullResponse": {
+                    "id": "msg_011NPt4L6kKX47kfZisGdxnM",
+                    "type": "message",
+                    "role": "assistant",
+                    "model": "claude-3-haiku-20240307",
+                    "content": [
+                      {
+                        "type": "text",
+                        "text": "This appears to be a JSON object with a nested structure. Let's break it down:\n\n1. The outermost object has a single key-value pair:\n   - \"items\": an array of one object\n\n2. The object in the \"items\" array has two key-value pairs:\n   - \"json\": another object\n   - \"text\": a string that is a JSON-encoded version of the \"json\" object\n\n3. The \"json\" object has two key-value pairs:\n   - \"meta\": an object with four key-value pairs\n     - \"status\": \"success\"\n     - \"message\": \"Text input processed successfully\"\n     - \"startTime\": \"2025-04-15T03:51:05.532Z\"\n     - \"endTime\": \"2025-04-15T03:51:05.532Z\"\n   - \"items\": an array of one object\n     - This inner object has two key-value pairs:\n       - \"json\": an object with one key-value pair\n         - \"text\": an empty string\n       - \"binary\": null\n\n4. The outermost object also has a \"meta\" object with two key-value pairs:\n   - \"startTime\": \"2025-04-15T03:51:05.532Z\"\n   - \"endTime\": \"2025-04-15T03:51:05.532Z\"\n\nIn summary, this JSON object represents a processing result with some metadata and a single item that has an empty text field."
+                      }
+                    ],
+                    "stop_reason": "end_turn",
+                    "stop_sequence": null,
+                    "usage": {
+                      "input_tokens": 219,
+                      "cache_creation_input_tokens": 0,
+                      "cache_read_input_tokens": 0,
+                      "output_tokens": 342
+                    }
+                  }
+                },
+                "binary": null
+              }
+            ]
+          },
+          "text": "{\"meta\":{\"status\":\"success\",\"message\":\"Successfully generated text with Claude\",\"startTime\":\"2025-04-15T03:51:05.541Z\",\"endTime\":\"2025-04-15T03:51:08.189Z\"},\"items\":[{\"json\":{\"response\":\"This appears to be a JSON object with a nested structure. Let's break it down:\\n\\n1. The outermost object has a single key-value pair:\\n   - \\\"items\\\": an array of one object\\n\\n2. The object in the \\\"items\\\" array has two key-value pairs:\\n   - \\\"json\\\": another object\\n   - \\\"text\\\": a string that is a JSON-encoded version of the \\\"json\\\" object\\n\\n3. The \\\"json\\\" object has two key-value pairs:\\n   - \\\"meta\\\": an object with four key-value pairs\\n     - \\\"status\\\": \\\"success\\\"\\n     - \\\"message\\\": \\\"Text input processed successfully\\\"\\n     - \\\"startTime\\\": \\\"2025-04-15T03:51:05.532Z\\\"\\n     - \\\"endTime\\\": \\\"2025-04-15T03:51:05.532Z\\\"\\n   - \\\"items\\\": an array of one object\\n     - This inner object has two key-value pairs:\\n       - \\\"json\\\": an object with one key-value pair\\n         - \\\"text\\\": an empty string\\n       - \\\"binary\\\": null\\n\\n4. The outermost object also has a \\\"meta\\\" object with two key-value pairs:\\n   - \\\"startTime\\\": \\\"2025-04-15T03:51:05.532Z\\\"\\n   - \\\"endTime\\\": \\\"2025-04-15T03:51:05.532Z\\\"\\n\\nIn summary, this JSON object represents a processing result with some metadata and a single item that has an empty text field.\",\"fullResponse\":{\"id\":\"msg_011NPt4L6kKX47kfZisGdxnM\",\"type\":\"message\",\"role\":\"assistant\",\"model\":\"claude-3-haiku-20240307\",\"content\":[{\"type\":\"text\",\"text\":\"This appears to be a JSON object with a nested structure. Let's break it down:\\n\\n1. The outermost object has a single key-value pair:\\n   - \\\"items\\\": an array of one object\\n\\n2. The object in the \\\"items\\\" array has two key-value pairs:\\n   - \\\"json\\\": another object\\n   - \\\"text\\\": a string that is a JSON-encoded version of the \\\"json\\\" object\\n\\n3. The \\\"json\\\" object has two key-value pairs:\\n   - \\\"meta\\\": an object with four key-value pairs\\n     - \\\"status\\\": \\\"success\\\"\\n     - \\\"message\\\": \\\"Text input processed successfully\\\"\\n     - \\\"startTime\\\": \\\"2025-04-15T03:51:05.532Z\\\"\\n     - \\\"endTime\\\": \\\"2025-04-15T03:51:05.532Z\\\"\\n   - \\\"items\\\": an array of one object\\n     - This inner object has two key-value pairs:\\n       - \\\"json\\\": an object with one key-value pair\\n         - \\\"text\\\": an empty string\\n       - \\\"binary\\\": null\\n\\n4. The outermost object also has a \\\"meta\\\" object with two key-value pairs:\\n   - \\\"startTime\\\": \\\"2025-04-15T03:51:05.532Z\\\"\\n   - \\\"endTime\\\": \\\"2025-04-15T03:51:05.532Z\\\"\\n\\nIn summary, this JSON object represents a processing result with some metadata and a single item that has an empty text field.\"}],\"stop_reason\":\"end_turn\",\"stop_sequence\":null,\"usage\":{\"input_tokens\":219,\"cache_creation_input_tokens\":0,\"cache_read_input_tokens\":0,\"output_tokens\":342}}},\"binary\":null}]}"
+        }
+      ],
+      "meta": {
+        "startTime": "2025-04-15T03:51:08.189Z",
+        "endTime": "2025-04-15T03:51:08.189Z"
+      }
+    }
+  },
+  "output": {
+    "items": [
+      {
+        "json": {
+          "meta": {
+            "status": "success",
+            "message": "Successfully generated text with Claude",
+            "startTime": "2025-04-15T03:51:05.541Z",
+            "endTime": "2025-04-15T03:51:08.189Z"
+          },
+          "items": [
+            {
+              "json": {
+                "response": "This appears to be a JSON object with a nested structure. Let's break it down:\n\n1. The outermost object has a single key-value pair:\n   - \"items\": an array of one object\n\n2. The object in the \"items\" array has two key-value pairs:\n   - \"json\": another object\n   - \"text\": a string that is a JSON-encoded version of the \"json\" object\n\n3. The \"json\" object has two key-value pairs:\n   - \"meta\": an object with four key-value pairs\n     - \"status\": \"success\"\n     - \"message\": \"Text input processed successfully\"\n     - \"startTime\": \"2025-04-15T03:51:05.532Z\"\n     - \"endTime\": \"2025-04-15T03:51:05.532Z\"\n   - \"items\": an array of one object\n     - This inner object has two key-value pairs:\n       - \"json\": an object with one key-value pair\n         - \"text\": an empty string\n       - \"binary\": null\n\n4. The outermost object also has a \"meta\" object with two key-value pairs:\n   - \"startTime\": \"2025-04-15T03:51:05.532Z\"\n   - \"endTime\": \"2025-04-15T03:51:05.532Z\"\n\nIn summary, this JSON object represents a processing result with some metadata and a single item that has an empty text field.",
+                "fullResponse": {
+                  "id": "msg_011NPt4L6kKX47kfZisGdxnM",
+                  "type": "message",
+                  "role": "assistant",
+                  "model": "claude-3-haiku-20240307",
+                  "content": [
+                    {
+                      "type": "text",
+                      "text": "This appears to be a JSON object with a nested structure. Let's break it down:\n\n1. The outermost object has a single key-value pair:\n   - \"items\": an array of one object\n\n2. The object in the \"items\" array has two key-value pairs:\n   - \"json\": another object\n   - \"text\": a string that is a JSON-encoded version of the \"json\" object\n\n3. The \"json\" object has two key-value pairs:\n   - \"meta\": an object with four key-value pairs\n     - \"status\": \"success\"\n     - \"message\": \"Text input processed successfully\"\n     - \"startTime\": \"2025-04-15T03:51:05.532Z\"\n     - \"endTime\": \"2025-04-15T03:51:05.532Z\"\n   - \"items\": an array of one object\n     - This inner object has two key-value pairs:\n       - \"json\": an object with one key-value pair\n         - \"text\": an empty string\n       - \"binary\": null\n\n4. The outermost object also has a \"meta\" object with two key-value pairs:\n   - \"startTime\": \"2025-04-15T03:51:05.532Z\"\n   - \"endTime\": \"2025-04-15T03:51:05.532Z\"\n\nIn summary, this JSON object represents a processing result with some metadata and a single item that has an empty text field."
+                    }
+                  ],
+                  "stop_reason": "end_turn",
+                  "stop_sequence": null,
+                  "usage": {
+                    "input_tokens": 219,
+                    "cache_creation_input_tokens": 0,
+                    "cache_read_input_tokens": 0,
+                    "output_tokens": 342
+                  }
+                }
+              },
+              "binary": null
+            }
+          ]
+        },
+        "text": "{\"meta\":{\"status\":\"success\",\"message\":\"Successfully generated text with Claude\",\"startTime\":\"2025-04-15T03:51:05.541Z\",\"endTime\":\"2025-04-15T03:51:08.189Z\"},\"items\":[{\"json\":{\"response\":\"This appears to be a JSON object with a nested structure. Let's break it down:\\n\\n1. The outermost object has a single key-value pair:\\n   - \\\"items\\\": an array of one object\\n\\n2. The object in the \\\"items\\\" array has two key-value pairs:\\n   - \\\"json\\\": another object\\n   - \\\"text\\\": a string that is a JSON-encoded version of the \\\"json\\\" object\\n\\n3. The \\\"json\\\" object has two key-value pairs:\\n   - \\\"meta\\\": an object with four key-value pairs\\n     - \\\"status\\\": \\\"success\\\"\\n     - \\\"message\\\": \\\"Text input processed successfully\\\"\\n     - \\\"startTime\\\": \\\"2025-04-15T03:51:05.532Z\\\"\\n     - \\\"endTime\\\": \\\"2025-04-15T03:51:05.532Z\\\"\\n   - \\\"items\\\": an array of one object\\n     - This inner object has two key-value pairs:\\n       - \\\"json\\\": an object with one key-value pair\\n         - \\\"text\\\": an empty string\\n       - \\\"binary\\\": null\\n\\n4. The outermost object also has a \\\"meta\\\" object with two key-value pairs:\\n   - \\\"startTime\\\": \\\"2025-04-15T03:51:05.532Z\\\"\\n   - \\\"endTime\\\": \\\"2025-04-15T03:51:05.532Z\\\"\\n\\nIn summary, this JSON object represents a processing result with some metadata and a single item that has an empty text field.\",\"fullResponse\":{\"id\":\"msg_011NPt4L6kKX47kfZisGdxnM\",\"type\":\"message\",\"role\":\"assistant\",\"model\":\"claude-3-haiku-20240307\",\"content\":[{\"type\":\"text\",\"text\":\"This appears to be a JSON object with a nested structure. Let's break it down:\\n\\n1. The outermost object has a single key-value pair:\\n   - \\\"items\\\": an array of one object\\n\\n2. The object in the \\\"items\\\" array has two key-value pairs:\\n   - \\\"json\\\": another object\\n   - \\\"text\\\": a string that is a JSON-encoded version of the \\\"json\\\" object\\n\\n3. The \\\"json\\\" object has two key-value pairs:\\n   - \\\"meta\\\": an object with four key-value pairs\\n     - \\\"status\\\": \\\"success\\\"\\n     - \\\"message\\\": \\\"Text input processed successfully\\\"\\n     - \\\"startTime\\\": \\\"2025-04-15T03:51:05.532Z\\\"\\n     - \\\"endTime\\\": \\\"2025-04-15T03:51:05.532Z\\\"\\n   - \\\"items\\\": an array of one object\\n     - This inner object has two key-value pairs:\\n       - \\\"json\\\": an object with one key-value pair\\n         - \\\"text\\\": an empty string\\n       - \\\"binary\\\": null\\n\\n4. The outermost object also has a \\\"meta\\\" object with two key-value pairs:\\n   - \\\"startTime\\\": \\\"2025-04-15T03:51:05.532Z\\\"\\n   - \\\"endTime\\\": \\\"2025-04-15T03:51:05.532Z\\\"\\n\\nIn summary, this JSON object represents a processing result with some metadata and a single item that has an empty text field.\"}],\"stop_reason\":\"end_turn\",\"stop_sequence\":null,\"usage\":{\"input_tokens\":219,\"cache_creation_input_tokens\":0,\"cache_read_input_tokens\":0,\"output_tokens\":342}}},\"binary\":null}]}"
+      }
+    ],
+    "meta": {
+      "startTime": "2025-04-15T03:51:08.189Z",
+      "endTime": "2025-04-15T03:51:08.189Z"
+    }
+  }
+}
