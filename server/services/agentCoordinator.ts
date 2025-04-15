@@ -58,14 +58,14 @@ export class AgentCoordinator {
       // Log the incoming message
       const logEntry: InsertLog = {
         agentId: agentId || undefined,
-        type: 'user_message',
-        level: 'info',
-        message: input,
-        source: 'agent_coordinator',
-        timestamp: new Date(),
-        metadata: {
+        status: 'info',
+        input: { message: input },
+        output: {},
+        executionPath: {
+          source: 'agent_coordinator',
+          messageType: 'user_message',
           userId,
-          sessionId,
+          sessionId
         }
       };
       
@@ -120,17 +120,18 @@ Provide suggestions when the user's request is unclear, and once they confirm, t
         // Log the tool execution
         const toolLogEntry: InsertLog = {
           agentId: agentId || undefined,
-          type: 'tool_execution',
-          level: result.success ? 'info' : 'error',
-          message: `Tool ${functionName} execution: ${result.success ? 'success' : 'failed'}`,
-          source: 'agent_coordinator',
-          timestamp: new Date(),
-          metadata: {
+          status: result.success ? 'success' : 'error',
+          input: functionParams,
+          output: result,
+          error: result.success ? null : (result.error || 'Tool execution failed'),
+          executionPath: {
+            source: 'agent_coordinator',
+            operation: `Tool ${functionName} execution: ${result.success ? 'success' : 'failed'}`,
+            messageType: 'tool_execution',
+            level: result.success ? 'info' : 'error',
             userId,
             sessionId,
-            toolName: functionName,
-            toolParams: functionParams,
-            toolResult: result
+            toolName: functionName
           }
         };
         

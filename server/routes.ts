@@ -19,9 +19,9 @@ import { registerAllTools } from "./tools/implementations";
 
 /**
  * Utility function to execute a workflow
- * This is outside registerRoutes to avoid strict mode issues
+ * This is exported for use in tools and other modules
  */
-async function runWorkflow(
+export async function runWorkflow(
   workflowId: number,
   input: any,
   options: { 
