@@ -10,6 +10,28 @@ import { IStorage } from "../storage";
 import { InsertWorkflow, Node } from "@shared/schema";
 import { fetchWithTimeout } from "../utils/fetch";
 
+// Define the list of available node types
+// This should match client/src/nodes and the addNode tool list
+export const AVAILABLE_NODE_TYPES = [
+  // System node types
+  'text_input',
+  'claude',
+  'http_request',
+  'text_template',
+  'data_transform',
+  'decision',
+  'function',
+  'json_path',
+  'text_prompt',
+  // Other node types found in the codebase
+  'json_parser',
+  'csv_parser',
+  'delay',
+  'file_input',
+  'logger',
+  'api_response'
+];
+
 /**
  * Interface for workflow generation options
  */
@@ -54,6 +76,32 @@ export class WorkflowGenerationService {
   /**
    * Initialize the service, loading available node types
    */
+  /**
+   * Get a descriptive string for a node type
+   */
+  private getNodeDescription(type: string): string {
+    // Map node types to descriptions
+    const descriptionMap: Record<string, string> = {
+      'text_input': 'For collecting text input from users',
+      'claude': 'For using the Claude AI model for text generation',
+      'http_request': 'For making API calls to external services',
+      'text_template': 'For creating formatted text with variables',
+      'data_transform': 'For transforming data between different formats',
+      'decision': 'For creating conditional branches based on criteria',
+      'function': 'For executing custom code functions',
+      'json_path': 'For extracting data from JSON using JSONPath',
+      'text_prompt': 'For text prompts or questions a user would answer',
+      'json_parser': 'For parsing JSON data into structured format',
+      'csv_parser': 'For parsing CSV data into structured format',
+      'delay': 'For adding time delays in workflow execution',
+      'file_input': 'For handling file uploads and processing',
+      'logger': 'For logging events and data during workflow execution',
+      'api_response': 'For formatting API responses and outputs'
+    };
+
+    return descriptionMap[type] || `Generic ${type.replace('_', ' ')} node`;
+  }
+  
   async init(): Promise<void> {
     // Retrieve all registered node types from the database
     const nodes = await this.storage.getNodes();
@@ -168,27 +216,10 @@ export class WorkflowGenerationService {
       })
       .join("\n");
 
-    // Define the supported node types with clear descriptions
+    // Define the supported node types with clear descriptions - ONLY use from this exact list
     const supportedNodeTypes = `
-Supported Node Types (use ONLY these types):
-- text_prompt: For text input, prompts, or questions a user would answer
-- text_input: For collecting text input from users or systems
-- generate_text: For generating text using AI models
-- http_request: For making API calls to external services
-- transform: For transforming data between different formats
-- output: For displaying results or final output
-- visualize_text: For creating visualizations of text data
-- chat_interface: For creating chat-based interactions
-- claude: For using the Claude AI model for generation
-- database_query: For querying databases
-- email_send: For sending emails
-- trigger: For starting workflow processes
-- processor: For processing data in various ways
-- filter: For filtering data based on conditions
-- response_message: For formatting response messages
-- api_response_message: For formatting API responses
-- workflow_trigger: For triggering other workflows
-- agent_trigger: For triggering agents
+AVAILABLE NODE TYPES (IMPORTANT: use ONLY these exact types, do not invent new ones):
+${AVAILABLE_NODE_TYPES.map(type => `- ${type}: ${this.getNodeDescription(type)}`).join('\n')}
 `;
 
     // Create the system prompt
@@ -352,17 +383,37 @@ Ensure that:
       // Map node types to the ones supported by the FlowEditor component
       // Only keeping essential mappings for standard node types
       const nodeTypeMapping: Record<string, string> = {
-        transform: "transform",
-        output: "output",
+        transform: "data_transform",
+        output: "api_response",
         database: "database_query",
         email: "email_send",
-        trigger: "trigger",
-        process: "processor",
-        filter: "filter",
+        trigger: "text_input",
+        process: "function",
+        filter: "decision",
       };
 
       // Update node types and positions in the workflow
       if (workflow.flowData.nodes) {
+        // First, validate that all node types are supported
+        const unsupportedNodes = workflow.flowData.nodes.filter(
+          (node: any) => {
+            const nodeType = node.type;
+            // If the node type is in our mapping, it will be converted to a valid type
+            const willBeMapped = nodeType && nodeTypeMapping[nodeType];
+            // If the node type is already in our available types, it's valid
+            const isAvailable = nodeType && AVAILABLE_NODE_TYPES.includes(nodeType);
+            
+            // Node is unsupported if it's neither mappable nor already available
+            return nodeType && !willBeMapped && !isAvailable;
+          }
+        );
+        
+        // If we found unsupported node types, throw an error
+        if (unsupportedNodes.length > 0) {
+          const unsupportedTypes = unsupportedNodes.map((node: any) => node.type).join(', ');
+          throw new Error(`Workflow contains unsupported node types: ${unsupportedTypes}. Only use available node types: ${AVAILABLE_NODE_TYPES.join(', ')}`);
+        }
+        
         // Ensure all nodes are nicely positioned in the top-left of the canvas
         // This makes them immediately visible to users
         const baseX = 100; // Start X position
@@ -385,6 +436,11 @@ Ensure that:
               nodeTypeMapping[node.data.type]
             ) {
               node.data.type = nodeTypeMapping[node.data.type];
+            }
+            
+            // Final validation - after mapping, the node type must be in our available types
+            if (node.type && !AVAILABLE_NODE_TYPES.includes(node.type)) {
+              throw new Error(`Invalid node type after mapping: ${node.type}. Must be one of: ${AVAILABLE_NODE_TYPES.join(', ')}`);
             }
 
             // Calculate grid position
@@ -435,6 +491,32 @@ Ensure that:
   }
 
   /**
+   * Get a descriptive string for a node type
+   */
+  private getNodeDescription(type: string): string {
+    // Map node types to descriptions
+    const descriptionMap: Record<string, string> = {
+      'text_input': 'For collecting text input from users',
+      'claude': 'For using the Claude AI model for text generation',
+      'http_request': 'For making API calls to external services',
+      'text_template': 'For creating formatted text with variables',
+      'data_transform': 'For transforming data between different formats',
+      'decision': 'For creating conditional branches based on criteria',
+      'function': 'For executing custom code functions',
+      'json_path': 'For extracting data from JSON using JSONPath',
+      'text_prompt': 'For text prompts or questions a user would answer',
+      'json_parser': 'For parsing JSON data into structured format',
+      'csv_parser': 'For parsing CSV data into structured format',
+      'delay': 'For adding time delays in workflow execution',
+      'file_input': 'For handling file uploads and processing',
+      'logger': 'For logging events and data during workflow execution',
+      'api_response': 'For formatting API responses and outputs'
+    };
+
+    return descriptionMap[type] || `Generic ${type.replace('_', ' ')} node`;
+  }
+
+  /**
    * Get the appropriate category for a node type
    */
   private getCategoryForNodeType(type: string | undefined): string {
@@ -460,16 +542,25 @@ Ensure that:
       output: "output",
       email_send: "output",
       visualize_text: "output",
+      api_response: "output",
 
       // Data nodes
       transform: "data",
       database_query: "data",
       filter: "data",
       data_transform: "data",
+      json_parser: "data",
+      csv_parser: "data",
+      json_path: "data",
 
       // Processor nodes
       processor: "process",
       http_request: "process",
+      function: "process",
+      delay: "process",
+      file_input: "process",
+      logger: "process",
+      decision: "process",
     };
 
     return categoryMap[type] || "default";
