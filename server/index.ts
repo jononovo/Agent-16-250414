@@ -78,49 +78,15 @@ app.use((req, res, next) => {
       log(`serving on port 5000`);
     });
     
-    // Add shutdown handlers to ensure data is saved
-    const shutdownHandler = async () => {
-      log('Server shutting down, saving all data...');
-      try {
-        // Force setting initializing to false to ensure data is saved
-        (storage as any).initializing = false;
-        
-        await storage.saveAllData();
-        log('All data saved successfully before shutdown');
-        
-        // Verify workflows were saved by logging count
-        const workflows = await storage.getWorkflows();
-        log(`Verified ${workflows.length} workflows saved before exit`);
-      } catch (error) {
-        log(`Error saving data during shutdown: ${error}`);
-      }
-      
-      // Small delay to ensure all async operations complete
-      setTimeout(() => {
-        log('Exiting process');
-        process.exit(0);
-      }, 500);
-    };
+    // Simple process termination handlers with no automatic saving
+    process.on('SIGINT', () => {
+      log('Server shutting down');
+      process.exit(0);
+    });
     
-    // Handle various termination signals
-    process.on('SIGINT', shutdownHandler);
-    process.on('SIGTERM', shutdownHandler);
-    process.on('SIGUSR2', shutdownHandler); // For nodemon restarts
-    
-    // Also save data periodically (every 5 minutes)
-    const autoSaveInterval = setInterval(async () => {
-      log('Auto-saving all data...');
-      try {
-        await storage.saveAllData();
-        log('Auto-save completed successfully');
-      } catch (error) {
-        log(`Error during auto-save: ${error}`);
-      }
-    }, 5 * 60 * 1000); // 5 minutes in milliseconds
-    
-    // Clear interval on shutdown
-    process.on('beforeExit', () => {
-      clearInterval(autoSaveInterval);
+    process.on('SIGTERM', () => {
+      log('Server terminating');
+      process.exit(0);
     });
   } catch (error) {
     log(`Error initializing application: ${error}`);

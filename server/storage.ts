@@ -119,41 +119,24 @@ export class MemStorage implements IStorage {
    */
   async saveAllData(): Promise<void> {
     try {
-      // Set initializing to false to ensure data is saved
+      // Temporarily disable initialization flag to allow saving
       const wasInitializing = this.initializing;
       this.initializing = false;
       
-      console.log('Starting saveAllData operation...');
-      console.log(`Current state: ${this.workflows.size} workflows, ${this.agents.size} agents, ${this.nodes.size} nodes, ${this.logs.size} logs`);
+      // Simple parallel save of all data types
+      await Promise.all([
+        this.saveWorkflows(),
+        this.saveAgents(),
+        this.saveNodes(),
+        this.saveLogs()
+      ]);
       
-      // Save each data type sequentially for more reliable saving
-      console.log('Saving workflows...');
-      await this.saveWorkflows();
-      
-      console.log('Saving agents...');
-      await this.saveAgents();
-      
-      console.log('Saving nodes...');
-      await this.saveNodes();
-      
-      console.log('Saving logs...');
-      await this.saveLogs();
-      
-      console.log('All data successfully saved to Replit Database');
-      
-      // Force a specific save of workflow data again to ensure it's properly persisted
-      if (this.workflows.size > 0) {
-        const workflowData = Array.from(this.workflows.values());
-        console.log(`Ensuring ${workflowData.length} workflows are saved...`);
-        await this.db.set('workflows', JSON.stringify(workflowData));
-        console.log('Workflows explicitly saved');
-      }
+      console.log('All data saved to Replit Database');
       
       // Restore initializing state
       this.initializing = wasInitializing;
     } catch (error) {
       console.error('Error saving all data:', error);
-      throw error; // Re-throw to allow calling code to handle the error
     }
   }
   
@@ -494,37 +477,13 @@ export class MemStorage implements IStorage {
    */
   private async saveData(key: string, data: any) {
     // Skip saving during initialization
-    if (this.initializing) {
-      console.log(`Skipping save of ${key} during initialization`);
-      return;
-    }
+    if (this.initializing) return;
     
     try {
-      // Log what we're about to save
-      console.log(`Saving ${key} to Replit Database, data length: ${Array.isArray(data) ? data.length : 'not array'}`);
-      
+      // Simple save implementation with just the essential functionality
       const jsonData = JSON.stringify(data);
-      console.log(`Data serialized, JSON length: ${jsonData.length}`);
-      
-      // Directly set data in database with timeout handling
-      const savePromise = this.db.set(key, jsonData);
-      
-      // Add a timeout to avoid hanging indefinitely
-      const timeoutPromise = new Promise((_, reject) => {
-        setTimeout(() => reject(new Error(`Timeout saving ${key} to Replit Database`)), 5000);
-      });
-      
-      await Promise.race([savePromise, timeoutPromise]);
-      
-      // Verify data was saved by reading it back
-      try {
-        const verifyData = await this.db.get(key) as unknown;
-        console.log(`Verified ${key} was saved, data exists: ${verifyData ? 'yes' : 'no'}`);
-      } catch (verifyError) {
-        console.warn(`Could not verify ${key} was saved:`, verifyError);
-      }
-      
-      console.log(`Successfully saved data to Replit Database: ${key}`);
+      await this.db.set(key, jsonData);
+      console.log(`Saved data to Replit Database: ${key}`);
       return true;
     } catch (error) {
       console.error(`Error saving data to Replit Database (${key}):`, error);
