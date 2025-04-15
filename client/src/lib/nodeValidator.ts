@@ -232,28 +232,38 @@ export function registerCustomNodeTypes(nodeTypes: string[]): void {
 
 /**
  * Gets the path to a node's executor
- * Checks both System and Custom folders, then falls back to the root nodes folder
+ * Attempts to find the node in System, Custom, or root folders
  */
 export function getNodeExecutorPath(nodeType: string): string {
-  // For now, we'll try the root folder first for backward compatibility
-  return `../nodes/${nodeType}/executor`;
+  // Check System folder first (preferred for built-in nodes)
+  if (FOLDER_BASED_NODE_TYPES.includes(nodeType)) {
+    return `../nodes/System/${nodeType}/executor`;
+  }
   
-  // In the future, we can implement a more sophisticated path resolver:
-  // 1. Try System folder first
-  // 2. If not found, try Custom folder
-  // 3. If still not found, try root folder as fallback
+  // Then check Custom folder (for user-generated nodes)
+  if (CUSTOM_NODE_TYPES.includes(nodeType)) {
+    return `../nodes/Custom/${nodeType}/executor`;
+  }
+  
+  // Fallback to root folder for backward compatibility
+  return `../nodes/${nodeType}/executor`;
 }
 
 /**
  * Gets the path to a node's definition
- * Checks both System and Custom folders, then falls back to the root nodes folder
+ * Attempts to find the node in System, Custom, or root folders
  */
 export function getNodeDefinitionPath(nodeType: string): string {
-  // For now, we'll try the root folder first for backward compatibility
-  return `../nodes/${nodeType}/definition`;
+  // Check System folder first (preferred for built-in nodes)
+  if (FOLDER_BASED_NODE_TYPES.includes(nodeType)) {
+    return `../nodes/System/${nodeType}/definition`;
+  }
   
-  // In the future, we can implement a more sophisticated path resolver:
-  // 1. Try System folder first
-  // 2. If not found, try Custom folder
-  // 3. If still not found, try root folder as fallback
+  // Then check Custom folder (for user-generated nodes)
+  if (CUSTOM_NODE_TYPES.includes(nodeType)) {
+    return `../nodes/Custom/${nodeType}/definition`;
+  }
+  
+  // Fallback to root folder for backward compatibility
+  return `../nodes/${nodeType}/definition`;
 }

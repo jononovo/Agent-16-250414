@@ -101,27 +101,35 @@ export const execute = async (nodeData: any, inputs: any = {}): Promise<any> => 
 }
 
 /**
- * Save node files to the appropriate directories
- * In a browser context, this needs to use the server API
+ * Save node files to the appropriate directories via the server API
  */
 async function saveNodeFiles(nodeType: string, template: NodeTemplate): Promise<boolean> {
   try {
-    // For a real implementation, we would call an API endpoint
-    // But for now we'll just log what would happen
-    console.log(`Would save definition file to: client/src/nodes/Custom/${nodeType}/definition.ts`);
-    console.log(`Would save executor file to: client/src/nodes/Custom/${nodeType}/executor.ts`);
+    // Call the API endpoint to create the node files
+    const result = await fetch('/api/nodes/custom', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        nodeType,
+        definition: template.definition,
+        executor: template.executor
+      })
+    });
     
-    // In a real implementation, we would do:
-    // const result = await fetch('/api/nodes/custom', {
-    //   method: 'POST',
-    //   headers: { 'Content-Type': 'application/json' },
-    //   body: JSON.stringify({
-    //     nodeType,
-    //     definition: template.definition,
-    //     executor: template.executor
-    //   })
-    // });
-    // return result.ok;
+    if (!result.ok) {
+      const errorData = await result.json();
+      console.error('Server error creating custom node:', errorData);
+      return false;
+    }
+    
+    const data = await result.json();
+    console.log('Custom node created successfully:', data);
+    
+    // For UI purposes, we might want to register the node type immediately
+    // This avoids having to reload the page to see the new node
+    import('./nodeValidator').then(validator => {
+      validator.registerCustomNodeType(nodeType);
+    });
     
     return true;
   } catch (error) {
