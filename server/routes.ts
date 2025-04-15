@@ -1435,25 +1435,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (updateData.flowData !== undefined) {
         if (typeof updateData.flowData === 'string') {
           try {
-            updateData.flowData = JSON.parse(updateData.flowData);
+            // Convert string to Record<string, any> type
+            const parsedData = JSON.parse(updateData.flowData) as Record<string, any>;
+            updateData.flowData = parsedData;
           } catch (e) {
-            updateData.flowData = { nodes: [], edges: [] };
+            // If parsing fails, initialize with empty nodes and edges
+            updateData.flowData = { nodes: [], edges: [] } as Record<string, any>;
           }
         }
       }
       
-      // Ensure flowData is a proper object if it exists in the update
-      if (updateData.flowData !== undefined) {
-        if (typeof updateData.flowData === 'string') {
-          try {
-            // Try to parse it if it's a JSON string
-            updateData.flowData = JSON.parse(updateData.flowData);
-          } catch (e) {
-            // If parsing fails, initialize with empty nodes and edges
-            updateData.flowData = { nodes: [], edges: [] };
-          }
-        }
-      }
+      /* We've already processed the flowData above, so we don't need this duplicate code */
       
       // Update the workflow
       const updatedWorkflow = await storage.updateWorkflow(id, updateData);
