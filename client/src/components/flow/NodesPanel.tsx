@@ -323,10 +323,15 @@ const NodesPanel = () => {
     // These match the folder-based nodes we have implemented
     const typesToUse = NODE_TYPES.filter(nodeType => {
       // Only include node types that we know are implemented in the folder-based system
-      return ['text_input', 'claude', 'http_request', 'text_template', 
-              'data_transform', 'decision', 'function', 'json_path',
-              'text_formatter', 'number_input', 'toggle_switch',
-              'json_schema_validator', 'csv_processor', 'markdown_renderer'].includes(nodeType.id);
+      // First wave of implementations
+      const implementedNodeTypes = [
+        'text_input', 'claude', 'http_request', 'text_template', 
+        'data_transform', 'decision', 'function', 'json_path',
+        // New custom nodes
+        'text_formatter', 'number_input', 'toggle_switch',
+        'json_schema_validator', 'csv_processor', 'markdown_renderer'
+      ];
+      return implementedNodeTypes.includes(nodeType.id);
     });
     
     const nodes = typesToUse.map((nodeType, index) => {
