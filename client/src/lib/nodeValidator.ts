@@ -8,7 +8,7 @@
 
 import { NodeDefinition, PortDefinition } from '../nodes/types';
 
-// List of implemented node types
+// List of all node types implemented using the folder-based structure
 export const FOLDER_BASED_NODE_TYPES = [
   'text_input',
   'claude',
@@ -17,11 +17,9 @@ export const FOLDER_BASED_NODE_TYPES = [
   'data_transform',
   'decision',
   'function',
-  'json_path'
+  'json_path',
+  'json_parser'
 ];
-
-// List of custom user-created node types (will be populated at runtime)
-export let CUSTOM_NODE_TYPES: string[] = [];
 
 // Required fields for node definitions
 const REQUIRED_NODE_FIELDS = [
