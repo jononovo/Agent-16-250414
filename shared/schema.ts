@@ -99,7 +99,14 @@ export const nodeSchema = z.object({
   createdAt: z.date().default(() => new Date()),
   updatedAt: z.date().default(() => new Date()),
   userId: z.number().nullable().optional(),
-  configuration: z.record(z.any()).nullable().optional()
+  configuration: z.record(z.any()).nullable().optional(),
+  // Additional fields for custom nodes
+  isCustom: z.boolean().optional().default(false),
+  inputs: z.record(z.any()).optional(),
+  outputs: z.record(z.any()).optional(),
+  defaultData: z.record(z.any()).optional(),
+  version: z.string().optional().default("1.0.0"),
+  implementation: z.string().optional() // Stores executable code for custom nodes
 });
 
 export const insertNodeSchema = nodeSchema.omit({

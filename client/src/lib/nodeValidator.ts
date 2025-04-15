@@ -20,6 +20,9 @@ export const FOLDER_BASED_NODE_TYPES = [
   'json_path'
 ];
 
+// List of custom user-created node types (will be populated at runtime)
+export let CUSTOM_NODE_TYPES: string[] = [];
+
 // Required fields for node definitions
 const REQUIRED_NODE_FIELDS = [
   'type',
@@ -197,7 +200,27 @@ export function logValidationResults(results: Record<string, ValidationResult>):
  * Check if a node type is implemented
  */
 export function isNodeTypeImplemented(nodeType: string): boolean {
-  return FOLDER_BASED_NODE_TYPES.includes(nodeType);
+  return FOLDER_BASED_NODE_TYPES.includes(nodeType) || CUSTOM_NODE_TYPES.includes(nodeType);
+}
+
+/**
+ * Register a custom node type
+ */
+export function registerCustomNodeType(nodeType: string): void {
+  if (!CUSTOM_NODE_TYPES.includes(nodeType)) {
+    CUSTOM_NODE_TYPES.push(nodeType);
+  }
+}
+
+/**
+ * Register multiple custom node types
+ */
+export function registerCustomNodeTypes(nodeTypes: string[]): void {
+  nodeTypes.forEach(nodeType => {
+    if (!CUSTOM_NODE_TYPES.includes(nodeType)) {
+      CUSTOM_NODE_TYPES.push(nodeType);
+    }
+  });
 }
 
 /**
