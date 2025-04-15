@@ -132,6 +132,113 @@ The node UI system is organized by feature/functionality:
    - Text should be properly truncated with tooltips for overflow
    - Minimum and maximum width constraints should be respected
 
+### Simple-AI.dev UI Examples
+
+#### 1. Node Container and Header
+
+```tsx
+<div className={cn(
+  'rounded-md border bg-card text-card-foreground shadow-sm transition-all',
+  'min-w-[280px] max-w-[320px]',
+  selected ? 'border-primary/70 shadow-md' : 'border-border'
+)}>
+  {/* Node Header */}
+  <div className="flex items-center justify-between p-3 border-b border-border bg-muted/40 rounded-t-md">
+    <div className="flex items-center gap-2">
+      <div className="flex-shrink-0 text-primary">
+        <MyIcon size={16} />
+      </div>
+      <h3 className="text-sm font-medium truncate">Node Title</h3>
+    </div>
+    <div className="flex items-center gap-1">
+      {/* Optional status icons or actions */}
+    </div>
+  </div>
+  
+  {/* Node Content */}
+  <div className="p-3 space-y-3">
+    {/* Node content here */}
+  </div>
+</div>
+```
+
+#### 2. Handle Styling
+
+```tsx
+<Handle
+  type="target"
+  position={Position.Left}
+  id="inputId"
+  style={{ 
+    top: 60, 
+    width: '10px', 
+    height: '10px', 
+    background: 'white',
+    border: '2px solid #3b82f6'
+  }}
+  isConnectable={isConnectable}
+/>
+<div className="relative py-1 ml-6 my-1 text-xs text-muted-foreground">
+  Input Label
+</div>
+```
+
+#### 3. Editable Handles for Dynamic Interfaces
+
+```tsx
+<EditableHandle
+  type="target"
+  position={Position.Left}
+  id={input.id}
+  label={input.label}
+  isConnectable={isConnectable}
+  onLabelChange={handleInputLabelChange}
+  onDelete={inputs.length > 1 ? handleDeleteInput : undefined}
+/>
+<Button 
+  variant="ghost" 
+  size="sm" 
+  className="flex items-center text-xs ml-6 mt-1 h-7 px-2"
+  onClick={handleAddInput}
+>
+  <Plus size={12} className="mr-1" />
+  Add Input
+</Button>
+```
+
+#### 4. Tabbed Interface for Complex Nodes
+
+```tsx
+<Tabs value={activeTab} className="w-full">
+  <TabsList className="h-7 p-0">
+    <TabsTrigger
+      value="settings"
+      className="h-7 px-2 text-xs"
+      onClick={() => setActiveTab('settings')}
+    >
+      <Settings size={12} className="mr-1" />
+      Settings
+    </TabsTrigger>
+    <TabsTrigger
+      value="advanced"
+      className="h-7 px-2 text-xs"
+      onClick={() => setActiveTab('advanced')}
+    >
+      <Sliders size={12} className="mr-1" />
+      Advanced
+    </TabsTrigger>
+  </TabsList>
+  
+  <TabsContent value="settings" className="p-3 space-y-3 mt-0">
+    {/* Settings content */}
+  </TabsContent>
+  
+  <TabsContent value="advanced" className="p-3 space-y-3 mt-0">
+    {/* Advanced settings content */}
+  </TabsContent>
+</Tabs>
+```
+
 ### Node UI Data Management
 
 1. **Data Handling**
