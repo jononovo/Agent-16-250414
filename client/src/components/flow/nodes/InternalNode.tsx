@@ -2,10 +2,14 @@ import { memo } from 'react';
 import { Handle, Position, NodeProps } from 'reactflow';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
-import { Info, Settings, Check, AlertTriangle } from 'lucide-react';
+import { Settings, AlertTriangle, Info } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import DynamicIcon from '../DynamicIcon';
+
+// Import the common node components
+import { NodeContainer } from '@/components/nodes/common/NodeContainer';
+import { NodeHeader } from '@/components/nodes/common/NodeHeader';
+import { NodeContent } from '@/components/nodes/common/NodeContent';
 
 interface InternalNodeData {
   label: string;
@@ -157,46 +161,45 @@ function InternalNode({ data, id, selected }: NodeProps<InternalNodeData>) {
     return null;
   };
   
+  // Create the header actions slot
+  const headerActions = (
+    <div className="flex items-center gap-1.5">
+      {getStatusBadge()}
+      <Button 
+        variant="ghost" 
+        size="icon" 
+        className="h-7 w-7" 
+        title={nodeInfo.infoText}
+      >
+        <Settings className="h-3.5 w-3.5 text-muted-foreground" />
+      </Button>
+    </div>
+  );
+  
+  // Create icon element for the header
+  const iconElement = (
+    <div className="bg-primary/10 p-1.5 rounded-md">
+      <DynamicIcon icon={icon} className="h-4 w-4 text-primary" />
+    </div>
+  );
+  
+  // Additional class for animation and state indication
+  const containerClass = cn(
+    isProcessing && 'animate-pulse',
+    isComplete && 'border-green-500/30',
+    hasError && 'border-red-500/30'
+  );
+  
   return (
-    <div className={cn(
-      'bg-background rounded-xl border transition-all duration-200',
-      'min-w-[280px] max-w-[320px]',
-      isProcessing && 'animate-pulse',
-      isComplete && 'border-green-500/30',
-      hasError && 'border-red-500/30',
-      selected ? 'border-primary shadow-md' : 'border-border/40'
-    )}>
-      {/* Node Header */}
-      <div className="flex items-center justify-between px-4 py-2 border-b border-border/50">
-        <div className="flex items-center gap-2">
-          <div className="bg-primary/10 p-1.5 rounded-md">
-            <DynamicIcon icon={icon} className="h-4 w-4 text-primary" />
-          </div>
-          <div>
-            <h3 className="text-sm font-medium">{label}</h3>
-            <p className="text-xs text-muted-foreground line-clamp-1">{description}</p>
-          </div>
-        </div>
-        <div className="flex items-center gap-1.5">
-          {getStatusBadge()}
-          
-          <TooltipProvider>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button variant="ghost" size="icon" className="h-7 w-7">
-                  <Info className="h-3.5 w-3.5 text-muted-foreground" />
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent side="top" className="max-w-xs">
-                <p className="text-xs">{nodeInfo.infoText}</p>
-              </TooltipContent>
-            </Tooltip>
-          </TooltipProvider>
-        </div>
-      </div>
+    <NodeContainer selected={selected} className={containerClass}>
+      <NodeHeader 
+        title={label} 
+        description={description}
+        icon={iconElement}
+        actions={headerActions}
+      />
       
-      {/* Node Content */}
-      <div className="p-4 space-y-4">
+      <NodeContent padding="normal">
         {/* Node Type Badge */}
         <div className="flex justify-between items-center">
           <Badge variant="outline" className="text-xs px-2 py-0.5 bg-slate-100/50 dark:bg-slate-800/50">
@@ -222,7 +225,7 @@ function InternalNode({ data, id, selected }: NodeProps<InternalNodeData>) {
             {errorMessage}
           </div>
         )}
-      </div>
+      </NodeContent>
       
       {/* Input handle for triggering the node */}
       <Handle
@@ -259,7 +262,7 @@ function InternalNode({ data, id, selected }: NodeProps<InternalNodeData>) {
       <div className="absolute right-2 top-[46px] text-xs text-muted-foreground text-right">
         Out
       </div>
-    </div>
+    </NodeContainer>
   );
 }
 
