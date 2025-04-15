@@ -86,20 +86,27 @@ const improveWorkflowTool: Tool = {
       
       // Analyze workflow for each node type and suggest improvements
       workflowNodes.forEach(node => {
-        // First verify the node type is in our allowed list, or provide general improvements
+        // First verify the node type is in our allowed list - if not, recommend replacing it
         if (!AVAILABLE_NODE_TYPES.includes(node.type)) {
-          // For legacy or custom node types, suggest migration to supported types
+          // For non-supported node types, suggest upgrading to a suitable supported type
+          // Find a matching supported type or default to text_template
+          const recommendedType = AVAILABLE_NODE_TYPES.find(type => 
+            type.toLowerCase().includes(node.type.toLowerCase().replace(/([A-Z])/g, '_$1').toLowerCase())
+          ) || 'text_template';
+          
           suggestedImprovements.push({
             nodeId: node.id,
             nodeType: node.type,
             currentConfig: node.data || {},
             suggestedChanges: {
-              migrateToSupportedType: true,
-              recommendedType: AVAILABLE_NODE_TYPES.find(type => 
-                type.toLowerCase().includes(node.type.toLowerCase().replace(/([A-Z])/g, '_$1').toLowerCase())
-              ) || 'text_template'
+              replaceNodeWith: recommendedType,
+              action: 'replace_node',
+              newNodeConfig: {
+                type: recommendedType,
+                label: `${recommendedType.replace(/_/g, ' ')} (upgraded)`,
+              }
             },
-            reason: `Migrate from unsupported node type "${node.type}" to a supported node type`,
+            reason: `Replace unsupported node type "${node.type}" with "${recommendedType}"`,
             benefitArea: 'compatibility',
             implementationDifficulty: 'medium'
           });
@@ -110,7 +117,6 @@ const improveWorkflowTool: Tool = {
         switch (node.type) {
           // Input nodes
           case 'text_input':
-          case 'textInput': // For backward compatibility
             suggestedImprovements.push({
               nodeId: node.id,
               nodeType: node.type,
@@ -146,7 +152,6 @@ const improveWorkflowTool: Tool = {
           
           // API nodes
           case 'http_request':
-          case 'httpRequest': // For backward compatibility
             suggestedImprovements.push({
               nodeId: node.id,
               nodeType: node.type,

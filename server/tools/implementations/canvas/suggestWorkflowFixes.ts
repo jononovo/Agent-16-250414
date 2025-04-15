@@ -120,11 +120,10 @@ const suggestWorkflowFixesTool: Tool = {
                   if (node) {
                     let suggestedParams = {};
                     
-                    // Suggest parameters based on node type - using our approved node types
+                    // Suggest parameters based on node type - using only approved node types
                     switch (node.type) {
                       // Input nodes
                       case 'text_input':
-                      case 'textInput': // For backward compatibility
                         suggestedParams = {
                           defaultValue: '',
                           label: 'Input',
@@ -144,7 +143,6 @@ const suggestWorkflowFixesTool: Tool = {
                         
                       // Processing nodes  
                       case 'http_request':
-                      case 'httpRequest': // For backward compatibility
                         suggestedParams = {
                           url: 'https://api.example.com/data',
                           method: 'GET',
@@ -243,12 +241,9 @@ const suggestWorkflowFixesTool: Tool = {
         // Without specific issues, provide general improvement suggestions
         // Check for missing node types that would make the workflow more complete
         
-        // Check if there's an input node - map to available node types
+        // Check if there's an input node using only approved node types
         const inputNodeTypes = ['text_input', 'file_input'];
-        const hasInputNode = workflowNodes.some(node => 
-          inputNodeTypes.includes(node.type) || 
-          node.type === 'textInput' // Also check legacy names
-        );
+        const hasInputNode = workflowNodes.some(node => inputNodeTypes.includes(node.type));
         
         if (!hasInputNode) {
           // Use text_input from our approved list
@@ -263,12 +258,9 @@ const suggestWorkflowFixesTool: Tool = {
           });
         }
         
-        // Check if there's an output/display node
+        // Check if there's an output/display node using only approved node types
         const outputNodeTypes = ['api_response', 'text_template']; 
-        const hasOutputNode = workflowNodes.some(node => 
-          outputNodeTypes.includes(node.type) || 
-          ['textOutput', 'visualization'].includes(node.type) // Check legacy names
-        );
+        const hasOutputNode = workflowNodes.some(node => outputNodeTypes.includes(node.type));
         
         if (!hasOutputNode) {
           // Use api_response from our approved list

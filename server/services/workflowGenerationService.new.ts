@@ -451,17 +451,8 @@ Ensure that:
         throw new Error("Workflow edges must be an array");
       }
 
-      // Map node types to the ones supported by the FlowEditor component
-      // Only keeping essential mappings for standard node types
-      const nodeTypeMapping: Record<string, string> = {
-        transform: "data_transform",
-        output: "api_response",
-        database: "database_query",
-        email: "email_send",
-        trigger: "text_input",
-        process: "function",
-        filter: "decision",
-      };
+      // No type mapping - only use explicit approved node types
+      // All nodes must use exact types from the AVAILABLE_NODE_TYPES list
 
       // Update node types and positions in the workflow
       if (workflow.flowData.nodes) {
@@ -495,23 +486,20 @@ Ensure that:
 
         workflow.flowData.nodes = workflow.flowData.nodes.map(
           (node: any, index: number) => {
-            // Check if this node type needs to be mapped
-            if (node.type && nodeTypeMapping[node.type]) {
-              node.type = nodeTypeMapping[node.type];
+            // Final validation - only explicitly approved node types are allowed
+            // No mapping or compatibility layer - node types must be from our explicit list
+            if (node.type && !AVAILABLE_NODE_TYPES.includes(node.type)) {
+              throw new Error(`Invalid node type: ${node.type}. Must be one of: ${AVAILABLE_NODE_TYPES.join(', ')}`);
             }
 
-            // Also update the type in the data object if it exists
-            if (
-              node.data &&
-              node.data.type &&
-              nodeTypeMapping[node.data.type]
-            ) {
-              node.data.type = nodeTypeMapping[node.data.type];
+            // Also ensure data.type matches exactly
+            if (node.data && node.data.type && !AVAILABLE_NODE_TYPES.includes(node.data.type)) {
+              throw new Error(`Invalid node data type: ${node.data.type}. Must be one of: ${AVAILABLE_NODE_TYPES.join(', ')}`);
             }
             
-            // Final validation - after mapping, the node type must be in our available types
-            if (node.type && !AVAILABLE_NODE_TYPES.includes(node.type)) {
-              throw new Error(`Invalid node type after mapping: ${node.type}. Must be one of: ${AVAILABLE_NODE_TYPES.join(', ')}`);
+            // Ensure data.type matches node.type for consistency
+            if (node.data && !node.data.type) {
+              node.data.type = node.type;
             }
 
             // Calculate grid position

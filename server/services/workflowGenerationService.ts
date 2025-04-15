@@ -495,23 +495,20 @@ Ensure that:
 
         workflow.flowData.nodes = workflow.flowData.nodes.map(
           (node: any, index: number) => {
-            // Check if this node type needs to be mapped
-            if (node.type && nodeTypeMapping[node.type]) {
-              node.type = nodeTypeMapping[node.type];
+            // Final validation - only explicitly approved node types are allowed
+            // No mapping or compatibility layer - node types must be from our explicit list
+            if (node.type && !AVAILABLE_NODE_TYPES.includes(node.type)) {
+              throw new Error(`Invalid node type: ${node.type}. Must be one of: ${AVAILABLE_NODE_TYPES.join(', ')}`);
             }
 
-            // Also update the type in the data object if it exists
-            if (
-              node.data &&
-              node.data.type &&
-              nodeTypeMapping[node.data.type]
-            ) {
-              node.data.type = nodeTypeMapping[node.data.type];
+            // Also ensure data.type matches exactly
+            if (node.data && node.data.type && !AVAILABLE_NODE_TYPES.includes(node.data.type)) {
+              throw new Error(`Invalid node data type: ${node.data.type}. Must be one of: ${AVAILABLE_NODE_TYPES.join(', ')}`);
             }
             
-            // Final validation - after mapping, the node type must be in our available types
-            if (node.type && !AVAILABLE_NODE_TYPES.includes(node.type)) {
-              throw new Error(`Invalid node type after mapping: ${node.type}. Must be one of: ${AVAILABLE_NODE_TYPES.join(', ')}`);
+            // Ensure data.type matches node.type for consistency
+            if (node.data && !node.data.type) {
+              node.data.type = node.type;
             }
 
             // Calculate grid position
