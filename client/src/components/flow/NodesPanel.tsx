@@ -32,6 +32,7 @@ import {
   FileText
 } from 'lucide-react';
 import NodeItem from './NodeItem';
+import { FOLDER_BASED_NODE_TYPES, SYSTEM_NODE_TYPES, CUSTOM_NODE_TYPES } from '@/lib/nodeValidator';
 
 // Node categories based on the documentation
 const NODE_CATEGORIES = [
@@ -45,7 +46,7 @@ const NODE_CATEGORIES = [
   { id: 'internal', name: 'Internal', description: 'Internal system nodes that trigger system operations' }
 ];
 
-// Specialized AI node types based on the documentation and screenshot
+// Node types from nodeValidator for a single source of truth
 const NODE_TYPES = [
   // AI Nodes
   { 
@@ -56,157 +57,18 @@ const NODE_TYPES = [
     icon: Type
   },
   { 
-    id: 'text_prompt', 
-    name: 'Text Prompt', 
-    description: 'Provide text prompts to your workflow',
-    category: 'ai',
-    icon: MessageSquare
-  },
-  { 
     id: 'claude', 
     name: 'Claude API', 
     description: 'Generate content with Claude AI',
     category: 'ai',
     icon: Sparkles
   },
-  {
-    id: 'chat_interface',
-    name: 'Chat Interface',
-    description: 'Add conversational chat interface',
-    category: 'ai',
-    icon: MessageSquare
-  },
-  { 
-    id: 'generate_text', 
-    name: 'Generate Text', 
-    description: 'Create AI-generated text with model',
-    category: 'ai',
-    icon: Sparkles
-  },
-  { 
-    id: 'prompt_crafter', 
-    name: 'Prompt Crafter', 
-    description: 'Design templated prompts for AI',
-    category: 'ai',
-    icon: MessageSquare
-  },
-  { 
-    id: 'perplexity', 
-    name: 'In-house Perplexity API', 
-    description: 'Search web content with Perplexity API',
-    category: 'ai',
-    icon: SearchIcon
-  },
-  { 
-    id: 'ai_processing', 
-    name: 'AI Processing', 
-    description: 'AI-powered data processing',
-    category: 'ai',
-    icon: Cpu
-  },
-  { 
-    id: 'ai_chat', 
-    name: 'AI Chat', 
-    description: 'Generate text with AI chat',
-    category: 'ai',
-    icon: MessageSquare
-  },
-  { 
-    id: 'valid_response', 
-    name: 'Response Validator', 
-    description: 'Verify content meets requirements',
-    category: 'ai',
-    icon: CheckCheck
-  },
-  { 
-    id: 'visualize_text', 
-    name: 'Visualize Text', 
-    description: 'Display text output in the workflow',
-    category: 'data',
-    icon: BarChart
-  },
-  
-  // Trigger Nodes
-  { 
-    id: 'webhook', 
-    name: 'Webhook Trigger', 
-    description: 'Triggers a workflow from an HTTP request',
-    category: 'triggers',
-    icon: Webhook
-  },
-  { 
-    id: 'scheduler', 
-    name: 'Scheduler', 
-    description: 'Runs a workflow on a schedule',
-    category: 'triggers',
-    icon: Clock
-  },
-  { 
-    id: 'email_trigger', 
-    name: 'Email Trigger', 
-    description: 'Triggers from email events',
-    category: 'triggers',
-    icon: Mail
-  },
-  
-  // Action Nodes
   { 
     id: 'http_request', 
     name: 'HTTP Request', 
     description: 'Makes API requests to external services',
     category: 'actions',
     icon: Globe
-  },
-  { 
-    id: 'email_send', 
-    name: 'Email Send', 
-    description: 'Sends email messages',
-    category: 'actions',
-    icon: Send
-  },
-  { 
-    id: 'database_query', 
-    name: 'Database Query', 
-    description: 'Performs database operations',
-    category: 'actions',
-    icon: Database
-  },
-  { 
-    id: 'agent_trigger', 
-    name: 'Agent Trigger', 
-    description: 'Call another agent within the system',
-    category: 'actions',
-    icon: Cpu
-  },
-  { 
-    id: 'workflow_trigger', 
-    name: 'Workflow Trigger', 
-    description: 'Call another workflow within the system',
-    category: 'actions',
-    icon: GitBranch
-  },
-  { 
-    id: 'response_message', 
-    name: 'Response Message', 
-    description: 'Display conditional success/error messages',
-    category: 'actions',
-    icon: AlertCircle
-  },
-  { 
-    id: 'api_response_message', 
-    name: 'API Response Message', 
-    description: 'Send direct API messages to the chat UI',
-    category: 'actions',
-    icon: Send
-  },
-  
-  // Data Nodes
-  {
-    id: 'transform',
-    name: 'Transform',
-    description: 'Transform data between nodes',
-    category: 'data',
-    icon: Repeat
   },
   { 
     id: 'data_transform', 
@@ -216,32 +78,11 @@ const NODE_TYPES = [
     icon: Repeat
   },
   { 
-    id: 'filter', 
-    name: 'Filter', 
-    description: 'Filters data based on conditions',
-    category: 'data',
-    icon: Filter
-  },
-  { 
     id: 'text_formatter', 
     name: 'Text Formatter', 
     description: 'Formats text with various transformations',
     category: 'data',
     icon: Type
-  },
-  { 
-    id: 'number_input', 
-    name: 'Number Input', 
-    description: 'Provides numeric input with slider visualization',
-    category: 'input',
-    icon: Hash
-  },
-  { 
-    id: 'toggle_switch', 
-    name: 'Toggle Switch', 
-    description: 'A simple boolean toggle switch',
-    category: 'input',
-    icon: ToggleLeft
   },
   { 
     id: 'json_schema_validator', 
@@ -258,47 +99,27 @@ const NODE_TYPES = [
     icon: Table
   },
   { 
+    id: 'number_input', 
+    name: 'Number Input', 
+    description: 'Provides numeric input with slider visualization',
+    category: 'input',
+    icon: Hash
+  },
+  { 
+    id: 'toggle_switch', 
+    name: 'Toggle Switch', 
+    description: 'A simple boolean toggle switch',
+    category: 'input',
+    icon: ToggleLeft
+  },
+  { 
     id: 'markdown_renderer', 
     name: 'Markdown Renderer', 
     description: 'Renders markdown text with live preview',
     category: 'content',
     icon: FileText
-  },
-  
-  // Internal Nodes
-  {
-    id: 'internal_new_agent',
-    name: 'New Agent Trigger',
-    description: 'Triggers the creation of a new agent from UI interaction',
-    category: 'internal',
-    icon: 'plus-circle',
-    configuration: {
-      agent_id: 13,
-      workflow_id: 16
-    }
-  },
-  {
-    id: 'internal_ai_chat_agent',
-    name: 'AI Chat Agent Trigger',
-    description: 'Triggers the creation of a new agent from chat instruction',
-    category: 'internal',
-    icon: 'message-circle',
-    configuration: {
-      agent_id: 13,
-      workflow_id: 16
-    }
-  },
-  {
-    id: 'internal',
-    name: 'Internal Action',
-    description: 'Performs internal system actions',
-    category: 'internal',
-    icon: 'cog',
-    configuration: {
-      action_type: 'create_agent'
-    }
-  },
-  // Additional internal nodes can be added here
+  }
+  // Additional nodes will be loaded dynamically from the System and Custom directories
 ];
 
 const NodesPanel = () => {
