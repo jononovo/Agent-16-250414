@@ -129,7 +129,7 @@ function DefaultNode({ data, id, selected }: NodeProps<DefaultNodeData>) {
   
   // Create icon element for the header
   const iconElement = (
-    <div className="bg-gray-50 p-2 rounded-md flex items-center justify-center">
+    <div className="bg-gray-50 p-1.5 rounded-md flex items-center justify-center w-8 h-8">
       <DynamicIcon icon={icon} className="h-5 w-5 text-gray-700" />
     </div>
   );
@@ -152,16 +152,16 @@ function DefaultNode({ data, id, selected }: NodeProps<DefaultNodeData>) {
       
       <NodeContent padding="normal">
         {/* Node Type Badge */}
-        <div className="flex justify-between items-center mb-1">
-          <Badge variant="outline" className="text-xs px-2 py-0.5 bg-gray-100 text-gray-600 border-gray-200 rounded-md">
+        <div className="flex justify-between items-center mb-1.5">
+          <Badge variant="outline" className="text-[11px] px-2 py-0.5 bg-gray-50 text-gray-600 border-gray-200/70 rounded-full font-medium">
             {type}
           </Badge>
           
           {/* Settings Summary */}
           {settingsSummary && (
-            <div className="flex items-center text-xs text-gray-500">
-              <Settings className="h-3 w-3 mr-1 inline" />
-              <span className="truncate">{settingsSummary}</span>
+            <div className="flex items-center text-[11px] text-gray-500">
+              <Settings className="h-3 w-3 mr-1 inline opacity-70" />
+              <span className="truncate max-w-[120px]">{settingsSummary}</span>
             </div>
           )}
         </div>
@@ -184,17 +184,17 @@ function DefaultNode({ data, id, selected }: NodeProps<DefaultNodeData>) {
         position={Position.Left}
         id="input"
         style={{ 
-          top: 32, 
-          width: '10px', 
-          height: '10px', 
+          top: 38, 
+          width: '12px', 
+          height: '12px', 
           background: 'white',
           border: '2px solid #4f46e5',
           borderRadius: '50%',
-          boxShadow: '0 0 0 2px rgba(79, 70, 229, 0.2)'
+          boxShadow: '0 0 0 2px rgba(79, 70, 229, 0.15)'
         }}
         isConnectable={true}
       />
-      <div className="absolute left-1 top-[28px] text-xs text-gray-400 text-left">
+      <div className="absolute left-[-2px] top-[35px] text-[10px] text-gray-400 text-left">
         In
       </div>
 
@@ -204,17 +204,17 @@ function DefaultNode({ data, id, selected }: NodeProps<DefaultNodeData>) {
         position={Position.Right}
         id="output"
         style={{ 
-          top: 32, 
-          width: '10px', 
-          height: '10px', 
+          top: 38, 
+          width: '12px', 
+          height: '12px', 
           background: 'white',
           border: '2px solid #4f46e5',
           borderRadius: '50%',
-          boxShadow: '0 0 0 2px rgba(79, 70, 229, 0.2)'
+          boxShadow: '0 0 0 2px rgba(79, 70, 229, 0.15)'
         }}
         isConnectable={true}
       />
-      <div className="absolute right-1 top-[28px] text-xs text-gray-400 text-right">
+      <div className="absolute right-[-4px] top-[35px] text-[10px] text-gray-400 text-right">
         Out
       </div>
     </NodeContainer>

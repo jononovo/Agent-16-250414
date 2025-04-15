@@ -20,15 +20,15 @@ export function NodeContent({
 }: NodeContentProps) {
   const paddingClass = {
     none: 'p-0',
-    small: 'p-2',
-    normal: 'p-3',
+    small: 'px-3 py-2',
+    normal: 'px-3 py-2.5',
     large: 'p-4'
   }[padding];
 
   return (
     <div className={cn(
       paddingClass,
-      'flex flex-col gap-3 bg-white rounded-b-md',
+      'flex flex-col gap-2.5 bg-white rounded-b-md',
       className
     )}>
       {children}

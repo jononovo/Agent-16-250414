@@ -31,11 +31,11 @@ export function NodeHeader({
 }: NodeHeaderProps) {
   return (
     <div className={cn(
-      'flex items-center justify-between p-3 border-b',
+      'flex items-center justify-between px-3 py-2.5 border-b',
       'border-gray-100 bg-white rounded-t-md',
       className
     )}>
-      <div className="flex items-center gap-2 overflow-hidden">
+      <div className="flex items-center gap-2.5 overflow-hidden">
         {icon && (
           <div className="flex-shrink-0">
             {typeof icon === 'string' ? (
@@ -52,7 +52,7 @@ export function NodeHeader({
           <TooltipProvider>
             <Tooltip>
               <TooltipTrigger asChild>
-                <h3 className="text-sm font-semibold truncate text-gray-800">
+                <h3 className="text-sm font-semibold truncate text-gray-800 leading-tight">
                   {title}
                 </h3>
               </TooltipTrigger>
@@ -65,7 +65,7 @@ export function NodeHeader({
           </TooltipProvider>
           
           {description && (
-            <p className="text-xs text-gray-500 truncate max-w-[180px]">
+            <p className="text-xs text-gray-500 truncate max-w-[180px] leading-tight mt-0.5">
               {description}
             </p>
           )}
