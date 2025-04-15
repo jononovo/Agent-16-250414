@@ -66,6 +66,11 @@ export const ChatProvider = ({ children }: ChatProviderProps) => {
   // Send a message to the agent
   const sendMessage = async (content: string) => {
     try {
+      // Generate a session ID if not exists
+      if (!sessionStorage.getItem('chatSessionId')) {
+        sessionStorage.setItem('chatSessionId', `session_${Math.random().toString(36).substring(2, 9)}`);
+      }
+      
       // Add user message to state
       const userMessage: ChatMessage = {
         id: generateId(),
@@ -77,7 +82,7 @@ export const ChatProvider = ({ children }: ChatProviderProps) => {
       setMessages(prevMessages => [...prevMessages, userMessage]);
       setIsLoading(true);
       
-      // Call the agent API
+      // Call the agent API with our natural language agent
       const response = await fetch('/api/agent/chat', {
         method: 'POST',
         headers: {
@@ -85,8 +90,10 @@ export const ChatProvider = ({ children }: ChatProviderProps) => {
         },
         body: JSON.stringify({ 
           message: content,
-          // Include a session ID to maintain context
-          sessionId: sessionStorage.getItem('chatSessionId') || 'default-session' 
+          context: 'general', // Provide context to get relevant tools
+          sessionId: sessionStorage.getItem('chatSessionId') || 'default-session',
+          // Optional parameters
+          // agentId: 1, // If you want to use a specific agent
         }),
       });
       
@@ -99,10 +106,26 @@ export const ChatProvider = ({ children }: ChatProviderProps) => {
       // Add assistant message to state
       const assistantMessage: ChatMessage = {
         id: generateId(),
-        content: data.response,
+        content: data.response || 'I processed your request but have no specific response.',
         role: 'assistant',
         timestamp: new Date(),
       };
+      
+      // If there's tool execution info, add it to the message content
+      if (data.toolName && data.toolResult) {
+        console.log(`Tool executed: ${data.toolName}`, data.toolResult);
+        
+        // If the tool execution failed, show an error message
+        if (data.toolResult.success === false) {
+          const errorMessage: ChatMessage = {
+            id: generateId(),
+            content: `I tried to use the ${data.toolName} tool, but encountered an error: ${data.toolResult.error || 'Unknown error'}`,
+            role: 'system',
+            timestamp: new Date(),
+          };
+          setMessages(prevMessages => [...prevMessages, errorMessage]);
+        }
+      }
       
       setMessages(prevMessages => [...prevMessages, assistantMessage]);
     } catch (error) {
