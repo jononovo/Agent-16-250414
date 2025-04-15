@@ -182,12 +182,13 @@ const TextPromptNodeComponent = ({
   };
   
   // Handle creation of a new input
-  const handleCreateInput = useCallback((name: string, description?: string) => {
+  const handleCreateInput = useCallback((name: string, description?: string, dataType?: string) => {
     if (data.onAddInput) {
       const newInput = {
         id: `input-${nanoid()}`,
         name,
-        description
+        description,
+        dataType: dataType || 'string'
       };
       data.onAddInput(newInput);
       updateNodeInternals(id);
@@ -196,9 +197,9 @@ const TextPromptNodeComponent = ({
   }, [data.onAddInput, id, updateNodeInternals]);
   
   // Handle updating an input
-  const handleUpdateInput = useCallback((handleId: string, name: string, description?: string) => {
+  const handleUpdateInput = useCallback((handleId: string, name: string, description?: string, dataType?: string) => {
     if (data.onUpdateInput) {
-      data.onUpdateInput(handleId, name, description);
+      data.onUpdateInput(handleId, name, description, dataType);
       return true;
     }
     return false;

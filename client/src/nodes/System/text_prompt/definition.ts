@@ -27,10 +27,11 @@ export interface TextPromptNodeData {
       id: string;
       name: string;
       description?: string;
+      dataType?: string;
     }[];
   };
-  onAddInput?: (input: { id: string; name: string; description?: string }) => void;
-  onUpdateInput?: (id: string, name: string, description?: string) => void;
+  onAddInput?: (input: { id: string; name: string; description?: string; dataType?: string }) => void;
+  onUpdateInput?: (id: string, name: string, description?: string, dataType?: string) => void;
   onRemoveInput?: (id: string) => void;
 }
 
