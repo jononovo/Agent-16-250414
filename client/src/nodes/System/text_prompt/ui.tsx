@@ -12,7 +12,7 @@ import { Badge } from '@/components/ui/badge';
 import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
 import { nanoid } from 'nanoid';
-import { EditableHandle, EditableHandleDialog } from '@/components/ui/flow/editable-handle';
+import { EditableHandle, EditableHandleDialog } from '@/components/nodes/handles';
 import { TextPromptNodeData } from './definition';
 
 // This component provides a visual submenu for node operations
