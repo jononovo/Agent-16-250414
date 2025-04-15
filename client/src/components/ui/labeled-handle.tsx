@@ -48,12 +48,12 @@ export const LabeledHandle: React.FC<LabeledHandleProps> = ({
         style={style}
       />
       
-      {/* Label positioned directly over the handle */}
+      {/* Label positioned as requested */}
       <div 
         className={`absolute text-[8px] text-muted-foreground bg-background/80 z-10 select-none whitespace-nowrap rounded-sm`}
         style={{ 
-          top: '-6px',
-          [isRight ? 'right' : 'left']: '-1px',
+          top: '-16px',
+          [isRight ? 'right' : 'left']: '-20px',
           transform: 'translateY(-50%)',
           pointerEvents: 'none',
           padding: '1px 2px' // Using inline style for precise padding
