@@ -3,11 +3,9 @@
  * 
  * This tool suggests specific fixes for workflow issues, including which nodes
  * to modify and what specific parameters to update.
- * It only works with valid node types from the system.
  */
 import { Tool, ToolResult } from '../../toolTypes';
 import { storage } from '../../../storage';
-import { AVAILABLE_NODE_TYPES } from '../../../services/workflowGenerationService';
 
 const suggestWorkflowFixesTool: Tool = {
   name: 'suggestWorkflowFixes',
@@ -66,16 +64,13 @@ const suggestWorkflowFixesTool: Tool = {
       const workflowNodes = nodes.filter(node => node.workflowId === workflowId);
       
       if (workflowNodes.length === 0) {
-        // Use text_input which is in our AVAILABLE_NODE_TYPES list
-        const inputNodeType = 'text_input';
-        
         return {
           success: true,
           message: 'This workflow has no nodes to fix',
           data: {
             suggestedFixes: [{
               action: 'add_node',
-              nodeType: inputNodeType,
+              nodeType: 'textInput',
               reason: 'Add an initial input node to start the workflow',
               details: 'Every workflow needs a starting point. A text input node allows users to provide initial data.'
             }],
@@ -93,9 +88,9 @@ const suggestWorkflowFixesTool: Tool = {
             case 'disconnected_nodes':
               // Suggest connecting disconnected nodes
               if (issue.affectedNodes && issue.affectedNodes.length > 0) {
-                issue.affectedNodes.forEach((node: {id: number, type: string}) => {
+                issue.affectedNodes.forEach(node => {
                   // Find potential nodes to connect to
-                  const potentialTargets = workflowNodes.filter((n) => n.id !== node.id);
+                  const potentialTargets = workflowNodes.filter(n => n.id !== node.id);
                   
                   if (potentialTargets.length > 0) {
                     const target = potentialTargets[0]; // Simplistic - just pick the first one
@@ -115,15 +110,14 @@ const suggestWorkflowFixesTool: Tool = {
             case 'missing_parameters':
               // Suggest parameters based on node type
               if (issue.affectedNodes && issue.affectedNodes.length > 0) {
-                issue.affectedNodes.forEach((nodeInfo: {id: number, type: string}) => {
-                  const node = workflowNodes.find((n) => n.id === nodeInfo.id);
+                issue.affectedNodes.forEach(nodeInfo => {
+                  const node = workflowNodes.find(n => n.id === nodeInfo.id);
                   if (node) {
                     let suggestedParams = {};
                     
-                    // Suggest parameters based on node type - using only approved node types
+                    // Suggest parameters based on node type
                     switch (node.type) {
-                      // Input nodes
-                      case 'text_input':
+                      case 'textInput':
                         suggestedParams = {
                           defaultValue: '',
                           label: 'Input',
@@ -132,17 +126,7 @@ const suggestWorkflowFixesTool: Tool = {
                         };
                         break;
                         
-                      case 'file_input':
-                        suggestedParams = {
-                          label: 'File Input',
-                          acceptedTypes: '.txt,.json,.csv',
-                          maxSize: 10, // MB
-                          required: true
-                        };
-                        break;
-                        
-                      // Processing nodes  
-                      case 'http_request':
+                      case 'httpRequest':
                         suggestedParams = {
                           url: 'https://api.example.com/data',
                           method: 'GET',
@@ -150,53 +134,17 @@ const suggestWorkflowFixesTool: Tool = {
                         };
                         break;
                         
-                      case 'claude':
+                      case 'openAiCompletion':
                         suggestedParams = {
-                          model: 'claude-3-opus-20240229',
+                          model: 'gpt-4',
                           temperature: 0.7,
-                          maxTokens: 1000,
-                          systemPrompt: 'You are a helpful AI assistant.'
+                          maxTokens: 500,
                         };
                         break;
                         
-                      case 'json_parser':
-                        suggestedParams = {
-                          strictMode: false,
-                          defaultValue: {},
-                        };
-                        break;
-                        
-                      case 'csv_parser':
-                        suggestedParams = {
-                          delimiter: ',',
-                          hasHeader: true,
-                        };
-                        break;
-                        
-                      case 'decision':
-                        suggestedParams = {
-                          condition: 'value > 0',
-                          defaultPath: 'false'
-                        };
-                        break;
-                        
-                      // Output nodes
-                      case 'text_template':
-                        suggestedParams = {
-                          template: 'The result is: {{ result }}',
-                        };
-                        break;
-                        
-                      case 'api_response':
-                        suggestedParams = {
-                          statusCode: 200,
-                          format: 'json',
-                        };
-                        break;
-                       
                       default:
-                        // Generic parameters for any node type
                         suggestedParams = {
+                          // Generic parameters
                           configured: true,
                           enabled: true,
                         };
@@ -220,7 +168,7 @@ const suggestWorkflowFixesTool: Tool = {
               if (issue.affectedNodes && issue.affectedNodes.length > 0) {
                 suggestedFixes.push({
                   action: 'modify_workflow_structure',
-                  affectedNodes: issue.affectedNodes.map((n: {id: number, type: string}) => n.id),
+                  affectedNodes: issue.affectedNodes.map(n => n.id),
                   reason: 'Break potential circular references in the workflow',
                   details: 'Circular references can cause infinite loops. Review the connections between these nodes and consider removing or redirecting some connections.'
                 });
@@ -241,34 +189,30 @@ const suggestWorkflowFixesTool: Tool = {
         // Without specific issues, provide general improvement suggestions
         // Check for missing node types that would make the workflow more complete
         
-        // Check if there's an input node using only approved node types
-        const inputNodeTypes = ['text_input', 'file_input'];
-        const hasInputNode = workflowNodes.some(node => inputNodeTypes.includes(node.type));
+        // Check if there's an input node
+        const hasInputNode = workflowNodes.some(node => 
+          ['textInput', 'fileInput', 'formInput'].includes(node.type)
+        );
         
         if (!hasInputNode) {
-          // Use text_input from our approved list
-          const recommendedInputType = 'text_input';
-          
           suggestedFixes.push({
             action: 'add_node',
-            nodeType: recommendedInputType,
+            nodeType: 'textInput',
             position: { x: 100, y: 100 },
             reason: 'Add an input node to start the workflow',
             details: 'Every workflow needs a starting point for data input.'
           });
         }
         
-        // Check if there's an output/display node using only approved node types
-        const outputNodeTypes = ['api_response', 'text_template']; 
-        const hasOutputNode = workflowNodes.some(node => outputNodeTypes.includes(node.type));
+        // Check if there's an output/display node
+        const hasOutputNode = workflowNodes.some(node => 
+          ['textOutput', 'visualization', 'fileOutput'].includes(node.type)
+        );
         
         if (!hasOutputNode) {
-          // Use api_response from our approved list
-          const recommendedOutputType = 'api_response';
-          
           suggestedFixes.push({
             action: 'add_node',
-            nodeType: recommendedOutputType,
+            nodeType: 'textOutput',
             position: { x: 500, y: 300 },
             reason: 'Add an output node to display results',
             details: 'Adding an output node will help visualize the workflow results.'

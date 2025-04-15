@@ -2,15 +2,13 @@
  * Add Node Tool
  * 
  * This tool adds a specific node type to a workflow in the canvas.
- * It validates that the requested node type exists in the system.
  */
 import { Tool, ToolResult } from '../../toolTypes';
 import { storage } from '../../../storage';
-import { AVAILABLE_NODE_TYPES } from '../../../services/workflowGenerationService';
 
 const addNodeTool: Tool = {
   name: 'addNode',
-  description: 'Add a specific node to the current workflow in the canvas. Note: Only use existing node types, do not invent new ones.',
+  description: 'Add a specific node to the current workflow in the canvas',
   category: 'canvas',
   contexts: ['canvas', 'workflow'], // This tool is only available in canvas contexts
   parameters: {
@@ -22,8 +20,7 @@ const addNodeTool: Tool = {
       },
       nodeType: {
         type: 'string',
-        description: 'The type of node to add. Must be one of the available node types: ' + AVAILABLE_NODE_TYPES.join(', '),
-        enum: AVAILABLE_NODE_TYPES // Limit to only available types
+        description: 'The type of node to add (e.g., "textInput", "httpRequest", "openAiCompletion")',
       },
       position: {
         type: 'object',
@@ -42,7 +39,7 @@ const addNodeTool: Tool = {
       },
       data: {
         type: 'object',
-        description: 'Additional data to configure the node with. Use this to customize the node behavior without inventing new node types.',
+        description: 'Additional data to configure the node with',
       },
     },
     required: ['workflowId', 'nodeType'],
@@ -50,14 +47,6 @@ const addNodeTool: Tool = {
   async execute(params: any): Promise<ToolResult> {
     try {
       const { workflowId, nodeType, position, data } = params;
-      
-      // Validate the node type exists
-      if (!AVAILABLE_NODE_TYPES.includes(nodeType)) {
-        return {
-          success: false,
-          error: `Invalid node type: "${nodeType}". You must use one of the available node types: ${AVAILABLE_NODE_TYPES.join(', ')}`,
-        };
-      }
       
       // Get the workflow
       const workflow = await storage.getWorkflow(workflowId);

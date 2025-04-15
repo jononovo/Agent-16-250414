@@ -5,7 +5,7 @@
  */
 
 import { createNodeOutput, createErrorOutput } from '../../lib/nodeOutputUtils';
-import { NodeExecutionData } from '../../../lib/types/workflow';
+import { NodeExecutionData } from '@shared/nodeTypes';
 
 // Define the shape of the node's data
 export interface JSONPathNodeData {

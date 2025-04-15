@@ -4,18 +4,22 @@
  * This file exports all node-related functionality as a single module.
  * It provides the public API for accessing nodes and node registry functions.
  * 
- * This file implements the folder-based node system, where each node is
- * defined in its own folder with definition.ts and executor.ts files.
+ * Note: This is the new folder-based implementation that replaces the legacy registry.
  */
 
 import { NodeDefinition } from './types';
+import fs from 'fs'; // Not actually used at runtime - just for types
 
 /**
  * Dynamic folder-based node system
  * 
- * Nodes are dynamically loaded from their folders in the System and Custom directories.
- * This makes the system more maintainable and allows for easier addition of new nodes.
+ * Instead of using a static registry, we now dynamically load nodes
+ * from their folders. This makes the system more maintainable and
+ * allows for easier addition of new nodes.
  */
+
+// These functions provide a compatibility layer with the old registry
+// but implement the functionality using the folder structure.
 
 /**
  * Dynamically import a node definition at runtime
@@ -23,20 +27,9 @@ import { NodeDefinition } from './types';
  */
 export async function importNodeDefinition(nodeType: string): Promise<NodeDefinition | null> {
   try {
-    // Determine if this is a system or custom node
-    const isSystemNode = [
-      'text_input', 'claude', 'http_request', 'text_template', 
-      'data_transform', 'decision', 'function', 'json_path', 
-      'text_prompt', 'api_response', 'delay', 'file_input', 'logger'
-    ].includes(nodeType);
-    
-    // Dynamic import based on node type from the appropriate folder
-    const modulePath = isSystemNode 
-      ? `./System/${nodeType}/definition`
-      : `./Custom/${nodeType}/definition`;
-      
+    // Dynamic import based on node type
     // Using @vite-ignore to suppress warnings about dynamic imports
-    const module = await import(/* @vite-ignore */ modulePath);
+    const module = await import(/* @vite-ignore */ `./${nodeType}/definition`);
     return module.default || module.nodeDefinition;
   } catch (error) {
     console.warn(`Failed to import node definition for type ${nodeType}:`, error);
@@ -75,14 +68,7 @@ export function getAllNodes(): any[] {
     'data_transform',
     'decision',
     'function',
-    'json_path',
-    'text_prompt',
-    'api_response',
-    'delay',
-    'file_input',
-    'logger',
-    'json_parser',
-    'csv_parser'
+    'json_path'
   ];
   
   // Map the node types to their basic information
@@ -106,28 +92,18 @@ export function getAllNodes(): any[] {
  */
 function getCategoryForNodeType(type: string): string {
   // AI-related nodes
-  if (['text_input', 'claude', 'text_template', 'text_prompt'].includes(type)) {
+  if (['text_input', 'claude', 'text_template'].includes(type)) {
     return 'ai';
   }
   
   // Data processing nodes
-  if (['data_transform', 'json_path', 'function', 'json_parser', 'csv_parser'].includes(type)) {
+  if (['data_transform', 'json_path', 'function'].includes(type)) {
     return 'data';
   }
   
   // Action/integration nodes
-  if (['http_request', 'decision', 'api_response'].includes(type)) {
+  if (['http_request', 'decision'].includes(type)) {
     return 'actions';
-  }
-  
-  // Input/Output nodes
-  if (['file_input', 'logger'].includes(type)) {
-    return 'io';
-  }
-  
-  // Utility nodes
-  if (['delay'].includes(type)) {
-    return 'utility';
   }
   
   // Default category
@@ -146,14 +122,7 @@ function getIconForNodeType(type: string): string {
     'data_transform': 'repeat',
     'decision': 'git-branch',
     'function': 'code',
-    'json_path': 'filter',
-    'text_prompt': 'message-square',
-    'api_response': 'server',
-    'delay': 'clock',
-    'file_input': 'file-input',
-    'logger': 'list',
-    'json_parser': 'braces',
-    'csv_parser': 'table'
+    'json_path': 'filter'
   };
   
   return iconMap[type] || 'box';
@@ -186,7 +155,7 @@ export function getNodesByCategory(category: string): any[] {
   return nodes.filter(node => node.category === category);
 }
 
-// Default export provides the main API functions
+// Default export is a compatibility object with the main functions
 export default {
   getNode,
   getAllNodes,

@@ -4,7 +4,7 @@
  * Simple utility functions for creating standardized node outputs
  */
 
-import { WorkflowItem, NodeExecutionData } from './types/workflow';
+import { WorkflowItem, NodeExecutionData } from '@shared/nodeTypes';
 
 /**
  * Options for createNodeOutput function
@@ -29,9 +29,7 @@ export function createNodeOutput(data: any, options?: NodeOutputOptions): NodeEx
   // Create a single workflow item from the data
   const workflowItem: WorkflowItem = {
     json: data,
-    meta: {
-      source: options?.source || 'unknown'
-    }
+    text: typeof data === 'string' ? data : JSON.stringify(data)
   };
   
   // Create the full node execution data

@@ -6,7 +6,7 @@
 
 import axios, { AxiosRequestConfig, AxiosResponse, Method } from 'axios';
 import { createNodeOutput, createErrorOutput } from '../../lib/nodeOutputUtils';
-import { NodeExecutionData } from '../../../lib/types/workflow';
+import { NodeExecutionData } from '@shared/nodeTypes';
 
 export interface HttpRequestNodeData {
   url: string;

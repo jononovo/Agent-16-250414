@@ -9,93 +9,6 @@
 import { IStorage } from "../storage";
 import { InsertWorkflow, Node } from "@shared/schema";
 import { fetchWithTimeout } from "../utils/fetch";
-import { storage } from "../storage";
-
-// Define the list of available node types
-// This should match client/src/nodes and the addNode tool list
-export const AVAILABLE_NODE_TYPES = [
-  // System node types
-  'text_input',
-  'claude',
-  'http_request',
-  'text_template',
-  'data_transform',
-  'decision',
-  'function',
-  'json_path',
-  'text_prompt',
-  // Other node types found in the codebase
-  'json_parser',
-  'csv_parser',
-  'delay',
-  'file_input',
-  'logger',
-  'api_response'
-];
-
-/**
- * Helper functions for node descriptions and categories
- */
-
-// Map node types to descriptions
-const NODE_DESCRIPTIONS: Record<string, string> = {
-  'text_input': 'For collecting text input from users',
-  'claude': 'For using the Claude AI model for text generation',
-  'http_request': 'For making API calls to external services',
-  'text_template': 'For creating formatted text with variables',
-  'data_transform': 'For transforming data between different formats',
-  'decision': 'For creating conditional branches based on criteria',
-  'function': 'For executing custom code functions',
-  'json_path': 'For extracting data from JSON using JSONPath',
-  'text_prompt': 'For text prompts or questions a user would answer',
-  'json_parser': 'For parsing JSON data into structured format',
-  'csv_parser': 'For parsing CSV data into structured format',
-  'delay': 'For adding time delays in workflow execution',
-  'file_input': 'For handling file uploads and processing',
-  'logger': 'For logging events and data during workflow execution',
-  'api_response': 'For formatting API responses and outputs'
-};
-
-// Map node types to categories
-const NODE_CATEGORIES: Record<string, string> = {
-  // Trigger nodes
-  trigger: "trigger",
-  schedule_trigger: "trigger",
-  webhook: "trigger",
-  email_trigger: "trigger",
-
-  // AI nodes
-  text_prompt: "AI",
-  prompt_crafter: "AI",
-  generate_text: "AI",
-  claude: "AI",
-  perplexity: "AI",
-
-  // Input/Output nodes
-  text_input: "input",
-  output: "output",
-  email_send: "output",
-  visualize_text: "output",
-  api_response: "output",
-
-  // Data nodes
-  transform: "data",
-  database_query: "data",
-  filter: "data",
-  data_transform: "data",
-  json_parser: "data",
-  csv_parser: "data",
-  json_path: "data",
-
-  // Processor nodes
-  processor: "process",
-  http_request: "process",
-  function: "process",
-  delay: "process",
-  file_input: "process",
-  logger: "process",
-  decision: "process",
-};
 
 /**
  * Interface for workflow generation options
@@ -124,21 +37,6 @@ interface NodeTypesCatalog {
     outputs: Record<string, any>;
     settings?: Record<string, any>;
   };
-}
-
-/**
- * Get a descriptive string for a node type
- */
-function getNodeDescription(type: string): string {
-  return NODE_DESCRIPTIONS[type] || `Generic ${type.replace('_', ' ')} node`;
-}
-
-/**
- * Get the appropriate category for a node type
- */
-function getCategoryForNodeType(type: string | undefined): string {
-  if (!type) return "default";
-  return NODE_CATEGORIES[type] || "default";
 }
 
 /**
@@ -182,23 +80,6 @@ export class WorkflowGenerationService {
       },
       {},
     );
-
-    // If no nodes were found in the database, use the hardcoded list of available node types
-    if (Object.keys(this.nodeTypesCatalog).length === 0) {
-      AVAILABLE_NODE_TYPES.forEach(nodeType => {
-        this.nodeTypesCatalog[nodeType] = {
-          type: nodeType,
-          displayName: nodeType.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase()),
-          description: getNodeDescription(nodeType),
-          category: getCategoryForNodeType(nodeType),
-          icon: "square",
-          inputs: {},
-          outputs: {},
-          settings: {},
-        };
-      });
-      console.log(`Using default node types: ${AVAILABLE_NODE_TYPES.join(', ')}`);
-    }
 
     console.log(
       `Workflow Generation Service initialized with ${Object.keys(this.nodeTypesCatalog).length} node types`,
@@ -287,10 +168,27 @@ export class WorkflowGenerationService {
       })
       .join("\n");
 
-    // Define the supported node types with clear descriptions - ONLY use from this exact list
+    // Define the supported node types with clear descriptions
     const supportedNodeTypes = `
-AVAILABLE NODE TYPES (IMPORTANT: use ONLY these exact types, do not invent new ones):
-${AVAILABLE_NODE_TYPES.map(type => `- ${type}: ${getNodeDescription(type)}`).join('\n')}
+Supported Node Types (use ONLY these types):
+- text_prompt: For text input, prompts, or questions a user would answer
+- text_input: For collecting text input from users or systems
+- generate_text: For generating text using AI models
+- http_request: For making API calls to external services
+- transform: For transforming data between different formats
+- output: For displaying results or final output
+- visualize_text: For creating visualizations of text data
+- chat_interface: For creating chat-based interactions
+- claude: For using the Claude AI model for generation
+- database_query: For querying databases
+- email_send: For sending emails
+- trigger: For starting workflow processes
+- processor: For processing data in various ways
+- filter: For filtering data based on conditions
+- response_message: For formatting response messages
+- api_response_message: For formatting API responses
+- workflow_trigger: For triggering other workflows
+- agent_trigger: For triggering agents
 `;
 
     // Create the system prompt
@@ -308,7 +206,7 @@ Maximum nodes: ${maxNodes}
 
 Your task is to:
 1. Analyze the user's natural language description of a workflow
-2. Identify the appropriate node types, ALWAYS using ONLY from the "AVAILABLE NODE TYPES" list above
+2. Identify the appropriate node types, ALWAYS using ONLY from the "Supported Node Types" list above
 3. Create a coherent workflow with properly connected nodes and edges
 4. Return a valid JSON workflow definition with the following structure:
 
@@ -319,7 +217,7 @@ Your task is to:
     "nodes": [
       {
         "id": "unique-node-id",
-        "type": "text_prompt", // ALWAYS use types from the AVAILABLE NODE TYPES list
+        "type": "text_prompt", // ALWAYS use types from the Supported Node Types list
         "position": { "x": number, "y": number },
         "data": {
           "label": "Node Label",
@@ -343,8 +241,8 @@ Your task is to:
 }
 
 Ensure that:
-- All nodes MUST use types from the "AVAILABLE NODE TYPES" list (text_input, claude, http_request, etc.)
-- Never use deprecated or invented types - ONLY use the exact types listed above
+- All nodes MUST use types from the "Supported Node Types" list (text_prompt, text_input, generate_text, http_request, etc.)
+- Never use deprecated types like "prompt", "api", or "input" - instead use their proper equivalents
 - All nodes are properly connected with edges
 - The workflow has clear input and output nodes
 - Node positions are logical (from left to right, with proper spacing)
@@ -451,29 +349,20 @@ Ensure that:
         throw new Error("Workflow edges must be an array");
       }
 
-      // No type mapping - only use explicit approved node types
-      // All nodes must use exact types from the AVAILABLE_NODE_TYPES list
+      // Map node types to the ones supported by the FlowEditor component
+      // Only keeping essential mappings for standard node types
+      const nodeTypeMapping: Record<string, string> = {
+        transform: "transform",
+        output: "output",
+        database: "database_query",
+        email: "email_send",
+        trigger: "trigger",
+        process: "processor",
+        filter: "filter",
+      };
 
       // Update node types and positions in the workflow
       if (workflow.flowData.nodes) {
-        // First, validate that all node types are supported
-        const unsupportedNodes = workflow.flowData.nodes.filter(
-          (node: any) => {
-            const nodeType = node.type;
-            // Only nodes with type explicitly in our available types list are valid
-            const isAvailable = nodeType && AVAILABLE_NODE_TYPES.includes(nodeType);
-            
-            // Any node not in the approved list is unsupported
-            return nodeType && !isAvailable;
-          }
-        );
-        
-        // If we found unsupported node types, throw an error
-        if (unsupportedNodes.length > 0) {
-          const unsupportedTypes = unsupportedNodes.map((node: any) => node.type).join(', ');
-          throw new Error(`Workflow contains unsupported node types: ${unsupportedTypes}. Only use available node types: ${AVAILABLE_NODE_TYPES.join(', ')}`);
-        }
-        
         // Ensure all nodes are nicely positioned in the top-left of the canvas
         // This makes them immediately visible to users
         const baseX = 100; // Start X position
@@ -484,20 +373,18 @@ Ensure that:
 
         workflow.flowData.nodes = workflow.flowData.nodes.map(
           (node: any, index: number) => {
-            // Final validation - only explicitly approved node types are allowed
-            // No mapping or compatibility layer - node types must be from our explicit list
-            if (node.type && !AVAILABLE_NODE_TYPES.includes(node.type)) {
-              throw new Error(`Invalid node type: ${node.type}. Must be one of: ${AVAILABLE_NODE_TYPES.join(', ')}`);
+            // Check if this node type needs to be mapped
+            if (node.type && nodeTypeMapping[node.type]) {
+              node.type = nodeTypeMapping[node.type];
             }
 
-            // Also ensure data.type matches exactly
-            if (node.data && node.data.type && !AVAILABLE_NODE_TYPES.includes(node.data.type)) {
-              throw new Error(`Invalid node data type: ${node.data.type}. Must be one of: ${AVAILABLE_NODE_TYPES.join(', ')}`);
-            }
-            
-            // Ensure data.type matches node.type for consistency
-            if (node.data && !node.data.type) {
-              node.data.type = node.type;
+            // Also update the type in the data object if it exists
+            if (
+              node.data &&
+              node.data.type &&
+              nodeTypeMapping[node.data.type]
+            ) {
+              node.data.type = nodeTypeMapping[node.data.type];
             }
 
             // Calculate grid position
@@ -527,7 +414,7 @@ Ensure that:
             }
 
             if (!node.data.category) {
-              node.data.category = getCategoryForNodeType(node.type);
+              node.data.category = this.getCategoryForNodeType(node.type);
             }
 
             return node;
@@ -548,6 +435,47 @@ Ensure that:
   }
 
   /**
+   * Get the appropriate category for a node type
+   */
+  private getCategoryForNodeType(type: string | undefined): string {
+    if (!type) return "default";
+
+    // Map node types to categories
+    const categoryMap: Record<string, string> = {
+      // Trigger nodes
+      trigger: "trigger",
+      schedule_trigger: "trigger",
+      webhook: "trigger",
+      email_trigger: "trigger",
+
+      // AI nodes
+      text_prompt: "AI",
+      prompt_crafter: "AI",
+      generate_text: "AI",
+      claude: "AI",
+      perplexity: "AI",
+
+      // Input/Output nodes
+      text_input: "input",
+      output: "output",
+      email_send: "output",
+      visualize_text: "output",
+
+      // Data nodes
+      transform: "data",
+      database_query: "data",
+      filter: "data",
+      data_transform: "data",
+
+      // Processor nodes
+      processor: "process",
+      http_request: "process",
+    };
+
+    return categoryMap[type] || "default";
+  }
+
+  /**
    * Create a new workflow in the database
    */
   async createWorkflow(workflowData: InsertWorkflow): Promise<any> {
@@ -562,6 +490,9 @@ Ensure that:
     }
   }
 }
+
+// Import storage
+import { storage } from "../storage";
 
 // Export a function to create the service
 export function createWorkflowGenerationService(
