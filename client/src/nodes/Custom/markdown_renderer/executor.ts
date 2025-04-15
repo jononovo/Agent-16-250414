@@ -5,7 +5,7 @@
  * It processes markdown text, generates HTML, and extracts metadata.
  */
 
-import { createNodeOutput, createErrorOutput } from '../../lib/nodeOutputUtils';
+import { createNodeOutput, createErrorOutput } from '../../../nodes/lib/nodeOutputUtils';
 import { NodeExecutionData } from '@shared/nodeTypes';
 
 export interface MarkdownRendererNodeData {

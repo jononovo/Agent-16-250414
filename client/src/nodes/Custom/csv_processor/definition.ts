@@ -3,7 +3,7 @@
  * Defines the node's properties, appearance, and behavior
  */
 
-import { NodeDefinition } from '../types';
+import { NodeDefinition } from '../../Custom/types';
 
 export const definition: NodeDefinition = {
   type: 'csv_processor',
