@@ -8,3 +8,4 @@
 export * from './BaseNode';
 export * from './AIModelNode';
 export * from './DataTransformNode';
+export * from './APINode';
