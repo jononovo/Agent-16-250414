@@ -526,8 +526,19 @@ export class MemStorage implements IStorage {
     // Only save the most recent logs (e.g., last 100) to avoid excessive storage usage
     const logs = Array.from(this.logs.values())
       .sort((a, b) => {
-        const dateA = a.startedAt || new Date(0);
-        const dateB = b.startedAt || new Date(0);
+        // Convert strings to Date objects if needed
+        const dateA = a.startedAt instanceof Date 
+          ? a.startedAt 
+          : a.startedAt 
+            ? new Date(a.startedAt) 
+            : new Date(0);
+            
+        const dateB = b.startedAt instanceof Date 
+          ? b.startedAt 
+          : b.startedAt 
+            ? new Date(b.startedAt) 
+            : new Date(0);
+            
         return dateB.getTime() - dateA.getTime();
       })
       .slice(0, 100); // Keep only the most recent 100 logs
@@ -690,8 +701,19 @@ export class MemStorage implements IStorage {
     const logs = Array.from(this.logs.values())
       .sort((a, b) => {
         // Sort by startedAt in descending order
-        const dateA = a.startedAt || new Date(0);
-        const dateB = b.startedAt || new Date(0);
+        // Convert strings to Date objects if needed
+        const dateA = a.startedAt instanceof Date 
+          ? a.startedAt 
+          : a.startedAt 
+            ? new Date(a.startedAt) 
+            : new Date(0);
+            
+        const dateB = b.startedAt instanceof Date 
+          ? b.startedAt 
+          : b.startedAt 
+            ? new Date(b.startedAt) 
+            : new Date(0);
+            
         return dateB.getTime() - dateA.getTime();
       });
     

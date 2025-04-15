@@ -1444,8 +1444,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Ensure flowData is a proper object if it exists in the update
       if (updateData.flowData !== undefined) {
-        updateData.flowData = typeof updateData.flowData === 'string' ? 
-          { nodes: [], edges: [] } : updateData.flowData;
+        if (typeof updateData.flowData === 'string') {
+          try {
+            // Try to parse it if it's a JSON string
+            updateData.flowData = JSON.parse(updateData.flowData);
+          } catch (e) {
+            // If parsing fails, initialize with empty nodes and edges
+            updateData.flowData = { nodes: [], edges: [] };
+          }
+        }
       }
       
       // Update the workflow
