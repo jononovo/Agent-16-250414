@@ -130,7 +130,8 @@ const AgentTestPage: React.FC = () => {
         },
         body: JSON.stringify({
           tool: selectedTool.name,
-          parameters: params
+          parameters: params,
+          context: directContext
         }),
       });
       
@@ -307,6 +308,25 @@ const AgentTestPage: React.FC = () => {
                       </div>
                     )}
                     
+                    <div className="mt-4">
+                      <Label htmlFor="directContext" className="mb-2 block">Context:</Label>
+                      <Select value={directContext} onValueChange={setDirectContext}>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select a context" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="general">General</SelectItem>
+                          <SelectItem value="canvas">Workflow Canvas</SelectItem>
+                          <SelectItem value="workflow">Workflow</SelectItem>
+                          <SelectItem value="home">Home</SelectItem>
+                          <SelectItem value="admin">Admin</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <p className="text-xs text-muted-foreground mt-1">
+                        The context helps the agent decide which tools are available.
+                      </p>
+                    </div>
+                    
                     {selectedTool && (
                       <div className="mt-4 space-y-2">
                         <h3 className="font-medium text-sm">Description:</h3>
@@ -410,9 +430,10 @@ const AgentTestPage: React.FC = () => {
                       </SelectTrigger>
                       <SelectContent>
                         <SelectItem value="general">General</SelectItem>
-                        <SelectItem value="canvas">Canvas</SelectItem>
+                        <SelectItem value="canvas">Workflow Canvas</SelectItem>
                         <SelectItem value="workflow">Workflow</SelectItem>
                         <SelectItem value="home">Home</SelectItem>
+                        <SelectItem value="admin">Admin</SelectItem>
                       </SelectContent>
                     </Select>
                     <p className="text-xs text-muted-foreground mt-1">

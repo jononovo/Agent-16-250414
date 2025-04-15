@@ -526,7 +526,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Execute a tool directly (for testing)
   app.post('/api/tools/execute', async (req: Request, res: Response) => {
     try {
-      const { tool: toolName, parameters } = req.body;
+      const { tool: toolName, parameters, context = 'general' } = req.body;
       
       if (!toolName) {
         return res.status(400).json({ error: 'Tool name is required' });
@@ -540,19 +540,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ error: `Tool "${toolName}" not found` });
       }
       
-      // Execute the tool
-      const result = await tool.execute(parameters || {});
+      // Execute the tool with context
+      const result = await tool.execute(parameters || {}, { context });
       
       // Create a log entry
       const logEntry: InsertLog = {
         agentId: 0,
         workflowId: 0,
         status: result.success ? 'success' : 'error',
-        input: { tool: toolName, parameters },
+        input: { tool: toolName, parameters, context },
         output: result,
         error: result.success ? null : result.error,
         completedAt: new Date(),
-        executionPath: { source: 'direct-tool-execution' }
+        executionPath: { source: 'direct-tool-execution', context }
       };
       
       await storage.createLog(logEntry);
