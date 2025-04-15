@@ -2,7 +2,7 @@
  * Labeled Handle Component
  * 
  * A custom ReactFlow handle that includes a label for better usability
- * Labels are positioned outside the node to avoid overlapping with content
+ * Labels are positioned completely outside the node
  */
 import React from 'react';
 import { Handle, Position } from 'reactflow';
@@ -38,13 +38,6 @@ export const LabeledHandle: React.FC<LabeledHandleProps> = ({
       style={{ top: `${handlePosition * 100}%`, transform: 'translateY(-50%)', 
                [isRight ? 'right' : 'left']: '-1px' }}
     >
-      {/* Label positioned above the handle */}
-      <div 
-        className={`absolute text-[9px] ${isRight ? 'right-2' : 'left-2'} text-muted-foreground px-0.5 bg-background/90 rounded select-none whitespace-nowrap border border-muted/40 -top-5`}
-      >
-        {label}
-      </div>
-      
       {/* Handle */}
       <Handle
         type={type}
@@ -54,6 +47,14 @@ export const LabeledHandle: React.FC<LabeledHandleProps> = ({
         className={`w-2 h-6 rounded-sm ${bgColor} ${isRight ? '-mr-0.5' : '-ml-0.5'} ${className}`}
         style={style}
       />
+      
+      {/* Label positioned outside the node */}
+      <div 
+        className={`absolute text-[8px] ${isRight ? 'right-3' : 'left-3'} text-muted-foreground px-1 py-0.5 bg-background shadow-sm rounded-full select-none whitespace-nowrap border border-muted/40`}
+        style={{ top: '-1px', transform: 'translateY(-100%)' }}
+      >
+        {label}
+      </div>
     </div>
   );
 };
