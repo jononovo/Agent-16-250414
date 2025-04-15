@@ -413,7 +413,11 @@ const NodesPanel = () => {
                           <NodeItem 
                             key={node.id} 
                             node={{
-                              ...node,
+                              type: node.type,
+                              name: node.name,
+                              description: node.description === undefined ? null : node.description,
+                              icon: node.icon || 'circle',
+                              category: node.category,
                               data: {
                                 label: node.name,
                                 description: node.description || '',
