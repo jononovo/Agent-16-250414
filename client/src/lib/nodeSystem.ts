@@ -3,12 +3,14 @@
  * 
  * This module connects the folder-based node structure with the workflow execution engine.
  * It automatically discovers and registers node executors using dynamic imports.
- * All nodes (standard and custom) use the same folder-based registry mechanism.
+ * All nodes (both System and Custom) use the same folder-based registry mechanism.
  */
 
 import { registerEnhancedNodeExecutor, createEnhancedNodeExecutor } from './enhancedWorkflowEngine';
 import { 
   FOLDER_BASED_NODE_TYPES, 
+  SYSTEM_NODE_TYPES,
+  CUSTOM_NODE_TYPES,
   validateNode, 
   getNodeExecutorPath, 
   getNodeDefinitionPath
@@ -20,22 +22,77 @@ import {
 export async function initializeNodeSystem(): Promise<void> {
   console.log('Initializing node system...');
   
-  // Register all nodes from the folder structure
-  registerNodeExecutorsFromRegistry();
+  // Register all nodes from both System and Custom folders
+  await discoverAndRegisterNodeExecutors();
   
   console.log('Folder-based node system initialized');
 }
 
 /**
- * Register all node executors from the folder-based node registry
+ * Discover and register all node executors from both System and Custom folders
  */
-export function registerNodeExecutorsFromRegistry(): void {
+async function discoverAndRegisterNodeExecutors(): Promise<void> {
   console.log('Registering node executors from folder-based registry...');
   
   // Track missing or invalid components
   const missingComponents: Record<string, string[]> = {};
   
-  // Register each node type
+  // Use the predefined lists from nodeValidator
+  // First register the static list of nodes (backward compatibility)
+  FOLDER_BASED_NODE_TYPES.forEach(nodeType => {
+    registerNodeType(nodeType, missingComponents);
+  });
+  
+  // Then discover any additional nodes in the folders
+  try {
+    // Dynamically import all definition files from System and Custom folders
+    const systemDefinitionModules = import.meta.glob('../nodes/System/*/definition.ts', { eager: true });
+    const customDefinitionModules = import.meta.glob('../nodes/Custom/*/definition.ts', { eager: true });
+    
+    // Process System folder node definitions
+    for (const path in systemDefinitionModules) {
+      const module = systemDefinitionModules[path] as any;
+      const nodeDef = module.default as any;
+      
+      if (nodeDef && nodeDef.type && !FOLDER_BASED_NODE_TYPES.includes(nodeDef.type)) {
+        // Register this node type
+        registerNodeType(nodeDef.type, missingComponents);
+      }
+    }
+    
+    // Process Custom folder node definitions
+    for (const path in customDefinitionModules) {
+      const module = customDefinitionModules[path] as any;
+      const nodeDef = module.default as any;
+      
+      if (nodeDef && nodeDef.type && !FOLDER_BASED_NODE_TYPES.includes(nodeDef.type)) {
+        // Register this node type
+        registerNodeType(nodeDef.type, missingComponents);
+      }
+    }
+  } catch (error) {
+    console.error('Error discovering node definitions:', error);
+  }
+  
+  // Report any missing components after imports complete
+  setTimeout(() => {
+    if (Object.keys(missingComponents).length > 0) {
+      console.warn('Some folder-based node components could not be imported:', missingComponents);
+    }
+  }, 1000);
+  
+  console.log('Node executors registration complete');
+}
+
+/**
+ * Register all node executors from the folder-based node registry
+ * Legacy method maintained for backward compatibility
+ */
+export function registerNodeExecutorsFromRegistry(): void {
+  // Track missing or invalid components
+  const missingComponents: Record<string, string[]> = {};
+  
+  // Register each node type from the static list
   FOLDER_BASED_NODE_TYPES.forEach(nodeType => {
     registerNodeType(nodeType, missingComponents);
   });
@@ -46,8 +103,6 @@ export function registerNodeExecutorsFromRegistry(): void {
       console.warn('Some folder-based node components could not be imported:', missingComponents);
     }
   }, 1000);
-  
-  console.log('Node executors registration complete');
 }
 
 /**
@@ -167,83 +222,6 @@ function createNodeExecutor(nodeType: string, executor: any) {
       };
     }
   };
-}
-
-/**
- * Register a custom node type with the workflow engine
- */
-export function registerCustomNodeTypeExecutor(nodeType: string, nodeDefinition: any): void {
-  try {
-    console.log(`Registering custom node type: ${nodeType}`);
-    
-    // Create a simple executor for the custom node
-    const customExecutor = {
-      execute: async (nodeData: any, inputs: Record<string, any>) => {
-        try {
-          // If the node has an implementation field, try to eval it (with caution!)
-          if (nodeDefinition.implementation) {
-            // Create a safe execution context
-            const safeExecutionContext = {
-              nodeData,
-              inputs,
-              console,
-              // Add safe globals here, like fetch
-              fetch
-            };
-            
-            // Function to safely execute the implementation
-            const executeImplementation = new Function(
-              ...Object.keys(safeExecutionContext),
-              `try { ${nodeDefinition.implementation} } catch (error) { return { error: error.message }; }`
-            );
-            
-            // Execute the implementation with safe context
-            return executeImplementation(...Object.values(safeExecutionContext));
-          }
-          
-          // Default behavior if no implementation is provided
-          return { 
-            output: "Custom node executed (no implementation provided)",
-            inputs 
-          };
-        } catch (error) {
-          console.error(`Error executing custom node ${nodeType}:`, error);
-          return { error: error instanceof Error ? error.message : String(error) };
-        }
-      }
-    };
-    
-    // Parse inputs and outputs from the node definition
-    const inputs = typeof nodeDefinition.inputs === 'string' 
-      ? JSON.parse(nodeDefinition.inputs) 
-      : (nodeDefinition.inputs || {});
-      
-    const outputs = typeof nodeDefinition.outputs === 'string'
-      ? JSON.parse(nodeDefinition.outputs)
-      : (nodeDefinition.outputs || {});
-    
-    // Register with workflow engine
-    registerEnhancedNodeExecutor(
-      nodeType,
-      createEnhancedNodeExecutor(
-        {
-          type: nodeType,
-          displayName: nodeDefinition.name || nodeType,
-          description: nodeDefinition.description || 'Custom node',
-          icon: nodeDefinition.icon || 'code',
-          category: nodeDefinition.category || 'custom',
-          version: nodeDefinition.version || '1.0.0',
-          inputs: formatPortDefinitions(inputs, true),
-          outputs: formatPortDefinitions(outputs, false)
-        },
-        createNodeExecutor(nodeType, customExecutor)
-      )
-    );
-    
-    console.log(`Registered custom node type: ${nodeType}`);
-  } catch (error) {
-    console.error(`Failed to register custom node type ${nodeType}:`, error);
-  }
 }
 
 /**
