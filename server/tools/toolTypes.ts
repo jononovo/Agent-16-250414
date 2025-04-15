@@ -20,6 +20,14 @@ export interface ToolResult {
   error?: string;
 }
 
+// Options for tool execution
+export interface ToolExecuteOptions {
+  context?: string;      // The context in which the tool is being executed (e.g., "general", "canvas")
+  userId?: number;       // The ID of the user executing the tool
+  sessionId?: string;    // A session identifier for tracking related operations
+  debug?: boolean;       // Whether to enable debug logging
+}
+
 // Core tool interface
 export interface Tool {
   name: string;
@@ -27,7 +35,7 @@ export interface Tool {
   category: string;
   parameters?: ParameterSchema;
   contexts?: string[];    // Defines where this tool can be used (e.g., "home", "canvas")
-  execute: (params: any) => Promise<ToolResult>;
+  execute: (params: any, options?: ToolExecuteOptions) => Promise<ToolResult>;
 }
 
 // Keeping this for backwards compatibility
