@@ -24,7 +24,9 @@ import {
   Repeat,
   GitBranch,
   AlertCircle,
-  Search as SearchIcon
+  Search as SearchIcon,
+  Hash,
+  ToggleLeft
 } from 'lucide-react';
 import NodeItem from './NodeItem';
 
@@ -32,6 +34,7 @@ import NodeItem from './NodeItem';
 const NODE_CATEGORIES = [
   { id: 'ai', name: 'AI', description: 'AI model interactions, prompt engineering, and text generation' },
   { id: 'data', name: 'Data', description: 'Data visualization, transformation, and filtering' },
+  { id: 'input', name: 'Input', description: 'Basic input nodes for data entry and user interactions' },
   { id: 'code', name: 'Code', description: 'Custom code and function execution' },
   { id: 'triggers', name: 'Triggers', description: 'Nodes that initiate workflows based on events or schedules' },
   { id: 'actions', name: 'Actions', description: 'Nodes that perform operations such as API requests or database queries' },
@@ -215,6 +218,27 @@ const NODE_TYPES = [
     category: 'data',
     icon: Filter
   },
+  { 
+    id: 'text_formatter', 
+    name: 'Text Formatter', 
+    description: 'Formats text with various transformations',
+    category: 'data',
+    icon: Type
+  },
+  { 
+    id: 'number_input', 
+    name: 'Number Input', 
+    description: 'Provides numeric input with slider visualization',
+    category: 'input',
+    icon: Hash
+  },
+  { 
+    id: 'toggle_switch', 
+    name: 'Toggle Switch', 
+    description: 'A simple boolean toggle switch',
+    category: 'input',
+    icon: ToggleLeft
+  },
   
   // Internal Nodes
   {
@@ -275,7 +299,8 @@ const NodesPanel = () => {
     const typesToUse = NODE_TYPES.filter(nodeType => {
       // Only include node types that we know are implemented in the folder-based system
       return ['text_input', 'claude', 'http_request', 'text_template', 
-              'data_transform', 'decision', 'function', 'json_path'].includes(nodeType.id);
+              'data_transform', 'decision', 'function', 'json_path',
+              'text_formatter', 'number_input', 'toggle_switch'].includes(nodeType.id);
     });
     
     const nodes = typesToUse.map((nodeType, index) => {
@@ -365,6 +390,7 @@ const NodesPanel = () => {
           <TabsList className="w-auto inline-flex">
             <TabsTrigger value="all" className="px-4">All</TabsTrigger>
             <TabsTrigger value="ai" className="px-4">AI</TabsTrigger>
+            <TabsTrigger value="input" className="px-4">Input</TabsTrigger>
             <TabsTrigger value="data" className="px-4">Data</TabsTrigger>
             <TabsTrigger value="code" className="px-4">Code</TabsTrigger>
             <TabsTrigger value="triggers" className="px-4">Triggers</TabsTrigger>
