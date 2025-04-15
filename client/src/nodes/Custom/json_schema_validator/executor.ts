@@ -55,7 +55,7 @@ function validateJson(data: any, schema: any, allowAdditionalProperties: boolean
           const propResult = validateJson(data[propName], propSchema as any, allowAdditionalProperties);
           if (!propResult.isValid) {
             result.isValid = false;
-            result.errors.push(...propResult.errors.map(err => `${propName}: ${err}`));
+            result.errors.push(...propResult.errors.map((err: string) => `${propName}: ${err}`));
           }
         }
       }
@@ -80,7 +80,7 @@ function validateJson(data: any, schema: any, allowAdditionalProperties: boolean
         const itemResult = validateJson(data[i], schema.items, allowAdditionalProperties);
         if (!itemResult.isValid) {
           result.isValid = false;
-          result.errors.push(...itemResult.errors.map(err => `[${i}]: ${err}`));
+          result.errors.push(...itemResult.errors.map((err: string) => `[${i}]: ${err}`));
         }
       }
     }

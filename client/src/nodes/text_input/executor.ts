@@ -71,10 +71,10 @@ export const execute = async (nodeData: TextInputNodeData, inputs?: any): Promis
     if (typeof parsedContent === 'string') {
       console.log('Returning string content:', parsedContent);
       return createNodeOutput(parsedContent);
-    } else if (parsedContent && parsedContent.text) {
+    } else if (parsedContent && typeof parsedContent === 'object' && 'text' in parsedContent) {
       // Special case for objects with text field
-      console.log('Returning text field from object:', parsedContent.text);
-      return createNodeOutput(parsedContent.text);
+      console.log('Returning text field from object:', (parsedContent as {text: string}).text);
+      return createNodeOutput((parsedContent as {text: string}).text);
     } else {
       // If it's an object, use the full object in json
       console.log('Returning full object:', parsedContent);
