@@ -18,12 +18,17 @@ export const SYSTEM_NODE_TYPES = [
   'decision',
   'function',
   'json_path',
-  'text_prompt'
+  'text_prompt',
+  'api_response',
+  'delay',
+  'file_input',
+  'logger'
 ];
 
 // List of custom user-created node types (default + dynamically populated at runtime)
 export let CUSTOM_NODE_TYPES: string[] = [
-  'json_parser'
+  'json_parser',
+  'csv_parser'
 ];
 
 // Combined list of all folder-based node types

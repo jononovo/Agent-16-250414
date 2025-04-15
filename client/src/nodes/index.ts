@@ -68,7 +68,14 @@ export function getAllNodes(): any[] {
     'data_transform',
     'decision',
     'function',
-    'json_path'
+    'json_path',
+    'text_prompt',
+    'api_response',
+    'delay',
+    'file_input',
+    'logger',
+    'json_parser',
+    'csv_parser'
   ];
   
   // Map the node types to their basic information
@@ -92,18 +99,28 @@ export function getAllNodes(): any[] {
  */
 function getCategoryForNodeType(type: string): string {
   // AI-related nodes
-  if (['text_input', 'claude', 'text_template'].includes(type)) {
+  if (['text_input', 'claude', 'text_template', 'text_prompt'].includes(type)) {
     return 'ai';
   }
   
   // Data processing nodes
-  if (['data_transform', 'json_path', 'function'].includes(type)) {
+  if (['data_transform', 'json_path', 'function', 'json_parser', 'csv_parser'].includes(type)) {
     return 'data';
   }
   
   // Action/integration nodes
-  if (['http_request', 'decision'].includes(type)) {
+  if (['http_request', 'decision', 'api_response'].includes(type)) {
     return 'actions';
+  }
+  
+  // Input/Output nodes
+  if (['file_input', 'logger'].includes(type)) {
+    return 'io';
+  }
+  
+  // Utility nodes
+  if (['delay'].includes(type)) {
+    return 'utility';
   }
   
   // Default category
@@ -122,7 +139,14 @@ function getIconForNodeType(type: string): string {
     'data_transform': 'repeat',
     'decision': 'git-branch',
     'function': 'code',
-    'json_path': 'filter'
+    'json_path': 'filter',
+    'text_prompt': 'message-square',
+    'api_response': 'server',
+    'delay': 'clock',
+    'file_input': 'file-input',
+    'logger': 'list',
+    'json_parser': 'braces',
+    'csv_parser': 'table'
   };
   
   return iconMap[type] || 'box';
