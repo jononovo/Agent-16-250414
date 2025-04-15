@@ -9,6 +9,21 @@ import { Tool, ToolResult } from '../../toolTypes';
 import { storage } from '../../../storage';
 import { AVAILABLE_NODE_TYPES } from '../../../services/workflowGenerationService';
 
+// Define the improvement suggestion interface
+interface ImprovementSuggestion {
+  nodeId?: number;
+  nodeType?: string;
+  currentConfig?: Record<string, any>;
+  suggestedChanges?: Record<string, any>;
+  reason?: string;
+  benefitArea?: string;
+  implementationDifficulty?: string;
+  type?: string;
+  message?: string;
+  suggestion?: string;
+  focusArea?: string;
+}
+
 const improveWorkflowTool: Tool = {
   name: 'improveWorkflow',
   description: 'Suggest improvements to an existing workflow based on stated criteria or objectives',
@@ -67,7 +82,7 @@ const improveWorkflowTool: Tool = {
       }
       
       // Generate suggested improvements
-      const suggestedImprovements = [];
+      const suggestedImprovements: ImprovementSuggestion[] = [];
       
       // Analyze workflow for each node type and suggest improvements
       workflowNodes.forEach(node => {
@@ -193,7 +208,7 @@ const improveWorkflowTool: Tool = {
       if (criteria.length > 0) {
         criteriaResponse = {
           providedCriteria: criteria,
-          criteriaAnalysis: criteria.map(criterion => ({
+          criteriaAnalysis: criteria.map((criterion: string) => ({
             criterion,
             applicability: 'high',
             relatedImprovements: filteredImprovements

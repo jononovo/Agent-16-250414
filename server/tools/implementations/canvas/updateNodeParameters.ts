@@ -2,13 +2,15 @@
  * Update Node Parameters Tool
  * 
  * This tool updates the parameters or editable fields of a specific node in a workflow.
+ * It works with the existing node types defined in the system.
  */
 import { Tool, ToolResult } from '../../toolTypes';
 import { storage } from '../../../storage';
+import { AVAILABLE_NODE_TYPES } from '../../../services/workflowGenerationService';
 
 const updateNodeParametersTool: Tool = {
   name: 'updateNodeParameters',
-  description: 'Update the parameters or editable fields of a specific node in a workflow',
+  description: 'Update the parameters or editable fields of a specific node in a workflow. Note: When updating node type, only existing node types are allowed.',
   category: 'canvas',
   contexts: ['canvas', 'workflow'], // This tool is only available in canvas contexts
   parameters: {
@@ -42,6 +44,14 @@ const updateNodeParametersTool: Tool = {
         };
       }
       
+      // Check if trying to update type and validate if so
+      if (parameters.type && !AVAILABLE_NODE_TYPES.includes(parameters.type)) {
+        return {
+          success: false,
+          error: `Invalid node type: "${parameters.type}". Must be one of the available node types: ${AVAILABLE_NODE_TYPES.join(', ')}`,
+        };
+      }
+
       // Update the node data by merging the new parameters
       const updatedData = {
         ...node.data,

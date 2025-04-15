@@ -6,28 +6,7 @@
  */
 import { Tool, ToolResult } from '../../toolTypes';
 import { storage } from '../../../storage';
-
-// Define available node types - these are the only ones that should be used
-// This list should match the node types available in the client/src/nodes directory
-const AVAILABLE_NODE_TYPES = [
-  // System node types
-  'text_input',
-  'claude',
-  'http_request',
-  'text_template',
-  'data_transform',
-  'decision',
-  'function',
-  'json_path',
-  'text_prompt',
-  // Other node types found in the codebase
-  'json_parser',
-  'csv_parser',
-  'delay',
-  'file_input',
-  'logger',
-  'api_response'
-];
+import { AVAILABLE_NODE_TYPES } from '../../../services/workflowGenerationService';
 
 const addNodeTool: Tool = {
   name: 'addNode',
