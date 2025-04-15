@@ -8,8 +8,8 @@
 
 import { NodeDefinition, PortDefinition } from '../nodes/types';
 
-// List of all node types implemented using the folder-based structure
-export const FOLDER_BASED_NODE_TYPES = [
+// List of built-in system node types
+export const SYSTEM_NODE_TYPES = [
   'text_input',
   'claude',
   'http_request',
@@ -18,11 +18,16 @@ export const FOLDER_BASED_NODE_TYPES = [
   'decision',
   'function',
   'json_path',
+  'text_prompt'
+];
+
+// List of custom user-created node types (default + dynamically populated at runtime)
+export let CUSTOM_NODE_TYPES: string[] = [
   'json_parser'
 ];
 
-// List of custom user-created node types (will be populated at runtime)
-export let CUSTOM_NODE_TYPES: string[] = [];
+// Combined list of all folder-based node types
+export const FOLDER_BASED_NODE_TYPES = [...SYSTEM_NODE_TYPES, ...CUSTOM_NODE_TYPES];
 
 // Required fields for node definitions
 const REQUIRED_NODE_FIELDS = [
@@ -235,12 +240,12 @@ export function registerCustomNodeTypes(nodeTypes: string[]): void {
  * Attempts to find the node in System, Custom, or root folders
  */
 export function getNodeExecutorPath(nodeType: string): string {
-  // Check System folder first (preferred for built-in nodes)
-  if (FOLDER_BASED_NODE_TYPES.includes(nodeType)) {
+  // Check System folder first for system node types
+  if (SYSTEM_NODE_TYPES.includes(nodeType)) {
     return `../nodes/System/${nodeType}/executor`;
   }
   
-  // Then check Custom folder (for user-generated nodes)
+  // Then check Custom folder for custom node types
   if (CUSTOM_NODE_TYPES.includes(nodeType)) {
     return `../nodes/Custom/${nodeType}/executor`;
   }
@@ -254,12 +259,12 @@ export function getNodeExecutorPath(nodeType: string): string {
  * Attempts to find the node in System, Custom, or root folders
  */
 export function getNodeDefinitionPath(nodeType: string): string {
-  // Check System folder first (preferred for built-in nodes)
-  if (FOLDER_BASED_NODE_TYPES.includes(nodeType)) {
+  // Check System folder first for system node types
+  if (SYSTEM_NODE_TYPES.includes(nodeType)) {
     return `../nodes/System/${nodeType}/definition`;
   }
   
-  // Then check Custom folder (for user-generated nodes)
+  // Then check Custom folder for custom node types
   if (CUSTOM_NODE_TYPES.includes(nodeType)) {
     return `../nodes/Custom/${nodeType}/definition`;
   }
