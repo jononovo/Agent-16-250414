@@ -207,13 +207,29 @@ export class MemStorage implements IStorage {
         const nodes = this.parseDbResult(nodesData);
         
         if (Array.isArray(nodes)) {
+          // Array to store custom node types for registration with the front-end
+          const customNodeTypes: string[] = [];
+          
           nodes.forEach((node: Node) => {
             this.nodes.set(node.id, node);
+            
             // Update nodeId counter to be higher than any existing node ID
             if (node.id >= this.nodeId) {
               this.nodeId = node.id + 1;
             }
+            
+            // Add custom nodes to the customNodeTypes array
+            if (node.isCustom && node.type) {
+              customNodeTypes.push(node.type);
+            }
           });
+          
+          // Store custom node types in the database for the front-end to access
+          if (customNodeTypes.length > 0) {
+            this.saveData('customNodeTypes', customNodeTypes);
+            console.log(`Registered ${customNodeTypes.length} custom node types`);
+          }
+          
           console.log(`Loaded ${nodes.length} nodes from Replit Database`);
           hasData = true;
         }
@@ -278,7 +294,9 @@ export class MemStorage implements IStorage {
       category: "input",
       icon: "MessageSquare",
       description: "A simple text input node for workflow input",
-      configuration: { defaultText: '' }
+      configuration: { defaultText: '' },
+      isCustom: false,
+      version: "1.0.0"
     });
     
     this.createNode({
@@ -287,7 +305,9 @@ export class MemStorage implements IStorage {
       category: "integration",
       icon: "Globe",
       description: "Make HTTP requests to external APIs and web services",
-      configuration: { url: '', method: 'GET', headers: {} }
+      configuration: { url: '', method: 'GET', headers: {} },
+      isCustom: false,
+      version: "1.0.0"
     });
     
     this.createNode({
@@ -296,7 +316,9 @@ export class MemStorage implements IStorage {
       category: "ai",
       icon: "Brain",
       description: "Generate text using Claude AI model",
-      configuration: { model: 'claude-3-opus-20240229', temperature: 0.7 }
+      configuration: { model: 'claude-3-opus-20240229', temperature: 0.7 },
+      isCustom: false,
+      version: "1.0.0"
     });
     
     // Sample workflow with minimal structure
