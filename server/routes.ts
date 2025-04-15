@@ -372,6 +372,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
     res.json({ status: 'ok', timestamp: new Date().toISOString() });
   });
   
+  // Endpoint to manually trigger saving of all data
+  app.post('/api/admin/save-all-data', async (req: Request, res: Response) => {
+    try {
+      console.log('Manual save of all data triggered');
+      await storage.saveAllData();
+      res.json({ success: true, message: 'All data saved successfully' });
+    } catch (error) {
+      console.error('Error during manual save:', error);
+      res.status(500).json({ success: false, message: 'Error saving data', error: String(error) });
+    }
+  });
+  
   // Proxy for Claude API
   app.post('/api/proxy/claude', async (req: Request, res: Response) => {
     try {
