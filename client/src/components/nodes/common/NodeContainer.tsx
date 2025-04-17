@@ -24,15 +24,12 @@ export function NodeContainer({
   return (
     <div
       className={cn(
-        'rounded-md border bg-white text-gray-800 shadow-sm transition-all',
-        'min-w-[240px] max-w-[320px]',
-        selected ? 'border-indigo-500 shadow-md ring-2 ring-indigo-500/20' : 'border-gray-200/80',
+        'rounded-md border bg-card text-card-foreground shadow-sm transition-all',
+        'min-w-[180px] max-w-[320px]',
+        selected ? 'border-primary/70 shadow-md' : 'border-border',
         className
       )}
-      style={{
-        ...style,
-        fontFamily: 'Inter, system-ui, sans-serif'
-      }}
+      style={style}
     >
       {children}
     </div>

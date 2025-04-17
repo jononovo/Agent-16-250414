@@ -31,15 +31,15 @@ export function NodeHeader({
 }: NodeHeaderProps) {
   return (
     <div className={cn(
-      'flex items-center justify-between px-3 py-2.5 border-b',
-      'border-gray-100 bg-white rounded-t-md',
+      'flex items-center justify-between p-3 border-b border-border',
+      'bg-muted/40 rounded-t-md',
       className
     )}>
-      <div className="flex items-center gap-2.5 overflow-hidden">
+      <div className="flex items-center gap-2 overflow-hidden">
         {icon && (
           <div className="flex-shrink-0">
             {typeof icon === 'string' ? (
-              <div className="flex items-center justify-center w-8 h-8 text-primary rounded-md bg-gray-50">
+              <div className="flex items-center justify-center w-6 h-6 text-primary">
                 {icon}
               </div>
             ) : (
@@ -48,28 +48,20 @@ export function NodeHeader({
           </div>
         )}
         
-        <div className="flex flex-col">
-          <TooltipProvider>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <h3 className="text-sm font-semibold truncate text-gray-800 leading-tight">
-                  {title}
-                </h3>
-              </TooltipTrigger>
-              {description && (
-                <TooltipContent side="top">
-                  <p className="max-w-xs text-xs">{description}</p>
-                </TooltipContent>
-              )}
-            </Tooltip>
-          </TooltipProvider>
-          
-          {description && (
-            <p className="text-xs text-gray-500 truncate max-w-[180px] leading-tight mt-0.5">
-              {description}
-            </p>
-          )}
-        </div>
+        <TooltipProvider>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <h3 className="text-sm font-medium truncate">
+                {title}
+              </h3>
+            </TooltipTrigger>
+            {description && (
+              <TooltipContent side="top">
+                <p className="max-w-xs text-xs">{description}</p>
+              </TooltipContent>
+            )}
+          </Tooltip>
+        </TooltipProvider>
       </div>
       
       {actions && (
