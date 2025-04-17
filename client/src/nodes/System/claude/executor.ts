@@ -6,7 +6,7 @@
  */
 
 // Import node types
-import { NodeExecutionData } from '../../types';
+import { NodeExecutionData, WorkflowItem } from '../../types';
 
 /**
  * Calls the Claude API with configured parameters

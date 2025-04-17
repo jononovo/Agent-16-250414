@@ -65,7 +65,7 @@ export const validator = (data: ClaudeNodeData) => {
 };
 
 // Claude API Node Component
-export const component = ({ data, selected, id }: NodeProps<ClaudeNodeData>) => {
+export const component = ({ data, isConnectable }: any) => {
   const [isGenerating, setIsGenerating] = useState(false);
   
   // Extract settings or use defaults
@@ -167,7 +167,7 @@ export const component = ({ data, selected, id }: NodeProps<ClaudeNodeData>) => 
   );
   
   return (
-    <NodeContainer selected={selected} className={data._hasError ? 'border-red-300' : ''}>
+    <NodeContainer selected={false} className={data._hasError ? 'border-red-300' : ''}>
       <NodeHeader 
         title="Claude API" 
         description="Generates text using Claude"
