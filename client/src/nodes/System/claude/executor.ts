@@ -5,8 +5,8 @@
  * It handles the API call to Claude and processes the response.
  */
 
-// Import from shared directory
-import { NodeExecutionData } from '../../../../shared/nodeTypes';
+// Import node types
+import { NodeExecutionData } from '../../types';
 
 /**
  * Calls the Claude API with configured parameters

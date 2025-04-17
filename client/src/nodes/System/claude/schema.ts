@@ -4,29 +4,48 @@
  * This file defines the zod schema for validating node data.
  */
 
-import { z } from 'zod';
+import { NodeSchema } from '../../../lib/types';
 
-// Define schema for Claude node data
-const schema = z.object({
-  // Model selection
-  model: z.string().default('claude-3-sonnet-20240229'),
-  
-  // Parameters
-  temperature: z.number().min(0).max(1).default(0.7),
-  maxTokens: z.number().int().min(1).max(100000).default(2000),
-  
-  // Prompt data
-  inputText: z.string().optional(),
-  systemPrompt: z.string().optional(),
-  
-  // API Key
-  apiKey: z.string().optional(),
-  
-  // Status and results
-  _isProcessing: z.boolean().optional(),
-  _hasError: z.boolean().optional(),
-  _errorMessage: z.string().optional(),
-  _generatedText: z.string().optional()
-});
+const schema: NodeSchema = {
+  inputs: {
+    input: {
+      type: 'string',
+      description: 'The prompt text to send to Claude'
+    }
+  },
+  outputs: {
+    output: {
+      type: 'string',
+      description: 'The generated text response from Claude'
+    }
+  },
+  parameters: {
+    model: {
+      type: 'string',
+      description: 'Claude model to use for generation',
+      default: 'claude-3-sonnet-20240229'
+    },
+    temperature: {
+      type: 'number',
+      description: 'Controls randomness of the output (higher = more random)',
+      default: 0.7
+    },
+    maxTokens: {
+      type: 'number',
+      description: 'Maximum number of tokens to generate',
+      default: 2000
+    },
+    systemPrompt: {
+      type: 'string',
+      description: 'Optional system instructions for Claude',
+      default: ''
+    },
+    apiKey: {
+      type: 'string',
+      description: 'Your Anthropic API key (leave empty to use environment variable)',
+      default: ''
+    }
+  }
+};
 
 export default schema;

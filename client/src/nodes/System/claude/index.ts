@@ -5,7 +5,7 @@
  * It's designed to be used for generating text responses.
  */
 
-import { NodeRegistryEntry } from '../../lib/types';
+import { NodeRegistryEntry } from '../../../lib/types';
 import definition from './definition';
 import schema from './schema';
 import * as executor from './executor';
@@ -22,7 +22,7 @@ const metadata = {
 };
 
 // Claude API Node Implementation
-const ClaudeNode: NodeType = {
+const ClaudeNode: NodeRegistryEntry = {
   type: 'claude',
   metadata,
   schema,
