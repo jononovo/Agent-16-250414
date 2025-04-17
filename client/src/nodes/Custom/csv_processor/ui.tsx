@@ -16,6 +16,7 @@ import { Table } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { LabeledHandle } from '@/components/ui/labeled-handle';
+import { EnhancedNode } from '@/components/nodes/common/EnhancedNode';
 
 // Default data for the node
 export const defaultData = {
@@ -145,31 +146,87 @@ export const component = ({ data, isConnectable, selected }: any) => {
     updateNodeData({ filterOperation: newValue });
   };
   
-  return (
-    <div className={`p-3 rounded-md ${selected ? 'bg-muted/80 shadow-md' : 'bg-background/80'} border shadow-sm transition-all duration-200 min-w-[280px]`}>
-      {/* Node Header */}
-      <div className="flex items-center gap-2 mb-3 pb-2 border-b">
-        <div className="p-1 rounded bg-primary/10 text-primary">
-          <Table size={16} />
-        </div>
-        <div className="font-medium text-sm">{nodeData.label || 'CSV Processor'}</div>
-        
-        {/* Status badge - e.g. "3 columns selected" or similar */}
+  // Enhanced node data with settings
+  const enhancedData = {
+    ...data,
+    icon: <Table className="h-4 w-4 text-indigo-600" />,
+    description: "Processes CSV data with column mapping and filtering",
+    category: "data",
+    settings: {
+      title: "CSV Processor Settings",
+      fields: [
+        {
+          key: "label",
+          label: "Node Label",
+          type: "text" as const,
+          description: "Display name for this node"
+        },
+        {
+          key: "hasHeader",
+          label: "Has Header Row",
+          type: "checkbox" as const,
+          description: "Whether CSV has column headers in the first row"
+        },
+        {
+          key: "delimiter",
+          label: "Delimiter",
+          type: "text" as const,
+          description: "Character used to separate values (e.g., comma, tab, semicolon)"
+        },
+        {
+          key: "trimValues",
+          label: "Trim Values",
+          type: "checkbox" as const,
+          description: "Remove whitespace from beginning and end of values"
+        },
+        {
+          key: "columnsToInclude",
+          label: "Columns to Include",
+          type: "text" as const,
+          description: "Comma-separated list of columns to include (empty = all)"
+        },
+        {
+          key: "filterColumn",
+          label: "Filter Column",
+          type: "text" as const,
+          description: "Column name to filter on"
+        },
+        {
+          key: "filterValue",
+          label: "Filter Value",
+          type: "text" as const,
+          description: "Value to filter by"
+        },
+        {
+          key: "filterOperation",
+          label: "Filter Operation",
+          type: "select" as const,
+          description: "Operation to use when filtering rows",
+          options: filterOperations
+        }
+      ]
+    }
+  };
+  
+  // Node content
+  const nodeContent = (
+    <>
+      {/* Status badges */}
+      <div className="flex justify-end gap-1 mb-2">
         {columnsToInclude && (
-          <Badge variant="outline" className="ml-auto text-xs">
+          <Badge variant="outline" className="text-xs">
             {columnsToInclude.split(',').filter(c => c.trim()).length} cols
           </Badge>
         )}
         
-        {/* Filter badge */}
         {filterColumn && filterValue && (
-          <Badge variant="outline" className="ml-1 text-xs">
+          <Badge variant="outline" className="text-xs bg-yellow-50 text-yellow-800 border-yellow-200">
             Filter: {filterOperation}
           </Badge>
         )}
       </div>
       
-      {/* Node Content */}
+      {/* Configuration section */}
       <div className="flex flex-col gap-3">
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
           <TabsList className="w-full grid grid-cols-2 mb-2">
@@ -328,7 +385,18 @@ export const component = ({ data, isConnectable, selected }: any) => {
         handlePosition={0.66}
         bgColor="bg-yellow-500"
       />
-    </div>
+    </>
+  );
+  
+  // Return the enhanced node with our content
+  return (
+    <EnhancedNode
+      id={data.id}
+      data={enhancedData}
+      selected={selected}
+    >
+      {nodeContent}
+    </EnhancedNode>
   );
 };
 

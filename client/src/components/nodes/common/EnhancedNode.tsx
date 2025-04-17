@@ -9,10 +9,15 @@ import React from 'react';
 import { NodeProps } from 'reactflow';
 import { EnhancedBaseNode, EnhancedNodeData } from './EnhancedBaseNode';
 
-interface EnhancedNodeWrapperProps extends NodeProps {
+interface EnhancedNodeWrapperProps {
+  id: string;
+  data: any;
+  selected?: boolean;
+  isConnectable?: boolean;
   children?: React.ReactNode;
   showContextMenu?: boolean;
   onSettingsSubmit?: (data: EnhancedNodeData) => void;
+  [key: string]: any;
 }
 
 export const EnhancedNode: React.FC<EnhancedNodeWrapperProps> = ({

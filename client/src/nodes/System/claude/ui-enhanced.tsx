@@ -295,15 +295,15 @@ export const component = ({ data, selected, id }: NodeProps<ClaudeNodeData>) => 
     </>
   );
   
-  // Return the EnhancedBaseNode with our custom node content
+  // Return the EnhancedNode with our custom node content
   return (
-    <EnhancedBaseNode
+    <EnhancedNode
       id={id}
       selected={selected}
       data={enhancedData}
     >
       {nodeContent}
-    </EnhancedBaseNode>
+    </EnhancedNode>
   );
 };
 
