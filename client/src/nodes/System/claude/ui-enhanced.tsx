@@ -8,7 +8,7 @@
 import React from 'react';
 import { Handle, Position, NodeProps } from 'reactflow';
 import { Computer, ArrowDownToLine, ArrowUpFromLine, Sparkles, Loader, Info } from 'lucide-react';
-import { EnhancedBaseNode } from '@/components/nodes/common/EnhancedBaseNode';
+import { EnhancedNode } from '@/components/nodes/common/EnhancedNode';
 import { Button } from '@/components/ui/button';
 
 // Node interface (same as before)
@@ -139,13 +139,13 @@ export const component = ({ data, selected, id }: NodeProps<ClaudeNodeData>) => 
         {
           key: "apiKey",
           label: "API Key",
-          type: "text",
+          type: "text" as const,
           description: "Your Anthropic API key (leave empty to use environment variable)"
         },
         {
           key: "model",
           label: "Model",
-          type: "select",
+          type: "select" as const,
           description: "Claude model to use for generation",
           options: [
             { label: "Claude 3 Sonnet", value: "claude-3-sonnet-20240229" },
@@ -156,7 +156,7 @@ export const component = ({ data, selected, id }: NodeProps<ClaudeNodeData>) => 
         {
           key: "temperature",
           label: "Temperature",
-          type: "slider",
+          type: "slider" as const,
           description: "Controls randomness of the output (higher = more random)",
           min: 0,
           max: 1,
@@ -165,7 +165,7 @@ export const component = ({ data, selected, id }: NodeProps<ClaudeNodeData>) => 
         {
           key: "maxTokens",
           label: "Max Tokens",
-          type: "number",
+          type: "number" as const,
           description: "Maximum number of tokens to generate",
           min: 1,
           max: 100000
@@ -173,7 +173,7 @@ export const component = ({ data, selected, id }: NodeProps<ClaudeNodeData>) => 
         {
           key: "systemPrompt",
           label: "System Prompt",
-          type: "textarea",
+          type: "textarea" as const,
           description: "Optional system instructions for Claude"
         }
       ]

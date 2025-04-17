@@ -1,8 +1,7 @@
 /**
- * NodeContainer
+ * Node Container
  * 
- * Base container component for all node UIs.
- * Provides consistent styling, padding, and border-radius.
+ * A wrapper component for workflow nodes that provides consistent styling.
  */
 
 import React from 'react';
@@ -12,26 +11,25 @@ interface NodeContainerProps {
   children: React.ReactNode;
   selected?: boolean;
   className?: string;
-  style?: React.CSSProperties;
 }
 
-export function NodeContainer({
+export const NodeContainer: React.FC<NodeContainerProps> = ({
   children,
   selected = false,
   className,
-  style
-}: NodeContainerProps) {
+}) => {
   return (
     <div
       className={cn(
-        'rounded-md border bg-card text-card-foreground shadow-sm transition-all',
-        'min-w-[180px] max-w-[320px]',
-        selected ? 'border-primary/70 shadow-md' : 'border-border',
+        'relative bg-slate-50 shadow-sm rounded-lg border border-slate-200',
+        'min-w-[240px] max-w-[320px] transition-all duration-200',
+        selected && 'ring-2 ring-indigo-300 ring-opacity-50',
         className
       )}
-      style={style}
     >
       {children}
     </div>
   );
-}
+};
+
+export default NodeContainer;

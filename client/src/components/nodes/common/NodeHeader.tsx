@@ -1,74 +1,55 @@
 /**
- * NodeHeader
+ * Node Header
  * 
- * Header component for nodes with title, icon, and optional actions.
+ * A consistent header component for workflow nodes with title, icon, and actions.
  */
 
 import React from 'react';
-import { LucideIcon } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { 
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger 
-} from '@/components/ui/tooltip';
 
 interface NodeHeaderProps {
   title: string;
-  icon?: React.ReactNode | string;
   description?: string;
+  icon?: React.ReactNode;
   actions?: React.ReactNode;
   className?: string;
 }
 
-export function NodeHeader({
+export const NodeHeader: React.FC<NodeHeaderProps> = ({
   title,
-  icon,
   description,
+  icon,
   actions,
-  className
-}: NodeHeaderProps) {
+  className,
+}) => {
   return (
-    <div className={cn(
-      'flex items-center justify-between p-3 border-b border-border',
-      'bg-muted/40 rounded-t-md',
-      className
-    )}>
-      <div className="flex items-center gap-2 overflow-hidden">
-        {icon && (
-          <div className="flex-shrink-0">
-            {typeof icon === 'string' ? (
-              <div className="flex items-center justify-center w-6 h-6 text-primary">
-                {icon}
-              </div>
-            ) : (
-              icon
-            )}
+    <div className={cn('px-3 py-2 border-b border-slate-200', className)}>
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          {icon && (
+            <div className="flex-shrink-0 w-5 h-5 flex items-center justify-center">
+              {icon}
+            </div>
+          )}
+          <div className="font-medium text-sm text-slate-800 truncate">
+            {title}
+          </div>
+        </div>
+        
+        {actions && (
+          <div className="flex items-center">
+            {actions}
           </div>
         )}
-        
-        <TooltipProvider>
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <h3 className="text-sm font-medium truncate">
-                {title}
-              </h3>
-            </TooltipTrigger>
-            {description && (
-              <TooltipContent side="top">
-                <p className="max-w-xs text-xs">{description}</p>
-              </TooltipContent>
-            )}
-          </Tooltip>
-        </TooltipProvider>
       </div>
       
-      {actions && (
-        <div className="flex items-center ml-2">
-          {actions}
+      {description && (
+        <div className="mt-1 text-xs text-slate-500">
+          {description}
         </div>
       )}
     </div>
   );
-}
+};
+
+export default NodeHeader;

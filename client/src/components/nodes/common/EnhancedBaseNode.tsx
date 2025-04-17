@@ -41,7 +41,9 @@ export interface EnhancedNodeData {
   [key: string]: any;
 }
 
-interface EnhancedNodeProps extends NodeProps {
+interface EnhancedNodeProps {
+  id: string;
+  selected?: boolean;
   children?: React.ReactNode;
   data: EnhancedNodeData;
   showContextMenu?: boolean;
