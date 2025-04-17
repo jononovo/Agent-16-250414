@@ -1,82 +1,78 @@
 /**
- * Claude Node Definition
- * Defines the Claude node's properties, appearance, and behavior
+ * Claude API Node Definition
+ * Defines the node's properties, appearance, and behavior
  */
 
-import { NodeDefinition } from '../../../nodes/types';
-import { Sparkles } from 'lucide-react';
-import React from 'react';
+import { NodeDefinition } from '../../types';
 
-// Define default data for the node
-const defaultData = {
-  model: 'claude-3-opus-20240229',
-  temperature: 0.7,
-  maxTokens: 1000
-};
-
-export const nodeDefinition: NodeDefinition = {
+const definition: NodeDefinition = {
   type: 'claude',
-  name: 'Claude AI',
-  description: 'Generate text using Anthropic\'s Claude AI model',
+  name: 'Claude API',
+  description: 'Generates text using the Claude AI model',
   icon: 'sparkles',
   category: 'ai',
   version: '1.0.0',
-  defaultData,
-  
   inputs: {
-    prompt: {
+    input: {
       type: 'string',
-      description: 'Input prompt to send to Claude'
-    },
-    systemPrompt: {
-      type: 'string',
-      description: 'System instructions for Claude'
+      description: 'The prompt text to send to Claude'
     }
   },
-  
   outputs: {
-    response: {
+    output: {
       type: 'string',
-      description: 'Generated response from Claude'
-    },
-    metadata: {
-      type: 'object',
-      description: 'Additional metadata about the response'
+      description: 'The generated text response from Claude'
     }
   },
-  
   configOptions: [
     {
       key: 'model',
       type: 'select',
-      description: 'Claude model to use',
-      default: 'claude-3-opus-20240229',
+      default: 'claude-3-sonnet-20240229',
       options: [
-        { value: 'claude-3-opus-20240229', label: 'Claude 3 Opus' },
-        { value: 'claude-3-sonnet-20240229', label: 'Claude 3 Sonnet' },
-        { value: 'claude-3-haiku-20240307', label: 'Claude 3 Haiku' }
-      ]
+        { label: 'Claude 3 Sonnet', value: 'claude-3-sonnet-20240229' },
+        { label: 'Claude 3 Opus', value: 'claude-3-opus-20240229' },
+        { label: 'Claude 3 Haiku', value: 'claude-3-haiku-20240307' }
+      ],
+      description: 'Claude model to use for generation'
     },
     {
       key: 'temperature',
-      type: 'number',
-      description: 'Temperature for response generation',
-      default: 0.7
+      type: 'range',
+      default: 0.7,
+      min: 0,
+      max: 1,
+      step: 0.1,
+      description: 'Controls randomness of the output (higher = more random)'
     },
     {
       key: 'maxTokens',
       type: 'number',
-      description: 'Maximum tokens to generate',
-      default: 1000
+      default: 2000,
+      min: 1,
+      max: 100000,
+      description: 'Maximum number of tokens to generate'
+    },
+    {
+      key: 'systemPrompt',
+      type: 'textarea',
+      default: '',
+      description: 'Optional system instructions for Claude'
+    },
+    {
+      key: 'apiKey',
+      type: 'password',
+      default: '',
+      description: 'Your Anthropic API key (leave empty to use environment variable)'
     }
-  ]
+  ],
+  defaultData: {
+    model: 'claude-3-sonnet-20240229',
+    temperature: 0.7,
+    maxTokens: 2000,
+    systemPrompt: '',
+    apiKey: ''
+  }
 };
 
-// Additional metadata - not part of NodeDefinition interface but used for UI/rendering
-export const nodeMetadata = {
-  tags: ["ai", "text generation", "claude", "llm"],
-  color: "#5646ED",
-  reactIcon: React.createElement(Sparkles, { size: 16 })
-};
-
-export default nodeDefinition;
+export default definition;
