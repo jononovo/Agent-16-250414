@@ -1,260 +1,242 @@
 /**
- * Claude Node Executor
+ * Claude API Node Executor
  * 
- * This file contains the logic for executing the Claude AI node.
- * It sends a prompt to the Claude API and returns the response.
+ * This file contains the logic for executing the Claude API node.
+ * It handles the API call to Claude and processes the response.
  */
 
-// Deep search function to extract text from nested structures
-// Moved outside to avoid strict mode error with function declarations inside blocks
-function extractTextFromData(data: any): string | null {
-  // Direct case - string
-  if (typeof data === 'string') {
-    return data;
+// Import from shared directory
+import { NodeExecutionData } from '../../../../shared/nodeTypes';
+
+/**
+ * Calls the Claude API with configured parameters
+ */
+async function callClaudeAPI(
+  prompt: string, 
+  apiKey: string, 
+  model: string = 'claude-3-sonnet-20240229',
+  systemPrompt?: string,
+  temperature: number = 0.7,
+  maxTokens: number = 2000
+): Promise<string> {
+  try {
+    // Prepare messages array
+    const messages = [];
+    
+    // Add system prompt if provided
+    if (systemPrompt) {
+      messages.push({ role: 'system', content: systemPrompt });
+    }
+    
+    // Add user message
+    messages.push({ role: 'user', content: prompt });
+    
+    // Make API request
+    const response = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': apiKey,
+        'anthropic-version': '2023-06-01'
+      },
+      body: JSON.stringify({
+        model,
+        messages,
+        temperature,
+        max_tokens: maxTokens
+      })
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(`API error: ${response.status} - ${errorText}`);
+    }
+
+    const data = await response.json();
+    
+    if (!data.content || !data.content[0] || !data.content[0].text) {
+      throw new Error('Unexpected API response format');
+    }
+    
+    return data.content[0].text;
+  } catch (error) {
+    console.error('Error calling Claude API:', error);
+    throw error;
   }
-  
-  // If it's an object, search through common patterns
-  if (data && typeof data === 'object') {
-    // Common patterns
-    if (data.text) return data.text;
-    if (data.content) return data.content;
-    if (data.inputText) return data.inputText;
-    
-    // Check for items array
-    if (data.items && Array.isArray(data.items) && data.items.length > 0) {
-      // Try to extract from each item
-      for (const item of data.items) {
-        const extracted = extractTextFromData(item);
-        if (extracted) return extracted;
-      }
-    }
-    
-    // Check for json property
-    if (data.json) {
-      const extracted = extractTextFromData(data.json);
-      if (extracted) return extracted;
-    }
-    
-    // Try all properties recursively
-    for (const key in data) {
-      if (typeof data[key] === 'object' && data[key] !== null) {
-        const extracted = extractTextFromData(data[key]);
-        if (extracted) return extracted;
-      }
-    }
-  }
-  
-  // If nothing works, return null
-  return null;
 }
 
-export const execute = async (nodeData: any, inputs?: any): Promise<any> => {
-  try {
-    const startTime = new Date();
+/**
+ * Extract text from standardized input format
+ */
+function extractInputText(inputs: Record<string, any> = {}): string {
+  // Case 1: No inputs provided
+  if (!inputs || Object.keys(inputs).length === 0) {
+    return '';
+  }
+
+  // Get the first input key
+  const firstInputKey = Object.keys(inputs)[0];
+  const firstInput = inputs[firstInputKey];
+  
+  // Case 2: No data in the input
+  if (!firstInput) {
+    return '';
+  }
+  
+  // Case 3: Handle standardized format with items array
+  if (firstInput.items && Array.isArray(firstInput.items) && firstInput.items.length > 0) {
+    const firstItem = firstInput.items[0];
     
-    // Get inputs and parameters
-    // Enhanced input handling to support various formats
-    let promptInput = '';
-    
-    if (inputs?.prompt) {
-      // Handle various possible input formats - simplified approach for reliability
-      console.log('Raw prompt input:', typeof inputs.prompt, inputs.prompt);
-      
-      // Try to extract text from the input
-      const extractedText = extractTextFromData(inputs.prompt);
-      if (extractedText) {
-        promptInput = extractedText;
-      }
-      
-      // As a last resort, try JSON parsing if it looks like a JSON string
-      if (!promptInput && typeof inputs.prompt === 'string' && 
-          (inputs.prompt.startsWith('{') || inputs.prompt.startsWith('['))) {
-        try {
-          const parsed = JSON.parse(inputs.prompt);
-          const extractedFromJson = extractTextFromData(parsed);
-          if (extractedFromJson) {
-            promptInput = extractedFromJson;
-          }
-        } catch (e) {
-          // Couldn't parse JSON, that's fine
-        }
+    // Extract text from JSON if available
+    if (firstItem.json) {
+      if (typeof firstItem.json === 'string') {
+        return firstItem.json;
+      } else if (firstItem.json.text) {
+        return firstItem.json.text;
+      } else if (firstItem.json.content) {
+        return firstItem.json.content;
       }
     }
     
-    // Log what we received to help with debugging
-    console.log('Claude inputs received:', {
-      rawInput: inputs?.prompt,
-      extractedPrompt: promptInput
-    });
+    // Extract from text field if available
+    if (firstItem.text) {
+      return firstItem.text;
+    }
+  }
+  
+  // Case 4: Input might be a direct string or object with text property
+  if (typeof firstInput === 'string') {
+    return firstInput;
+  } else if (firstInput.text) {
+    return firstInput.text;
+  } else if (firstInput.content) {
+    return firstInput.content;
+  } else if (firstInput.message) {
+    return firstInput.message;
+  }
+  
+  // Case 5: Fallback - stringify the input
+  return JSON.stringify(firstInput);
+}
+
+/**
+ * Execute the Claude API node
+ */
+export const execute = async (
+  nodeData: any,
+  inputs: Record<string, any> = {}
+): Promise<Record<string, NodeExecutionData>> => {
+  // Record start time
+  const startTime = new Date();
+  
+  try {
+    // Extract input text from node data or connected nodes
+    let prompt = '';
+    if (inputs && Object.keys(inputs).length > 0) {
+      prompt = extractInputText(inputs);
+    } else if (nodeData.inputText) {
+      prompt = nodeData.inputText;
+    }
     
-    const prompt = nodeData.prompt || promptInput || '';
-    const model = nodeData.model || 'claude-3-haiku-20240307';
-    const temperature = nodeData.temperature !== undefined ? nodeData.temperature : 0.7;
-    const maxTokens = nodeData.maxTokens || 1000;
-    const systemPrompt = nodeData.systemPrompt || '';
-    
-    // Check if we have a prompt
+    // Validate input
     if (!prompt) {
       return {
-        meta: {
-          status: 'error',
-          message: 'No prompt provided to Claude',
-          startTime: startTime.toISOString(),
-          endTime: new Date().toISOString()
-        },
-        items: []
-      };
-    }
-    
-    // Look for API key in this order:
-    // 1. Node data (user entered in UI)
-    // 2. Server environment (via API config endpoint)
-    let claudeApiKey = nodeData.apiKey || '';
-    let useServerProxy = false;
-    
-    // If no API key in node data, try to get from server config
-    if (!claudeApiKey) {
-      try {
-        // Fetch the API key from server config
-        const configResponse = await fetch('/api/config');
-        if (configResponse.ok) {
-          const config = await configResponse.json();
-          console.log('Retrieved API config, claudeApiKey exists:', !!config.claudeApiKey);
-          
-          // If config.claudeApiKey exists, we'll use the server proxy endpoint
-          if (config.claudeApiKey) {
-            useServerProxy = true;
-            claudeApiKey = 'use-server-proxy';  // Marker to indicate we'll use server proxy
-          }
-        } else {
-          console.error('Failed to fetch API config:', configResponse.status);
-        }
-      } catch (error) {
-        console.error('Error fetching API config:', error);
-      }
-    }
-    
-    // Check if we have an API key (either direct or via server)
-    if (!claudeApiKey) {
-      console.warn('No Claude API key available. Using mock response. Please configure the API key in the node settings or server environment.');
-      
-      // Return a mock response for development
-      const mockResponse = {
-        text: `This is a mock response from Claude because no API key was provided. Your prompt was: "${prompt}"`,
-        model,
-        usage: {
-          input_tokens: prompt.length / 4,
-          output_tokens: 20,
-          total_tokens: prompt.length / 4 + 20
-        }
-      };
-      
-      return {
-        meta: {
-          status: 'success',
-          message: 'Generated mock Claude response (no API key)',
-          startTime: startTime.toISOString(),
-          endTime: new Date().toISOString()
-        },
-        items: [
-          {
+        output: {
+          items: [{
             json: {
-              response: mockResponse.text,
-              fullResponse: mockResponse
-            },
-            binary: null
+              error: 'No input text provided',
+              _hasError: true,
+              _errorMessage: 'No input text provided'
+            }
+          }],
+          meta: {
+            startTime,
+            endTime: new Date(),
+            error: true,
+            errorMessage: 'No input text provided',
+            source: 'claude'
           }
-        ]
+        }
       };
     }
     
-    // Prepare request to Claude API
-    const requestBody = {
+    // Get API key from node data or environment
+    const apiKey = nodeData.apiKey || process.env.CLAUDE_API_KEY || '';
+    
+    // Validate API key
+    if (!apiKey) {
+      return {
+        output: {
+          items: [{
+            json: {
+              error: 'Claude API key is not configured',
+              _hasError: true,
+              _errorMessage: 'Claude API key is not configured'
+            }
+          }],
+          meta: {
+            startTime,
+            endTime: new Date(),
+            error: true,
+            errorMessage: 'Claude API key is not configured',
+            source: 'claude'
+          }
+        }
+      };
+    }
+    
+    // Get node settings
+    const model = nodeData.model || 'claude-3-sonnet-20240229';
+    const systemPrompt = nodeData.systemPrompt;
+    const temperature = Number(nodeData.temperature || 0.7);
+    const maxTokens = Number(nodeData.maxTokens || 2000);
+    
+    // Call Claude API
+    const generatedText = await callClaudeAPI(
+      prompt, 
+      apiKey, 
       model,
-      messages: [
-        ...(systemPrompt ? [{ role: 'system', content: systemPrompt }] : []),
-        { role: 'user', content: prompt }
-      ],
-      max_tokens: maxTokens,
-      temperature
-    };
+      systemPrompt,
+      temperature,
+      maxTokens
+    );
     
-    console.log('Sending request to Claude API:', { model, temperature, maxTokens });
-    
-    try {
-      let response;
-      
-      if (useServerProxy) {
-        // Use server proxy when the API key comes from server environment
-        console.log('Using server proxy for Claude API call');
-        response = await fetch('/api/proxy/claude', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify(requestBody)
-        });
-      } else {
-        // Direct API call when user provided an API key in the node
-        console.log('Using direct Claude API call with provided key');
-        response = await fetch('https://api.anthropic.com/v1/messages', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'x-api-key': claudeApiKey,
-            'anthropic-version': '2023-06-01'
-          },
-          body: JSON.stringify(requestBody)
-        });
-      }
-      
-      if (!response.ok) {
-        const errorText = await response.text();
-        throw new Error(`Claude API error (${response.status}): ${errorText}`);
-      }
-      
-      const data = await response.json();
-      
-      return {
-        meta: {
-          status: 'success',
-          message: 'Successfully generated text with Claude',
-          startTime: startTime.toISOString(),
-          endTime: new Date().toISOString()
-        },
-        items: [
-          {
-            json: {
-              response: data.content && data.content[0]?.text || '',
-              fullResponse: data
-            },
-            binary: null
-          }
-        ]
-      };
-    } catch (apiError: any) {
-      console.error('Claude API error:', apiError);
-      
-      return {
-        meta: {
-          status: 'error',
-          message: `Claude API error: ${apiError.message || 'Unknown error'}`,
-          startTime: startTime.toISOString(),
-          endTime: new Date().toISOString()
-        },
-        items: []
-      };
-    }
-  } catch (error: any) {
-    // Handle general errors
+    // Return successful result
     return {
-      meta: {
-        status: 'error',
-        message: error.message || 'Error executing Claude node',
-        startTime: new Date().toISOString(),
-        endTime: new Date().toISOString()
-      },
-      items: []
+      output: {
+        items: [{
+          json: {
+            text: generatedText,
+            model: model
+          },
+          text: generatedText
+        }],
+        meta: {
+          startTime,
+          endTime: new Date(),
+          source: 'claude'
+        }
+      }
+    };
+  } catch (error: any) {
+    // Return error result
+    return {
+      output: {
+        items: [{
+          json: {
+            error: error.message || 'Error processing Claude API request',
+            _hasError: true,
+            _errorMessage: error.message || 'Error processing Claude API request'
+          }
+        }],
+        meta: {
+          startTime,
+          endTime: new Date(),
+          error: true,
+          errorMessage: error.message || 'Error processing Claude API request',
+          source: 'claude'
+        }
+      }
     };
   }
 };

@@ -1,51 +1,61 @@
 /**
  * Claude API Node UI Component
  * 
- * This component renders the Claude API node in the workflow editor
- * following Simple AI Dev's clean design aesthetic.
+ * This file contains the React component used to render the Claude API node
+ * in the workflow editor.
  */
 
-import React, { useState, useEffect } from 'react';
-import { Handle, Position } from 'reactflow';
+import React, { useState } from 'react';
+import { Handle, Position, NodeProps } from 'reactflow';
+import { 
+  Computer, Key, Sliders, ArrowDownToLine, 
+  ArrowUpFromLine, Sparkles, Settings, Loader, Info 
+} from 'lucide-react';
+
+// Import the common node components
+import { NodeContainer } from '@/components/nodes/common/NodeContainer';
+import { NodeHeader } from '@/components/nodes/common/NodeHeader';
+import { NodeContent } from '@/components/nodes/common/NodeContent';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Slider } from '@/components/ui/slider';
-import { Textarea } from '@/components/ui/textarea';
-import { Settings, Check, RotateCcw, Sparkles } from 'lucide-react';
-import { cn } from '@/lib/utils';
 
-// List of available Claude models
-const CLAUDE_MODELS = [
-  { value: 'claude-3-opus-20240229', label: 'Claude 3 Opus' },
-  { value: 'claude-3-sonnet-20240229', label: 'Claude 3 Sonnet' },
-  { value: 'claude-3-haiku-20240307', label: 'Claude 3 Haiku' },
-  { value: 'claude-3-5-sonnet-20240620', label: 'Claude 3.5 Sonnet' }
-];
+// Node interface
+interface ClaudeNodeData {
+  label?: string;
+  icon?: string;
+  inputText?: string;
+  model?: string;
+  temperature?: number;
+  maxTokens?: number;
+  systemPrompt?: string;
+  apiKey?: string;
+  _isProcessing?: boolean;
+  _hasError?: boolean;
+  _errorMessage?: string;
+  _generatedText?: string;
+  onSettingsClick?: () => void;
+  onChange?: (data: any) => void;
+  [key: string]: any;
+}
 
 // Default data for the node
-export const defaultData = {
+export const defaultData: ClaudeNodeData = {
+  label: 'Claude API',
   model: 'claude-3-sonnet-20240229',
   temperature: 0.7,
-  maxTokens: 1000,
+  maxTokens: 2000,
   systemPrompt: '',
-  prompt: '',
   apiKey: '',
-  status: 'idle' // idle, running, completed, error
+  _isProcessing: false,
+  _hasError: false
 };
 
 // Validator for the node data
-export const validator = (data: any) => {
-  const errors: string[] = [];
+export const validator = (data: ClaudeNodeData) => {
+  const errors = [];
   
-  if (data.temperature < 0 || data.temperature > 1) {
-    errors.push('Temperature must be between 0 and 1');
-  }
-  
-  if (data.maxTokens < 1) {
-    errors.push('Max tokens must be at least 1');
+  if (!data.apiKey) {
+    errors.push('API Key is not configured');
   }
   
   return {
@@ -54,279 +64,263 @@ export const validator = (data: any) => {
   };
 };
 
-// UI component for the Claude node
-export const component = ({ data, isConnectable, selected }: any) => {
-  const [showSettings, setShowSettings] = useState(false);
-  const [localPrompt, setLocalPrompt] = useState(data.prompt || '');
+// Claude API Node Component
+export const component = ({ data, selected, id }: NodeProps<ClaudeNodeData>) => {
+  const [isGenerating, setIsGenerating] = useState(false);
   
-  // Update local prompt when data changes externally
-  useEffect(() => {
-    if (data.prompt !== undefined) {
-      setLocalPrompt(data.prompt);
+  // Extract settings or use defaults
+  const apiKey = data.apiKey || '';
+  const model = data.model || 'claude-3-sonnet-20240229';
+  const temperature = data.temperature || 0.7;
+  const maxTokens = data.maxTokens || 2000;
+  
+  // Format model name for display
+  const modelDisplay = model.includes('claude-3-sonnet') 
+    ? 'CLAUDE SONNET'
+    : model.includes('claude-3-opus')
+    ? 'CLAUDE OPUS'
+    : model.includes('claude-3-haiku')
+    ? 'CLAUDE HAIKU'
+    : model.toUpperCase();
+  
+  // Check if node is processing
+  const isProcessing = data._isProcessing || isGenerating;
+  
+  // Handle text generation
+  const handleGenerate = async () => {
+    if (!data.inputText && !data._generatedText) {
+      // Skip if no input provided and not already generated
+      return;
     }
-  }, [data.prompt]);
-  
-  // Handler for data changes
-  const handleDataChange = (key: string, value: any) => {
-    if (data && typeof data.onChange === 'function') {
-      data.onChange({
-        ...data,
-        [key]: value
-      });
+    
+    if (!apiKey) {
+      // Update node data with error info
+      if (data.onChange) {
+        data.onChange({
+          ...data,
+          _hasError: true,
+          _errorMessage: 'Claude API key is not configured'
+        });
+      }
+      return;
+    }
+    
+    setIsGenerating(true);
+    
+    try {
+      // Update node data to show processing state
+      if (data.onChange) {
+        data.onChange({
+          ...data,
+          _isProcessing: true,
+          _hasError: false,
+          _errorMessage: ''
+        });
+      }
+      
+      // Actual generation happens in the executor
+      // This UI just shows the loading state
+      setTimeout(() => {
+        setIsGenerating(false);
+        if (data.onChange) {
+          data.onChange({
+            ...data,
+            _isProcessing: false
+          });
+        }
+      }, 500);
+    } catch (error) {
+      console.error('Generation error:', error);
+      setIsGenerating(false);
+      
+      // Update node data with error info
+      if (data.onChange) {
+        data.onChange({
+          ...data,
+          _isProcessing: false,
+          _hasError: true,
+          _errorMessage: error instanceof Error ? error.message : 'An unknown error occurred'
+        });
+      }
     }
   };
-
-  // Format temperature value for display
-  const formatTemperature = (temp: number) => temp.toFixed(1);
   
-  // Format token count with commas
-  const formatTokens = (tokens: number) => tokens.toLocaleString();
-  
-  // Handle prompt changes with debouncing
-  const handlePromptChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
-    const newValue = e.target.value;
-    setLocalPrompt(newValue);
-    handleDataChange('prompt', newValue);
-  };
-  
-  // Handle execution status and badge display
-  const getStatusBadge = () => {
-    switch (data.status) {
-      case 'running':
-        return <Badge variant="outline" className="bg-blue-500/10 text-blue-500 border-blue-500/20">Running</Badge>;
-      case 'completed':
-        return <Badge variant="outline" className="bg-green-500/10 text-green-500 border-green-500/20">Completed</Badge>;
-      case 'error':
-        return <Badge variant="outline" className="bg-red-500/10 text-red-500 border-red-500/20">Error</Badge>;
-      default:
-        return null;
+  // Open settings modal/drawer
+  const openSettings = () => {
+    if (typeof data.onSettingsClick === 'function') {
+      data.onSettingsClick();
     }
   };
+  
+  // Create icon element for the header
+  const iconElement = (
+    <div className="bg-indigo-100 p-1.5 rounded-md">
+      <Computer className="h-4 w-4 text-indigo-600" />
+    </div>
+  );
+  
+  // Create header actions
+  const headerActions = (
+    <Badge variant="outline" className="bg-indigo-100 text-indigo-800 text-xs">
+      LLM
+    </Badge>
+  );
   
   return (
-    <div className={cn(
-      'bg-background rounded-xl border transition-all duration-200',
-      'min-w-[300px] max-w-[400px]',
-      selected ? 'border-primary shadow-md' : 'border-border/40'
-    )}>
-      {/* Node Header */}
-      <div className="flex items-center justify-between px-4 py-2 border-b border-border/50">
-        <div className="flex items-center gap-2">
-          <div className="bg-primary/10 p-1.5 rounded-md">
-            <Sparkles size={16} className="text-primary" />
-          </div>
-          <div>
-            <h3 className="text-sm font-medium">Claude API</h3>
-            <p className="text-xs text-muted-foreground">Generate content with Claude AI</p>
-          </div>
-        </div>
-        <div className="flex items-center gap-2">
-          {getStatusBadge()}
-          <Button 
-            variant="ghost" 
-            size="icon" 
-            className="h-8 w-8" 
-            onClick={() => setShowSettings(!showSettings)}
-          >
-            <Settings size={16} />
-          </Button>
-        </div>
-      </div>
+    <NodeContainer selected={selected} className={data._hasError ? 'border-red-300' : ''}>
+      <NodeHeader 
+        title="Claude API" 
+        description="Generates text using Claude"
+        icon={iconElement}
+        actions={headerActions}
+      />
       
-      {/* Node Content */}
-      <div className="p-4 space-y-4">
-        {/* Prompt Input */}
-        <div className="space-y-2">
-          <Textarea
-            placeholder="Enter your prompt for Claude..."
-            value={localPrompt}
-            onChange={handlePromptChange}
-            className="resize-none min-h-[100px] text-sm"
-          />
+      <NodeContent padding="normal">
+        {/* API key status */}
+        {!apiKey ? (
+          <div className="flex items-center text-red-500 text-xs mb-2 bg-red-50 p-1.5 rounded border border-red-100">
+            <Key size={12} className="mr-1" /> 
+            No API key configured
+          </div>
+        ) : null}
+        
+        {/* Model */}
+        <div className="flex items-center justify-between bg-white rounded p-1.5 border border-slate-200 mb-2">
+          <div className="flex items-center text-xs text-slate-600">
+            <Computer size={12} className="mr-1" /> 
+            Model:
+          </div>
+          <div className="text-xs font-medium text-slate-700">
+            {modelDisplay}
+          </div>
         </div>
         
-        {/* Settings Panel */}
-        {showSettings && (
-          <div className="space-y-4 pt-2 border-t border-border/50">
-            {/* Model Selection */}
-            <div className="space-y-1.5">
-              <Label htmlFor="model" className="text-xs font-medium">Model</Label>
-              <Select
-                value={data.model || defaultData.model}
-                onValueChange={(value) => handleDataChange('model', value)}
-              >
-                <SelectTrigger id="model" className="h-8 text-xs">
-                  <SelectValue placeholder="Select a model" />
-                </SelectTrigger>
-                <SelectContent>
-                  {CLAUDE_MODELS.map((model) => (
-                    <SelectItem key={model.value} value={model.value} className="text-xs">
-                      {model.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            
-            {/* API Key */}
-            <div className="space-y-1.5">
-              <Label htmlFor="apiKey" className="text-xs font-medium">API Key</Label>
-              <Input
-                id="apiKey"
-                type="password"
-                value={data.apiKey || ''}
-                onChange={(e) => handleDataChange('apiKey', e.target.value)}
-                placeholder="Enter your Claude API key"
-                className="h-8 text-xs"
-              />
-              {data.apiKey ? (
-                <p className="text-xs text-green-600 flex items-center gap-1">
-                  <Check size={12} /> API key provided
-                </p>
-              ) : (
-                <p className="text-xs text-muted-foreground">
-                  Will use environment API key if available
-                </p>
-              )}
-            </div>
-            
-            {/* Temperature */}
-            <div className="space-y-1.5">
-              <div className="flex justify-between items-center">
-                <Label htmlFor="temperature" className="text-xs font-medium">
-                  Temperature: {formatTemperature(data.temperature !== undefined ? data.temperature : defaultData.temperature)}
-                </Label>
-              </div>
-              <Slider
-                id="temperature"
-                min={0}
-                max={1}
-                step={0.1}
-                value={[data.temperature !== undefined ? data.temperature : defaultData.temperature]}
-                onValueChange={([value]) => handleDataChange('temperature', value)}
-              />
-              <div className="flex justify-between text-xs text-muted-foreground">
-                <span>Precise</span>
-                <span>Creative</span>
-              </div>
-            </div>
-            
-            {/* Max Tokens */}
-            <div className="space-y-1.5">
-              <Label htmlFor="maxTokens" className="text-xs font-medium">Max Tokens</Label>
-              <Input
-                id="maxTokens"
-                type="number"
-                value={data.maxTokens !== undefined ? data.maxTokens : defaultData.maxTokens}
-                onChange={(e) => handleDataChange('maxTokens', parseInt(e.target.value) || 0)}
-                className="h-8 text-xs"
-              />
-              <p className="text-xs text-muted-foreground">
-                Maximum output length: {formatTokens(data.maxTokens || defaultData.maxTokens)} tokens
-              </p>
-            </div>
-            
-            {/* System Prompt */}
-            <div className="space-y-1.5">
-              <Label htmlFor="systemPrompt" className="text-xs font-medium">System Prompt</Label>
-              <Textarea
-                id="systemPrompt"
-                value={data.systemPrompt || ''}
-                onChange={(e) => handleDataChange('systemPrompt', e.target.value)}
-                placeholder="Instructions for the Claude assistant..."
-                className="resize-none min-h-[80px] text-xs"
-              />
-              <p className="text-xs text-muted-foreground">
-                Sets the assistant's behavior and constraints
-              </p>
-            </div>
+        {/* Parameters */}
+        <div className="flex items-center justify-between bg-white rounded p-1.5 border border-slate-200 mb-2">
+          <div className="flex items-center text-xs text-slate-600">
+            <Sliders size={12} className="mr-1" /> 
+            Parameters:
           </div>
-        )}
-      </div>
-      
-      {/* Action Buttons */}
-      {data.status === 'completed' && (
-        <div className="px-4 py-2 border-t border-border/50 flex justify-end">
+          <div className="text-xs text-slate-700">
+            <span className="font-medium">{temperature}</span>
+            <span className="mx-1">|</span>
+            <span className="font-medium">{maxTokens}t</span>
+          </div>
+        </div>
+        
+        {/* Input summary */}
+        <div className="bg-white rounded p-1.5 border border-slate-200 mb-3">
+          <div className="flex items-center text-xs text-slate-600 mb-1">
+            <ArrowDownToLine size={12} className="mr-1" /> 
+            Input Prompt:
+          </div>
+          <div className="text-xs text-slate-600 min-h-[40px] max-h-[60px] overflow-hidden">
+            {data.inputText ? (
+              data.inputText.substring(0, 100) + (data.inputText.length > 100 ? '...' : '')
+            ) : (
+              <div className="text-slate-400 flex items-center justify-center h-[40px]">
+                Waiting for input from previous node...
+              </div>
+            )}
+          </div>
+        </div>
+        
+        {/* Action buttons */}
+        <div className="flex gap-2 mb-3">
           <Button 
-            variant="ghost"
+            className="flex-1 flex items-center justify-center py-1 px-2 text-xs h-auto"
             size="sm"
-            className="h-7 text-xs"
-            onClick={() => handleDataChange('status', 'idle')}
+            onClick={handleGenerate}
+            disabled={isGenerating || isProcessing}
           >
-            <RotateCcw size={12} className="mr-1" /> Run Again
+            {isGenerating || isProcessing ? (
+              <>
+                <Loader size={12} className="mr-1 animate-spin" />
+                {isProcessing ? "Processing..." : "Generating..."}
+              </>
+            ) : (
+              <>
+                <Sparkles size={12} className="mr-1" />
+                Generate
+              </>
+            )}
+          </Button>
+          
+          <Button
+            variant="outline"
+            size="sm"
+            className="py-1 px-2 text-xs h-auto"
+            onClick={openSettings}
+          >
+            <Settings size={12} className="mr-1" />
+            Settings
           </Button>
         </div>
-      )}
+        
+        {/* Output display */}
+        <div className={`bg-white border rounded p-1.5 min-h-[60px] ${
+          data._hasError ? 'border-red-300 bg-red-50' : 'border-slate-200'
+        }`}>
+          <div className="flex items-center text-xs text-slate-600 mb-1">
+            <ArrowUpFromLine size={12} className="mr-1" /> 
+            Generated Output:
+          </div>
+          
+          {data._hasError ? (
+            <div className="text-red-600 text-xs">
+              {data._errorMessage || 'An error occurred during generation'}
+            </div>
+          ) : data._generatedText ? (
+            <div className="text-xs text-slate-600 max-h-[60px] overflow-hidden">
+              {typeof data._generatedText === 'string' 
+                ? (data._generatedText.substring(0, 100) + 
+                   (data._generatedText.length > 100 ? '...' : ''))
+                : JSON.stringify(data._generatedText).substring(0, 100) + '...'}
+            </div>
+          ) : (
+            <div className="text-slate-400 text-xs flex items-center justify-center h-[40px]">
+              <Info size={12} className="mr-1" />
+              No response received yet. Click Generate to run this node.
+            </div>
+          )}
+        </div>
+      </NodeContent>
       
-      {/* Input Handles */}
+      {/* Input handle */}
       <Handle
         type="target"
         position={Position.Left}
-        id="prompt"
+        id="input"
         style={{ 
-          top: 50, 
+          top: 60, 
           width: '12px', 
           height: '12px', 
           background: 'white',
-          border: '2px solid #3b82f6'
+          border: '2px solid #818cf8'
         }}
-        isConnectable={isConnectable}
+        isConnectable={true}
       />
-      <div className="absolute left-2 top-[46px] text-xs text-muted-foreground">
+      <div className="absolute left-2 top-[56px] text-xs text-slate-500">
         In
       </div>
       
-      <Handle
-        type="target"
-        position={Position.Left}
-        id="system"
-        style={{ 
-          top: 80, 
-          width: '12px', 
-          height: '12px', 
-          background: 'white',
-          border: '2px solid #3b82f6'
-        }}
-        isConnectable={isConnectable}
-      />
-      <div className="absolute left-2 top-[76px] text-xs text-muted-foreground">
-        System
-      </div>
-      
-      {/* Output Handles */}
+      {/* Output handle */}
       <Handle
         type="source"
         position={Position.Right}
-        id="response"
+        id="output"
         style={{ 
-          top: 50, 
+          top: 60, 
           width: '12px', 
           height: '12px', 
           background: 'white',
-          border: '2px solid #10b981'
+          border: '2px solid #818cf8'
         }}
-        isConnectable={isConnectable}
+        isConnectable={true}
       />
-      <div className="absolute right-2 top-[46px] text-xs text-muted-foreground text-right">
+      <div className="absolute right-2 top-[56px] text-xs text-slate-500 text-right">
         Out
       </div>
-      
-      <Handle
-        type="source"
-        position={Position.Right}
-        id="metadata"
-        style={{ 
-          top: 80, 
-          width: '12px', 
-          height: '12px', 
-          background: 'white',
-          border: '2px solid #10b981'
-        }}
-        isConnectable={isConnectable}
-      />
-      <div className="absolute right-2 top-[76px] text-xs text-muted-foreground text-right">
-        Meta
-      </div>
-    </div>
+    </NodeContainer>
   );
 };

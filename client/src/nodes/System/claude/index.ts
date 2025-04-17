@@ -1,26 +1,38 @@
 /**
- * Claude AI Node
+ * Claude API Node
  * 
- * This node provides integration with the Claude AI API for text generation.
+ * This node provides integration with Anthropic's Claude AI model.
+ * It's designed to be used for generating text responses.
  */
 
-import { NodeDefinition } from '../../../nodes/types';
-import nodeDefinition, { nodeMetadata } from './definition';
+import { NodeRegistryEntry } from '../../lib/types';
+import definition from './definition';
 import schema from './schema';
 import * as executor from './executor';
 import * as ui from './ui';
+import { Sparkles } from 'lucide-react';
+import React from 'react';
 
-// Re-export the node definition and metadata
-export { nodeDefinition, nodeMetadata };
+// Ensure the definition complies with NodeMetadata interface
+const metadata = {
+  name: definition.name,
+  description: definition.description,
+  category: definition.category,
+  version: definition.version
+};
 
-// Re-export the executor for dynamic imports
-export { execute } from './executor';
+// Claude API Node Implementation
+const ClaudeNode: NodeType = {
+  type: 'claude',
+  metadata,
+  schema,
+  executor: {
+    execute: executor.execute,
+    defaultData: ui.defaultData
+  },
+  ui: ui.component,
+  validator: ui.validator,
+  icon: React.createElement(Sparkles, { size: 16 })
+};
 
-// Export UI components
-export { 
-  component,
-  defaultData,
-  validator
-} from './ui';
-
-export default nodeDefinition;
+export default ClaudeNode;

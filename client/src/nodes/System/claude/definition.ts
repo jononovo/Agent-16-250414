@@ -38,30 +38,25 @@ const definition: NodeDefinition = {
     },
     {
       key: 'temperature',
-      type: 'range',
+      type: 'number',
       default: 0.7,
-      min: 0,
-      max: 1,
-      step: 0.1,
       description: 'Controls randomness of the output (higher = more random)'
     },
     {
       key: 'maxTokens',
       type: 'number',
       default: 2000,
-      min: 1,
-      max: 100000,
       description: 'Maximum number of tokens to generate'
     },
     {
       key: 'systemPrompt',
-      type: 'textarea',
+      type: 'string',
       default: '',
       description: 'Optional system instructions for Claude'
     },
     {
       key: 'apiKey',
-      type: 'password',
+      type: 'string',
       default: '',
       description: 'Your Anthropic API key (leave empty to use environment variable)'
     }
