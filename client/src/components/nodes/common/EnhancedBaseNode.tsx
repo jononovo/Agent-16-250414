@@ -1,7 +1,7 @@
 /**
  * Enhanced Base Node - DEPRECATED
  * 
- * @deprecated This component is deprecated. Use EnhancedDefaultNode from /nodes/Default/ui.tsx instead.
+ * @deprecated This component is deprecated. Use DefaultNode from /nodes/Default/ui.tsx instead.
  * 
  * This component extends the standard node functionality with consistent UI patterns
  * including:

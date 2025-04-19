@@ -66,13 +66,13 @@ export interface DefaultNodeData {
 }
 
 /**
- * Enhanced Default Node - A generic node type with settings functionality
+ * Default Node - A generic node type with settings functionality
  * 
  * This node type serves as a fallback for nodes that don't have
  * specific UI implementations, or for simple node types that don't
  * need custom rendering. It includes a settings drawer.
  */
-function EnhancedDefaultNode({ data, id, selected }: NodeProps<DefaultNodeData>) {
+function DefaultNode({ data, id, selected }: NodeProps<DefaultNodeData>) {
   const [showSettings, setShowSettings] = useState(false);
   const [showContextActions, setShowContextActions] = useState(false);
   
@@ -346,4 +346,4 @@ function EnhancedDefaultNode({ data, id, selected }: NodeProps<DefaultNodeData>)
   );
 }
 
-export default memo(EnhancedDefaultNode);
+export default memo(DefaultNode);
