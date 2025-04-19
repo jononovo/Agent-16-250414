@@ -58,7 +58,7 @@ client/src/nodes/
 ├── Custom/                # User-defined nodes
 │   └── ...
 └── Default/               # Default node implementation
-    └── ui.tsx             # Enhanced default node component
+    └── ui.tsx             # Default node component
 ```
 
 ### Categories
@@ -144,12 +144,12 @@ export const execute: NodeExecutorFunction<MyNodeData> = async (data, inputs) =>
 
 ### 3. UI Component (`ui.tsx`)
 
-Implements the node's UI using the Enhanced Default Node pattern:
+Implements the node's UI using the Default Node pattern:
 
 ```typescript
 import React from 'react';
 import { Handle, Position, NodeProps } from 'reactflow';
-import EnhancedDefaultNode from '@/nodes/Default/ui';
+import DefaultNode from '@/nodes/Default/ui';
 
 interface MyNodeData {
   // Node data structure
@@ -186,13 +186,13 @@ export const component: React.FC<NodeProps<MyNodeData>> = ({ data, id, selected 
 
   // Return enhanced node
   return (
-    <EnhancedDefaultNode
+    <DefaultNode
       id={id}
       data={enhancedData}
       selected={selected}
     >
       {nodeContent}
-    </EnhancedDefaultNode>
+    </DefaultNode>
   );
 };
 ```
@@ -321,13 +321,13 @@ export const YourNodeComponent = ({ data, id, selected, isConnectable }) => {
 
   // Return the enhanced node
   return (
-    <EnhancedDefaultNode
+    <DefaultNode
       id={id}
       data={enhancedData}
       selected={selected}
     >
       {nodeContent}
-    </EnhancedDefaultNode>
+    </DefaultNode>
   );
 };
 ```
@@ -560,7 +560,7 @@ To add a new node:
 ### Visual Consistency
 
 - Follow the Simple-AI.dev design pattern for consistent UI
-- Use the Enhanced Default Node pattern for all nodes
+- Use the Default Node pattern for all nodes
 - Maintain consistent handle positioning and labeling
 - Use appropriate icons from Lucide React for node types
 
@@ -600,7 +600,7 @@ Here's a complete example of a node implementation using the Enhanced Node Patte
 /**
  * Example Enhanced Node
  * 
- * This is an example of how to use the Enhanced Default Node pattern
+ * This is an example of how to use the Default Node pattern
  * to create a node with settings drawer functionality.
  */
 
@@ -731,13 +731,13 @@ export const ExampleEnhancedNode: React.FC<NodeProps<ExampleNodeData>> = ({
   
   // Return the enhanced node
   return (
-    <EnhancedDefaultNode
+    <DefaultNode
       id={id}
       data={enhancedData}
       selected={selected}
     >
       {nodeContent}
-    </EnhancedDefaultNode>
+    </DefaultNode>
   );
 };
 ```
