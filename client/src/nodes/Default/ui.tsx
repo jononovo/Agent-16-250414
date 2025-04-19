@@ -1,15 +1,21 @@
 /**
- * Default Node UI
+ * Enhanced Default Node
  * 
- * This is the default node UI component used for basic node types
+ * This is the enhanced default node UI component used for basic node types
  * and as a fallback for node types without specific implementations.
+ * 
+ * Features:
+ * - Settings drawer/sheet functionality
+ * - Status badges for node execution state
+ * - Settings summary display
+ * - Error message display
  */
 
-import { memo } from 'react';
+import { memo, useState } from 'react';
 import { Handle, Position, NodeProps } from 'reactflow';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Settings, AlertTriangle } from 'lucide-react';
+import { Settings, AlertTriangle, MoreHorizontal } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import DynamicIcon from '@/components/flow/DynamicIcon';
 
@@ -23,41 +29,87 @@ import {
   TooltipProvider,
   TooltipTrigger 
 } from '@/components/ui/tooltip';
+import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { NodeSettingsForm } from '@/components/nodes/common/NodeSettingsForm';
 
-interface DefaultNodeData {
+interface SettingsField {
+  key: string;
+  label: string;
+  type: 'text' | 'number' | 'select' | 'checkbox' | 'textarea' | 'slider';
+  options?: Array<{ label: string; value: string | number }>;
+  description?: string;
+  min?: number;
+  max?: number;
+  step?: number;
+}
+
+interface NodeSettings {
+  title?: string;
+  fields?: SettingsField[];
+}
+
+export interface DefaultNodeData {
   label: string;
   description?: string;
   type?: string;
   category?: string;
-  settings?: Record<string, unknown>;
+  settings?: NodeSettings;
+  settingsData?: Record<string, any>;
   isProcessing?: boolean;
   isComplete?: boolean;
   hasError?: boolean;
   errorMessage?: string;
   icon?: string;
+  onChange?: (data: any) => void;
+  [key: string]: any;
 }
 
 /**
- * DefaultNode - A generic node type that can be used for any node
+ * Enhanced Default Node - A generic node type with settings functionality
  * 
  * This node type serves as a fallback for nodes that don't have
  * specific UI implementations, or for simple node types that don't
- * need custom rendering.
+ * need custom rendering. It includes a settings drawer.
  */
-function DefaultNode({ data, id, selected }: NodeProps<DefaultNodeData>) {
+function EnhancedDefaultNode({ data, id, selected }: NodeProps<DefaultNodeData>) {
+  const [showSettings, setShowSettings] = useState(false);
+  const [showContextActions, setShowContextActions] = useState(false);
+  
   // Destructure node data with defaults
   const {
     label = 'Node',
     description = 'Generic node',
     type = 'default',
     category = 'general',
-    settings = {},
+    settings = { fields: [] },
+    settingsData = {},
     isProcessing = false,
     isComplete = false,
     hasError = false,
     errorMessage = '',
     icon = 'box',
+    onChange
   } = data;
+  
+  // Settings icon click handler
+  const handleSettingsClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setShowSettings(true);
+  };
+  
+  // Settings submission handler
+  const handleSubmitSettings = (updatedData: any) => {
+    // Update node data when settings are changed
+    if (onChange) {
+      onChange({
+        ...data,
+        ...updatedData
+      });
+    }
+    
+    setShowSettings(false);
+  };
   
   // Get the status badge based on execution state
   const getStatusBadge = () => {
@@ -69,27 +121,27 @@ function DefaultNode({ data, id, selected }: NodeProps<DefaultNodeData>) {
   
   // Get settings summary for display in the node
   const getSettingsSummary = () => {
-    if (!settings || Object.keys(settings).length === 0) {
+    if (!settingsData || Object.keys(settingsData).length === 0) {
       return null;
     }
     
     // Format based on common settings patterns
     const summaryItems = [];
     
-    if (settings.operation) {
-      summaryItems.push(`Operation: ${settings.operation}`);
+    if (settingsData.operation) {
+      summaryItems.push(`Operation: ${settingsData.operation}`);
     }
     
-    if (settings.method) {
-      summaryItems.push(`Method: ${settings.method}`);
+    if (settingsData.method) {
+      summaryItems.push(`Method: ${settingsData.method}`);
     }
     
-    if (settings.format) {
-      summaryItems.push(`Format: ${settings.format}`);
+    if (settingsData.format) {
+      summaryItems.push(`Format: ${settingsData.format}`);
     }
     
-    if (settings.triggerType) {
-      summaryItems.push(`Trigger: ${settings.triggerType}`);
+    if (settingsData.triggerType) {
+      summaryItems.push(`Trigger: ${settingsData.triggerType}`);
     }
     
     // Return formatted summary or just the first few settings
@@ -97,10 +149,17 @@ function DefaultNode({ data, id, selected }: NodeProps<DefaultNodeData>) {
       return summaryItems.join(' • ');
     } else {
       // Just take first 2 settings if available
-      const keys = Object.keys(settings).slice(0, 2);
-      return keys.map(key => `${key}: ${String(settings[key])}`).join(' • ');
+      const keys = Object.keys(settingsData).slice(0, 2);
+      return keys.map(key => `${key}: ${String(settingsData[key])}`).join(' • ');
     }
   };
+  
+  // Create context actions for the node
+  const contextActions = [
+    { label: 'Run Node', action: () => console.log('Run node:', id) },
+    { label: 'Duplicate', action: () => console.log('Duplicate node:', id) },
+    { label: 'Delete', action: () => console.log('Delete node:', id) }
+  ];
   
   const settingsSummary = getSettingsSummary();
   
@@ -108,22 +167,47 @@ function DefaultNode({ data, id, selected }: NodeProps<DefaultNodeData>) {
   const headerActions = (
     <div className="flex items-center gap-1.5">
       {getStatusBadge()}
-      <TooltipProvider>
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <Button 
-              variant="ghost" 
-              size="icon" 
-              className="h-7 w-7"
-            >
-              <Settings className="h-3.5 w-3.5 text-muted-foreground" />
-            </Button>
-          </TooltipTrigger>
-          <TooltipContent side="top">
-            <p className="text-xs">Node settings</p>
-          </TooltipContent>
-        </Tooltip>
-      </TooltipProvider>
+      
+      <Popover open={showContextActions} onOpenChange={setShowContextActions}>
+        <PopoverTrigger asChild>
+          <Button 
+            variant="ghost" 
+            size="icon" 
+            className="h-7 w-7"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <MoreHorizontal size={14} />
+          </Button>
+        </PopoverTrigger>
+        <PopoverContent className="w-40 p-1" align="end">
+          <div className="flex flex-col gap-1">
+            {contextActions.map((action, index) => (
+              <Button
+                key={index}
+                variant="ghost"
+                size="sm"
+                className="justify-start text-xs h-7"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  action.action();
+                  setShowContextActions(false);
+                }}
+              >
+                {action.label}
+              </Button>
+            ))}
+          </div>
+        </PopoverContent>
+      </Popover>
+      
+      <Button 
+        variant="ghost" 
+        size="icon" 
+        className="h-7 w-7"
+        onClick={handleSettingsClick}
+      >
+        <Settings className="h-3.5 w-3.5 text-muted-foreground" />
+      </Button>
     </div>
   );
   
@@ -142,79 +226,120 @@ function DefaultNode({ data, id, selected }: NodeProps<DefaultNodeData>) {
   );
   
   return (
-    <NodeContainer selected={selected} className={containerClass}>
-      <NodeHeader 
-        title={label} 
-        description={description}
-        icon={iconElement}
-        actions={headerActions}
-      />
-      
-      <NodeContent padding="normal">
-        {/* Node Type Badge */}
-        <div className="flex justify-between items-center">
-          <Badge variant="outline" className="text-xs px-2 py-0.5 bg-slate-100/50 dark:bg-slate-800/50">
-            {category}
-          </Badge>
+    <>
+      <NodeContainer selected={selected} className={containerClass}>
+        <NodeHeader 
+          title={label} 
+          description={description}
+          icon={iconElement}
+          actions={headerActions}
+        />
+        
+        <NodeContent padding="normal">
+          {/* Node Type Badge */}
+          <div className="flex justify-between items-center">
+            <Badge variant="outline" className="text-xs px-2 py-0.5 bg-slate-100/50 dark:bg-slate-800/50">
+              {category}
+            </Badge>
+            
+            {/* Settings Summary */}
+            {settingsSummary && (
+              <div className="flex items-center text-xs text-muted-foreground">
+                <Settings className="h-3 w-3 mr-1 inline" />
+                <span className="truncate">{settingsSummary}</span>
+              </div>
+            )}
+          </div>
           
-          {/* Settings Summary */}
-          {settingsSummary && (
-            <div className="flex items-center text-xs text-muted-foreground">
-              <Settings className="h-3 w-3 mr-1 inline" />
-              <span className="truncate">{settingsSummary}</span>
+          {/* Status messages and errors */}
+          {hasError && errorMessage && (
+            <div className="p-2 text-xs bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 rounded border border-red-200 dark:border-red-800">
+              <div className="flex items-center gap-1 mb-1">
+                <AlertTriangle className="h-3 w-3" />
+                <span className="font-medium">Error</span>
+              </div>
+              {errorMessage}
             </div>
           )}
-        </div>
+        </NodeContent>
         
-        {/* Status messages and errors */}
-        {hasError && errorMessage && (
-          <div className="p-2 text-xs bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 rounded border border-red-200 dark:border-red-800">
-            <div className="flex items-center gap-1 mb-1">
-              <AlertTriangle className="h-3 w-3" />
-              <span className="font-medium">Error</span>
-            </div>
-            {errorMessage}
-          </div>
-        )}
-      </NodeContent>
-      
-      {/* Input handle for triggering the node */}
-      <Handle
-        type="target"
-        position={Position.Left}
-        id="input"
-        style={{ 
-          top: 50, 
-          width: '12px', 
-          height: '12px', 
-          background: 'white',
-          border: '2px solid #3b82f6'
-        }}
-        isConnectable={true}
-      />
-      <div className="absolute left-2 top-[46px] text-xs text-muted-foreground">
-        In
-      </div>
+        {/* Input handle for triggering the node */}
+        <Handle
+          type="target"
+          position={Position.Left}
+          id="input"
+          style={{ 
+            top: 50, 
+            width: '12px', 
+            height: '12px', 
+            background: 'white',
+            border: '2px solid #3b82f6'
+          }}
+          isConnectable={true}
+        />
+        <div className="absolute left-2 top-[46px] text-xs text-muted-foreground">
+          In
+        </div>
 
-      {/* Output handle for continuing to the next node */}
-      <Handle
-        type="source"
-        position={Position.Right}
-        id="output"
-        style={{ 
-          top: 50, 
-          width: '12px', 
-          height: '12px', 
-          background: 'white',
-          border: '2px solid #10b981'
-        }}
-        isConnectable={true}
-      />
-      <div className="absolute right-2 top-[46px] text-xs text-muted-foreground text-right">
-        Out
-      </div>
-    </NodeContainer>
+        {/* Output handle for continuing to the next node */}
+        <Handle
+          type="source"
+          position={Position.Right}
+          id="output"
+          style={{ 
+            top: 50, 
+            width: '12px', 
+            height: '12px', 
+            background: 'white',
+            border: '2px solid #10b981'
+          }}
+          isConnectable={true}
+        />
+        <div className="absolute right-2 top-[46px] text-xs text-muted-foreground text-right">
+          Out
+        </div>
+      </NodeContainer>
+      
+      {/* Settings Sheet/Drawer */}
+      <Sheet open={showSettings} onOpenChange={setShowSettings}>
+        <SheetContent className="w-[350px] sm:w-[450px]">
+          <SheetHeader>
+            <SheetTitle>{settings?.title || `${label} Settings`}</SheetTitle>
+          </SheetHeader>
+          
+          <div className="py-4">
+            {settings?.fields && settings.fields.length > 0 ? (
+              <NodeSettingsForm 
+                nodeData={data}
+                settingsFields={settings.fields}
+                onChange={handleSubmitSettings}
+              />
+            ) : (
+              <div className="text-sm text-slate-600">
+                No configurable settings for this node.
+              </div>
+            )}
+            
+            <div className="flex justify-end gap-2 mt-6">
+              <Button 
+                variant="outline" 
+                size="sm"
+                onClick={() => setShowSettings(false)}
+              >
+                Cancel
+              </Button>
+              <Button 
+                size="sm"
+                onClick={() => handleSubmitSettings(data)}
+              >
+                Apply
+              </Button>
+            </div>
+          </div>
+        </SheetContent>
+      </Sheet>
+    </>
   );
 }
 
-export default memo(DefaultNode);
+export default memo(EnhancedDefaultNode);
