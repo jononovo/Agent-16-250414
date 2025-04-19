@@ -214,11 +214,16 @@ function DefaultNode({ data, id, selected }: NodeProps<DefaultNodeData>) {
     }
   };
   
+  // Settings click handler for the menu 
+  const handleSettingsClickForMenu = () => {
+    setShowSettings(true);
+  };
+  
   // Create hover menu actions
   const hoverMenuActions = [
     createRunAction(handleRunNode),
     createDuplicateAction(handleDuplicateNode),
-    createSettingsAction(handleSettingsClick),
+    createSettingsAction(handleSettingsClickForMenu),
     createDeleteAction(handleDeleteNode)
   ];
   
@@ -299,78 +304,94 @@ function DefaultNode({ data, id, selected }: NodeProps<DefaultNodeData>) {
   
   return (
     <>
-      <NodeContainer selected={selected} className={containerClass}>
-        <NodeHeader 
-          title={label} 
-          description={description}
-          icon={iconElement}
-          actions={headerActions}
-        />
+      <div 
+        ref={nodeRef}
+        onMouseEnter={handleHoverStart}
+        onMouseLeave={handleHoverEnd}
+        className="relative"
+      >
+        {/* Hover Menu */}
+        {showHoverMenu && (
+          <NodeHoverMenu 
+            nodeId={id}
+            actions={hoverMenuActions}
+            position="right"
+          />
+        )}
         
-        <NodeContent padding="normal">
-          {/* Node Type Badge */}
-          <div className="flex justify-between items-center">
-            <Badge variant="outline" className="text-xs px-2 py-0.5 bg-slate-100/50 dark:bg-slate-800/50">
-              {category}
-            </Badge>
+        <NodeContainer selected={selected} className={containerClass}>
+          <NodeHeader 
+            title={label} 
+            description={description}
+            icon={iconElement}
+            actions={headerActions}
+          />
+          
+          <NodeContent padding="normal">
+            {/* Node Type Badge */}
+            <div className="flex justify-between items-center">
+              <Badge variant="outline" className="text-xs px-2 py-0.5 bg-slate-100/50 dark:bg-slate-800/50">
+                {category}
+              </Badge>
+              
+              {/* Settings Summary */}
+              {settingsSummary && (
+                <div className="flex items-center text-xs text-muted-foreground">
+                  <Settings className="h-3 w-3 mr-1 inline" />
+                  <span className="truncate">{settingsSummary}</span>
+                </div>
+              )}
+            </div>
             
-            {/* Settings Summary */}
-            {settingsSummary && (
-              <div className="flex items-center text-xs text-muted-foreground">
-                <Settings className="h-3 w-3 mr-1 inline" />
-                <span className="truncate">{settingsSummary}</span>
+            {/* Status messages and errors */}
+            {hasError && errorMessage && (
+              <div className="p-2 text-xs bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 rounded border border-red-200 dark:border-red-800">
+                <div className="flex items-center gap-1 mb-1">
+                  <AlertTriangle className="h-3 w-3" />
+                  <span className="font-medium">Error</span>
+                </div>
+                {errorMessage}
               </div>
             )}
-          </div>
+          </NodeContent>
           
-          {/* Status messages and errors */}
-          {hasError && errorMessage && (
-            <div className="p-2 text-xs bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 rounded border border-red-200 dark:border-red-800">
-              <div className="flex items-center gap-1 mb-1">
-                <AlertTriangle className="h-3 w-3" />
-                <span className="font-medium">Error</span>
-              </div>
-              {errorMessage}
-            </div>
-          )}
-        </NodeContent>
-        
-        {/* Input handle for triggering the node */}
-        <Handle
-          type="target"
-          position={Position.Left}
-          id="input"
-          style={{ 
-            top: 50, 
-            width: '12px', 
-            height: '12px', 
-            background: 'white',
-            border: '2px solid #3b82f6'
-          }}
-          isConnectable={true}
-        />
-        <div className="absolute left-2 top-[46px] text-xs text-muted-foreground">
-          In
-        </div>
+          {/* Input handle for triggering the node */}
+          <Handle
+            type="target"
+            position={Position.Left}
+            id="input"
+            style={{ 
+              top: 50, 
+              width: '12px', 
+              height: '12px', 
+              background: 'white',
+              border: '2px solid #3b82f6'
+            }}
+            isConnectable={true}
+          />
+          <div className="absolute left-2 top-[46px] text-xs text-muted-foreground">
+            In
+          </div>
 
-        {/* Output handle for continuing to the next node */}
-        <Handle
-          type="source"
-          position={Position.Right}
-          id="output"
-          style={{ 
-            top: 50, 
-            width: '12px', 
-            height: '12px', 
-            background: 'white',
-            border: '2px solid #10b981'
-          }}
-          isConnectable={true}
-        />
-        <div className="absolute right-2 top-[46px] text-xs text-muted-foreground text-right">
-          Out
-        </div>
-      </NodeContainer>
+          {/* Output handle for continuing to the next node */}
+          <Handle
+            type="source"
+            position={Position.Right}
+            id="output"
+            style={{ 
+              top: 50, 
+              width: '12px', 
+              height: '12px', 
+              background: 'white',
+              border: '2px solid #10b981'
+            }}
+            isConnectable={true}
+          />
+          <div className="absolute right-2 top-[46px] text-xs text-muted-foreground text-right">
+            Out
+          </div>
+        </NodeContainer>
+      </div>
       
       {/* Settings Sheet/Drawer */}
       <Sheet open={showSettings} onOpenChange={setShowSettings}>
