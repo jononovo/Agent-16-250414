@@ -90,6 +90,7 @@ function DefaultNode({ data, id, selected }: NodeProps<DefaultNodeData>) {
   const nodeRef = useRef<HTMLDivElement>(null);
   const menuRef = useRef<HTMLDivElement>(null);
   const hoverDelay = 300; // ms before showing menu
+  const hideDelay = 400; // ms before hiding menu
   const hoverAreaRef = useRef<HTMLDivElement>(null);
   
   // Function to handle hover start
@@ -109,8 +110,14 @@ function DefaultNode({ data, id, selected }: NodeProps<DefaultNodeData>) {
       clearTimeout(hoverTimer);
       setHoverTimer(null);
     }
-    setShowHoverMenu(false);
-  }, [hoverTimer]);
+    
+    // Add a delay before hiding the menu to give users time to move to it
+    const timer = setTimeout(() => {
+      setShowHoverMenu(false);
+    }, hideDelay);
+    
+    setHoverTimer(timer);
+  }, [hoverTimer, hideDelay]);
   
   // Handle menu hovering to keep it visible when cursor moves from node to menu
   const handleMenuHoverStart = useCallback(() => {
@@ -338,7 +345,7 @@ function DefaultNode({ data, id, selected }: NodeProps<DefaultNodeData>) {
               onMouseEnter={handleMenuHoverStart}
               onMouseLeave={handleHoverEnd}
               className="absolute z-50"
-              style={{ right: '-20px', top: '0px' }}
+              style={{ right: '0px', top: '0px' }}
             >
               <NodeHoverMenu 
                 nodeId={id}

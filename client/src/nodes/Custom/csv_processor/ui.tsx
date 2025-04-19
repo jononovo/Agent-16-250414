@@ -74,6 +74,7 @@ export const component = ({ data, id, isConnectable, selected }: NodeProps<any>)
   const nodeRef = useRef<HTMLDivElement>(null);
   const menuRef = useRef<HTMLDivElement>(null);
   const hoverDelay = 300; // ms before showing menu
+  const hideDelay = 400; // ms before hiding menu
   const hoverAreaRef = useRef<HTMLDivElement>(null);
   
   // Combine default data with passed data
@@ -142,8 +143,14 @@ export const component = ({ data, id, isConnectable, selected }: NodeProps<any>)
       clearTimeout(hoverTimer);
       setHoverTimer(null);
     }
-    setShowHoverMenu(false);
-  }, [hoverTimer]);
+    
+    // Add a delay before hiding the menu to give users time to move to it
+    const timer = setTimeout(() => {
+      setShowHoverMenu(false);
+    }, hideDelay);
+    
+    setHoverTimer(timer);
+  }, [hoverTimer, hideDelay]);
   
   // Handle menu hovering to keep it visible when cursor moves from node to menu
   const handleMenuHoverStart = useCallback(() => {
@@ -426,7 +433,7 @@ export const component = ({ data, id, isConnectable, selected }: NodeProps<any>)
               onMouseEnter={handleMenuHoverStart}
               onMouseLeave={handleHoverEnd}
               className="absolute z-50"
-              style={{ right: '-20px', top: '0px' }}
+              style={{ right: '0px', top: '0px' }}
             >
               <NodeHoverMenu 
                 nodeId={id}

@@ -43,6 +43,11 @@ export const NodeSettingsForm: React.FC<NodeSettingsFormProps> = ({
 }) => {
   const [formData, setFormData] = useState<Record<string, any>>({ ...nodeData });
   
+  // Method to submit the form data to the parent component
+  const submitForm = () => {
+    onChange(formData);
+  };
+  
   // Handle changes to form fields
   const handleFieldChange = (key: string, value: any) => {
     const updatedData = {
@@ -51,7 +56,7 @@ export const NodeSettingsForm: React.FC<NodeSettingsFormProps> = ({
     };
     
     setFormData(updatedData);
-    onChange(updatedData);
+    // Don't call onChange here, wait until the user clicks Apply
   };
   
   // Render the appropriate form control based on field type
@@ -139,6 +144,15 @@ export const NodeSettingsForm: React.FC<NodeSettingsFormProps> = ({
     }
   };
   
+  // Expose the submitForm method via a ref
+  React.useImperativeHandle(
+    // @ts-ignore - This is expected
+    ref,
+    () => ({
+      submitForm
+    })
+  );
+
   return (
     <div className="space-y-4 py-2">
       {settingsFields.map((field) => (
