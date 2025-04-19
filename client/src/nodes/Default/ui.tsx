@@ -9,28 +9,32 @@
  * - Status badges for node execution state
  * - Settings summary display
  * - Error message display
+ * - Hover menu for quick actions
  */
 
-import React, { memo, useState } from 'react';
+import React, { useState, memo, useCallback, useRef, useEffect } from 'react';
 import { Handle, Position, NodeProps } from 'reactflow';
+import { Settings, MoreHorizontal, AlertTriangle } from 'lucide-react';
+import { cn } from '@/lib/utils';
+
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Settings, AlertTriangle, MoreHorizontal } from 'lucide-react';
-import { cn } from '@/lib/utils';
-import DynamicIcon from '@/components/flow/DynamicIcon';
+import DynamicIcon from '@/components/ui/dynamic-icon';
+import { 
+  Sheet, 
+  SheetContent, 
+  SheetHeader, 
+  SheetTitle 
+} from '@/components/ui/sheet';
+import { 
+  Popover, 
+  PopoverContent, 
+  PopoverTrigger 
+} from '@/components/ui/popover';
 
-// Import the common node components
 import { NodeContainer } from '@/components/nodes/common/NodeContainer';
 import { NodeHeader } from '@/components/nodes/common/NodeHeader';
 import { NodeContent } from '@/components/nodes/common/NodeContent';
-import { 
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger 
-} from '@/components/ui/tooltip';
-import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { NodeSettingsForm } from '@/components/nodes/common/NodeSettingsForm';
 import NodeHoverMenu, { 
   createDuplicateAction, 
@@ -83,30 +87,38 @@ function DefaultNode({ data, id, selected }: NodeProps<DefaultNodeData>) {
   const [showContextActions, setShowContextActions] = useState(false);
   const [showHoverMenu, setShowHoverMenu] = useState(false);
   const [hoverTimer, setHoverTimer] = useState<NodeJS.Timeout | null>(null);
-  const nodeRef = React.useRef<HTMLDivElement>(null);
+  const nodeRef = useRef<HTMLDivElement>(null);
+  const menuRef = useRef<HTMLDivElement>(null);
+  const hoverDelay = 300; // ms before showing menu
+  const hoverAreaRef = useRef<HTMLDivElement>(null);
   
   // Function to handle hover start
-  const handleHoverStart = () => {
-    // Set a timeout to show the menu after hovering for 500ms
+  const handleHoverStart = useCallback(() => {
+    // Set a timeout to show the menu after hovering for specified delay
     const timer = setTimeout(() => {
       setShowHoverMenu(true);
-    }, 500);
+    }, hoverDelay);
     
     setHoverTimer(timer);
-  };
+  }, [hoverDelay]);
   
   // Function to handle hover end
-  const handleHoverEnd = () => {
+  const handleHoverEnd = useCallback(() => {
     // Clear the timeout if the user stops hovering before the menu appears
     if (hoverTimer) {
       clearTimeout(hoverTimer);
       setHoverTimer(null);
     }
     setShowHoverMenu(false);
-  };
+  }, [hoverTimer]);
+  
+  // Handle menu hovering to keep it visible when cursor moves from node to menu
+  const handleMenuHoverStart = useCallback(() => {
+    setShowHoverMenu(true);
+  }, []);
   
   // Cleanup timeout on unmount
-  React.useEffect(() => {
+  useEffect(() => {
     return () => {
       if (hoverTimer) {
         clearTimeout(hoverTimer);
@@ -305,92 +317,110 @@ function DefaultNode({ data, id, selected }: NodeProps<DefaultNodeData>) {
   return (
     <>
       <div 
-        ref={nodeRef}
-        onMouseEnter={handleHoverStart}
-        onMouseLeave={handleHoverEnd}
+        ref={hoverAreaRef}
         className="relative"
+        style={{ 
+          // Add padding when menu is shown to create a seamless interaction area
+          padding: showHoverMenu ? '8px 20px 8px 8px' : '0',
+          margin: showHoverMenu ? '-8px -20px -8px -8px' : '0',
+        }}
       >
-        {/* Hover Menu */}
-        {showHoverMenu && (
-          <NodeHoverMenu 
-            nodeId={id}
-            actions={hoverMenuActions}
-            position="right"
-          />
-        )}
-        
-        <NodeContainer selected={selected} className={containerClass}>
-          <NodeHeader 
-            title={label} 
-            description={description}
-            icon={iconElement}
-            actions={headerActions}
-          />
+        <div
+          ref={nodeRef}
+          onMouseEnter={handleHoverStart}
+          onMouseLeave={handleHoverEnd}
+          className="relative"
+        >
+          {/* Hover Menu */}
+          {showHoverMenu && (
+            <div 
+              ref={menuRef}
+              onMouseEnter={handleMenuHoverStart}
+              onMouseLeave={handleHoverEnd}
+              className="absolute z-50"
+              style={{ right: '-20px', top: '0px' }}
+            >
+              <NodeHoverMenu 
+                nodeId={id}
+                actions={hoverMenuActions}
+                position="right"
+              />
+            </div>
+          )}
           
-          <NodeContent padding="normal">
-            {/* Node Type Badge */}
-            <div className="flex justify-between items-center">
-              <Badge variant="outline" className="text-xs px-2 py-0.5 bg-slate-100/50 dark:bg-slate-800/50">
-                {category}
-              </Badge>
+          <NodeContainer selected={selected} className={containerClass}>
+            <NodeHeader 
+              title={label} 
+              description={description}
+              icon={iconElement}
+              actions={headerActions}
+            />
+            
+            <NodeContent padding="normal">
+              {/* Node Type Badge */}
+              <div className="flex justify-between items-center">
+                <Badge variant="outline" className="text-xs px-2 py-0.5 bg-slate-100/50 dark:bg-slate-800/50">
+                  {category}
+                </Badge>
+                
+                {/* Settings Summary */}
+                {settingsSummary && (
+                  <div className="flex items-center text-xs text-muted-foreground">
+                    <Settings className="h-3 w-3 mr-1 inline" />
+                    <span className="truncate">{settingsSummary}</span>
+                  </div>
+                )}
+              </div>
               
-              {/* Settings Summary */}
-              {settingsSummary && (
-                <div className="flex items-center text-xs text-muted-foreground">
-                  <Settings className="h-3 w-3 mr-1 inline" />
-                  <span className="truncate">{settingsSummary}</span>
+              {/* Status messages and errors */}
+              {hasError && errorMessage && (
+                <div className="p-2 text-xs bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 rounded border border-red-200 dark:border-red-800">
+                  <div className="flex items-center gap-1 mb-1">
+                    <AlertTriangle className="h-3 w-3" />
+                    <span className="font-medium">Error</span>
+                  </div>
+                  {errorMessage}
                 </div>
               )}
-            </div>
+            </NodeContent>
             
-            {/* Status messages and errors */}
-            {hasError && errorMessage && (
-              <div className="p-2 text-xs bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 rounded border border-red-200 dark:border-red-800">
-                <div className="flex items-center gap-1 mb-1">
-                  <AlertTriangle className="h-3 w-3" />
-                  <span className="font-medium">Error</span>
-                </div>
-                {errorMessage}
-              </div>
-            )}
-          </NodeContent>
-          
-          {/* Input handle for triggering the node */}
-          <Handle
-            type="target"
-            position={Position.Left}
-            id="input"
-            style={{ 
-              top: 50, 
-              width: '12px', 
-              height: '12px', 
-              background: 'white',
-              border: '2px solid #3b82f6'
-            }}
-            isConnectable={true}
-          />
-          <div className="absolute left-2 top-[46px] text-xs text-muted-foreground">
-            In
-          </div>
+            {/* Input handle for triggering the node */}
+            <Handle
+              type="target"
+              position={Position.Left}
+              id="input"
+              style={{ 
+                top: 50, 
+                width: '12px', 
+                height: '12px', 
+                background: 'white',
+                border: '2px solid #3b82f6'
+              }}
+              isConnectable={true}
+            />
+            <div className="absolute left-2 top-[46px] text-xs text-muted-foreground">
+              In
+            </div>
 
-          {/* Output handle for continuing to the next node */}
-          <Handle
-            type="source"
-            position={Position.Right}
-            id="output"
-            style={{ 
-              top: 50, 
-              width: '12px', 
-              height: '12px', 
-              background: 'white',
-              border: '2px solid #10b981'
-            }}
-            isConnectable={true}
-          />
-          <div className="absolute right-2 top-[46px] text-xs text-muted-foreground text-right">
-            Out
-          </div>
-        </NodeContainer>
+            {/* Output handle for continuing to the next node */}
+            <Handle
+              type="source"
+              position={Position.Right}
+              id="output"
+              style={{ 
+                top: 50, 
+                width: '12px', 
+                height: '12px', 
+                background: 'white',
+                border: '2px solid #10b981'
+              }}
+              isConnectable={true}
+            />
+            <div className="absolute right-2 top-[46px] text-xs text-muted-foreground text-right">
+              Out
+            </div>
+          </NodeContainer>
+        </div>
       </div>
       
       {/* Settings Sheet/Drawer */}
