@@ -11,7 +11,7 @@
  * - Error message display
  */
 
-import { memo, useState } from 'react';
+import React, { memo, useState } from 'react';
 import { Handle, Position, NodeProps } from 'reactflow';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -60,7 +60,7 @@ export interface DefaultNodeData {
   isComplete?: boolean;
   hasError?: boolean;
   errorMessage?: string;
-  icon?: string;
+  icon?: string | React.ReactNode;
   onChange?: (data: any) => void;
   [key: string]: any;
 }
@@ -214,7 +214,11 @@ function EnhancedDefaultNode({ data, id, selected }: NodeProps<DefaultNodeData>)
   // Create icon element for the header
   const iconElement = (
     <div className="bg-primary/10 p-1.5 rounded-md">
-      <DynamicIcon icon={icon} className="h-4 w-4 text-primary" />
+      {typeof icon === 'string' ? (
+        <DynamicIcon icon={icon} className="h-4 w-4 text-primary" />
+      ) : (
+        icon
+      )}
     </div>
   );
   
