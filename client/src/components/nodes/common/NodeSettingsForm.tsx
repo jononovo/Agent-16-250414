@@ -12,9 +12,11 @@ import { Textarea } from '@/components/ui/textarea';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Slider } from '@/components/ui/slider';
-import { EnhancedNodeData } from './EnhancedBaseNode';
 
-interface SettingsField {
+/**
+ * Settings field definition for node configuration
+ */
+export interface SettingsField {
   key: string;
   label: string;
   type: 'text' | 'number' | 'select' | 'checkbox' | 'textarea' | 'slider';
@@ -25,10 +27,13 @@ interface SettingsField {
   step?: number;
 }
 
-interface NodeSettingsFormProps {
-  nodeData: EnhancedNodeData;
+/**
+ * Props for the NodeSettingsForm component
+ */
+export interface NodeSettingsFormProps {
+  nodeData: Record<string, any>;
   settingsFields: SettingsField[];
-  onChange: (updatedData: EnhancedNodeData) => void;
+  onChange: (updatedData: Record<string, any>) => void;
 }
 
 export const NodeSettingsForm: React.FC<NodeSettingsFormProps> = ({
