@@ -1,7 +1,7 @@
 /**
- * Enhanced Default Node
+ * Default Node
  * 
- * This is the enhanced default node UI component used for basic node types
+ * This is the default node UI component used for basic node types
  * and as a fallback for node types without specific implementations.
  * 
  * Features:
@@ -32,6 +32,12 @@ import {
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { NodeSettingsForm } from '@/components/nodes/common/NodeSettingsForm';
+import NodeHoverMenu, { 
+  createDuplicateAction, 
+  createDeleteAction, 
+  createSettingsAction,
+  createRunAction
+} from '@/components/nodes/common/NodeHoverMenu';
 
 interface SettingsField {
   key: string;
@@ -75,6 +81,38 @@ export interface DefaultNodeData {
 function DefaultNode({ data, id, selected }: NodeProps<DefaultNodeData>) {
   const [showSettings, setShowSettings] = useState(false);
   const [showContextActions, setShowContextActions] = useState(false);
+  const [showHoverMenu, setShowHoverMenu] = useState(false);
+  const [hoverTimer, setHoverTimer] = useState<NodeJS.Timeout | null>(null);
+  const nodeRef = React.useRef<HTMLDivElement>(null);
+  
+  // Function to handle hover start
+  const handleHoverStart = () => {
+    // Set a timeout to show the menu after hovering for 500ms
+    const timer = setTimeout(() => {
+      setShowHoverMenu(true);
+    }, 500);
+    
+    setHoverTimer(timer);
+  };
+  
+  // Function to handle hover end
+  const handleHoverEnd = () => {
+    // Clear the timeout if the user stops hovering before the menu appears
+    if (hoverTimer) {
+      clearTimeout(hoverTimer);
+      setHoverTimer(null);
+    }
+    setShowHoverMenu(false);
+  };
+  
+  // Cleanup timeout on unmount
+  React.useEffect(() => {
+    return () => {
+      if (hoverTimer) {
+        clearTimeout(hoverTimer);
+      }
+    };
+  }, [hoverTimer]);
   
   // Destructure node data with defaults
   const {
@@ -154,11 +192,41 @@ function DefaultNode({ data, id, selected }: NodeProps<DefaultNodeData>) {
     }
   };
   
-  // Create context actions for the node
+  // Node action handlers
+  const handleRunNode = () => {
+    console.log('Run node:', id);
+    if (data.onRun) {
+      data.onRun(id);
+    }
+  };
+  
+  const handleDuplicateNode = () => {
+    console.log('Duplicate node:', id);
+    if (data.onDuplicate) {
+      data.onDuplicate(id);
+    }
+  };
+  
+  const handleDeleteNode = () => {
+    console.log('Delete node:', id);
+    if (data.onDelete) {
+      data.onDelete(id);
+    }
+  };
+  
+  // Create hover menu actions
+  const hoverMenuActions = [
+    createRunAction(handleRunNode),
+    createDuplicateAction(handleDuplicateNode),
+    createSettingsAction(handleSettingsClick),
+    createDeleteAction(handleDeleteNode)
+  ];
+  
+  // Create context actions for the node (dropdown menu)
   const contextActions = [
-    { label: 'Run Node', action: () => console.log('Run node:', id) },
-    { label: 'Duplicate', action: () => console.log('Duplicate node:', id) },
-    { label: 'Delete', action: () => console.log('Delete node:', id) }
+    { label: 'Run Node', action: handleRunNode },
+    { label: 'Duplicate', action: handleDuplicateNode },
+    { label: 'Delete', action: handleDeleteNode }
   ];
   
   const settingsSummary = getSettingsSummary();
