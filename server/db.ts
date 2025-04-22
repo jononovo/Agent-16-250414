@@ -1,15 +1,24 @@
-import { Pool, neonConfig } from '@neondatabase/serverless';
-import { drizzle } from 'drizzle-orm/neon-serverless';
-import ws from "ws";
-import * as schema from "@shared/schema";
+/**
+ * Database module - Replit Key-Value Database Implementation
+ * 
+ * This file provides a direct export of the Replit Database client
+ * to be used across the application for data persistence that will
+ * survive remixes.
+ */
 
-neonConfig.webSocketConstructor = ws;
+import Database from '@replit/database';
 
-if (!process.env.DATABASE_URL) {
-  throw new Error(
-    "DATABASE_URL must be set. Did you forget to provision a database?",
-  );
-}
+// Create a single database instance to be used throughout the application
+export const db = new Database();
 
-export const pool = new Pool({ connectionString: process.env.DATABASE_URL });
-export const db = drizzle({ client: pool, schema });
+// Export a helper function to check if the database is available
+export const checkDb = async (): Promise<boolean> => {
+  try {
+    // Quick check if the database is working by attempting to list keys
+    await db.list();
+    return true;
+  } catch (error) {
+    console.error('Error connecting to Replit Database:', error);
+    return false;
+  }
+};
