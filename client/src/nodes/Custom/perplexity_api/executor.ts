@@ -4,7 +4,7 @@
  * Handles the execution logic for the Perplexity API node.
  */
 
-import { createNodeOutput, createErrorOutput } from '@/lib/nodeOutputUtils';
+import { createNodeOutput, createErrorOutput } from '@/nodes/nodeOutputUtils';
 import { NodeExecutionData } from '@/nodes/types';
 
 // Define configuration data interface for this node

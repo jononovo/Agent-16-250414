@@ -5,7 +5,7 @@
  * It applies various text transformations based on node configuration.
  */
 
-import { createNodeOutput, createErrorOutput } from '../../lib/nodeOutputUtils';
+import { createNodeOutput, createErrorOutput } from '../../nodeOutputUtils';
 import { NodeExecutionData } from '@shared/nodeTypes';
 
 export interface TextFormatterNodeData {
@@ -33,9 +33,7 @@ export const execute = async (
     
     // Check if we have text input
     if (!inputs || !inputs.text) {
-      return createErrorOutput('No text input provided', 'text_formatter', {
-        startTime
-      });
+      return createErrorOutput('No text input provided', 'text_formatter');
     }
     
     // Get the input text
@@ -74,7 +72,9 @@ export const execute = async (
     }
     
     // Return the result in our standardized format
-    return createNodeOutput(formattedText, {
+    return createNodeOutput({
+      text: formattedText
+    }, {
       startTime,
       additionalMeta: {
         formatType: nodeData.formatType,

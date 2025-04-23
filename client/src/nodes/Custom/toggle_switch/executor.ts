@@ -5,7 +5,7 @@
  * It provides boolean state and condition string outputs.
  */
 
-import { createNodeOutput, createErrorOutput } from '../../lib/nodeOutputUtils';
+import { createNodeOutput, createErrorOutput } from '../../nodeOutputUtils';
 import { NodeExecutionData } from '@shared/nodeTypes';
 
 export interface ToggleSwitchNodeData {

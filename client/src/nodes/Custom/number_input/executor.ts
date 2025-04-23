@@ -5,7 +5,7 @@
  * It processes numeric input and provides both number and string outputs.
  */
 
-import { createNodeOutput, createErrorOutput } from '../../lib/nodeOutputUtils';
+import { createNodeOutput, createErrorOutput } from '../../nodeOutputUtils';
 import { NodeExecutionData } from '@shared/nodeTypes';
 
 export interface NumberInputNodeData {
