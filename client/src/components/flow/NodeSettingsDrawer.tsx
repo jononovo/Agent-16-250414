@@ -1,4 +1,13 @@
 import React, { useEffect, useState } from 'react';
+import {
+  Sheet,
+  SheetContent,
+  SheetClose,
+  SheetHeader,
+  SheetTitle,
+  SheetDescription,
+  SheetFooter
+} from '@/components/ui/sheet';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
@@ -601,26 +610,17 @@ const NodeSettingsDrawer: React.FC<NodeSettingsDrawerProps> = ({
     }
   };
 
-  // When Sheet is requested to close, call onClose
+  // When Sheet close button is clicked, call onClose
   const handleOpenChange = (open: boolean) => {
     if (!open) {
+      // Only call onClose directly - no setTimeout to avoid DOM manipulation issues
       onClose();
     }
   };
 
-  if (!node) return null;
-  
   return (
     <Sheet open={isOpen} onOpenChange={handleOpenChange}>
-      <SheetContent 
-        side="right" 
-        className="w-[400px] sm:w-[540px] p-0"
-        // This will safely handle events for us without the error
-        onInteractOutside={(e) => {
-          // Prevent the problematic behavior
-          e.preventDefault();
-        }}
-      >
+      <SheetContent side="right" className="w-[400px] sm:w-[540px] p-0">
         <SheetHeader className="p-6 pb-2">
           <SheetTitle>Node Configuration <span className="text-sm text-muted-foreground">({node.type})</span></SheetTitle>
           <SheetDescription>
