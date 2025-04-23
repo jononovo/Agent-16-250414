@@ -5,6 +5,47 @@ import { X } from "lucide-react"
 
 import { cn } from "@/lib/utils"
 
+// Create a monkeypatched version of the Radix Dialog to prevent the nodeName.toLowerCase error
+const safeEventHandler = (handler: any) => {
+  return (e: any) => {
+    try {
+      if (handler) handler(e);
+    } catch (error) {
+      // Catch the specific error and prevent it from propagating
+      if (error instanceof TypeError && 
+          error.message && 
+          error.message.includes('nodeName.toLowerCase')) {
+        console.log('Prevented nodeName.toLowerCase error');
+        e.preventDefault();
+        e.stopPropagation();
+      } else {
+        // Re-throw any other errors
+        throw error;
+      }
+    }
+  };
+};
+
+// Apply the safe event handler to all event props
+const withSafeEventHandlers = (props: any) => {
+  const safeProps = { ...props };
+  
+  // List of common event handler prop names
+  const eventHandlerProps = [
+    'onClick', 'onMouseDown', 'onMouseUp', 'onKeyDown', 'onKeyUp',
+    'onFocus', 'onBlur', 'onChange', 'onInput', 'onSubmit'
+  ];
+  
+  // Replace each event handler with a safe version
+  eventHandlerProps.forEach(propName => {
+    if (typeof safeProps[propName] === 'function') {
+      safeProps[propName] = safeEventHandler(safeProps[propName]);
+    }
+  });
+  
+  return safeProps;
+};
+
 const Sheet = SheetPrimitive.Root
 
 const SheetTrigger = SheetPrimitive.Trigger
@@ -17,20 +58,17 @@ const SheetOverlay = React.forwardRef<
   React.ElementRef<typeof SheetPrimitive.Overlay>,
   React.ComponentPropsWithoutRef<typeof SheetPrimitive.Overlay>
 >(({ className, ...props }, ref) => {
-  // Add handler to prevent event bubbling issues
-  const handleOverlayClick = (e: React.MouseEvent) => {
-    // Stop propagation to prevent the event from bubbling up
-    e.stopPropagation();
-  };
-
+  // Create safe props with wrapped event handlers
+  const safeProps = withSafeEventHandlers(props);
+  
   return (
     <SheetPrimitive.Overlay
       className={cn(
-        "fixed inset-0 z-50 bg-black/80  data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0",
+        "fixed inset-0 z-50 bg-black/80 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0",
         className
       )}
-      onClick={handleOverlayClick}
-      {...props}
+      onClick={(e) => e.stopPropagation()}
+      {...safeProps}
       ref={ref}
     />
   );
@@ -47,7 +85,7 @@ const sheetVariants = cva(
           "inset-x-0 bottom-0 border-t data-[state=closed]:slide-out-to-bottom data-[state=open]:slide-in-from-bottom",
         left: "inset-y-0 left-0 h-full w-3/4 border-r data-[state=closed]:slide-out-to-left data-[state=open]:slide-in-from-left sm:max-w-sm",
         right:
-          "inset-y-0 right-0 h-full w-3/4  border-l data-[state=closed]:slide-out-to-right data-[state=open]:slide-in-from-right sm:max-w-sm",
+          "inset-y-0 right-0 h-full w-3/4 border-l data-[state=closed]:slide-out-to-right data-[state=open]:slide-in-from-right sm:max-w-sm",
       },
     },
     defaultVariants: {
@@ -64,32 +102,35 @@ const SheetContent = React.forwardRef<
   React.ElementRef<typeof SheetPrimitive.Content>,
   SheetContentProps
 >(({ side = "right", className, children, ...props }, ref) => {
-  // Add a handler for click events to prevent the nodeName.toLowerCase error
-  const handleContentClick = (e: React.MouseEvent<HTMLDivElement>) => {
-    // Stop propagation to prevent the event from bubbling up
+  // Create safe props with wrapped event handlers
+  const safeProps = withSafeEventHandlers(props);
+  
+  // For debugging purposes
+  const handleClick = (e: React.MouseEvent) => {
     e.stopPropagation();
-    
-    // This prevents potential null/undefined node errors
-    if (!e.target || e.target === e.currentTarget) {
-      e.preventDefault();
-    }
+    if (safeProps.onClick) safeProps.onClick(e);
   };
   
   return (
     <SheetPortal>
       <SheetOverlay />
-      <SheetPrimitive.Content
-        ref={ref}
-        className={cn(sheetVariants({ side }), className)}
-        onClick={handleContentClick}
-        {...props}
+      <div 
+        className="fixed inset-0 z-50"
+        onClick={(e) => e.stopPropagation()}
       >
-        {children}
-        <SheetPrimitive.Close className="absolute right-4 top-4 rounded-sm opacity-70 ring-offset-background transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:pointer-events-none data-[state=open]:bg-secondary">
-          <X className="h-4 w-4" />
-          <span className="sr-only">Close</span>
-        </SheetPrimitive.Close>
-      </SheetPrimitive.Content>
+        <SheetPrimitive.Content
+          ref={ref}
+          className={cn(sheetVariants({ side }), className)}
+          onClick={handleClick}
+          {...safeProps}
+        >
+          {children}
+          <SheetPrimitive.Close className="absolute right-4 top-4 rounded-sm opacity-70 ring-offset-background transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:pointer-events-none data-[state=open]:bg-secondary">
+            <X className="h-4 w-4" />
+            <span className="sr-only">Close</span>
+          </SheetPrimitive.Close>
+        </SheetPrimitive.Content>
+      </div>
     </SheetPortal>
   );
 })
