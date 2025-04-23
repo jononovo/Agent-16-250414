@@ -150,6 +150,28 @@ export const component = ({ data, id, isConnectable, selected }: NodeProps<TextI
     };
   }, [hoverTimer]);
   
+  // This adds additional hooks to connect with the FlowEditor
+  useEffect(() => {
+    // Add a global event listener for node settings
+    const handleNodeSettings = () => {
+      const event = new CustomEvent('node-settings-open', { 
+        detail: { nodeId: id }
+      });
+      window.dispatchEvent(event);
+    };
+    
+    // Add the settings click handler to the node data
+    if (nodeData.onSettingsClick === undefined) {
+      // Only add if it doesn't already exist
+      if (nodeData.onChange) {
+        nodeData.onChange({
+          ...nodeData,
+          onSettingsClick: handleNodeSettings
+        });
+      }
+    }
+  }, [id, nodeData]);
+  
   // Handle change in the input field
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const newText = e.target.value;
@@ -167,7 +189,20 @@ export const component = ({ data, id, isConnectable, selected }: NodeProps<TextI
   // Settings icon click handler
   const handleSettingsClick = (e: React.MouseEvent) => {
     e.stopPropagation();
-    setShowSettings(true);
+    
+    // If we have an onSettingsClick function provided by FlowEditor, use it
+    if (nodeData.onSettingsClick) {
+      nodeData.onSettingsClick();
+    } else {
+      // Otherwise, fall back to local settings drawer
+      setShowSettings(true);
+      
+      // Also emit the node-settings-open event for FlowEditor to catch
+      const event = new CustomEvent('node-settings-open', { 
+        detail: { nodeId: id }
+      });
+      window.dispatchEvent(event);
+    }
   };
   
   // Settings submission handler
@@ -219,7 +254,18 @@ export const component = ({ data, id, isConnectable, selected }: NodeProps<TextI
   
   // Settings click handler for the menu 
   const handleSettingsClickForMenu = () => {
-    setShowSettings(true);
+    // Use the same logic as handleSettingsClick but without needing the event parameter
+    if (nodeData.onSettingsClick) {
+      nodeData.onSettingsClick();
+    } else {
+      setShowSettings(true);
+      
+      // Also emit the node-settings-open event for FlowEditor to catch
+      const event = new CustomEvent('node-settings-open', { 
+        detail: { nodeId: id }
+      });
+      window.dispatchEvent(event);
+    }
   };
   
   // Create hover menu actions
