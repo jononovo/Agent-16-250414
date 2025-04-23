@@ -4,7 +4,7 @@
  * This node creates conditional branching based on rules and input data.
  */
 
-import { NodeRegistryEntry } from '../../lib/types';
+import { NodeRegistryEntry } from '../../../lib/types';
 import { metadata, schema } from './definition';
 import * as executor from './executor';
 import * as ui from './ui';

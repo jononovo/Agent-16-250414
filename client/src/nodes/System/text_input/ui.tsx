@@ -367,7 +367,14 @@ export const component = ({ data, id, isConnectable, selected }: NodeProps<TextI
   // Create icon element for the header
   const iconElement = (
     <div className="bg-primary/10 p-1.5 rounded-md">
-      <Type className="h-4 w-4 text-primary" />
+      {nodeData.icon && typeof nodeData.icon === 'object' && Object.keys(nodeData.icon).length === 0 ? (
+        // Handle empty object case that was causing the React error
+        <Type className="h-4 w-4 text-primary" />
+      ) : nodeData.icon && React.isValidElement(nodeData.icon) ? (
+        nodeData.icon
+      ) : (
+        <Type className="h-4 w-4 text-primary" />
+      )}
     </div>
   );
   

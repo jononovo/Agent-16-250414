@@ -4,7 +4,7 @@
  * This node allows users to transform data using JavaScript expressions.
  */
 
-import { NodeRegistryEntry } from '../../lib/types';
+import { NodeRegistryEntry } from '../../../lib/types';
 import { metadata, schema } from './definition';
 import * as executor from './executor';
 import * as ui from './ui';
