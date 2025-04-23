@@ -12,16 +12,10 @@ import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Table, Settings, MoreHorizontal, AlertTriangle } from 'lucide-react';
+import { Table, Settings, MoreHorizontal, AlertTriangle, Rows, Split } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
-import { 
-  Sheet, 
-  SheetContent, 
-  SheetHeader, 
-  SheetTitle 
-} from '@/components/ui/sheet';
 import { 
   Popover, 
   PopoverContent, 
@@ -65,7 +59,7 @@ const filterOperations = [
 // CSV Processor node component
 export const component = ({ data, id, isConnectable, selected }: NodeProps<any>) => {
   // States for component functionality
-  const [showSettings, setShowSettings] = useState(false);
+  // Removed showSettings state as we're using the centralized drawer
   const [showContextActions, setShowContextActions] = useState(false);
   const [showHoverMenu, setShowHoverMenu] = useState(false);
   const [hoverTimer, setHoverTimer] = useState<NodeJS.Timeout | null>(null);
@@ -225,21 +219,15 @@ export const component = ({ data, id, isConnectable, selected }: NodeProps<any>)
   // Settings icon click handler
   const handleSettingsClick = (e: React.MouseEvent) => {
     e.stopPropagation();
-    setShowSettings(true);
+    
+    // Always use the centralized settings drawer by dispatching the event
+    const event = new CustomEvent('node-settings-open', { 
+      detail: { nodeId: id }
+    });
+    window.dispatchEvent(event);
   };
   
-  // Settings submission handler
-  const handleSubmitSettings = (updatedData: any) => {
-    // Update node data when settings are changed
-    if (data.onChange) {
-      data.onChange({
-        ...nodeData,
-        ...updatedData
-      });
-    }
-    
-    setShowSettings(false);
-  };
+  // Settings changes are now handled by the central settings drawer in FlowEditor
   
   // Node action handlers
   const handleRunNode = () => {
@@ -265,7 +253,11 @@ export const component = ({ data, id, isConnectable, selected }: NodeProps<any>)
   
   // Settings click handler for the menu 
   const handleSettingsClickForMenu = () => {
-    setShowSettings(true);
+    // Always use the centralized settings drawer by dispatching the event
+    const event = new CustomEvent('node-settings-open', { 
+      detail: { nodeId: id }
+    });
+    window.dispatchEvent(event);
   };
   
   // Create hover menu actions
@@ -410,16 +402,15 @@ export const component = ({ data, id, isConnectable, selected }: NodeProps<any>)
   );
   
   return (
-    <>
-      <div 
-        ref={hoverAreaRef}
-        className="relative"
-        style={{ 
-          // Add padding when menu is shown to create a seamless interaction area
-          padding: showHoverMenu ? '8px 20px 8px 8px' : '0',
-          margin: showHoverMenu ? '-8px -20px -8px -8px' : '0',
-        }}
-      >
+    <div 
+      ref={hoverAreaRef}
+      className="relative"
+      style={{ 
+        // Add padding when menu is shown to create a seamless interaction area
+        padding: showHoverMenu ? '8px 20px 8px 8px' : '0',
+        margin: showHoverMenu ? '-8px -20px -8px -8px' : '0',
+      }}
+    >
         <div
           ref={nodeRef}
           onMouseEnter={handleHoverStart}
@@ -648,46 +639,6 @@ export const component = ({ data, id, isConnectable, selected }: NodeProps<any>)
           </NodeContainer>
         </div>
       </div>
-      
-      {/* Settings Sheet/Drawer */}
-      <Sheet open={showSettings} onOpenChange={setShowSettings}>
-        <SheetContent className="w-[350px] sm:w-[450px]">
-          <SheetHeader>
-            <SheetTitle>{settings?.title || `${nodeData.label} Settings`}</SheetTitle>
-          </SheetHeader>
-          
-          <div className="py-4">
-            {settings?.fields && settings.fields.length > 0 ? (
-              <NodeSettingsForm 
-                nodeData={nodeData}
-                settingsFields={settings.fields}
-                onChange={handleSubmitSettings}
-              />
-            ) : (
-              <div className="text-sm text-slate-600">
-                No configurable settings for this node.
-              </div>
-            )}
-            
-            <div className="flex justify-end gap-2 mt-6">
-              <Button 
-                variant="outline" 
-                size="sm"
-                onClick={() => setShowSettings(false)}
-              >
-                Cancel
-              </Button>
-              <Button 
-                size="sm"
-                onClick={() => handleSubmitSettings(nodeData)}
-              >
-                Apply
-              </Button>
-            </div>
-          </div>
-        </SheetContent>
-      </Sheet>
-    </>
   );
 };
 
