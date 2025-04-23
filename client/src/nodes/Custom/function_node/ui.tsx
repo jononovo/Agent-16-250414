@@ -252,6 +252,31 @@ function FunctionNode({ data, id, selected }: NodeProps<FunctionNodeData>) {
     setShowSettings(true);
   };
   
+  // Dispatch a custom event to let the FlowEditor know about clicks
+  const dispatchCustomEvent = (eventName: string, detail: any) => {
+    const event = new CustomEvent(eventName, { detail });
+    document.dispatchEvent(event);
+  };
+  
+  // This adds additional hooks to connect with the FlowEditor
+  useEffect(() => {
+    // Add a global event listener for node settings
+    const handleNodeSettings = () => {
+      dispatchCustomEvent('node-settings-open', { nodeId: id });
+    };
+    
+    // Add the settings click handler to the node data
+    if (data.onSettingsClick === undefined) {
+      // Only add if it doesn't already exist
+      if (onChange) {
+        onChange({
+          ...data,
+          onSettingsClick: handleNodeSettings
+        });
+      }
+    }
+  }, [id, data, onChange]);
+  
   // Create hover menu actions
   const hoverMenuActions = [
     createRunAction(handleRunNode),

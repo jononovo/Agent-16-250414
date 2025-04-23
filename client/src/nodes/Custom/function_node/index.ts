@@ -12,7 +12,7 @@ export const defaultData = {
   label: 'Function',
   description: 'Custom JavaScript function',
   icon: 'code',
-  category: 'functions',
+  category: 'code',  // Changed from 'functions' to 'code' to match category
   code: 'function process(input) {\n  // Your code here\n  return input;\n}',
   settingsData: {}
 };
@@ -32,5 +32,5 @@ export const validator = (data: any) => {
 };
 
 // Export the component for use in the workflow editor
-export { FunctionNode as component };
+export const component = FunctionNode;
 export default FunctionNode;

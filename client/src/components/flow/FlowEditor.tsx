@@ -264,38 +264,66 @@ const FlowEditor = ({
     setLoadedNodeTypes(prev => ({ ...prev, [type]: true }));
     
     try {
-      // First try loading from the Custom directory
+      // First try loading from the Custom directory using index.ts
       try {
-        const customModule = await import(/* @vite-ignore */ `../../nodes/Custom/${type}/ui`);
-        if (customModule && customModule.component) {
+        const customIndexModule = await import(/* @vite-ignore */ `../../nodes/Custom/${type}/index`);
+        if (customIndexModule && customIndexModule.component) {
           // Update the nodeTypes with the loaded component
           setDynamicNodeTypes(prev => ({
             ...prev,
-            [type]: customModule.component
+            [type]: customIndexModule.component
           }));
-          console.log(`Successfully loaded component for ${type} from Custom directory`);
+          console.log(`Successfully loaded component for ${type} from Custom directory (index.ts)`);
           return;
         }
-      } catch (customError) {
-        // If not in Custom directory, try the System directory
-        console.log(`Node ${type} not found in Custom directory, trying System directory`);
+      } catch (customIndexError) {
+        // If not found in index.ts, try ui.tsx directly
+        try {
+          const customModule = await import(/* @vite-ignore */ `../../nodes/Custom/${type}/ui`);
+          if (customModule && customModule.default) {
+            // Update the nodeTypes with the loaded component
+            setDynamicNodeTypes(prev => ({
+              ...prev,
+              [type]: customModule.default
+            }));
+            console.log(`Successfully loaded component for ${type} from Custom directory (ui.tsx)`);
+            return;
+          }
+        } catch (customUiError) {
+          // If not in Custom directory, try the System directory
+          console.log(`Node ${type} not found in Custom directory, trying System directory`);
+        }
       }
       
-      // Try the System directory
+      // Try the System directory using index.ts
       try {
-        const systemModule = await import(/* @vite-ignore */ `../../nodes/System/${type}/ui`);
-        if (systemModule && systemModule.component) {
+        const systemIndexModule = await import(/* @vite-ignore */ `../../nodes/System/${type}/index`);
+        if (systemIndexModule && systemIndexModule.component) {
           // Update the nodeTypes with the loaded component
           setDynamicNodeTypes(prev => ({
             ...prev,
-            [type]: systemModule.component
+            [type]: systemIndexModule.component
           }));
-          console.log(`Successfully loaded component for ${type} from System directory`);
+          console.log(`Successfully loaded component for ${type} from System directory (index.ts)`);
           return;
         }
-      } catch (systemError) {
-        // If not in System directory, try the root directory
-        console.log(`Node ${type} not found in System directory, trying root path`);
+      } catch (systemIndexError) {
+        // If not found in index.ts, try ui.tsx directly
+        try {
+          const systemModule = await import(/* @vite-ignore */ `../../nodes/System/${type}/ui`);
+          if (systemModule && systemModule.default) {
+            // Update the nodeTypes with the loaded component
+            setDynamicNodeTypes(prev => ({
+              ...prev,
+              [type]: systemModule.default
+            }));
+            console.log(`Successfully loaded component for ${type} from System directory (ui.tsx)`);
+            return;
+          }
+        } catch (systemError) {
+          // If not in System directory, try the root directory
+          console.log(`Node ${type} not found in System directory, trying root path`);
+        }
       }
       
       // Try the standard directory as fallback
@@ -491,20 +519,18 @@ const FlowEditor = ({
         y: event.clientY - reactFlowBounds.top,
       });
 
-      // Add onSettingsClick to specific node types
+      // Add onSettingsClick to all node types
       const nodeDataWithHandlers = {
         ...nodeData,
-        // Add settings click handler for node types that need configuration
-        ...((type === 'generate_text' || type === 'agent_trigger' || type === 'workflow_trigger' || type === 'response_message' || type === 'api_response_message') ? {
-          onSettingsClick: () => {
-            // We need to find the node by ID later because this is a closure
-            const node = reactFlowInstance.getNode(`${type}-${Date.now()}`);
-            if (node) {
-              setSelectedNode(node);
-              setSettingsDrawerOpen(true);
-            }
+        // Add settings click handler for all nodes, allowing node-specific customization
+        onSettingsClick: () => {
+          // We need to find the node by ID later because this is a closure
+          const node = reactFlowInstance.getNode(`${type}-${Date.now()}`);
+          if (node) {
+            setSelectedNode(node);
+            setSettingsDrawerOpen(true);
           }
-        } : {})
+        }
       };
       
       // Generate a unique ID for the new node
