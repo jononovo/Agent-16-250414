@@ -618,12 +618,24 @@ const NodeSettingsDrawer: React.FC<NodeSettingsDrawerProps> = ({
     }
   };
 
+  // Event handler to fix the issue with clicks on empty spaces
+  const handleContentClick = (e: React.MouseEvent) => {
+    // Stop propagation to prevent the event from bubbling up
+    e.stopPropagation();
+    
+    // This prevents the nodeName.toLowerCase error by ensuring
+    // we don't pass undefined/null nodes to the DOM event handlers
+    if (e.target === e.currentTarget) {
+      e.preventDefault();
+    }
+  };
+
   return (
     <Sheet open={isOpen} onOpenChange={handleOpenChange}>
       <SheetContent 
         side="right" 
         className="w-[400px] sm:w-[540px] p-0"
-        onClick={(e) => e.stopPropagation()}
+        onClick={handleContentClick}
       >
         <SheetHeader className="p-6 pb-2">
           <SheetTitle>Node Configuration <span className="text-sm text-muted-foreground">({node.type})</span></SheetTitle>
@@ -635,7 +647,7 @@ const NodeSettingsDrawer: React.FC<NodeSettingsDrawerProps> = ({
         {/* Tabs */}
         <div 
           className="bg-muted/50 p-1 mx-6 rounded-lg mb-4 flex"
-          onClick={(e) => e.stopPropagation()}
+          onClick={handleContentClick}
         >
           <button
             className={cn(
@@ -668,11 +680,11 @@ const NodeSettingsDrawer: React.FC<NodeSettingsDrawerProps> = ({
         
         <ScrollArea 
           className="px-6 h-[calc(100vh-280px)]" 
-          onClick={(e) => e.stopPropagation()}
+          onClick={handleContentClick}
         >
           {/* Properties Tab */}
           {activeTab === 'properties' && (
-            <div className="space-y-4" onClick={(e) => e.stopPropagation()}>
+            <div className="space-y-4" onClick={handleContentClick}>
               <div className="space-y-2">
                 <Label htmlFor="nodeName">Node Name</Label>
                 <Input
