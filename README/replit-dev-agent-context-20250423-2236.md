@@ -307,16 +307,6 @@ export const execute = async (nodeData, inputs) => {
 - **Symptom**: Drawer closes when interacting with form fields
 - **Solution**: Add `e.stopPropagation()` to form field event handlers
 
-### Settings for New Nodes Not Working
-- **Symptom**: Settings drawer doesn't open for newly added nodes
-- **Solution**: Ensure nodes dispatch 'node-settings-open' events properly
-- **Check**: Verify that event detail includes the correct nodeId
-
-### Node Updates Not Affecting All Nodes
-- **Symptom**: Changes to DefaultNode not reflected in some nodes
-- **Solution**: Remember DefaultNode changes only affect nodes using it as a wrapper
-- **Approach**: Use event-based patterns for features that should work across all nodes
-
 ### Environment Differences
 - **Development**: Hot module reloading available, error overlay visible
 - **Production**: Optimized bundles, no developer tools, stricter error handling
