@@ -22,7 +22,6 @@ import { cn } from '@/lib/utils';
 import { Save, X } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { Agent } from '@shared/schema';
-import EventProtectionWrapper from '@/components/ui/EventProtectionWrapper';
 
 interface NodeSettingsDrawerProps {
   isOpen: boolean;
@@ -622,13 +621,12 @@ const NodeSettingsDrawer: React.FC<NodeSettingsDrawerProps> = ({
   return (
     <Sheet open={isOpen} onOpenChange={handleOpenChange}>
       <SheetContent side="right" className="w-[400px] sm:w-[540px] p-0">
-        <EventProtectionWrapper className="h-full">
-          <SheetHeader className="p-6 pb-2">
-            <SheetTitle>Node Configuration <span className="text-sm text-muted-foreground">({node.type})</span></SheetTitle>
-            <SheetDescription>
-              Configure the properties and variables for this node.
-            </SheetDescription>
-          </SheetHeader>
+        <SheetHeader className="p-6 pb-2">
+          <SheetTitle>Node Configuration <span className="text-sm text-muted-foreground">({node.type})</span></SheetTitle>
+          <SheetDescription>
+            Configure the properties and variables for this node.
+          </SheetDescription>
+        </SheetHeader>
         
         {/* Tabs */}
         <div className="bg-muted/50 p-1 mx-6 rounded-lg mb-4 flex">
@@ -973,7 +971,6 @@ const NodeSettingsDrawer: React.FC<NodeSettingsDrawerProps> = ({
             <Save className="h-4 w-4 mr-2" /> Save Changes
           </Button>
         </SheetFooter>
-        </EventProtectionWrapper>
       </SheetContent>
     </Sheet>
   );
