@@ -620,7 +620,11 @@ const NodeSettingsDrawer: React.FC<NodeSettingsDrawerProps> = ({
 
   return (
     <Sheet open={isOpen} onOpenChange={handleOpenChange}>
-      <SheetContent side="right" className="w-[400px] sm:w-[540px] p-0">
+      <SheetContent 
+        side="right" 
+        className="w-[400px] sm:w-[540px] p-0"
+        onClick={(e) => e.stopPropagation()}
+      >
         <SheetHeader className="p-6 pb-2">
           <SheetTitle>Node Configuration <span className="text-sm text-muted-foreground">({node.type})</span></SheetTitle>
           <SheetDescription>
@@ -629,7 +633,10 @@ const NodeSettingsDrawer: React.FC<NodeSettingsDrawerProps> = ({
         </SheetHeader>
         
         {/* Tabs */}
-        <div className="bg-muted/50 p-1 mx-6 rounded-lg mb-4 flex">
+        <div 
+          className="bg-muted/50 p-1 mx-6 rounded-lg mb-4 flex"
+          onClick={(e) => e.stopPropagation()}
+        >
           <button
             className={cn(
               "flex-1 px-3 py-2 text-sm font-medium rounded-md",
@@ -659,10 +666,13 @@ const NodeSettingsDrawer: React.FC<NodeSettingsDrawerProps> = ({
           </button>
         </div>
         
-        <ScrollArea className="px-6 h-[calc(100vh-280px)]">
+        <ScrollArea 
+          className="px-6 h-[calc(100vh-280px)]" 
+          onClick={(e) => e.stopPropagation()}
+        >
           {/* Properties Tab */}
           {activeTab === 'properties' && (
-            <div className="space-y-4">
+            <div className="space-y-4" onClick={(e) => e.stopPropagation()}>
               <div className="space-y-2">
                 <Label htmlFor="nodeName">Node Name</Label>
                 <Input
