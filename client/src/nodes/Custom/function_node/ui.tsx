@@ -13,12 +13,6 @@ import { cn } from '@/lib/utils';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { 
-  Sheet, 
-  SheetContent, 
-  SheetHeader, 
-  SheetTitle 
-} from '@/components/ui/sheet';
-import { 
   Popover, 
   PopoverContent, 
   PopoverTrigger 
@@ -163,19 +157,11 @@ function FunctionNode({ data, id, selected }: NodeProps<FunctionNodeData>) {
   const handleSettingsClick = (e: React.MouseEvent) => {
     e.stopPropagation();
     
-    // If we have an onSettingsClick function from FlowEditor, use it
-    if (data.onSettingsClick) {
-      data.onSettingsClick();
-    } else {
-      // Otherwise, fallback to the local settings drawer
-      setShowSettings(true);
-      
-      // Also emit the node-settings-open event for FlowEditor to catch
-      const event = new CustomEvent('node-settings-open', { 
-        detail: { nodeId: id }
-      });
-      window.dispatchEvent(event);
-    }
+    // Always use the centralized settings drawer by dispatching the event
+    const event = new CustomEvent('node-settings-open', { 
+      detail: { nodeId: id }
+    });
+    window.dispatchEvent(event);
   };
   
   // Settings submission handler
