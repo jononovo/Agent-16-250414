@@ -42,11 +42,23 @@ export interface NodeSettingsFormRef {
 
 export const NodeSettingsForm = forwardRef<NodeSettingsFormRef, NodeSettingsFormProps>((props, ref) => {
   const { nodeData, settingsFields, onChange } = props;
-  const [formData, setFormData] = useState<Record<string, any>>({ ...nodeData });
+  
+  // Extract settingsData if it exists, otherwise use just nodeData
+  const initialData = nodeData.settingsData || nodeData;
+  const [formData, setFormData] = useState<Record<string, any>>({ ...initialData });
   
   // Method to submit the form data to the parent component
   const submitForm = () => {
-    onChange(formData);
+    // Create a copy of the form data for the callback
+    const updatedData = { ...formData };
+    
+    // If the node data has a settingsData property, update it properly
+    if ('settingsData' in nodeData) {
+      onChange({ settingsData: updatedData });
+    } else {
+      // Otherwise update the node data directly
+      onChange(updatedData);
+    }
   };
   
   // Expose the submitForm method via the ref

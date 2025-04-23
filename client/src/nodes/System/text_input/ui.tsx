@@ -174,10 +174,22 @@ export const component = ({ data, id, isConnectable, selected }: NodeProps<TextI
   const handleSubmitSettings = (updatedData: any) => {
     // Update node data when settings are changed
     if (nodeData.onChange) {
-      nodeData.onChange({
-        ...nodeData,
-        ...updatedData
-      });
+      // If the updated data contains settingsData, handle it properly
+      if (updatedData.settingsData) {
+        nodeData.onChange({
+          ...nodeData,
+          settingsData: {
+            ...(nodeData.settingsData || {}),
+            ...updatedData.settingsData
+          }
+        });
+      } else {
+        // Otherwise apply the updates directly
+        nodeData.onChange({
+          ...nodeData,
+          ...updatedData
+        });
+      }
     }
     
     setShowSettings(false);

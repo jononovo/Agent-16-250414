@@ -159,10 +159,22 @@ function DefaultNode({ data, id, selected }: NodeProps<DefaultNodeData>) {
   const handleSubmitSettings = (updatedData: any) => {
     // Update node data when settings are changed
     if (onChange) {
-      onChange({
-        ...data,
-        ...updatedData
-      });
+      // If the updated data contains settingsData, handle it properly
+      if (updatedData.settingsData) {
+        onChange({
+          ...data,
+          settingsData: {
+            ...(data.settingsData || {}),
+            ...updatedData.settingsData
+          }
+        });
+      } else {
+        // Otherwise apply the updates directly
+        onChange({
+          ...data,
+          ...updatedData
+        });
+      }
     }
     
     setShowSettings(false);
