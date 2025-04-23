@@ -685,13 +685,14 @@ const NodeSettingsDrawer: React.FC<NodeSettingsDrawerProps> = ({
           {/* Properties Tab */}
           {activeTab === 'properties' && (
             <div className="space-y-4" onClick={handleContentClick}>
-              <div className="space-y-2">
+              <div className="space-y-2" onClick={(e) => e.stopPropagation()}>
                 <Label htmlFor="nodeName">Node Name</Label>
                 <Input
                   id="nodeName"
                   value={nodeName}
                   onChange={(e) => setNodeName(e.target.value)}
                   placeholder="Enter node name"
+                  onClick={(e) => e.stopPropagation()}
                 />
               </div>
               
