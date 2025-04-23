@@ -12,12 +12,13 @@ import { Label } from '@/components/ui/label';
 import { Type, Settings, MoreHorizontal, AlertTriangle } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { 
-  Sheet, 
-  SheetContent, 
-  SheetHeader, 
-  SheetTitle 
-} from '@/components/ui/sheet';
+// Sheet components are imported in FlowEditor for the centralized settings drawer
+// import { 
+//   Sheet, 
+//   SheetContent, 
+//   SheetHeader, 
+//   SheetTitle 
+// } from '@/components/ui/sheet';
 import { 
   Popover, 
   PopoverContent, 
