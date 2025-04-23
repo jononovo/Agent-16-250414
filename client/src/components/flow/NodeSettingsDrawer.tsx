@@ -621,12 +621,22 @@ const NodeSettingsDrawer: React.FC<NodeSettingsDrawerProps> = ({
   return (
     <Sheet open={isOpen} onOpenChange={handleOpenChange}>
       <SheetContent side="right" className="w-[400px] sm:w-[540px] p-0">
-        <SheetHeader className="p-6 pb-2">
-          <SheetTitle>Node Configuration <span className="text-sm text-muted-foreground">({node.type})</span></SheetTitle>
-          <SheetDescription>
-            Configure the properties and variables for this node.
-          </SheetDescription>
-        </SheetHeader>
+        <div 
+          className="h-full"
+          onClick={(e) => {
+            // Only prevent propagation if clicking directly on this div (empty area)
+            // and not on a child element (form control)
+            if (e.target === e.currentTarget) {
+              e.stopPropagation();
+            }
+          }}
+        >
+          <SheetHeader className="p-6 pb-2">
+            <SheetTitle>Node Configuration <span className="text-sm text-muted-foreground">({node.type})</span></SheetTitle>
+            <SheetDescription>
+              Configure the properties and variables for this node.
+            </SheetDescription>
+          </SheetHeader>
         
         {/* Tabs */}
         <div className="bg-muted/50 p-1 mx-6 rounded-lg mb-4 flex">

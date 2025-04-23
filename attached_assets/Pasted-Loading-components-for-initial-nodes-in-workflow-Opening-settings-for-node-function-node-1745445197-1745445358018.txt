@@ -1,0 +1,61 @@
+Loading components for initial nodes in workflow
+Opening settings for node: function_node-1745445197193
+Loaded workflow data: Nodes: 3, Edges: 0
+Sample node: {"id":"text_input-1745445127667","type":"text_input","position":{"x":0,"y":-105},"data":{"label":"Text Input55","description":"Add text input to your workflow","icon":{},"category":"ai","settings":{},...
+Grouped nodes by category: 
+Object {code: Array(1)}
+Initialized settings for node function_node-1745445197193 (function_node): 
+Object {}
+Loading components for initial nodes in workflow
+elem.nodeName.toLowerCase is not a function
+Loaded workflow data: Nodes: 3, Edges: 0
+Sample node: {"id":"text_input-1745445127667","type":"text_input","position":{"x":0,"y":-105},"data":{"label":"Text Input55","description":"Add text input to your workflow","icon":{},"category":"ai","settings":{},...
+Grouped nodes by category: 
+Object {code: Array(1)}
+Loading components for initial nodes in workflow
+elem.nodeName.toLowerCase is not a function
+Loaded workflow data: Nodes: 3, Edges: 0
+Sample node: {"id":"text_input-1745445127667","type":"text_input","position":{"x":0,"y":-105},"data":{"label":"Text Input55","description":"Add text input to your workflow","icon":{},"category":"ai","settings":{},...
+Grouped nodes by category: 
+Object {code: Array(1)}
+Loading components for initial nodes in workflow
+Loaded workflow data: Nodes: 3, Edges: 0
+Sample node: {"id":"text_input-1745445127667","type":"text_input","position":{"x":0,"y":-105},"data":{"label":"Text Input55","description":"Add text input to your workflow","icon":{},"category":"ai","settings":{},...
+Grouped nodes by category: 
+Object {code: Array(1)}
+Loading components for initial nodes in workflow
+Loaded workflow data: Nodes: 3, Edges: 0
+Sample node: {"id":"text_input-1745445127667","type":"text_input","position":{"x":0,"y":-105},"data":{"label":"Text Input55","description":"Add text input to your workflow","icon":{},"category":"ai","settings":{},...
+Grouped nodes by category: 
+Object {code: Array(1)}
+Loading components for initial nodes in workflow
+Loaded workflow data: Nodes: 3, Edges: 0
+Sample node: {"id":"text_input-1745445127667","type":"text_input","position":{"x":0,"y":-105},"data":{"label":"Text Input55","description":"Add text input to your workflow","icon":{},"category":"ai","settings":{},...
+Grouped nodes by category: 
+Object {code: Array(1)}
+Loading components for initial nodes in workflow
+Opening settings for node: text_input-1745445127667
+Loaded workflow data: Nodes: 3, Edges: 0
+Sample node: {"id":"text_input-1745445127667","type":"text_input","position":{"x":0,"y":-105},"data":{"label":"Text Input55","description":"Add text input to your workflow","icon":{},"category":"ai","settings":{},...
+Grouped nodes by category: 
+Object {code: Array(1)}
+Initialized settings for node text_input-1745445127667 (text_input): 
+Object {}
+Loading components for initial nodes in workflow
+elem.nodeName.toLowerCase is not a function
+at shouldUseChangeEvent (https://c56444ad-bdd7-498d-b8cc-ec57d823a5f1-00-wtn8p9bx6ksz.picard.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-RPCDYKBN.js?v=2f4ee919:6289:57)
+at extractEvents$1 (https://c56444ad-bdd7-498d-b8cc-ec57d823a5f1-00-wtn8p9bx6ksz.picard.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-RPCDYKBN.js?v=2f4ee919:6375:15)
+at extractEvents$5 (https://c56444ad-bdd7-498d-b8cc-ec57d823a5f1-00-wtn8p9bx6ksz.picard.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-RPCDYKBN.js?v=2f4ee919:7004:13)
+at dispatchEventsForPlugins (https://c56444ad-bdd7-498d-b8cc-ec57d823a5f1-00-wtn8p9bx6ksz.picard.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-RPCDYKBN.js?v=2f4ee919:7050:11)
+at https://c56444ad-bdd7-498d-b8cc-ec57d823a5f1-00-wtn8p9bx6ksz.picard.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-RPCDYKBN.js?v=2f4ee919:7174:20
+at batchedUpdates$1 (https://c56444ad-bdd7-498d-b8cc-ec57d823a5f1-00-wtn8p9bx6ksz.picard.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-RPCDYKBN.js?v=2f4ee919:18913:20)
+at batchedUpdates (https://c56444ad-bdd7-498d-b8cc-ec57d823a5f1-00-wtn8p9bx6ksz.picard.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-RPCDYKBN.js?v=2f4ee919:3579:20)
+at dispatchEventForPluginEventSystem (https://c56444ad-bdd7-498d-b8cc-ec57d823a5f1-00-wtn8p9bx6ksz.picard.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-RPCDYKBN.js?v=2f4ee919:7173:11)
+at dispatchEventWithEnableCapturePhaseSelectiveHydrationWithoutDiscreteEventReplay (https://c56444ad-bdd7-498d-b8cc-ec57d823a5f1-00-wtn8p9bx6ksz.picard.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-RPCDYKBN.js?v=2f4ee919:5478:13)
+at dispatchEvent (https://c56444ad-bdd7-498d-b8cc-ec57d823a5f1-00-wtn8p9bx6ksz.picard.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-RPCDYKBN.js?v=2f4ee919:5472:13)
+Loaded workflow data: Nodes: 3, Edges: 0
+Sample node: {"id":"text_input-1745445127667","type":"text_input","position":{"x":0,"y":-105},"data":{"label":"Text Input55","description":"Add text input to your workflow","icon":{},"category":"ai","settings":{},...
+Grouped nodes by category: 
+Object {code: Array(1)}
+Loading components for initial nodes in workflow
+elem.nodeName.toLowerCase is not a function
