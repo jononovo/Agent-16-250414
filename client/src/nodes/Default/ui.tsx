@@ -308,8 +308,10 @@ function DefaultNode({ data, id, selected }: NodeProps<DefaultNodeData>) {
     <div className="bg-primary/10 p-1.5 rounded-md">
       {typeof icon === 'string' ? (
         <DynamicIcon icon={icon} className="h-4 w-4 text-primary" />
-      ) : (
+      ) : React.isValidElement(icon) ? (
         icon
+      ) : (
+        <DynamicIcon icon="box" className="h-4 w-4 text-primary" />
       )}
     </div>
   );
