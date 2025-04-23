@@ -22,6 +22,7 @@ import { cn } from '@/lib/utils';
 import { Save, X } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { Agent } from '@shared/schema';
+import EventProtectionWrapper from '@/components/ui/EventProtectionWrapper';
 
 interface NodeSettingsDrawerProps {
   isOpen: boolean;
@@ -621,16 +622,7 @@ const NodeSettingsDrawer: React.FC<NodeSettingsDrawerProps> = ({
   return (
     <Sheet open={isOpen} onOpenChange={handleOpenChange}>
       <SheetContent side="right" className="w-[400px] sm:w-[540px] p-0">
-        <div 
-          className="h-full"
-          onClick={(e) => {
-            // Only prevent propagation if clicking directly on this div (empty area)
-            // and not on a child element (form control)
-            if (e.target === e.currentTarget) {
-              e.stopPropagation();
-            }
-          }}
-        >
+        <EventProtectionWrapper className="h-full">
           <SheetHeader className="p-6 pb-2">
             <SheetTitle>Node Configuration <span className="text-sm text-muted-foreground">({node.type})</span></SheetTitle>
             <SheetDescription>
@@ -981,6 +973,7 @@ const NodeSettingsDrawer: React.FC<NodeSettingsDrawerProps> = ({
             <Save className="h-4 w-4 mr-2" /> Save Changes
           </Button>
         </SheetFooter>
+        </EventProtectionWrapper>
       </SheetContent>
     </Sheet>
   );
