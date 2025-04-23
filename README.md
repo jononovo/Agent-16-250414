@@ -14,6 +14,7 @@ A flexible, extensible node-based workflow system for creating, visualizing, and
 For comprehensive documentation, please see:
 
 - [Complete Documentation](./README/DOCUMENTATION.md)
+- [AI Agent Context](./README/ai-agent-context-20250423.md) - Concise overview for AI assistants
 
 ## Getting Started
 

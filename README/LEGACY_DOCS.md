@@ -30,6 +30,16 @@ The project documentation has been reorganized and consolidated for clarity. Her
    - Development Guide
    - Troubleshooting
 
+2. **ai-agent-context-20250423.md** - Concise context document for AI assistants with:
+   - Application overview
+   - Technology stack
+   - Key files and directories
+   - Critical functions
+   - Data flow
+   - State management
+   - Common development tasks
+   - Known issues
+
 ## Why We Consolidated
 
 The documentation was consolidated to:
