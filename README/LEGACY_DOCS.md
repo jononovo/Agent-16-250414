@@ -8,32 +8,32 @@ The project documentation has been reorganized and consolidated for clarity. Her
 
 | Old File | New Location |
 |----------|-------------|
-| NODES_SYSTEM.md | See [README.md](./README.md) for node system overview and [REFERENCE.md](./REFERENCE.md) for technical details |
-| ARCHITECTURE.md | See [README.md](./README.md) for architectural overview |
-| DEVELOPMENT.md | See [README.md](./README.md) for getting started and [REFERENCE.md](./REFERENCE.md) for development patterns |
-| TECHNICAL_REFERENCE.md | Consolidated into [REFERENCE.md](./REFERENCE.md) |
-| AI_MODEL_CONTEXT.md | Consolidated into [REFERENCE.md](./REFERENCE.md) |
-| README-Quick-Start.md | Consolidated into [README.md](./README.md) as the Quick Start section |
-| README-Comprehensive.md | Consolidated into [README.md](./README.md) |
+| NODES_SYSTEM.md | See [DOCUMENTATION.md](./DOCUMENTATION.md) - Node System section |
+| ARCHITECTURE.md | See [DOCUMENTATION.md](./DOCUMENTATION.md) - Core Architecture section |
+| DEVELOPMENT.md | See [DOCUMENTATION.md](./DOCUMENTATION.md) - Development Guide section |
+| TECHNICAL_REFERENCE.md | See [DOCUMENTATION.md](./DOCUMENTATION.md) - Technical Reference section |
+| AI_MODEL_CONTEXT.md | See [DOCUMENTATION.md](./DOCUMENTATION.md) - Technical Reference section |
+| README-Quick-Start.md | See [DOCUMENTATION.md](./DOCUMENTATION.md) - Quick Start section |
+| README-Comprehensive.md | See [DOCUMENTATION.md](./DOCUMENTATION.md) |
+| README.md (in README folder) | See [DOCUMENTATION.md](./DOCUMENTATION.md) |
+| REFERENCE.md | See [DOCUMENTATION.md](./DOCUMENTATION.md) - Technical Reference section |
 
-## Current Documentation Files
+## Current Documentation Structure
 
-1. **README.md**
-   - Comprehensive documentation with Quick Start guide at the beginning
-   - Detailed explanation of the project architecture
-   - Node system structure and organization
-   - UI guidelines and patterns
-
-2. **REFERENCE.md**
-   - Technical reference for developers and AI assistants
-   - Data structures and interfaces
-   - Common code patterns
-   - System functions reference
+1. **DOCUMENTATION.md** - Single comprehensive documentation file with:
+   - Quick Start Guide
+   - Core Architecture
+   - Node System details
+   - Storage System
+   - UI Guidelines
+   - Technical Reference (including data structures and code patterns)
+   - Development Guide
+   - Troubleshooting
 
 ## Why We Consolidated
 
 The documentation was consolidated to:
-1. Reduce duplication of information
+1. Eliminate duplication of information
 2. Create a clearer information hierarchy
 3. Make it easier to keep documentation in sync with code changes
 4. Improve the overall developer experience
