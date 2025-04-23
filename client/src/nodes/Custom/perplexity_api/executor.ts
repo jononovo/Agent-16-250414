@@ -35,6 +35,7 @@ export const execute = async (
   inputs: Record<string, any>
 ): Promise<Record<string, any>> => {
   try {
+    const startTime = new Date();
     // Extract inputs
     const prompt = inputs.prompt;
     const systemPrompt = inputs.system || data.systemPrompt;
@@ -94,7 +95,7 @@ export const execute = async (
     };
     
     // Return output with response text and metadata
-    return createNodeOutput(result);
+    return createNodeOutput(result, { startTime });
   } catch (error: unknown) {
     console.error('Perplexity API error:', error);
     const errorMessage = error instanceof Error 

@@ -164,7 +164,7 @@ interface NodeExecutionData {
 }
 ```
 
-Use the `createNodeOutput` and `createErrorOutput` utility functions from `client/src/nodes/lib/nodeOutputUtils.ts` to ensure consistent output formatting.
+Use the `createNodeOutput` and `createErrorOutput` utility functions from `client/src/nodes/nodeOutputUtils.ts` to ensure consistent output formatting.
 
 ## Storage System
 
