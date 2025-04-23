@@ -25,11 +25,13 @@ function Router() {
       <Route path="/workflow-generator" component={WorkflowGenerator} />
       <Route path="/workflow-chat-generator" component={WorkflowChatGenerator} />
       <Route path="/agent/:id" component={AgentPage} />
+      {/* Removed agent-test route */}
       <Route path="/api-registry" component={ApiRegistry} />
       <Route path="/library" component={Library} />
       <Route path="/workflows" component={Library} />
       <Route path="/agents" component={Library} />
       <Route path="/nodes" component={Library} />
+      {/* Removed node-system-demo route */}
       <Route component={NotFound} />
     </Switch>
   );
