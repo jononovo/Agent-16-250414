@@ -8,24 +8,23 @@ The project documentation has been reorganized and consolidated for clarity. Her
 
 | Old File | New Location |
 |----------|-------------|
-| NODES_SYSTEM.md | See [README-Comprehensive.md](./README-Comprehensive.md) for node system overview and [REFERENCE.md](./REFERENCE.md) for technical details |
-| ARCHITECTURE.md | See [README-Comprehensive.md](./README-Comprehensive.md) for architectural overview |
-| DEVELOPMENT.md | See [README-Quick-Start.md](./README-Quick-Start.md) for getting started and [REFERENCE.md](./REFERENCE.md) for development patterns |
+| NODES_SYSTEM.md | See [README.md](./README.md) for node system overview and [REFERENCE.md](./REFERENCE.md) for technical details |
+| ARCHITECTURE.md | See [README.md](./README.md) for architectural overview |
+| DEVELOPMENT.md | See [README.md](./README.md) for getting started and [REFERENCE.md](./REFERENCE.md) for development patterns |
 | TECHNICAL_REFERENCE.md | Consolidated into [REFERENCE.md](./REFERENCE.md) |
 | AI_MODEL_CONTEXT.md | Consolidated into [REFERENCE.md](./REFERENCE.md) |
+| README-Quick-Start.md | Consolidated into [README.md](./README.md) as the Quick Start section |
+| README-Comprehensive.md | Consolidated into [README.md](./README.md) |
 
 ## Current Documentation Files
 
-1. **README-Quick-Start.md**
-   - Concise guide to get up and running quickly
-   - Installation and first steps
-
-2. **README-Comprehensive.md**
+1. **README.md**
+   - Comprehensive documentation with Quick Start guide at the beginning
    - Detailed explanation of the project architecture
    - Node system structure and organization
    - UI guidelines and patterns
 
-3. **REFERENCE.md**
+2. **REFERENCE.md**
    - Technical reference for developers and AI assistants
    - Data structures and interfaces
    - Common code patterns
@@ -38,3 +37,4 @@ The documentation was consolidated to:
 2. Create a clearer information hierarchy
 3. Make it easier to keep documentation in sync with code changes
 4. Improve the overall developer experience
+5. Provide a single source of truth for documentation
