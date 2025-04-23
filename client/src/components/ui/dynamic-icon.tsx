@@ -3,7 +3,7 @@ import * as LucideIcons from 'lucide-react';
 import { Bot, Code, FileText, Database, Settings, Cpu, Workflow, Zap } from 'lucide-react';
 
 interface DynamicIconProps {
-  icon: string;
+  icon: string | React.ComponentType<any> | object | null | undefined;
   size?: number;
   className?: string;
   strokeWidth?: number;
@@ -38,29 +38,51 @@ const DynamicIcon: React.FC<DynamicIconProps> = ({
   className = '', 
   strokeWidth = 2 
 }) => {
-  // Format the icon name to match Lucide's naming convention
-  // This handles both kebab-case and PascalCase icons
-  const formattedIconName = formatIconName(icon);
+  // If icon is a React component
+  if (typeof icon === 'function') {
+    const IconComponent = icon as React.ComponentType<any>;
+    return <IconComponent size={size} className={className} strokeWidth={strokeWidth} />;
+  }
   
-  // Get the icon component from our map or use a default if not found
-  const IconComponent = iconMap[formattedIconName] || 
-                       iconMap[icon] || 
-                       iconMap[icon.toLowerCase()] || 
-                       LucideIcons.HelpCircle;
+  // Handle empty objects - this is what causes the runtime error
+  if (icon && typeof icon === 'object' && Object.keys(icon).length === 0) {
+    return <LucideIcons.Box size={size} className={className} strokeWidth={strokeWidth} />;
+  }
   
-  return (
-    <IconComponent 
-      size={size} 
-      className={className} 
-      strokeWidth={strokeWidth} 
-    />
-  );
+  // If icon is a string, render the appropriate Lucide icon
+  if (typeof icon === 'string') {
+    // Format the icon name to match Lucide's naming convention
+    // This handles both kebab-case and PascalCase icons
+    const formattedIconName = formatIconName(icon);
+    
+    // Get the icon component from our map or use a default if not found
+    const IconComponent = iconMap[formattedIconName] || 
+                        iconMap[icon] || 
+                        iconMap[icon.toLowerCase()] || 
+                        LucideIcons.HelpCircle;
+    
+    return (
+      <IconComponent 
+        size={size} 
+        className={className} 
+        strokeWidth={strokeWidth} 
+      />
+    );
+  }
+  
+  // Default fallback
+  return <LucideIcons.HelpCircle size={size} className={className} strokeWidth={strokeWidth} />;
 };
 
 /**
  * Format icon name to match Lucide's capitalization pattern
  */
-function formatIconName(iconName: string): string {
+function formatIconName(iconName: string | React.ComponentType<any> | object | null | undefined): string {
+  // Only process if iconName is a string
+  if (typeof iconName !== 'string') {
+    return 'HelpCircle'; // default fallback
+  }
+  
   // Handle icon names in kebab-case (e.g., 'check-circle')
   if (iconName.includes('-')) {
     return iconName.split('-')

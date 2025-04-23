@@ -26,7 +26,7 @@ export interface NodeItemProps {
 // Helper type for icon components
 type IconComponent = React.ComponentType<{ className?: string }>;
 
-const DynamicIcon = ({ icon }: { icon?: string | IconComponent | null }) => {
+const DynamicIcon = ({ icon }: { icon?: string | IconComponent | null | object }) => {
   // If icon is a React component
   if (typeof icon === 'function') {
     const IconComponent = icon as IconComponent;
@@ -43,6 +43,11 @@ const DynamicIcon = ({ icon }: { icon?: string | IconComponent | null }) => {
     }
     
     return <IconComponent className="h-5 w-5" />;
+  }
+  
+  // Handle empty objects - this is what causes the runtime error
+  if (icon && typeof icon === 'object' && Object.keys(icon).length === 0) {
+    return <Circle className="h-5 w-5" />;
   }
   
   // Default
