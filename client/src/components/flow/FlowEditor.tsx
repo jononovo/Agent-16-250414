@@ -119,6 +119,7 @@ const createNodeTypes = () => {
     markdown_renderer: DefaultNode,
     number_input: DefaultNode,
     toggle_switch: DefaultNode,
+    function_node: DefaultNode,
     
     // Legacy mappings
     textInput: DefaultNode,
