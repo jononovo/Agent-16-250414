@@ -38,39 +38,48 @@ const DynamicIcon: React.FC<DynamicIconProps> = ({
   className = '', 
   strokeWidth = 2 
 }) => {
+  // If icon is not provided or is null/undefined, render default
+  if (!icon) {
+    return <LucideIcons.HelpCircle size={size} className={className} strokeWidth={strokeWidth} />;
+  }
+  
   // If icon is a React component
   if (typeof icon === 'function') {
     const IconComponent = icon as React.ComponentType<any>;
     return <IconComponent size={size} className={className} strokeWidth={strokeWidth} />;
   }
   
-  // Handle empty objects - this is what causes the runtime error
-  if (icon && typeof icon === 'object' && Object.keys(icon).length === 0) {
+  // Handle empty objects or any non-standard object
+  if (typeof icon === 'object') {
     return <LucideIcons.Box size={size} className={className} strokeWidth={strokeWidth} />;
   }
   
   // If icon is a string, render the appropriate Lucide icon
   if (typeof icon === 'string') {
-    // Format the icon name to match Lucide's naming convention
-    // This handles both kebab-case and PascalCase icons
-    const formattedIconName = formatIconName(icon);
-    
-    // Get the icon component from our map or use a default if not found
-    const IconComponent = iconMap[formattedIconName] || 
-                        iconMap[icon] || 
-                        iconMap[icon.toLowerCase()] || 
-                        LucideIcons.HelpCircle;
-    
-    return (
-      <IconComponent 
-        size={size} 
-        className={className} 
-        strokeWidth={strokeWidth} 
-      />
-    );
+    try {
+      // Format the icon name to match Lucide's naming convention
+      const formattedIconName = formatIconName(icon);
+      
+      // Get the icon component from our map or use a default if not found
+      const IconComponent = iconMap[formattedIconName] || 
+                          iconMap[icon] || 
+                          (icon.toLowerCase ? iconMap[icon.toLowerCase()] : null) || 
+                          LucideIcons.HelpCircle;
+      
+      return (
+        <IconComponent 
+          size={size} 
+          className={className} 
+          strokeWidth={strokeWidth} 
+        />
+      );
+    } catch (error) {
+      console.error("Error rendering icon:", error);
+      return <LucideIcons.HelpCircle size={size} className={className} strokeWidth={strokeWidth} />;
+    }
   }
   
-  // Default fallback
+  // Default fallback for any other type
   return <LucideIcons.HelpCircle size={size} className={className} strokeWidth={strokeWidth} />;
 };
 

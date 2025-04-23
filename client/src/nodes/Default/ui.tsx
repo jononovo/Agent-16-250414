@@ -372,153 +372,112 @@ function DefaultNode({ data, id, selected }: NodeProps<DefaultNodeData>) {
   );
   
   return (
-    <>
-      <div 
-        ref={hoverAreaRef}
+    <div 
+      ref={hoverAreaRef}
+      className="relative"
+      style={{ 
+        // Add padding when menu is shown to create a seamless interaction area
+        padding: showHoverMenu ? '8px 20px 8px 8px' : '0',
+        margin: showHoverMenu ? '-8px -20px -8px -8px' : '0',
+      }}
+    >
+      <div
+        ref={nodeRef}
+        onMouseEnter={handleHoverStart}
+        onMouseLeave={handleHoverEnd}
         className="relative"
-        style={{ 
-          // Add padding when menu is shown to create a seamless interaction area
-          padding: showHoverMenu ? '8px 20px 8px 8px' : '0',
-          margin: showHoverMenu ? '-8px -20px -8px -8px' : '0',
-        }}
       >
-        <div
-          ref={nodeRef}
-          onMouseEnter={handleHoverStart}
-          onMouseLeave={handleHoverEnd}
-          className="relative"
-        >
-          {/* Hover Menu */}
-          {showHoverMenu && (
-            <div 
-              ref={menuRef}
-              onMouseEnter={handleMenuHoverStart}
-              onMouseLeave={handleHoverEnd}
-              className="absolute z-50"
-              style={{ right: '0px', top: '0px' }}
-            >
-              <NodeHoverMenu 
-                nodeId={id}
-                actions={hoverMenuActions}
-                position="right"
-              />
-            </div>
-          )}
-          
-          <NodeContainer selected={selected} className={containerClass}>
-            <NodeHeader 
-              title={label} 
-              description={description}
-              icon={iconElement}
-              actions={headerActions}
+        {/* Hover Menu */}
+        {showHoverMenu && (
+          <div 
+            ref={menuRef}
+            onMouseEnter={handleMenuHoverStart}
+            onMouseLeave={handleHoverEnd}
+            className="absolute z-50"
+            style={{ right: '0px', top: '0px' }}
+          >
+            <NodeHoverMenu 
+              nodeId={id}
+              actions={hoverMenuActions}
+              position="right"
             />
-            
-            <NodeContent padding="normal">
-              {/* Node Type Badge */}
-              <div className="flex justify-between items-center">
-                <Badge variant="outline" className="text-xs px-2 py-0.5 bg-slate-100/50 dark:bg-slate-800/50">
-                  {category}
-                </Badge>
-                
-                {/* Settings Summary */}
-                {settingsSummary && (
-                  <div className="flex items-center text-xs text-muted-foreground">
-                    <Settings className="h-3 w-3 mr-1 inline" />
-                    <span className="truncate">{settingsSummary}</span>
-                  </div>
-                )}
-              </div>
+          </div>
+        )}
+        
+        <NodeContainer selected={selected} className={containerClass}>
+          <NodeHeader 
+            title={label} 
+            description={description}
+            icon={iconElement}
+            actions={headerActions}
+          />
+          
+          <NodeContent padding="normal">
+            {/* Node Type Badge */}
+            <div className="flex justify-between items-center">
+              <Badge variant="outline" className="text-xs px-2 py-0.5 bg-slate-100/50 dark:bg-slate-800/50">
+                {category}
+              </Badge>
               
-              {/* Status messages and errors */}
-              {hasError && errorMessage && (
-                <div className="p-2 text-xs bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 rounded border border-red-200 dark:border-red-800">
-                  <div className="flex items-center gap-1 mb-1">
-                    <AlertTriangle className="h-3 w-3" />
-                    <span className="font-medium">Error</span>
-                  </div>
-                  {errorMessage}
+              {/* Settings Summary */}
+              {settingsSummary && (
+                <div className="flex items-center text-xs text-muted-foreground">
+                  <Settings className="h-3 w-3 mr-1 inline" />
+                  <span className="truncate">{settingsSummary}</span>
                 </div>
               )}
-            </NodeContent>
+            </div>
             
-            {/* Input handle for triggering the node */}
-            <Handle
-              type="target"
-              position={Position.Left}
-              id="input"
-              style={{ 
-                top: 50, 
-                width: '12px', 
-                height: '12px', 
-                background: 'white',
-                border: '2px solid #3b82f6'
-              }}
-              isConnectable={true}
-            />
-            <div className="absolute left-2 top-[46px] text-xs text-muted-foreground">
-              In
-            </div>
-
-            {/* Output handle for continuing to the next node */}
-            <Handle
-              type="source"
-              position={Position.Right}
-              id="output"
-              style={{ 
-                top: 50, 
-                width: '12px', 
-                height: '12px', 
-                background: 'white',
-                border: '2px solid #10b981'
-              }}
-              isConnectable={true}
-            />
-            <div className="absolute right-2 top-[46px] text-xs text-muted-foreground text-right">
-              Out
-            </div>
-          </NodeContainer>
-        </div>
-      </div>
-      
-      {/* Settings Sheet/Drawer */}
-      <Sheet open={showSettings} onOpenChange={setShowSettings}>
-        <SheetContent className="w-[350px] sm:w-[450px]">
-          <SheetHeader>
-            <SheetTitle>{settings?.title || `${label} Settings`}</SheetTitle>
-          </SheetHeader>
-          
-          <div className="py-4">
-            {settings?.fields && settings.fields.length > 0 ? (
-              <NodeSettingsForm 
-                nodeData={data}
-                settingsFields={settings.fields}
-                onChange={handleSubmitSettings}
-              />
-            ) : (
-              <div className="text-sm text-slate-600">
-                No configurable settings for this node.
+            {/* Status messages and errors */}
+            {hasError && errorMessage && (
+              <div className="p-2 text-xs bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 rounded border border-red-200 dark:border-red-800">
+                <div className="flex items-center gap-1 mb-1">
+                  <AlertTriangle className="h-3 w-3" />
+                  <span className="font-medium">Error</span>
+                </div>
+                {errorMessage}
               </div>
             )}
-            
-            <div className="flex justify-end gap-2 mt-6">
-              <Button 
-                variant="outline" 
-                size="sm"
-                onClick={() => setShowSettings(false)}
-              >
-                Cancel
-              </Button>
-              <Button 
-                size="sm"
-                onClick={() => handleSubmitSettings(data)}
-              >
-                Apply
-              </Button>
-            </div>
+          </NodeContent>
+          
+          {/* Input handle for triggering the node */}
+          <Handle
+            type="target"
+            position={Position.Left}
+            id="input"
+            style={{ 
+              top: 50, 
+              width: '12px', 
+              height: '12px', 
+              background: 'white',
+              border: '2px solid #3b82f6'
+            }}
+            isConnectable={true}
+          />
+          <div className="absolute left-2 top-[46px] text-xs text-muted-foreground">
+            In
           </div>
-        </SheetContent>
-      </Sheet>
-    </>
+
+          {/* Output handle for continuing to the next node */}
+          <Handle
+            type="source"
+            position={Position.Right}
+            id="output"
+            style={{ 
+              top: 50, 
+              width: '12px', 
+              height: '12px', 
+              background: 'white',
+              border: '2px solid #10b981'
+            }}
+            isConnectable={true}
+          />
+          <div className="absolute right-2 top-[46px] text-xs text-muted-foreground text-right">
+            Out
+          </div>
+        </NodeContainer>
+      </div>
+    </div>
   );
 }
 

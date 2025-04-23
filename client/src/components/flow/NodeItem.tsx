@@ -27,30 +27,45 @@ export interface NodeItemProps {
 type IconComponent = React.ComponentType<{ className?: string }>;
 
 const DynamicIcon = ({ icon }: { icon?: string | IconComponent | null | object }) => {
+  // If icon is not provided or is null/undefined
+  if (!icon) {
+    return <Circle className="h-5 w-5" />;
+  }
+  
   // If icon is a React component
   if (typeof icon === 'function') {
     const IconComponent = icon as IconComponent;
     return <IconComponent className="h-5 w-5" />;
   }
   
-  // If icon is a string
-  if (typeof icon === 'string') {
-    const iconName = icon || 'circle';
-    const IconComponent = (Lucide as any)[iconName.charAt(0).toUpperCase() + iconName.slice(1)];
-    
-    if (!IconComponent) {
-      return <Circle className="h-5 w-5" />;
-    }
-    
-    return <IconComponent className="h-5 w-5" />;
-  }
-  
-  // Handle empty objects - this is what causes the runtime error
-  if (icon && typeof icon === 'object' && Object.keys(icon).length === 0) {
+  // If icon is an object (empty or otherwise)
+  if (typeof icon === 'object') {
     return <Circle className="h-5 w-5" />;
   }
   
-  // Default
+  // If icon is a string
+  if (typeof icon === 'string') {
+    try {
+      const iconName = icon || 'circle';
+      // Ensure we have a valid string before calling methods on it
+      const capitalizedName = typeof iconName === 'string' && iconName.charAt 
+        ? iconName.charAt(0).toUpperCase() + iconName.slice(1) 
+        : 'Circle';
+        
+      const IconComponent = (Lucide as any)[capitalizedName];
+      
+      if (!IconComponent) {
+        return <Circle className="h-5 w-5" />;
+      }
+      
+      return <IconComponent className="h-5 w-5" />;
+    } catch (error) {
+      console.error("Error rendering icon in NodeItem:", error);
+      return <Circle className="h-5 w-5" />;
+    }
+  }
+  
+  // Default fallback for any other case
   return <Circle className="h-5 w-5" />;
 };
 
