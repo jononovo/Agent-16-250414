@@ -145,6 +145,32 @@ All nodes are organized in one of three main folders:
 - `/client/src/nodes/Custom/` - For custom, domain-specific nodes
 - `/client/src/nodes/Default/` - For default node implementation patterns
 
+### Default Node Architecture
+
+The Default node implementation serves as both a template and extension point for the node system:
+
+1. **Inheritance Model**: Individual nodes can either:
+   - **Compose**: Use DefaultNode as a wrapper component, maintaining full control of inner content
+   - **Extend**: Inherit functionality by importing and using shared components
+
+2. **Event Propagation**:
+   - DefaultNode dispatches standardized window-level events (e.g., `node-settings-open`)
+   - NodeSettingsDrawer listens for these events globally rather than requiring direct props
+   - This decouples individual nodes from the settings drawer implementation
+
+3. **Modification Effects**:
+   - Changes to Default/ui.tsx affect **new nodes** that use it as a wrapper
+   - Existing nodes that don't explicitly use DefaultNode must be updated individually
+   - Shared behaviors should be implemented via event systems rather than component inheritance
+
+4. **Node Settings Events**:
+   ```typescript
+   // Standard pattern for opening settings
+   window.dispatchEvent(new CustomEvent('node-settings-open', {
+     detail: { nodeId }
+   }));
+   ```
+
 ### Node Output Format
 
 All node executors must follow the standardized output format to ensure compatibility across the workflow system:
@@ -215,6 +241,19 @@ All nodes follow UI design inspired by simple-ai.dev to maintain consistency acr
      - Open settings
      - Edit/customize node
    - Settings drawer opens on demand, does not close when editing form fields
+   - Global event listeners handle node interaction events:
+     ```typescript
+     // Opening settings drawer
+     window.addEventListener('node-settings-open', (event) => {
+       const { nodeId } = event.detail;
+       // Handle opening settings for nodeId
+     });
+     
+     // Other standard events include:
+     // - node-duplicate
+     // - node-delete
+     // - node-edit
+     ```
 
 ## Technical Reference
 
@@ -226,6 +265,8 @@ All nodes follow UI design inspired by simple-ai.dev to maintain consistency acr
    - Base node UI component that provides enhanced functionality
    - Used by all node UI implementations
    - Provides settings drawer and standardized node structure
+   - Acts as a composition wrapper rather than a base class
+   - Changes only affect nodes explicitly using DefaultNode as a wrapper
 
 2. **client/src/components/nodes/common/NodeHoverMenu.tsx**
    - Provides a hover menu for node actions like duplicate, delete, settings
@@ -492,6 +533,36 @@ All nodes use a standardized UI pattern:
 - Settings displayed in a drawer/sheet UI
 - Common actions via hover menu
 
+#### Event-Based Communication System
+
+Nodes communicate with the editor and other components through standardized window events:
+
+```typescript
+// Node Settings Events
+const openSettings = () => {
+  window.dispatchEvent(new CustomEvent('node-settings-open', {
+    detail: { nodeId: id }
+  }));
+};
+
+// Event Listener in NodeSettingsDrawer
+useEffect(() => {
+  const handleSettingsOpen = (event) => {
+    const { nodeId } = event.detail;
+    setIsOpen(true);
+    setCurrentNodeId(nodeId);
+  };
+  
+  window.addEventListener('node-settings-open', handleSettingsOpen);
+  return () => window.removeEventListener('node-settings-open', handleSettingsOpen);
+}, []);
+```
+
+This decoupled event system ensures:
+- New nodes automatically work with the settings drawer without direct coupling
+- Node UI implementations remain lightweight and focused on presentation
+- Global UI components like drawers can be modified independently of nodes
+
 ### Node Registration and Discovery
 
 The node system automatically:
@@ -517,6 +588,28 @@ The node system automatically:
 2. For system-wide changes, modify `client/src/nodes/Default/ui.tsx`
 3. For node-specific changes, modify that node's ui.tsx file
 
+> **Important Note on Default Node Updates**: Changes to `Default/ui.tsx` will only affect:
+> - New nodes created after the change
+> - Existing nodes that explicitly use DefaultNode as a wrapper component
+> 
+> Individual nodes that implement their own UI without using DefaultNode will need manual updates
+> to adopt new features. The recommended approach is to use events for global functionality.
+
+##### Adding Global Node Features
+
+When adding a feature that should work across all nodes:
+
+1. Implement the feature in a reusable component (e.g., in `components/nodes/common/`)
+2. Use standardized window events for communication:
+   ```typescript
+   // Add this to your new component
+   window.dispatchEvent(new CustomEvent('node-feature-event', {
+     detail: { nodeId, additionalData }
+   }));
+   ```
+3. Add the component to the DefaultNode implementation
+4. For existing non-standard nodes, manually add event dispatching code
+
 #### 3. Working with the Storage System
 
 1. Use the `storage.ts` interface methods for CRUD operations
@@ -541,3 +634,5 @@ The node system automatically:
 | Type errors | Ensure type definitions match actual data |
 | Settings drawer closing unexpectedly | Verify event propagation is properly stopped |
 | Hover menu not appearing | Check z-index and positioning calculations |
+| Settings for new nodes don't work | Ensure nodes dispatch 'node-settings-open' events properly |
+| Node updates not affecting all nodes | Remember DefaultNode changes only affect nodes using it as a wrapper |
