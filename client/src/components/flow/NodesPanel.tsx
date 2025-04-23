@@ -29,7 +29,8 @@ import {
   ToggleLeft,
   CheckSquare,
   Table,
-  FileText
+  FileText,
+  Code
 } from 'lucide-react';
 import NodeItem from './NodeItem';
 import { FOLDER_BASED_NODE_TYPES, SYSTEM_NODE_TYPES, CUSTOM_NODE_TYPES } from '@/lib/nodeValidator';
@@ -118,6 +119,13 @@ const NODE_TYPES = [
     description: 'Renders markdown text with live preview',
     category: 'content',
     icon: FileText
+  },
+  { 
+    id: 'function_node', 
+    name: 'Function', 
+    description: 'Custom JavaScript function that transforms data',
+    category: 'code',
+    icon: Code
   }
   // Additional nodes will be loaded dynamically from the System and Custom directories
 ];
@@ -150,7 +158,8 @@ const NodesPanel = () => {
         'data_transform', 'decision', 'function', 'json_path',
         // New custom nodes
         'text_formatter', 'number_input', 'toggle_switch',
-        'json_schema_validator', 'csv_processor', 'markdown_renderer'
+        'json_schema_validator', 'csv_processor', 'markdown_renderer',
+        'function_node'
       ];
       return implementedNodeTypes.includes(nodeType.id);
     });
