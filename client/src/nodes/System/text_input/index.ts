@@ -36,4 +36,7 @@ const TextInputNode: NodeRegistryEntry = {
   icon: React.createElement(MessageSquare, { size: 16 })
 };
 
+// Export the component directly for the dynamic loader
+export const component = ui.component;
+
 export default TextInputNode;

@@ -93,6 +93,26 @@ function DefaultNode({ data, id, selected }: NodeProps<DefaultNodeData>) {
   const hideDelay = 400; // ms before hiding menu
   const hoverAreaRef = useRef<HTMLDivElement>(null);
   
+  // Register with FlowEditor for settings
+  useEffect(() => {
+    // Add global event listener for node settings
+    const handleNodeSettings = () => {
+      const event = new CustomEvent('node-settings-open', { 
+        detail: { nodeId: id }
+      });
+      window.dispatchEvent(event);
+    };
+    
+    // Add the settings click handler to the node data
+    if (data.onSettingsClick === undefined && data.onChange) {
+      // Only add if it doesn't already exist
+      data.onChange({
+        ...data,
+        onSettingsClick: handleNodeSettings
+      });
+    }
+  }, [id, data]);
+  
   // Function to handle hover start
   const handleHoverStart = useCallback(() => {
     // Set a timeout to show the menu after hovering for specified delay
@@ -152,7 +172,20 @@ function DefaultNode({ data, id, selected }: NodeProps<DefaultNodeData>) {
   // Settings icon click handler
   const handleSettingsClick = (e: React.MouseEvent) => {
     e.stopPropagation();
-    setShowSettings(true);
+    
+    // If we have an onSettingsClick function from FlowEditor, use it
+    if (data.onSettingsClick) {
+      data.onSettingsClick();
+    } else {
+      // Otherwise, fall back to local settings drawer
+      setShowSettings(true);
+      
+      // Also emit the node-settings-open event for FlowEditor to catch
+      const event = new CustomEvent('node-settings-open', { 
+        detail: { nodeId: id }
+      });
+      window.dispatchEvent(event);
+    }
   };
   
   // Settings submission handler
