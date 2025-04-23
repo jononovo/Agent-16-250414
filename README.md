@@ -14,8 +14,7 @@ A flexible, extensible node-based workflow system for creating, visualizing, and
 For comprehensive documentation, please see:
 
 - [Complete Documentation](./README/DOCUMENTATION.md)
-- [AI Agent Context](./README/ai-agent-context-20250423.md) - Concise overview for AI assistants
-- [Optimized AI Agent Context](./README/ai-agent-context-optimized-20250423.md) - Enhanced technical details for AI assistance
+- [Replit Dev Agent Context](./README/replit-dev-agent-context-20250423-1644.md) - Technical reference for AI assistants
 
 ## Getting Started
 

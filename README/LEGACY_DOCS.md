@@ -30,25 +30,16 @@ The project documentation has been reorganized and consolidated for clarity. Her
    - Development Guide
    - Troubleshooting
 
-2. **ai-agent-context-20250423.md** - Concise context document for AI assistants with:
+2. **replit-dev-agent-context-20250423-1644.md** - Enhanced AI assistant context with:
    - Application overview
-   - Technology stack
-   - Key files and directories
-   - Critical functions
-   - Data flow
-   - State management
-   - Common development tasks
-   - Known issues
-
-3. **ai-agent-context-optimized-20250423.md** - Enhanced AI assistant context with:
-   - Detailed technology version compatibility
-   - Component dependency mapping
-   - Data transformation flow
-   - Initialization sequence
-   - Pattern examples with code snippets
+   - Technology stack with version compatibility
+   - Component relationships and dependency mapping
+   - Key files and directories with descriptions
+   - Critical functions with code snippets
+   - Data flow and transformation patterns
+   - State management details
    - Common error patterns and solutions
-   - Environment differences
-   - Enhanced debugging guidance
+   - Naming conventions and code examples
 
 ## Why We Consolidated
 
