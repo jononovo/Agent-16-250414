@@ -610,17 +610,20 @@ const NodeSettingsDrawer: React.FC<NodeSettingsDrawerProps> = ({
     }
   };
 
-  // When Sheet close button is clicked, call onClose
+  // When Sheet is requested to close, simply call onClose
+  // This bypasses any problematic DOM event handling that could cause errors
   const handleOpenChange = (open: boolean) => {
     if (!open) {
-      // Only call onClose directly - no setTimeout to avoid DOM manipulation issues
       onClose();
     }
   };
 
   return (
     <Sheet open={isOpen} onOpenChange={handleOpenChange}>
-      <SheetContent side="right" className="w-[400px] sm:w-[540px] p-0">
+      <SheetContent side="right" className="w-[400px] sm:w-[540px] p-0" onPointerDownOutside={(e) => {
+        // Prevent the default behavior to avoid any errors with element checking
+        e.preventDefault();
+      }}>
         <SheetHeader className="p-6 pb-2">
           <SheetTitle>Node Configuration <span className="text-sm text-muted-foreground">({node.type})</span></SheetTitle>
           <SheetDescription>
