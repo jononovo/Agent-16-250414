@@ -2,7 +2,7 @@
 
 This project implements a flexible, extensible node-based workflow system for creating, visualizing, and executing workflows. The architecture uses a folder-based approach for implementing nodes, making it easy to add new node types.
 
-> **Note**: For AI assistants helping with this codebase, see [AI Agent Context](./ai-agent-context-20250423.md) for a concise overview tailored for AI systems.
+> **Note**: For AI assistants helping with this codebase, see [AI Agent Context](./ai-agent-context-20250423.md) for a concise overview or [Optimized AI Agent Context](./ai-agent-context-optimized-20250423.md) for an enhanced version with more technical details, code patterns, and troubleshooting guidance.
 
 ## Table of Contents
 

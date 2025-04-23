@@ -15,6 +15,7 @@ For comprehensive documentation, please see:
 
 - [Complete Documentation](./README/DOCUMENTATION.md)
 - [AI Agent Context](./README/ai-agent-context-20250423.md) - Concise overview for AI assistants
+- [Optimized AI Agent Context](./README/ai-agent-context-optimized-20250423.md) - Enhanced technical details for AI assistance
 
 ## Getting Started
 

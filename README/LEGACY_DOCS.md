@@ -40,6 +40,16 @@ The project documentation has been reorganized and consolidated for clarity. Her
    - Common development tasks
    - Known issues
 
+3. **ai-agent-context-optimized-20250423.md** - Enhanced AI assistant context with:
+   - Detailed technology version compatibility
+   - Component dependency mapping
+   - Data transformation flow
+   - Initialization sequence
+   - Pattern examples with code snippets
+   - Common error patterns and solutions
+   - Environment differences
+   - Enhanced debugging guidance
+
 ## Why We Consolidated
 
 The documentation was consolidated to:
