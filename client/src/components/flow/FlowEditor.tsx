@@ -519,22 +519,21 @@ const FlowEditor = ({
         y: event.clientY - reactFlowBounds.top,
       });
 
+      // Generate a unique ID for the new node
+      const nodeId = `${type}-${Date.now()}`;
+      
       // Add onSettingsClick to all node types
       const nodeDataWithHandlers = {
         ...nodeData,
         // Add settings click handler for all nodes, allowing node-specific customization
         onSettingsClick: () => {
-          // We need to find the node by ID later because this is a closure
-          const node = reactFlowInstance.getNode(`${type}-${Date.now()}`);
-          if (node) {
-            setSelectedNode(node);
-            setSettingsDrawerOpen(true);
-          }
+          // Instead of trying to find the node by ID, dispatch an event that will be handled globally
+          const event = new CustomEvent('node-settings-open', { 
+            detail: { nodeId }
+          });
+          window.dispatchEvent(event);
         }
       };
-      
-      // Generate a unique ID for the new node
-      const nodeId = `${type}-${Date.now()}`;
 
       // Add a temporary loading node first
       const tempNodeId = `loading-${nodeId}`;
