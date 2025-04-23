@@ -97,7 +97,8 @@ export const validator = (data: TextInputNodeData) => {
 // React component for the node
 export const component = ({ data, id, isConnectable, selected }: NodeProps<TextInputNodeData>) => {
   // States for component functionality
-  const [showSettings, setShowSettings] = useState(false);
+  // We don't need showSettings anymore since we're using the global settings drawer
+  // const [showSettings, setShowSettings] = useState(false);
   const [showContextActions, setShowContextActions] = useState(false);
   const [showHoverMenu, setShowHoverMenu] = useState(false);
   const [hoverTimer, setHoverTimer] = useState<NodeJS.Timeout | null>(null);
@@ -194,10 +195,7 @@ export const component = ({ data, id, isConnectable, selected }: NodeProps<TextI
     if (nodeData.onSettingsClick) {
       nodeData.onSettingsClick();
     } else {
-      // Otherwise, fall back to local settings drawer
-      setShowSettings(true);
-      
-      // Also emit the node-settings-open event for FlowEditor to catch
+      // Always emit the node-settings-open event for FlowEditor to handle
       const event = new CustomEvent('node-settings-open', { 
         detail: { nodeId: id }
       });
@@ -205,30 +203,8 @@ export const component = ({ data, id, isConnectable, selected }: NodeProps<TextI
     }
   };
   
-  // Settings submission handler
-  const handleSubmitSettings = (updatedData: any) => {
-    // Update node data when settings are changed
-    if (nodeData.onChange) {
-      // If the updated data contains settingsData, handle it properly
-      if (updatedData.settingsData) {
-        nodeData.onChange({
-          ...nodeData,
-          settingsData: {
-            ...(nodeData.settingsData || {}),
-            ...updatedData.settingsData
-          }
-        });
-      } else {
-        // Otherwise apply the updates directly
-        nodeData.onChange({
-          ...nodeData,
-          ...updatedData
-        });
-      }
-    }
-    
-    setShowSettings(false);
-  };
+  // Settings submission handler is not needed anymore since we use FlowEditor's settings 
+  // component instead of our own implementation
   
   // Node action handlers
   const handleRunNode = () => {
@@ -258,9 +234,7 @@ export const component = ({ data, id, isConnectable, selected }: NodeProps<TextI
     if (nodeData.onSettingsClick) {
       nodeData.onSettingsClick();
     } else {
-      setShowSettings(true);
-      
-      // Also emit the node-settings-open event for FlowEditor to catch
+      // Always emit the node-settings-open event for FlowEditor to handle
       const event = new CustomEvent('node-settings-open', { 
         detail: { nodeId: id }
       });
@@ -386,143 +360,102 @@ export const component = ({ data, id, isConnectable, selected }: NodeProps<TextI
   );
   
   return (
-    <>
-      <div 
-        ref={hoverAreaRef}
+    <div 
+      ref={hoverAreaRef}
+      className="relative"
+      style={{ 
+        // Add padding when menu is shown to create a seamless interaction area
+        padding: showHoverMenu ? '8px 20px 8px 8px' : '0',
+        margin: showHoverMenu ? '-8px -20px -8px -8px' : '0',
+      }}
+    >
+      <div
+        ref={nodeRef}
+        onMouseEnter={handleHoverStart}
+        onMouseLeave={handleHoverEnd}
         className="relative"
-        style={{ 
-          // Add padding when menu is shown to create a seamless interaction area
-          padding: showHoverMenu ? '8px 20px 8px 8px' : '0',
-          margin: showHoverMenu ? '-8px -20px -8px -8px' : '0',
-        }}
       >
-        <div
-          ref={nodeRef}
-          onMouseEnter={handleHoverStart}
-          onMouseLeave={handleHoverEnd}
-          className="relative"
-        >
-          {/* Hover Menu */}
-          {showHoverMenu && (
-            <div 
-              ref={menuRef}
-              onMouseEnter={handleMenuHoverStart}
-              onMouseLeave={handleHoverEnd}
-              className="absolute z-50"
-              style={{ right: '-20px', top: '0px' }}
-            >
-              <NodeHoverMenu 
-                nodeId={id}
-                actions={hoverMenuActions}
-                position="right"
+        {/* Hover Menu */}
+        {showHoverMenu && (
+          <div 
+            ref={menuRef}
+            onMouseEnter={handleMenuHoverStart}
+            onMouseLeave={handleHoverEnd}
+            className="absolute z-50"
+            style={{ right: '-20px', top: '0px' }}
+          >
+            <NodeHoverMenu 
+              nodeId={id}
+              actions={hoverMenuActions}
+              position="right"
+            />
+          </div>
+        )}
+        
+        <NodeContainer selected={selected} className={containerClass}>
+          <NodeHeader 
+            title={nodeData.label} 
+            description={nodeData.description || "Text input for workflows"}
+            icon={iconElement}
+            actions={headerActions}
+          />
+          
+          <NodeContent padding="normal">
+            {/* Node Type Badge */}
+            <div className="flex justify-between items-start">
+              <Badge variant="outline" className="text-xs px-2 py-0.5 bg-slate-100/50 dark:bg-slate-800/50">
+                {nodeData.category || "input"}
+              </Badge>
+            </div>
+            
+            {/* Input Field */}
+            <div className="mt-3">
+              <Label htmlFor={`inputText-${id}`} className="mb-2 block text-xs">
+                {nodeData.label}
+                {nodeData.required && <span className="text-red-500 ml-1">*</span>}
+              </Label>
+              
+              <Input 
+                id={`inputText-${id}`}
+                type="text"
+                value={inputText}
+                onChange={handleInputChange}
+                placeholder={nodeData.placeholder}
+                className="w-full"
               />
             </div>
-          )}
-          
-          <NodeContainer selected={selected} className={containerClass}>
-            <NodeHeader 
-              title={nodeData.label} 
-              description={nodeData.description || "Text input for workflows"}
-              icon={iconElement}
-              actions={headerActions}
-            />
             
-            <NodeContent padding="normal">
-              {/* Node Type Badge */}
-              <div className="flex justify-between items-start">
-                <Badge variant="outline" className="text-xs px-2 py-0.5 bg-slate-100/50 dark:bg-slate-800/50">
-                  {nodeData.category || "input"}
-                </Badge>
-              </div>
-              
-              {/* Input Field */}
-              <div className="mt-3">
-                <Label htmlFor={`inputText-${id}`} className="mb-2 block text-xs">
-                  {nodeData.label}
-                  {nodeData.required && <span className="text-red-500 ml-1">*</span>}
-                </Label>
-                
-                <Input 
-                  id={`inputText-${id}`}
-                  type="text"
-                  value={inputText}
-                  onChange={handleInputChange}
-                  placeholder={nodeData.placeholder}
-                  className="w-full"
-                />
-              </div>
-              
-              {/* Status messages and errors */}
-              {nodeData.hasError && nodeData.errorMessage && (
-                <div className="mt-2 p-2 text-xs bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 rounded border border-red-200 dark:border-red-800">
-                  <div className="flex items-center gap-1 mb-1">
-                    <AlertTriangle className="h-3 w-3" />
-                    <span className="font-medium">Error</span>
-                  </div>
-                  {nodeData.errorMessage}
+            {/* Status messages and errors */}
+            {nodeData.hasError && nodeData.errorMessage && (
+              <div className="mt-2 p-2 text-xs bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 rounded border border-red-200 dark:border-red-800">
+                <div className="flex items-center gap-1 mb-1">
+                  <AlertTriangle className="h-3 w-3" />
+                  <span className="font-medium">Error</span>
                 </div>
-              )}
-            </NodeContent>
-            
-            {/* Output handle */}
-            <Handle
-              type="source"
-              position={Position.Right}
-              id="output"
-              style={{ 
-                top: 50, 
-                width: '12px', 
-                height: '12px', 
-                background: 'white',
-                border: '2px solid #10b981'
-              }}
-              isConnectable={isConnectable}
-            />
-            <div className="absolute right-2 top-[46px] text-xs text-muted-foreground text-right">
-              Out
-            </div>
-          </NodeContainer>
-        </div>
-      </div>
-      
-      {/* Settings Sheet/Drawer */}
-      <Sheet open={showSettings} onOpenChange={setShowSettings}>
-        <SheetContent className="w-[350px] sm:w-[450px]">
-          <SheetHeader>
-            <SheetTitle>{settings?.title || `${nodeData.label} Settings`}</SheetTitle>
-          </SheetHeader>
-          
-          <div className="py-4">
-            {settings?.fields && settings.fields.length > 0 ? (
-              <NodeSettingsForm 
-                nodeData={nodeData}
-                settingsFields={settings.fields}
-                onChange={handleSubmitSettings}
-              />
-            ) : (
-              <div className="text-sm text-slate-600">
-                No configurable settings for this node.
+                {nodeData.errorMessage}
               </div>
             )}
-            
-            <div className="flex justify-end gap-2 mt-6">
-              <Button 
-                variant="outline" 
-                size="sm"
-                onClick={() => setShowSettings(false)}
-              >
-                Cancel
-              </Button>
-              <Button 
-                size="sm"
-                onClick={() => handleSubmitSettings(nodeData)}
-              >
-                Apply
-              </Button>
-            </div>
+          </NodeContent>
+          
+          {/* Output handle */}
+          <Handle
+            type="source"
+            position={Position.Right}
+            id="output"
+            style={{ 
+              top: 50, 
+              width: '12px', 
+              height: '12px', 
+              background: 'white',
+              border: '2px solid #10b981'
+            }}
+            isConnectable={isConnectable}
+          />
+          <div className="absolute right-2 top-[46px] text-xs text-muted-foreground text-right">
+            Out
           </div>
-        </SheetContent>
-      </Sheet>
-    </>
+        </NodeContainer>
+      </div>
+    </div>
   );
 };
