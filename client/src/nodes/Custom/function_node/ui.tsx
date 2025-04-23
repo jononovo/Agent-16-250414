@@ -162,7 +162,20 @@ function FunctionNode({ data, id, selected }: NodeProps<FunctionNodeData>) {
   // Settings icon click handler
   const handleSettingsClick = (e: React.MouseEvent) => {
     e.stopPropagation();
-    setShowSettings(true);
+    
+    // If we have an onSettingsClick function from FlowEditor, use it
+    if (data.onSettingsClick) {
+      data.onSettingsClick();
+    } else {
+      // Otherwise, fallback to the local settings drawer
+      setShowSettings(true);
+      
+      // Also emit the node-settings-open event for FlowEditor to catch
+      const event = new CustomEvent('node-settings-open', { 
+        detail: { nodeId: id }
+      });
+      window.dispatchEvent(event);
+    }
   };
   
   // Settings submission handler
@@ -249,13 +262,24 @@ function FunctionNode({ data, id, selected }: NodeProps<FunctionNodeData>) {
   
   // Settings click handler for the menu 
   const handleSettingsClickForMenu = () => {
-    setShowSettings(true);
+    // Use the same logic as handleSettingsClick but without needing the event parameter
+    if (data.onSettingsClick) {
+      data.onSettingsClick();
+    } else {
+      setShowSettings(true);
+      
+      // Also emit the node-settings-open event for FlowEditor to catch
+      const event = new CustomEvent('node-settings-open', { 
+        detail: { nodeId: id }
+      });
+      window.dispatchEvent(event);
+    }
   };
   
   // Dispatch a custom event to let the FlowEditor know about clicks
   const dispatchCustomEvent = (eventName: string, detail: any) => {
     const event = new CustomEvent(eventName, { detail });
-    document.dispatchEvent(event);
+    window.dispatchEvent(event);
   };
   
   // This adds additional hooks to connect with the FlowEditor
