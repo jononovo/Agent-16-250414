@@ -322,6 +322,9 @@ function DefaultNode({ data, id, selected }: NodeProps<DefaultNodeData>) {
         <DynamicIcon icon={icon} className="h-4 w-4 text-primary" />
       ) : React.isValidElement(icon) ? (
         icon
+      ) : icon && typeof icon === 'object' && Object.keys(icon).length === 0 ? (
+        // Handle empty object case that was causing the React error
+        <DynamicIcon icon="box" className="h-4 w-4 text-primary" />
       ) : (
         <DynamicIcon icon="box" className="h-4 w-4 text-primary" />
       )}

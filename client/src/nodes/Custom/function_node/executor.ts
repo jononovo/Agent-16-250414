@@ -5,7 +5,29 @@
  * which allows users to run custom JavaScript functions within workflows.
  */
 
-import { NodeExecutionData, WorkflowItem } from '@/shared/nodeTypes';
+// Define interfaces needed to avoid import issues
+interface WorkflowItem {
+  json: any;              // The actual data
+  text?: string;          // Text representation
+  binary?: {              // For binary data (images, files, etc.)
+    mimeType: string;
+    data: string;
+    filename?: string;
+  };
+}
+
+interface NodeExecutionData {
+  items: WorkflowItem[];  // Output data items
+  meta: {
+    startTime: Date;           // When execution started
+    endTime: Date;             // When execution completed
+    source?: string;           // Source node identifier
+    error?: boolean;           // Whether execution resulted in an error
+    errorMessage?: string;     // Error message if error is true
+    warning?: string;          // Non-critical warning message
+    [key: string]: any;        // Additional metadata properties
+  };
+}
 
 interface FunctionNodeData {
   code?: string;
@@ -132,7 +154,7 @@ export async function execute(
   } catch (error: any) {
     // Catch any unexpected errors in the executor itself
     return {
-      items: input.items.map(item => ({
+      items: input.items.map((item: WorkflowItem) => ({
         json: { error: true, message: error.message },
         text: `Error: ${error.message}`
       })),
