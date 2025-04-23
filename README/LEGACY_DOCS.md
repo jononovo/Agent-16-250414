@@ -1,39 +1,40 @@
-# Legacy Documentation Archive
+# Legacy Documentation Reference
 
-This file contains archived documentation from earlier versions of the project. Much of this content has been updated and reorganized in the new documentation files:
+This file serves as a reference for developers who might be looking for previously available documentation files that have been consolidated or renamed for better organization.
 
-- README-updated.md (Quick Start Guide)  
-- README-CONSOLIDATED.md (Comprehensive Documentation)
-- TECHNICAL_REFERENCE.md (System Reference Guide)
-- AI_MODEL_CONTEXT.md (AI Assistant Context Guide)
+## Updated Documentation Structure
 
-The content below is kept for historical reference.
+The project documentation has been reorganized and consolidated for clarity. Here's where to find information that was previously in separate files:
 
----
+| Old File | New Location |
+|----------|-------------|
+| NODES_SYSTEM.md | See [README-Comprehensive.md](./README-Comprehensive.md) for node system overview and [REFERENCE.md](./REFERENCE.md) for technical details |
+| ARCHITECTURE.md | See [README-Comprehensive.md](./README-Comprehensive.md) for architectural overview |
+| DEVELOPMENT.md | See [README-Quick-Start.md](./README-Quick-Start.md) for getting started and [REFERENCE.md](./REFERENCE.md) for development patterns |
+| TECHNICAL_REFERENCE.md | Consolidated into [REFERENCE.md](./REFERENCE.md) |
+| AI_MODEL_CONTEXT.md | Consolidated into [REFERENCE.md](./REFERENCE.md) |
 
-# Node System Architecture Documentation
+## Current Documentation Files
 
-This documentation combines content from the original ARCHITECTURE.md, DEVELOPMENT.md, and NODES_SYSTEM.md files.
+1. **README-Quick-Start.md**
+   - Concise guide to get up and running quickly
+   - Installation and first steps
 
-## Original Table of Contents
-1. Node Architecture
-2. Folder Structure
-3. Node Components
-4. Enhanced Node Pattern
-5. Node UI System
-6. Node Data Management
-7. Node Execution
-8. Adding New Nodes
-9. Common Patterns and Best Practices
-10. Example Implementation
+2. **README-Comprehensive.md**
+   - Detailed explanation of the project architecture
+   - Node system structure and organization
+   - UI guidelines and patterns
 
-## Note About Updated Architecture
+3. **REFERENCE.md**
+   - Technical reference for developers and AI assistants
+   - Data structures and interfaces
+   - Common code patterns
+   - System functions reference
 
-Please be aware that the current version of the application:
+## Why We Consolidated
 
-1. Uses **Replit Key-Value Database** for persistence, not PostgreSQL
-2. Has removed the test files `node-system-demo.tsx` and `agent-test.tsx`
-3. Has updated the Node Hover Menu with a 400ms delay and positioning 20px from nodes
-4. Uses the Enhanced Node Pattern that avoids settings drawer closing when editing form fields
-
-For the most accurate and current information, please refer to the updated documentation files.
+The documentation was consolidated to:
+1. Reduce duplication of information
+2. Create a clearer information hierarchy
+3. Make it easier to keep documentation in sync with code changes
+4. Improve the overall developer experience

@@ -2,6 +2,8 @@
 
 This project implements a flexible, extensible node-based workflow system for creating, visualizing, and executing workflows. The architecture uses a folder-based approach for implementing nodes, making it easy to add new node types.
 
+> **Note**: For a comprehensive technical reference, including data structures, system functions, and code patterns, see [REFERENCE.md](./REFERENCE.md)
+
 ## Core Architecture Overview
 
 The AI Agent Workflow Platform is built around a modular node-based architecture that enables the composition of complex workflows through simple, reusable components. The architecture follows these core design principles:
