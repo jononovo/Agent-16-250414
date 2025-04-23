@@ -5,7 +5,7 @@
  * Used within the settings drawer/sheet to allow users to configure node parameters.
  */
 
-import React, { useState } from 'react';
+import React, { useState, forwardRef, useImperativeHandle } from 'react';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -36,17 +36,23 @@ export interface NodeSettingsFormProps {
   onChange: (updatedData: Record<string, any>) => void;
 }
 
-export const NodeSettingsForm: React.FC<NodeSettingsFormProps> = ({
-  nodeData,
-  settingsFields,
-  onChange
-}) => {
+export interface NodeSettingsFormRef {
+  submitForm: () => void;
+}
+
+export const NodeSettingsForm = forwardRef<NodeSettingsFormRef, NodeSettingsFormProps>((props, ref) => {
+  const { nodeData, settingsFields, onChange } = props;
   const [formData, setFormData] = useState<Record<string, any>>({ ...nodeData });
   
   // Method to submit the form data to the parent component
   const submitForm = () => {
     onChange(formData);
   };
+  
+  // Expose the submitForm method via the ref
+  useImperativeHandle(ref, () => ({
+    submitForm
+  }));
   
   // Handle changes to form fields
   const handleFieldChange = (key: string, value: any) => {
@@ -143,15 +149,6 @@ export const NodeSettingsForm: React.FC<NodeSettingsFormProps> = ({
         return <div>Unsupported field type: {field.type}</div>;
     }
   };
-  
-  // Expose the submitForm method via a ref
-  React.useImperativeHandle(
-    // @ts-ignore - This is expected
-    ref,
-    () => ({
-      submitForm
-    })
-  );
 
   return (
     <div className="space-y-4 py-2">
@@ -173,6 +170,6 @@ export const NodeSettingsForm: React.FC<NodeSettingsFormProps> = ({
       ))}
     </div>
   );
-};
+});
 
 export default NodeSettingsForm;
