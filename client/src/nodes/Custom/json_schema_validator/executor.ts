@@ -5,7 +5,7 @@
  * It validates JSON data against a JSON schema using Ajv and returns validation results.
  */
 
-import { createNodeOutput, createErrorOutput } from '../../../nodes/lib/nodeOutputUtils';
+import { createNodeOutput, createErrorOutput } from '../../../nodes/nodeOutputUtils';
 import { NodeExecutionData } from '@shared/nodeTypes';
 
 // We'll use vanilla JS validation since we don't want to add Ajv as a dependency

@@ -5,7 +5,7 @@
  * It processes CSV data, applies filters, and provides output in various formats.
  */
 
-import { createNodeOutput, createErrorOutput } from '../../../nodes/lib/nodeOutputUtils';
+import { createNodeOutput, createErrorOutput } from '../../../nodes/nodeOutputUtils';
 import { NodeExecutionData } from '@shared/nodeTypes';
 
 export interface CsvProcessorNodeData {
