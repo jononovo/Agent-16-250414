@@ -755,12 +755,29 @@ const FlowEditor = ({
         });
       }
     };
+    
+    // Handler for node delete events triggered from nodes
+    const handleNodeDelete = (event: CustomEvent) => {
+      if (event.detail && event.detail.nodeId) {
+        const nodeId = event.detail.nodeId;
+        console.log('Deleting node with ID:', nodeId);
+        
+        // Delete the node from the flow
+        setNodes(nodes => nodes.filter(node => node.id !== nodeId));
+        
+        // Also clean up any connected edges
+        setEdges(edges => edges.filter(
+          edge => edge.source !== nodeId && edge.target !== nodeId
+        ));
+      }
+    };
 
     // Add event listeners for custom events
     window.addEventListener('node-settings-open', handleNodeSettingsOpen as EventListener);
     window.addEventListener('agent-trigger-update', handleAgentTriggerUpdate as EventListener);
     window.addEventListener('workflow-trigger-update', handleWorkflowTriggerUpdate as EventListener);
     window.addEventListener('monkey-agent-update-node', handleMonkeyAgentNodeUpdate as EventListener);
+    window.addEventListener('node-delete', handleNodeDelete as EventListener);
     
     // Cleanup function to remove event listeners
     return () => {
@@ -768,6 +785,7 @@ const FlowEditor = ({
       window.removeEventListener('agent-trigger-update', handleAgentTriggerUpdate as EventListener);
       window.removeEventListener('workflow-trigger-update', handleWorkflowTriggerUpdate as EventListener);
       window.removeEventListener('monkey-agent-update-node', handleMonkeyAgentNodeUpdate as EventListener);
+      window.removeEventListener('node-delete', handleNodeDelete as EventListener);
     };
   }, [nodes, setNodes, setSelectedNode, setSettingsDrawerOpen, name, edges, saveMutation]);
   
