@@ -1,10 +1,8 @@
 import { ReactNode, useState, useEffect } from 'react';
-import { Link } from 'wouter';
 import { useBuilderContext } from '@/contexts/BuilderContext';
-import { Key, Settings, UserPlus } from 'lucide-react';
+import { UserPlus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogTrigger } from '@/components/ui/dialog';
-import { ApiConfigForm } from '@/components/ApiConfigForm';
 import { useToast } from '@/hooks/use-toast';
 import { apiRequest } from '@/lib/apiClient';
 import { executeWorkflow } from '@/lib/workflowClient';
@@ -16,32 +14,8 @@ interface MainContentProps {
 
 const MainContent = ({ children }: MainContentProps) => {
   const { activeTab } = useBuilderContext();
-  const [isApiDialogOpen, setIsApiDialogOpen] = useState(false);
   const [isNewAgentModalOpen, setIsNewAgentModalOpen] = useState(false);
-  const [apiKeyStatus, setApiKeyStatus] = useState<'missing' | 'present' | 'checking'>('checking');
   const { toast } = useToast();
-  
-  // Check if API keys are configured
-  useEffect(() => {
-    const checkApiKeys = async () => {
-      try {
-        setApiKeyStatus('checking');
-        const response = await fetch('/api/config');
-        const data = await response.json();
-        
-        if (data.claudeApiKey || data.perplexityApiKey) {
-          setApiKeyStatus('present');
-        } else {
-          setApiKeyStatus('missing');
-        }
-      } catch (error) {
-        console.error('Error checking API keys:', error);
-        setApiKeyStatus('missing');
-      }
-    };
-    
-    checkApiKeys();
-  }, [isApiDialogOpen]);
   
   const getPageTitle = () => {
     switch (activeTab) {
@@ -54,18 +28,6 @@ const MainContent = ({ children }: MainContentProps) => {
       default:
         return 'Build a New Component';
     }
-  };
-
-  const handleApiKeySaved = () => {
-    setIsApiDialogOpen(false);
-    
-    toast({
-      title: "API Keys Configured",
-      description: "API keys have been saved and will be used in workflows.",
-      duration: 3000,
-    });
-    
-    setApiKeyStatus('present');
   };
   
   // Function to trigger the internal workflow for creating a new agent
@@ -131,16 +93,7 @@ const MainContent = ({ children }: MainContentProps) => {
               }}
             />
             
-            <Link href="/settings">
-              <Button variant="outline" size="sm" className="flex items-center gap-1">
-                <Settings size={16} />
-                <span>Settings</span>
-              </Button>
-            </Link>
-            
-            <Button className="flex items-center gap-1">
-              <span>Deploy</span>
-            </Button>
+            {/* Settings and Deploy buttons removed */}
           </div>
         </div>
       </header>
