@@ -442,12 +442,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Proxy for Claude API
   app.post('/api/proxy/claude', async (req: Request, res: Response) => {
     try {
-      const claudeApiKey = process.env.CLAUDE_API_KEY;
+      // Try to get Claude API key from environment variable
+      let claudeApiKey = process.env.CLAUDE_API_KEY;
+      
+      // If not in env vars, try to get from persistent storage
+      if (!claudeApiKey) {
+        const apiConfig = await storage.getSetting('api_config');
+        if (apiConfig?.value?.claudeApiKey) {
+          claudeApiKey = apiConfig.value.claudeApiKey;
+          // Set it in env vars for future use
+          process.env.CLAUDE_API_KEY = claudeApiKey;
+        }
+      }
       
       if (!claudeApiKey) {
         return res.status(400).json({ 
           error: true,
-          message: "Claude API key not configured on the server. Please set the CLAUDE_API_KEY environment variable."
+          message: "Claude API key not configured. Please add your Claude API key in the API Configuration settings."
         });
       }
       
@@ -479,16 +490,38 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // API Configuration endpoints
   
   // Get API configuration
-  app.get('/api/config', (req: Request, res: Response) => {
+  app.get('/api/config', async (req: Request, res: Response) => {
     try {
+      // Get API keys from storage if available
+      const apiConfig = await storage.getSetting('api_config');
+      
       // Return masked API keys to verify they exist
       // Don't return the actual keys for security reasons
       const config = {
-        // Check for environment variables and create masked versions
-        openaiApiKey: process.env.OPENAI_API_KEY ? '****' + process.env.OPENAI_API_KEY.slice(-4) : null,
-        claudeApiKey: process.env.CLAUDE_API_KEY ? '****' + process.env.CLAUDE_API_KEY.slice(-4) : null,
-        perplexityApiKey: process.env.PERPLEXITY_API_KEY ? '****' + process.env.PERPLEXITY_API_KEY.slice(-4) : null
+        // First check if keys are in storage
+        openaiApiKey: apiConfig?.value?.openaiApiKey ? '****' + apiConfig.value.openaiApiKey.slice(-4) : 
+                     // Fall back to environment variables if not in storage
+                     (process.env.OPENAI_API_KEY ? '****' + process.env.OPENAI_API_KEY.slice(-4) : null),
+        
+        claudeApiKey: apiConfig?.value?.claudeApiKey ? '****' + apiConfig.value.claudeApiKey.slice(-4) : 
+                     (process.env.CLAUDE_API_KEY ? '****' + process.env.CLAUDE_API_KEY.slice(-4) : null),
+        
+        perplexityApiKey: apiConfig?.value?.perplexityApiKey ? '****' + apiConfig.value.perplexityApiKey.slice(-4) : 
+                         (process.env.PERPLEXITY_API_KEY ? '****' + process.env.PERPLEXITY_API_KEY.slice(-4) : null)
       };
+      
+      // Set env vars from stored keys if available and env vars not set
+      if (apiConfig?.value) {
+        if (apiConfig.value.openaiApiKey && !process.env.OPENAI_API_KEY) {
+          process.env.OPENAI_API_KEY = apiConfig.value.openaiApiKey;
+        }
+        if (apiConfig.value.claudeApiKey && !process.env.CLAUDE_API_KEY) {
+          process.env.CLAUDE_API_KEY = apiConfig.value.claudeApiKey;
+        }
+        if (apiConfig.value.perplexityApiKey && !process.env.PERPLEXITY_API_KEY) {
+          process.env.PERPLEXITY_API_KEY = apiConfig.value.perplexityApiKey;
+        }
+      }
       
       res.json(config);
     } catch (error) {
@@ -501,28 +534,47 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
   
   // Update API configuration
-  app.post('/api/config', (req: Request, res: Response) => {
+  app.post('/api/config', async (req: Request, res: Response) => {
     try {
       const { openaiApiKey, claudeApiKey, perplexityApiKey } = req.body;
       
-      // In a production environment, we would save these to a secure storage
-      // For this demo, we'll log them (but masked) and use environment variables
+      // Log masked keys for debugging
       console.log('API Key update requested:', {
         openaiApiKey: openaiApiKey ? '****' + openaiApiKey.slice(-4) : null,
         claudeApiKey: claudeApiKey ? '****' + claudeApiKey.slice(-4) : null,
         perplexityApiKey: perplexityApiKey ? '****' + perplexityApiKey.slice(-4) : null
       });
       
-      // Actually set the environment variables
+      // Set environment variables for immediate use
       if (openaiApiKey) process.env.OPENAI_API_KEY = openaiApiKey;
       if (claudeApiKey) process.env.CLAUDE_API_KEY = claudeApiKey;
       if (perplexityApiKey) process.env.PERPLEXITY_API_KEY = perplexityApiKey;
       
+      // Get existing config or create a new one
+      const existingConfig = await storage.getSetting('api_config');
+      const currentApiKeys = existingConfig?.value || {};
+      
+      // Update with new values, keeping existing ones if not provided
+      const updatedApiKeys = {
+        ...currentApiKeys,
+        ...(openaiApiKey ? { openaiApiKey } : {}),
+        ...(claudeApiKey ? { claudeApiKey } : {}),
+        ...(perplexityApiKey ? { perplexityApiKey } : {})
+      };
+      
+      // Save to persistent storage
+      await storage.saveSetting({
+        id: 'api_config',
+        value: updatedApiKeys
+      });
+      
+      console.log('Saved API keys to persistent storage');
+      
       // Return the masked config to confirm receipt
       const config = {
-        openaiApiKey: process.env.OPENAI_API_KEY ? '****' + process.env.OPENAI_API_KEY.slice(-4) : null,
-        claudeApiKey: process.env.CLAUDE_API_KEY ? '****' + process.env.CLAUDE_API_KEY.slice(-4) : null,
-        perplexityApiKey: process.env.PERPLEXITY_API_KEY ? '****' + process.env.PERPLEXITY_API_KEY.slice(-4) : null
+        openaiApiKey: updatedApiKeys.openaiApiKey ? '****' + updatedApiKeys.openaiApiKey.slice(-4) : null,
+        claudeApiKey: updatedApiKeys.claudeApiKey ? '****' + updatedApiKeys.claudeApiKey.slice(-4) : null,
+        perplexityApiKey: updatedApiKeys.perplexityApiKey ? '****' + updatedApiKeys.perplexityApiKey.slice(-4) : null
       };
       
       res.json(config);
@@ -631,13 +683,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
       
-      // Get OpenAI API key
-      const openaiApiKey = process.env.OPENAI_API_KEY;
+      // Try to get OpenAI API key from environment variable
+      let openaiApiKey = process.env.OPENAI_API_KEY;
+      
+      // If not in env vars, try to get from persistent storage
+      if (!openaiApiKey) {
+        const apiConfig = await storage.getSetting('api_config');
+        if (apiConfig?.value?.openaiApiKey) {
+          openaiApiKey = apiConfig.value.openaiApiKey;
+          // Set it in env vars for future use
+          process.env.OPENAI_API_KEY = openaiApiKey;
+        }
+      }
       
       if (!openaiApiKey) {
         return res.status(400).json({ 
           success: false, 
-          message: 'OpenAI API key not configured. Please set OPENAI_API_KEY environment variable.' 
+          message: 'OpenAI API key not configured. Please add your OpenAI API key in the API Configuration settings.' 
         });
       }
       

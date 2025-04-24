@@ -1,5 +1,6 @@
 import { ReactNode, useState, useEffect } from 'react';
 import { useBuilderContext } from '@/contexts/BuilderContext';
+
 import { UserPlus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogTrigger } from '@/components/ui/dialog';
@@ -92,6 +93,7 @@ const MainContent = ({ children }: MainContentProps) => {
                 // We could add a refresh of the agents list here if needed
               }}
             />
+
             
             {/* Settings and Deploy buttons removed */}
           </div>

@@ -13,7 +13,7 @@ const definition = {
   type: 'webhook_trigger',
   name: 'Webhook Trigger',
   description: 'Creates a webhook URL that can trigger this workflow when called from external systems',
-  category: 'triggers',
+  category: 'actions',
   icon: Webhook,
   version: '1.0.0',
   inputs: {},

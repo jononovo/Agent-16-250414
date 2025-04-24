@@ -7,6 +7,20 @@ import { z } from "zod";
  * These types are used by both the in-memory storage and the frontend.
  */
 
+// Settings schema for API keys and other configuration
+export const settingsSchema = z.object({
+  id: z.string(),
+  value: z.any(),
+  updatedAt: z.date().default(() => new Date())
+});
+
+export const insertSettingsSchema = settingsSchema.omit({
+  updatedAt: true
+});
+
+export type InsertSettings = z.infer<typeof insertSettingsSchema>;
+export type Settings = z.infer<typeof settingsSchema>;
+
 // User schema
 export const userSchema = z.object({
   id: z.number(),

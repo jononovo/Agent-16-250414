@@ -1,10 +1,10 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
-import { Key, Save, Check, Lock } from "lucide-react";
+import { Key, Save, Check, Lock, RefreshCw } from "lucide-react";
 
 interface ApiConfigFormProps {
   onApiKeysSaved?: () => void;
@@ -15,8 +15,35 @@ export function ApiConfigForm({ onApiKeysSaved, onClose }: ApiConfigFormProps) {
   const [claudeApiKey, setClaudeApiKey] = useState('');
   const [perplexityApiKey, setPerplexityApiKey] = useState('');
   const [loading, setLoading] = useState(false);
+  const [checkingStatus, setCheckingStatus] = useState(true); // Flag to indicate we're checking for existing keys
   const [success, setSuccess] = useState(false);
   const { toast } = useToast();
+  
+  // Check for existing config on component mount
+  useEffect(() => {
+    const fetchApiConfig = async () => {
+      try {
+        setCheckingStatus(true);
+        const response = await fetch('/api/config');
+        const data = await response.json();
+        
+        // If we have masks of the keys, show placeholders
+        if (data.claudeApiKey) {
+          setClaudeApiKey('[API key already configured]');
+        }
+        
+        if (data.perplexityApiKey) {
+          setPerplexityApiKey('[API key already configured]');
+        }
+      } catch (error) {
+        console.error('Error checking API config:', error);
+      } finally {
+        setCheckingStatus(false);
+      }
+    };
+    
+    fetchApiConfig();
+  }, []);
 
   // Validate the Claude API key format
   const validateClaudeApiKey = (key: string): boolean => {
@@ -114,6 +141,7 @@ export function ApiConfigForm({ onApiKeysSaved, onClose }: ApiConfigFormProps) {
   return (
     <div className="w-full">
       <form onSubmit={handleSubmit}>
+
         <div className="space-y-6">
           <div className="space-y-2">
             <Label htmlFor="claude-api-key" className="flex items-center gap-1 text-base">

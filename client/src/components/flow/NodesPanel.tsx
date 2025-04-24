@@ -43,8 +43,7 @@ const NODE_CATEGORIES = [
   { id: 'input', name: 'Input', description: 'Basic input nodes for data entry and user interactions' },
   { id: 'content', name: 'Content', description: 'Content creation, formatting, and rendering' },
   { id: 'code', name: 'Code', description: 'Custom code and function execution' },
-  { id: 'triggers', name: 'Triggers', description: 'Nodes that initiate workflows based on events or schedules' },
-  { id: 'actions', name: 'Actions', description: 'Nodes that perform operations such as API requests or database queries' },
+  { id: 'actions', name: 'Actions', description: 'Nodes that perform operations and trigger workflows based on events' },
   { id: 'internal', name: 'Internal', description: 'Internal system nodes that trigger system operations' }
 ];
 
@@ -197,7 +196,6 @@ const NodesPanel = () => {
             <TabsTrigger value="data" className="px-4">Data</TabsTrigger>
             <TabsTrigger value="content" className="px-4">Content</TabsTrigger>
             <TabsTrigger value="code" className="px-4">Code</TabsTrigger>
-            <TabsTrigger value="triggers" className="px-4">Triggers</TabsTrigger>
             <TabsTrigger value="actions" className="px-4">Actions</TabsTrigger>
             <TabsTrigger value="internal" className="px-4">Internal</TabsTrigger>
           </TabsList>
