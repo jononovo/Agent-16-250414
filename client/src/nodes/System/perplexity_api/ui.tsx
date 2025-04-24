@@ -270,6 +270,28 @@ export const component = memo(({ data, id, selected, isConnectable }: NodeProps<
       )}
       
       <NodeContainer selected={selected} className="overflow-visible">
+        {/* Left side labels (outside the node) */}
+        <div className="absolute left-0 -translate-x-[calc(100%+4px)] text-xs text-slate-500 text-right">
+          <div className="absolute whitespace-nowrap" style={{ top: 'calc(70% - 10px)' }}>
+            Prompt
+          </div>
+          {nodeData.useSystemPrompt && (
+            <div className="absolute whitespace-nowrap" style={{ top: 'calc(85% - 10px)' }}>
+              System
+            </div>
+          )}
+        </div>
+        
+        {/* Right side labels (outside the node) */}
+        <div className="absolute right-0 translate-x-[calc(100%+4px)] text-xs text-slate-500 text-left">
+          <div className="absolute whitespace-nowrap" style={{ top: 'calc(70% - 10px)' }}>
+            Response
+          </div>
+          <div className="absolute whitespace-nowrap" style={{ top: 'calc(85% - 10px)' }}>
+            Metadata
+          </div>
+        </div>
+      
         {/* Input Handles */}
         <Handle
           type="target"
@@ -406,20 +428,6 @@ export const component = memo(({ data, id, selected, isConnectable }: NodeProps<
               <div>{(data as any).note}</div>
             </div>
           )}
-          
-          {/* Input/Output Labels */}
-          <div className="absolute bottom-0 inset-x-0 pb-2">
-            <div className="flex justify-between">
-              <div className="pl-2 text-xs text-slate-500 text-left">
-                <div className="mb-2.5">Prompt</div>
-                {nodeData.useSystemPrompt && <div>System</div>}
-              </div>
-              <div className="pr-2 text-xs text-slate-500 text-right">
-                <div className="mb-2.5">Response</div>
-                <div>Metadata</div>
-              </div>
-            </div>
-          </div>
         </NodeContent>
       </NodeContainer>
     </div>
