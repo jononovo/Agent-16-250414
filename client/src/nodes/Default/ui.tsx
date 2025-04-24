@@ -14,7 +14,7 @@
 
 import React, { useState, memo, useCallback, useRef, useEffect } from 'react';
 import { Handle, Position, NodeProps } from 'reactflow';
-import { Settings, MoreHorizontal, AlertTriangle } from 'lucide-react';
+import { Settings, MoreHorizontal, AlertTriangle, Trash2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 import { Badge } from '@/components/ui/badge';
@@ -31,6 +31,16 @@ import {
   PopoverContent, 
   PopoverTrigger 
 } from '@/components/ui/popover';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 import { NodeContainer } from '@/components/nodes/common/NodeContainer';
 import { NodeHeader } from '@/components/nodes/common/NodeHeader';
@@ -40,7 +50,8 @@ import NodeHoverMenu, {
   createDuplicateAction, 
   createDeleteAction, 
   createSettingsAction,
-  createRunAction
+  createRunAction,
+  NodeHoverMenuAction
 } from '@/components/nodes/common/NodeHoverMenu';
 
 interface SettingsField {
@@ -294,19 +305,45 @@ function DefaultNode({
     setShowSettings(true);
   };
   
+  // State for the delete confirmation dialog
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  
+  // Delete confirmation handlers
+  const openDeleteConfirmation = () => {
+    setShowDeleteDialog(true);
+  };
+  
+  const confirmDelete = () => {
+    // Close the dialog
+    setShowDeleteDialog(false);
+    // Execute the delete action
+    if (data.onDelete) {
+      data.onDelete(id);
+    }
+  };
+  
+  // Custom delete action with confirmation
+  const deleteAction: NodeHoverMenuAction = {
+    id: 'delete',
+    icon: <Trash2 className="h-4 w-4" />,
+    label: 'Delete Node',
+    onClick: openDeleteConfirmation,
+    variant: 'destructive'
+  };
+  
   // Create hover menu actions
-  const hoverMenuActions = [
+  const hoverMenuActions: NodeHoverMenuAction[] = [
     createRunAction(handleRunNode),
     createDuplicateAction(handleDuplicateNode),
     createSettingsAction(handleSettingsClickForMenu),
-    createDeleteAction(handleDeleteNode)
+    deleteAction
   ];
   
   // Create context actions for the node (dropdown menu)
   const contextActions = [
     { label: 'Run Node', action: handleRunNode },
     { label: 'Duplicate', action: handleDuplicateNode },
-    { label: 'Delete', action: handleDeleteNode }
+    { label: 'Delete', action: openDeleteConfirmation }
   ];
   
   const settingsSummary = getSettingsSummary();
@@ -383,124 +420,163 @@ function DefaultNode({
   );
   
   return (
-    <div 
-      ref={hoverAreaRef}
-      className="relative"
-      style={{ 
-        // Add padding when menu is shown to create a seamless interaction area
-        padding: showHoverMenu ? '8px 20px 8px 8px' : '0',
-        margin: showHoverMenu ? '-8px -20px -8px -8px' : '0',
-      }}
-    >
-      <div
-        ref={nodeRef}
-        onMouseEnter={handleHoverStart}
-        onMouseLeave={handleHoverEnd}
-        className="relative"
-      >
-        {/* Hover Menu */}
-        {showHoverMenu && (
-          <div 
-            ref={menuRef}
-            onMouseEnter={handleMenuHoverStart}
-            onMouseLeave={handleHoverEnd}
-            className="absolute z-50"
-            style={{ right: '-8px', top: '0px' }}
-          >
-            <NodeHoverMenu 
-              nodeId={id}
-              actions={hoverMenuActions}
-              position="right"
+    <>
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Node</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete this node? This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmDelete} className="bg-red-500 hover:bg-red-600">
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Settings Sheet */}
+      <Sheet open={showSettings} onOpenChange={setShowSettings}>
+        <SheetContent className="w-[400px] sm:w-[540px] overflow-y-scroll">
+          <SheetHeader>
+            <SheetTitle>
+              {settings.title || `${label} Settings`}
+            </SheetTitle>
+          </SheetHeader>
+          <div className="mt-4">
+            <NodeSettingsForm 
+              settings={settings} 
+              data={data} 
+              onSubmit={handleSubmitSettings} 
+              className="pt-4"
             />
           </div>
-        )}
-        
-        <NodeContainer selected={selected} className={containerClass}>
-          <NodeHeader 
-            title={label} 
-            description={description}
-            icon={iconElement}
-            actions={headerActions}
-          />
+        </SheetContent>
+      </Sheet>
+
+      <div 
+        ref={hoverAreaRef}
+        className="relative"
+        style={{ 
+          // Add padding when menu is shown to create a seamless interaction area
+          padding: showHoverMenu ? '8px 20px 8px 8px' : '0',
+          margin: showHoverMenu ? '-8px -20px -8px -8px' : '0',
+        }}
+      >
+        <div
+          ref={nodeRef}
+          onMouseEnter={handleHoverStart}
+          onMouseLeave={handleHoverEnd}
+          className="relative"
+        >
+          {/* Hover Menu */}
+          {showHoverMenu && (
+            <div 
+              ref={menuRef}
+              onMouseEnter={handleMenuHoverStart}
+              onMouseLeave={handleHoverEnd}
+              className="absolute z-50"
+              style={{ right: '-8px', top: '0px' }}
+            >
+              <NodeHoverMenu 
+                nodeId={id}
+                actions={hoverMenuActions}
+                position="right"
+              />
+            </div>
+          )}
           
-          <NodeContent padding="normal">
-            {/* If custom content is provided, render it */}
-            {data.childrenContent ? (
-              data.childrenContent
-            ) : (
-              <>
-                {/* Node Type Badge */}
-                <div className="flex justify-between items-center">
-                  <Badge variant="outline" className="text-xs px-2 py-0.5 bg-slate-100/50 dark:bg-slate-800/50">
-                    {category}
-                  </Badge>
+          <NodeContainer selected={selected} className={containerClass}>
+            <NodeHeader 
+              title={label} 
+              description={description}
+              icon={iconElement}
+              actions={headerActions}
+            />
+            
+            <NodeContent padding="normal">
+              {/* If custom content is provided, render it */}
+              {data.childrenContent ? (
+                data.childrenContent
+              ) : (
+                <>
+                  {/* Node Type Badge */}
+                  <div className="flex justify-between items-center">
+                    <Badge variant="outline" className="text-xs px-2 py-0.5 bg-slate-100/50 dark:bg-slate-800/50">
+                      {category}
+                    </Badge>
+                    
+                    {/* Settings Summary */}
+                    {settingsSummary && (
+                      <div className="flex items-center text-xs text-muted-foreground">
+                        <Settings className="h-3 w-3 mr-1 inline" />
+                        <span className="truncate">{settingsSummary}</span>
+                      </div>
+                    )}
+                  </div>
                   
-                  {/* Settings Summary */}
-                  {settingsSummary && (
-                    <div className="flex items-center text-xs text-muted-foreground">
-                      <Settings className="h-3 w-3 mr-1 inline" />
-                      <span className="truncate">{settingsSummary}</span>
+                  {/* Status messages and errors */}
+                  {hasError && errorMessage && (
+                    <div className="p-2 text-xs bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 rounded border border-red-200 dark:border-red-800">
+                      <div className="flex items-center gap-1 mb-1">
+                        <AlertTriangle className="h-3 w-3" />
+                        <span className="font-medium">Error</span>
+                      </div>
+                      {errorMessage}
                     </div>
                   )}
+                </>
+              )}
+            </NodeContent>
+            
+            {/* Input and output handles - only render if not explicitly hidden */}
+            {!data.hideDefaultHandles && (
+              <>
+                {/* Input handle for triggering the node */}
+                <Handle
+                  type="target"
+                  position={Position.Left}
+                  id="input"
+                  style={{ 
+                    top: 50, 
+                    width: '12px', 
+                    height: '12px', 
+                    background: 'white',
+                    border: '2px solid #3b82f6'
+                  }}
+                  isConnectable={true}
+                />
+                <div className="absolute left-2 top-[46px] text-xs text-muted-foreground">
+                  In
                 </div>
-                
-                {/* Status messages and errors */}
-                {hasError && errorMessage && (
-                  <div className="p-2 text-xs bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 rounded border border-red-200 dark:border-red-800">
-                    <div className="flex items-center gap-1 mb-1">
-                      <AlertTriangle className="h-3 w-3" />
-                      <span className="font-medium">Error</span>
-                    </div>
-                    {errorMessage}
-                  </div>
-                )}
+
+                {/* Output handle for continuing to the next node */}
+                <Handle
+                  type="source"
+                  position={Position.Right}
+                  id="output"
+                  style={{ 
+                    top: 50, 
+                    width: '12px', 
+                    height: '12px', 
+                    background: 'white',
+                    border: '2px solid #10b981'
+                  }}
+                  isConnectable={true}
+                />
+                <div className="absolute right-2 top-[46px] text-xs text-muted-foreground text-right">
+                  Out
+                </div>
               </>
             )}
-          </NodeContent>
-          
-          {/* Input and output handles - only render if not explicitly hidden */}
-          {!data.hideDefaultHandles && (
-            <>
-              {/* Input handle for triggering the node */}
-              <Handle
-                type="target"
-                position={Position.Left}
-                id="input"
-                style={{ 
-                  top: 50, 
-                  width: '12px', 
-                  height: '12px', 
-                  background: 'white',
-                  border: '2px solid #3b82f6'
-                }}
-                isConnectable={true}
-              />
-              <div className="absolute left-2 top-[46px] text-xs text-muted-foreground">
-                In
-              </div>
-
-              {/* Output handle for continuing to the next node */}
-              <Handle
-                type="source"
-                position={Position.Right}
-                id="output"
-                style={{ 
-                  top: 50, 
-                  width: '12px', 
-                  height: '12px', 
-                  background: 'white',
-                  border: '2px solid #10b981'
-                }}
-                isConnectable={true}
-              />
-              <div className="absolute right-2 top-[46px] text-xs text-muted-foreground text-right">
-                Out
-              </div>
-            </>
-          )}
-        </NodeContainer>
+          </NodeContainer>
+        </div>
       </div>
-    </div>
+    </>
   );
 }
 
