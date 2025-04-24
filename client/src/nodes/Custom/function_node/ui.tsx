@@ -7,11 +7,22 @@
 
 import React, { useState, memo, useCallback, useRef, useEffect } from 'react';
 import { Handle, Position, NodeProps } from 'reactflow';
-import { Settings, MoreHorizontal, AlertTriangle, Code, Database, Zap, Clock } from 'lucide-react';
+import { Settings, MoreHorizontal, AlertTriangle, Code, Database, Zap, Clock, StickyNote } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Label } from '@/components/ui/label';
+import { 
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle
+} from '@/components/ui/dialog';
+import { Textarea } from '@/components/ui/textarea';
 import { 
   Popover, 
   PopoverContent, 
@@ -26,7 +37,9 @@ import NodeHoverMenu, {
   createDuplicateAction, 
   createDeleteAction, 
   createSettingsAction,
-  createRunAction
+  createRunAction,
+  createAddNoteAction,
+  NodeHoverMenuAction
 } from '@/components/nodes/common/NodeHoverMenu';
 
 import { nodeMetadata } from './definition';
@@ -70,6 +83,9 @@ function FunctionNode({ data, id, selected }: NodeProps<FunctionNodeData>) {
   const [showContextActions, setShowContextActions] = useState(false);
   const [showHoverMenu, setShowHoverMenu] = useState(false);
   const [hoverTimer, setHoverTimer] = useState<NodeJS.Timeout | null>(null);
+  const [noteDialogOpen, setNoteDialogOpen] = useState(false);
+  const [noteText, setNoteText] = useState('');
+  const [noteVisibility, setNoteVisibility] = useState(false);
   const nodeRef = useRef<HTMLDivElement>(null);
   const menuRef = useRef<HTMLDivElement>(null);
   const hoverDelay = 300; // ms before showing menu
@@ -271,11 +287,48 @@ function FunctionNode({ data, id, selected }: NodeProps<FunctionNodeData>) {
         });
       }
     }
+
+    // Initialize note state from node data
+    setNoteText(data.note || '');
+    setNoteVisibility(data.showNote || false);
+    
+    // Listen for note edit events that match this node
+    const handleNoteEditEvent = (event: CustomEvent) => {
+      if (event.detail.nodeId === id) {
+        setNoteText(data.note || '');
+        setNoteVisibility(data.showNote || false);
+        setNoteDialogOpen(true);
+      }
+    };
+    
+    window.addEventListener('node-note-edit', handleNoteEditEvent as EventListener);
+    
+    return () => {
+      window.removeEventListener('node-note-edit', handleNoteEditEvent as EventListener);
+    };
   }, [id, data, onChange]);
+  
+  // Handle note editing
+  const handleEditNote = () => {
+    setNoteDialogOpen(true);
+  };
+  
+  // Save note changes
+  const saveNoteChanges = () => {
+    if (onChange) {
+      onChange({
+        ...data,
+        note: noteText,
+        showNote: noteVisibility
+      });
+    }
+    setNoteDialogOpen(false);
+  };
   
   // Create hover menu actions
   const hoverMenuActions = [
     createRunAction(handleRunNode),
+    createAddNoteAction(handleEditNote),
     createDuplicateAction(handleDuplicateNode),
     createSettingsAction(handleSettingsClickForMenu),
     createDeleteAction(handleDeleteNode)
@@ -489,6 +542,46 @@ function FunctionNode({ data, id, selected }: NodeProps<FunctionNodeData>) {
           </div>
         </NodeContainer>
       </div>
+    </div>
+
+      {/* Note Dialog */}
+      <Dialog open={noteDialogOpen} onOpenChange={setNoteDialogOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Node Note</DialogTitle>
+            <DialogDescription>
+              Add a note to document or explain this function node.
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="grid gap-4 py-4">
+            <Textarea
+              value={noteText}
+              placeholder="Add your note here..."
+              onChange={(e) => setNoteText(e.target.value)}
+              className="min-h-[120px]"
+            />
+            
+            <div className="flex items-center space-x-2">
+              <Checkbox 
+                id="showNote" 
+                checked={noteVisibility}
+                onCheckedChange={(checked) => setNoteVisibility(!!checked)}
+              />
+              <Label htmlFor="showNote">Show note on canvas</Label>
+            </div>
+          </div>
+          
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setNoteDialogOpen(false)}>
+              Cancel
+            </Button>
+            <Button onClick={saveNoteChanges}>
+              Save
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
