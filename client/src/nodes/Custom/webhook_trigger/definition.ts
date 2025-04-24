@@ -7,12 +7,14 @@
 
 import { z } from 'zod';
 
+import { Webhook } from 'lucide-react';
+
 const definition = {
   type: 'webhook_trigger',
   name: 'Webhook Trigger',
   description: 'Creates a webhook URL that can trigger this workflow when called from external systems',
   category: 'triggers',
-  icon: 'webhook',
+  icon: Webhook,
   version: '1.0.0',
   inputs: {},
   outputs: {

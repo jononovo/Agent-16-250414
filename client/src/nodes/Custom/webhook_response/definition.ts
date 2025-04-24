@@ -6,12 +6,14 @@
 
 import { z } from 'zod';
 
+import { Send } from 'lucide-react';
+
 const definition = {
   type: 'webhook_response',
   name: 'Webhook Response',
   description: 'Sends workflow data to an external webhook endpoint',
   category: 'actions',
-  icon: 'send',
+  icon: Send,
   version: '1.0.0',
   inputs: {
     data: {
