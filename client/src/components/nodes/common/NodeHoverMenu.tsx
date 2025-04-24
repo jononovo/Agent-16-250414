@@ -18,7 +18,7 @@ export interface NodeHoverMenuAction {
   id: string;
   icon: React.ReactNode;
   label: string;
-  onClick: () => void;
+  onClick: (e?: React.MouseEvent) => void;
   variant?: 'default' | 'destructive' | 'primary';
 }
 
@@ -68,7 +68,8 @@ const NodeHoverMenu: React.FC<NodeHoverMenuProps> = ({
             onClick={(e) => {
               // Add safety check before calling stopPropagation
               if (e) e.stopPropagation();
-              action.onClick();
+              // Pass the event to onClick in case it expects it
+              action.onClick(e);
             }}
             title={action.label}
           >
@@ -81,7 +82,7 @@ const NodeHoverMenu: React.FC<NodeHoverMenuProps> = ({
 };
 
 // Common action creators to make it easy to build menus
-export const createDuplicateAction = (onClick: () => void): NodeHoverMenuAction => ({
+export const createDuplicateAction = (onClick: (e?: React.MouseEvent) => void): NodeHoverMenuAction => ({
   id: 'duplicate',
   icon: <Copy className="h-4 w-4" />,
   label: 'Duplicate Node',
@@ -89,7 +90,7 @@ export const createDuplicateAction = (onClick: () => void): NodeHoverMenuAction 
   variant: 'default'
 });
 
-export const createDeleteAction = (onClick: () => void): NodeHoverMenuAction => ({
+export const createDeleteAction = (onClick: (e?: React.MouseEvent) => void): NodeHoverMenuAction => ({
   id: 'delete',
   icon: <Trash2 className="h-4 w-4" />,
   label: 'Delete Node',
@@ -97,7 +98,7 @@ export const createDeleteAction = (onClick: () => void): NodeHoverMenuAction => 
   variant: 'destructive'
 });
 
-export const createSettingsAction = (onClick: () => void): NodeHoverMenuAction => ({
+export const createSettingsAction = (onClick: (e?: React.MouseEvent) => void): NodeHoverMenuAction => ({
   id: 'settings',
   icon: <Settings className="h-4 w-4" />,
   label: 'Node Settings',
@@ -105,7 +106,7 @@ export const createSettingsAction = (onClick: () => void): NodeHoverMenuAction =
   variant: 'primary'
 });
 
-export const createEditAction = (onClick: () => void): NodeHoverMenuAction => ({
+export const createEditAction = (onClick: (e?: React.MouseEvent) => void): NodeHoverMenuAction => ({
   id: 'edit',
   icon: <Edit className="h-4 w-4" />,
   label: 'Edit Node',
@@ -113,7 +114,7 @@ export const createEditAction = (onClick: () => void): NodeHoverMenuAction => ({
   variant: 'primary'
 });
 
-export const createAgentModifyAction = (onClick: () => void): NodeHoverMenuAction => ({
+export const createAgentModifyAction = (onClick: (e?: React.MouseEvent) => void): NodeHoverMenuAction => ({
   id: 'agent-modify',
   icon: <Bot className="h-4 w-4" />,
   label: 'Agent Modify',
@@ -121,7 +122,7 @@ export const createAgentModifyAction = (onClick: () => void): NodeHoverMenuActio
   variant: 'primary'
 });
 
-export const createRunAction = (onClick: () => void): NodeHoverMenuAction => ({
+export const createRunAction = (onClick: (e?: React.MouseEvent) => void): NodeHoverMenuAction => ({
   id: 'run',
   icon: <Play className="h-4 w-4" />,
   label: 'Run Node',
@@ -132,7 +133,7 @@ export const createRunAction = (onClick: () => void): NodeHoverMenuAction => ({
 /**
  * Create an action for adding/editing a note
  */
-export const createAddNoteAction = (onClick: () => void): NodeHoverMenuAction => ({
+export const createAddNoteAction = (onClick: (e?: React.MouseEvent) => void): NodeHoverMenuAction => ({
   id: 'add-note',
   icon: <StickyNote className="h-4 w-4 text-amber-500" />,
   label: 'Add/Edit Note',
