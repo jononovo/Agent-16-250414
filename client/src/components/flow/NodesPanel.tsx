@@ -174,10 +174,10 @@ const NodesPanel = () => {
   }, [groupedNodes]);
 
   return (
-    <div className="flex flex-col h-full max-h-full overflow-hidden w-full">
-      <h2 className="text-lg font-semibold mb-3 flex-shrink-0">Nodes</h2>
+    <div className="flex flex-col w-full">
+      <h2 className="text-lg font-semibold mb-3">Nodes</h2>
       
-      <div className="relative mb-3 flex-shrink-0 w-full">
+      <div className="relative mb-3 w-full">
         <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
         <Input
           placeholder="Search nodes..."
@@ -187,7 +187,7 @@ const NodesPanel = () => {
         />
       </div>
       
-      <Tabs defaultValue="all" className="mb-3 flex-shrink-0" onValueChange={setActiveTab}>
+      <Tabs defaultValue="all" className="mb-3" onValueChange={setActiveTab}>
         <div className="overflow-auto scrollbar-none w-full">
           <TabsList className="w-auto inline-flex">
             <TabsTrigger value="all" className="px-4">All</TabsTrigger>
@@ -202,7 +202,7 @@ const NodesPanel = () => {
         </div>
       </Tabs>
 
-      <div className="flex-1 overflow-auto w-full">
+      <div className="h-[calc(100vh-220px)] overflow-auto w-full pr-0 nodes-scroll-container">
         {isLoadingDb ? (
           <div className="p-2 text-center text-sm text-muted-foreground">
             Loading nodes...

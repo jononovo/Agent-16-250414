@@ -1139,10 +1139,8 @@ const FlowEditor = ({
             Back to Builder
           </Button>
 
-          <div className="flex-1 overflow-auto">
-            <div className="px-4 pb-2">
-              <NodesPanel />
-            </div>
+          <div className="px-4 flex-shrink-0">
+            <NodesPanel />
           </div>
         </div>
       </div>
