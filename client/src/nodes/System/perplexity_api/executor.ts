@@ -45,8 +45,11 @@ export const execute = async (
       return createErrorOutput('Prompt is required');
     }
 
-    if (!data.apiKey) {
-      return createErrorOutput('Perplexity API key is required. Please configure it in the node settings.');
+    // Get API key from node settings or environment variable
+    const apiKey = data.apiKey || process.env.PERPLEXITY_API_KEY;
+
+    if (!apiKey) {
+      return createErrorOutput('Perplexity API key is required. Please configure it in the node settings or provide it as an environment variable.');
     }
 
     // Prepare API request
@@ -66,7 +69,7 @@ export const execute = async (
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${data.apiKey}`
+        'Authorization': `Bearer ${apiKey}`
       },
       body: JSON.stringify(requestBody)
     });
