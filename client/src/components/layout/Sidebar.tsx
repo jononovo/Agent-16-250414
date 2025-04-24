@@ -11,7 +11,6 @@ const Sidebar = ({ collapsed = false }: SidebarProps) => {
   // Define navigation items
   const workspaceItems = [
     { path: "/", icon: <Home className="h-4 w-4" />, label: "Builder" },
-    { path: "/playground", icon: <Settings className="h-4 w-4" />, label: "Playground" },
     { path: "/settings", icon: <Settings className="h-4 w-4" />, label: "Settings" }
   ];
 
