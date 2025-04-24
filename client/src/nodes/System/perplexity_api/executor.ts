@@ -46,7 +46,7 @@ export const execute = async (
     }
 
     // Get API key from node settings or environment variable
-    const apiKey = data.apiKey || process.env.PERPLEXITY_API_KEY;
+    const apiKey = data.apiKey || import.meta.env.PERPLEXITY_API_KEY;
 
     if (!apiKey) {
       return createErrorOutput('Perplexity API key is required. Please configure it in the node settings or provide it as an environment variable.');
