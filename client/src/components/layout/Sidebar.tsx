@@ -10,31 +10,34 @@ const Sidebar = ({ collapsed = false }: SidebarProps) => {
 
   // Define navigation items
   const workspaceItems = [
-    { path: "/", icon: <Home className="h-4 w-4" />, label: "Builder" },
-    { path: "/settings", icon: <Settings className="h-4 w-4" />, label: "Settings" }
+    { path: "/", icon: Home, label: "Builder" },
+    { path: "/settings", icon: Settings, label: "Settings" }
   ];
 
   const libraryItems = [
-    { path: "/agents", icon: <Bot className="h-4 w-4" />, label: "Agents" },
-    { path: "/workflows", icon: <GitBranch className="h-4 w-4" />, label: "Workflows" },
-    { path: "/nodes", icon: <Puzzle className="h-4 w-4" />, label: "Nodes" }
+    { path: "/agents", icon: Bot, label: "Agents" },
+    { path: "/workflows", icon: GitBranch, label: "Workflows" },
+    { path: "/nodes", icon: Puzzle, label: "Nodes" }
   ];
   
   const advancedItems = [
-    { path: "/workflow-test", icon: <TestTube className="h-4 w-4" />, label: "Test Bench" },
-    { path: "/api-registry", icon: <Code className="h-4 w-4" />, label: "API Registry" }
+    { path: "/workflow-test", icon: TestTube, label: "Test Bench" },
+    { path: "/api-registry", icon: Code, label: "API Registry" }
   ];
 
   // Helper function to render navigation items
-  const renderNavItems = (items: Array<{ path: string; icon: JSX.Element; label: string }>) => {
-    return items.map((item, index) => (
-      <Link key={index} href={item.path}>
-        <div className={`flex items-center space-x-3 px-3 py-2 rounded-md cursor-pointer ${location === item.path ? 'bg-slate-800 text-white' : 'text-slate-300 hover:bg-slate-800 hover:text-white'}`}>
-          {item.icon}
-          {!collapsed && <span>{item.label}</span>}
-        </div>
-      </Link>
-    ));
+  const renderNavItems = (items: Array<{ path: string; icon: React.ElementType; label: string }>) => {
+    return items.map((item, index) => {
+      const IconComponent = item.icon;
+      return (
+        <Link key={index} href={item.path}>
+          <div className={`flex items-center space-x-3 px-3 py-2 rounded-md cursor-pointer ${location === item.path ? 'bg-slate-800 text-white' : 'text-slate-300 hover:bg-slate-800 hover:text-white'}`}>
+            <IconComponent className={collapsed ? "h-6 w-6" : "h-4 w-4"} />
+            {!collapsed && <span>{item.label}</span>}
+          </div>
+        </Link>
+      );
+    });
   };
 
   return (
@@ -42,8 +45,8 @@ const Sidebar = ({ collapsed = false }: SidebarProps) => {
       <div className="p-4 flex flex-col h-full">
         <div className="flex items-center justify-between mb-8">
           <div className="flex items-center space-x-3">
-            <div className="w-8 h-8 rounded-md bg-primary flex items-center justify-center">
-              <Bot className="h-5 w-5 text-white" />
+            <div className={`${collapsed ? "w-10 h-10" : "w-8 h-8"} rounded-md bg-primary flex items-center justify-center transition-all duration-200`}>
+              <Bot className={collapsed ? "h-6 w-6" : "h-5 w-5"} />
             </div>
             {!collapsed && <h1 className="font-bold text-xl">Agent Builder</h1>}
           </div>
@@ -81,13 +84,13 @@ const Sidebar = ({ collapsed = false }: SidebarProps) => {
         <div className="mt-auto">
           <Link href="/help">
             <div className={`flex items-center space-x-3 px-3 py-2 rounded-md cursor-pointer ${location === '/help' ? 'bg-slate-800 text-white' : 'text-slate-300 hover:bg-slate-800 hover:text-white'}`}>
-              <HelpCircle className="h-4 w-4" />
+              <HelpCircle className={collapsed ? "h-6 w-6" : "h-4 w-4"} />
               {!collapsed && <span>Help & Resources</span>}
             </div>
           </Link>
           <div className="flex items-center space-x-3 px-3 py-2 mt-2">
-            <div className="w-8 h-8 rounded-full bg-slate-700 flex items-center justify-center text-white">
-              <User className="h-4 w-4" />
+            <div className={`${collapsed ? "w-10 h-10" : "w-8 h-8"} rounded-full bg-slate-700 flex items-center justify-center text-white transition-all duration-200`}>
+              <User className={collapsed ? "h-5 w-5" : "h-4 w-4"} />
             </div>
             {!collapsed && (
               <div className="text-sm">
