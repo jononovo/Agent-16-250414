@@ -492,7 +492,7 @@ function FunctionNode({ data, id, selected }: NodeProps<FunctionNodeData>) {
                     </div>
                   )}
                   <div className="whitespace-pre-wrap overflow-x-auto" style={{ fontFamily: "'Fira Code', 'JetBrains Mono', monospace" }}>
-                    {(settingsData.code || code)
+                    {(settingsData?.code || data?.settings?.code || code)
                       .split('\n')
                       .map((line: string, i: number) => {
                         // Apply basic syntax highlighting
