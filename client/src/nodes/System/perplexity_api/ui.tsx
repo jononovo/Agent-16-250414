@@ -91,12 +91,8 @@ export const component = memo(({ data, id, selected, isConnectable }: NodeProps<
         {
           key: 'model',
           label: 'Model',
-          type: 'select',
-          description: 'Perplexity AI model to use',
-          options: PERPLEXITY_MODELS.map(model => ({ 
-            value: model.value, 
-            label: model.label 
-          }))
+          type: 'text',
+          description: 'Perplexity AI model to use (e.g., llama-3.1-sonar-small-128k-online)'
         },
         {
           key: 'apiKey',
@@ -405,9 +401,7 @@ export const component = memo(({ data, id, selected, isConnectable }: NodeProps<
           <div className="mt-2 mb-3 flex flex-col gap-1.5 text-slate-700">
             <div className="flex justify-between text-xs">
               <span className="text-slate-500">Model:</span>
-              <span className="font-medium">{
-                PERPLEXITY_MODELS.find(m => m.value === nodeData.model)?.label || nodeData.model
-              }</span>
+              <span className="font-medium">{nodeData.model}</span>
             </div>
             <div className="flex justify-between text-xs">
               <span className="text-slate-500">Temperature:</span>
