@@ -1193,7 +1193,13 @@ return (
                             placeholder={field.placeholder}
                             value={settings[field.id] || ''}
                             onChange={(e) => handleSettingChange(field.id, e.target.value)}
-                            className="min-h-[100px]"
+                            className={`${field.id === 'code' && node.type === 'function_node' 
+                              ? 'min-h-[250px] font-mono text-sm bg-slate-100 dark:bg-slate-800' 
+                              : 'min-h-[100px]'}`}
+                            style={{
+                              whiteSpace: field.id === 'code' ? 'pre-wrap' : 'normal',
+                              tabSize: 2
+                            }}
                           />
                         ) : field.type === 'number' ? (
                           <Input
@@ -1294,6 +1300,13 @@ return (
                         {field.description && (
                           <p className="text-xs text-muted-foreground">
                             {field.description}
+                          </p>
+                        )}
+                        
+                        {/* Add special help text for function code field */}
+                        {field.id === 'code' && node.type === 'function_node' && (
+                          <p className="text-xs text-blue-500 dark:text-blue-400 mt-1">
+                            Tip: Your function must include a process(input) method that returns a value
                           </p>
                         )}
                       </div>
