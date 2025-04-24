@@ -4,7 +4,10 @@
  * This node provides integration with the Perplexity AI API for text generation.
  */
 
-export const definition = {
+import { NodeDefinition } from '@/nodes/types';
+import { defaultData } from './executor';
+
+export const definition: NodeDefinition = {
   type: 'perplexity_api',
   name: 'Perplexity API',
   description: 'Generate text using Perplexity\'s AI models',
@@ -32,5 +35,9 @@ export const definition = {
       description: 'Response metadata like tokens used',
       optional: true
     }
-  }
+  },
+  // Add defaultData property required by the validator
+  defaultData: defaultData
 };
+
+export default definition;

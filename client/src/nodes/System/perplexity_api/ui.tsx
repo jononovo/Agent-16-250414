@@ -2,35 +2,34 @@
  * Perplexity API Node UI Component
  * 
  * This component renders the UI for the Perplexity API node in the workflow editor.
- * It follows the Simple AI Dev inspired design system.
+ * It follows the Simple AI Dev inspired design system and uses the DefaultNode wrapper.
  */
 
-import React, { useState } from 'react';
-import { Handle, Position } from 'reactflow';
-import { Brain, Settings, Lock, Info } from 'lucide-react';
+import React, { useState, memo } from 'react';
+import { Handle, Position, NodeProps } from 'reactflow';
+import { Brain } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { Slider } from '@/components/ui/slider';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { NodeUIComponentProps, NodeValidationResult } from '@/lib/types';
-import { cn } from '@/lib/utils';
-import { PerplexityApiNodeData } from './executor';
+import { NodeValidationResult } from '@/lib/types';
+import DefaultNode from '@/nodes/Default/ui';
+import { PerplexityApiNodeData, defaultData } from './executor';
 
 // Re-export defaultData from executor
 export { defaultData } from './executor';
 
 // List of available Perplexity models
 const PERPLEXITY_MODELS = [
+  { value: 'llama-3.1-sonar-small-128k-online', label: 'Llama 3.1 Sonar Small' },
+  { value: 'llama-3.1-sonar-large-128k-online', label: 'Llama 3.1 Sonar Large' },
+  { value: 'llama-3.1-sonar-huge-128k-online', label: 'Llama 3.1 Sonar Huge' },
   { value: 'pplx-7b-online', label: 'PPLX 7B Online' },
   { value: 'pplx-70b-online', label: 'PPLX 70B Online' },
-  { value: 'pplx-7b-chat', label: 'PPLX 7B Chat' },
-  { value: 'pplx-70b-chat', label: 'PPLX 70B Chat' },
   { value: 'mistral-7b-instruct', label: 'Mistral 7B Instruct' },
   { value: 'llama-2-70b-chat', label: 'Llama 2 70B Chat' },
-  { value: 'codellama-34b-instruct', label: 'CodeLlama 34B Instruct' },
   { value: 'mixtral-8x7b-instruct', label: 'Mixtral 8x7B Instruct' }
 ];
 
@@ -56,246 +55,194 @@ export const validator = (data: PerplexityApiNodeData): NodeValidationResult => 
   };
 };
 
-// UI component for the Perplexity node
-export const component: React.FC<NodeUIComponentProps<PerplexityApiNodeData>> = ({ 
-  data, 
-  onChange
-}) => {
-  const [activeTab, setActiveTab] = useState('settings');
-  
-  // Handler for data changes
-  const handleDataChange = (key: string, value: any) => {
-    onChange({
-      ...data,
-      [key]: value
-    });
-  };
+// UI component for the Perplexity node using DefaultNode wrapper
+export const component = memo(({ data, id, selected, isConnectable }: NodeProps<PerplexityApiNodeData>) => {
+  // Combine default data with passed data
+  const nodeData = { ...defaultData, ...data };
   
   // Format temperature value for display
   const formatTemperature = (temp: number) => temp.toFixed(1);
   
-  // Determine if node is selected based on wrapper props
-  const selected = false; // This would come from wrapper component
-  const isConnectable = true; // This would come from wrapper component
+  // Create icon element for the header
+  const iconElement = (
+    <div className="bg-primary/10 p-1.5 rounded-md">
+      <Brain className="h-4 w-4 text-primary" />
+    </div>
+  );
   
-  return (
-    <div className={cn(
-      'rounded-md border bg-card text-card-foreground shadow-sm transition-all',
-      'min-w-[280px] max-w-[320px]',
-      selected ? 'border-primary/70 shadow-md' : 'border-border'
-    )}>
-      {/* Node Header */}
-      <div className="flex items-center justify-between p-3 border-b border-border bg-muted/40 rounded-t-md">
-        <div className="flex items-center gap-2">
-          <div className="flex-shrink-0 text-primary">
-            <Brain size={16} />
-          </div>
-          <h3 className="text-sm font-medium truncate">Perplexity API</h3>
+  // Create the custom content for the node
+  const customContent = (
+    <>
+      {/* API Status */}
+      {!nodeData.apiKey && (
+        <div className="mt-2 p-2 bg-amber-100/50 text-amber-800 text-xs rounded-md">
+          Perplexity API key required in settings
         </div>
-        <div className="flex items-center gap-1">
-          {!data.apiKey && (
-            <div className="text-amber-500">
-              <Lock size={14} />
-            </div>
-          )}
-          {selected && (
-            <TabsList className="h-7 p-0">
-              <TabsTrigger
-                value="settings"
-                className="h-7 px-2 text-xs"
-                onClick={() => setActiveTab('settings')}
-              >
-                <Settings size={12} className="mr-1" />
-                Settings
-              </TabsTrigger>
-              <TabsTrigger
-                value="system"
-                className="h-7 px-2 text-xs"
-                onClick={() => setActiveTab('system')}
-              >
-                <Info size={12} className="mr-1" />
-                System
-              </TabsTrigger>
-            </TabsList>
-          )}
+      )}
+      
+      {/* Selected Model & Temperature */}
+      <div className="mt-2 flex flex-col gap-1">
+        <div className="flex justify-between text-xs">
+          <span className="text-muted-foreground">Model:</span>
+          <span className="font-medium">{
+            PERPLEXITY_MODELS.find(m => m.value === nodeData.model)?.label || nodeData.model
+          }</span>
+        </div>
+        <div className="flex justify-between text-xs">
+          <span className="text-muted-foreground">Temperature:</span>
+          <span className="font-medium">{nodeData.temperature.toFixed(1)}</span>
+        </div>
+        <div className="flex justify-between text-xs">
+          <span className="text-muted-foreground">Max Tokens:</span>
+          <span className="font-medium">{nodeData.maxTokens}</span>
         </div>
       </div>
       
-      {/* Node Content */}
-      <div className="p-0">
-        {/* Input Handles */}
-        <Handle
-          type="target"
-          position={Position.Left}
-          id="prompt"
-          style={{ 
-            top: 60, 
-            width: '10px', 
-            height: '10px', 
-            background: 'white',
-            border: '2px solid #3b82f6'
-          }}
-          isConnectable={isConnectable}
-        />
-        <div className="relative py-1 ml-6 my-1 text-xs text-muted-foreground">
-          Prompt
-        </div>
-        
-        {data.useSystemPrompt && (
-          <>
-            <Handle
-              type="target"
-              position={Position.Left}
-              id="system"
-              style={{ 
-                top: 90, 
-                width: '10px', 
-                height: '10px', 
-                background: 'white',
-                border: '2px solid #3b82f6'
-              }}
-              isConnectable={isConnectable}
-            />
-            <div className="relative py-1 ml-6 my-1 text-xs text-muted-foreground">
-              System
-            </div>
-          </>
-        )}
-        
-        <Tabs value={activeTab} className="w-full">
-          <TabsContent value="settings" className="p-3 space-y-3 mt-0">
-            {/* Model Selection */}
-            <div className="space-y-1">
-              <Label htmlFor="model" className="text-xs">Model</Label>
-              <Select
-                value={data.model}
-                onValueChange={(value) => handleDataChange('model', value)}
-              >
-                <SelectTrigger id="model" className="h-8 text-xs">
-                  <SelectValue placeholder="Select a model" />
-                </SelectTrigger>
-                <SelectContent>
-                  {PERPLEXITY_MODELS.map((model) => (
-                    <SelectItem key={model.value} value={model.value} className="text-xs">
-                      {model.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            
-            {/* API Key */}
-            <div className="space-y-1">
-              <Label htmlFor="apiKey" className="text-xs">API Key</Label>
-              <div className="flex gap-1">
-                <Input
-                  id="apiKey"
-                  type="password"
-                  value={data.apiKey || ''}
-                  onChange={(e) => handleDataChange('apiKey', e.target.value)}
-                  placeholder="Enter your Perplexity API key"
-                  className="h-8 text-xs flex-1"
-                />
-              </div>
-            </div>
-            
-            {/* Temperature */}
-            <div className="space-y-1">
-              <div className="flex justify-between items-center">
-                <Label htmlFor="temperature" className="text-xs">Temperature: {formatTemperature(data.temperature)}</Label>
-              </div>
-              <Slider
-                id="temperature"
-                min={0}
-                max={1}
-                step={0.1}
-                value={[data.temperature]}
-                onValueChange={([value]) => handleDataChange('temperature', value)}
-              />
-              <div className="flex justify-between text-xs text-muted-foreground">
-                <span>Precise</span>
-                <span>Creative</span>
-              </div>
-            </div>
-            
-            {/* Max Tokens */}
-            <div className="space-y-1">
-              <Label htmlFor="maxTokens" className="text-xs">Max Tokens</Label>
-              <Input
-                id="maxTokens"
-                type="number"
-                value={data.maxTokens}
-                onChange={(e) => handleDataChange('maxTokens', parseInt(e.target.value) || 0)}
-                className="h-8 text-xs"
-              />
-            </div>
-            
-            {/* System Prompt Toggle */}
-            <div className="flex items-center space-x-2">
-              <Switch
-                id="useSystemPrompt"
-                checked={data.useSystemPrompt}
-                onCheckedChange={(checked) => handleDataChange('useSystemPrompt', checked)}
-              />
-              <Label htmlFor="useSystemPrompt" className="text-xs">Use System Prompt</Label>
-            </div>
-          </TabsContent>
-          
-          <TabsContent value="system" className="p-3 space-y-3 mt-0">
-            {/* System Prompt */}
-            <div className="space-y-1">
-              <Label htmlFor="systemPrompt" className="text-xs">System Prompt</Label>
-              <Textarea
-                id="systemPrompt"
-                value={data.systemPrompt}
-                onChange={(e) => handleDataChange('systemPrompt', e.target.value)}
-                placeholder="Enter system instructions..."
-                className="h-[120px] text-xs resize-none"
-                disabled={!data.useSystemPrompt}
-              />
-              <p className="text-xs text-muted-foreground">
-                Sets the behavior of the AI assistant. 
-                {!data.useSystemPrompt && " Enable system prompt in Settings."}
-              </p>
-            </div>
-          </TabsContent>
-        </Tabs>
-        
-        {/* Output Handles */}
-        <Handle
-          type="source"
-          position={Position.Right}
-          id="response"
-          style={{ 
-            top: 60, 
-            width: '10px', 
-            height: '10px', 
-            background: 'white',
-            border: '2px solid #10b981'
-          }}
-          isConnectable={isConnectable}
-        />
-        <div className="relative py-1 mr-6 my-1 text-xs text-muted-foreground text-right">
-          Response
-        </div>
-        
-        <Handle
-          type="source"
-          position={Position.Right}
-          id="metadata"
-          style={{ 
-            top: 90, 
-            width: '10px', 
-            height: '10px', 
-            background: 'white',
-            border: '2px solid #10b981'
-          }}
-          isConnectable={isConnectable}
-        />
-        <div className="relative py-1 mr-6 my-1 text-xs text-muted-foreground text-right">
-          Metadata
-        </div>
+      {/* Input Handles */}
+      <Handle
+        type="target"
+        position={Position.Left}
+        id="prompt"
+        style={{ 
+          top: 60, 
+          width: '10px', 
+          height: '10px', 
+          background: 'white',
+          border: '2px solid #3b82f6'
+        }}
+        isConnectable={isConnectable}
+      />
+      <div className="absolute left-2 top-[56px] text-xs text-muted-foreground text-left">
+        Prompt
       </div>
-    </div>
+      
+      {nodeData.useSystemPrompt && (
+        <>
+          <Handle
+            type="target"
+            position={Position.Left}
+            id="system"
+            style={{ 
+              top: 90, 
+              width: '10px', 
+              height: '10px', 
+              background: 'white',
+              border: '2px solid #3b82f6'
+            }}
+            isConnectable={isConnectable}
+          />
+          <div className="absolute left-2 top-[86px] text-xs text-muted-foreground text-left">
+            System
+          </div>
+        </>
+      )}
+      
+      {/* Output Handles */}
+      <Handle
+        type="source"
+        position={Position.Right}
+        id="response"
+        style={{ 
+          top: 60, 
+          width: '10px', 
+          height: '10px', 
+          background: 'white',
+          border: '2px solid #10b981'
+        }}
+        isConnectable={isConnectable}
+      />
+      <div className="absolute right-2 top-[56px] text-xs text-muted-foreground text-right">
+        Response
+      </div>
+      
+      <Handle
+        type="source"
+        position={Position.Right}
+        id="metadata"
+        style={{ 
+          top: 90, 
+          width: '10px', 
+          height: '10px', 
+          background: 'white',
+          border: '2px solid #10b981'
+        }}
+        isConnectable={isConnectable}
+      />
+      <div className="absolute right-2 top-[86px] text-xs text-muted-foreground text-right">
+        Metadata
+      </div>
+    </>
   );
-};
+  
+  // Create node settings definition
+  const settings = {
+    title: 'Perplexity API Settings',
+    fields: [
+      {
+        key: 'model',
+        label: 'Model',
+        type: 'select' as const,
+        description: 'Perplexity AI model to use',
+        options: PERPLEXITY_MODELS.map(model => ({ 
+          value: model.value, 
+          label: model.label 
+        }))
+      },
+      {
+        key: 'apiKey',
+        label: 'API Key',
+        type: 'text' as const,
+        description: 'Your Perplexity API key'
+      },
+      {
+        key: 'temperature',
+        label: 'Temperature',
+        type: 'slider' as const,
+        description: 'Controls randomness (0-1)',
+        min: 0,
+        max: 1,
+        step: 0.1
+      },
+      {
+        key: 'maxTokens',
+        label: 'Max Tokens',
+        type: 'number' as const,
+        description: 'Maximum number of tokens to generate'
+      },
+      {
+        key: 'useSystemPrompt',
+        label: 'Use System Prompt',
+        type: 'checkbox' as const,
+        description: 'Enable system prompt input'
+      },
+      {
+        key: 'systemPrompt',
+        label: 'System Prompt',
+        type: 'textarea' as const,
+        description: 'Instructions for the AI assistant'
+      }
+    ]
+  };
+  
+  // Enhanced data with settings and icon
+  const enhancedData = {
+    ...nodeData,
+    icon: iconElement,
+    settings,
+    label: "Perplexity API",
+    description: "Generate text using Perplexity's AI models",
+    // These properties define custom content to render inside the DefaultNode
+    childrenContent: customContent,
+    // Don't render the default handles since we're adding our own
+    hideDefaultHandles: true
+  };
+  
+  // Return the default node wrapper with our customizations
+  return <DefaultNode 
+    data={enhancedData}
+    id={id} 
+    selected={selected}
+    isConnectable={isConnectable}
+    type="perplexity_api"
+  />;
+});
