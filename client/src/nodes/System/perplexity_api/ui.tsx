@@ -277,7 +277,7 @@ export const component = memo(({ data, id, selected, isConnectable }: NodeProps<
             position={Position.Left}
             id="prompt"
             style={{ 
-              top: 'calc(100% - 60px)', 
+              top: '160px', 
               width: '12px', 
               height: '12px', 
               background: 'white',
@@ -286,7 +286,7 @@ export const component = memo(({ data, id, selected, isConnectable }: NodeProps<
             }}
             isConnectable={isConnectable}
           />
-          <div className="absolute pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity duration-200 bg-slate-800 text-white text-xs rounded px-2 py-1 left-0 -translate-x-1/2" style={{ top: 'calc(100% - 90px)' }}>
+          <div className="absolute pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity duration-200 bg-slate-800 text-white text-xs rounded px-2 py-1 left-0 -translate-x-1/2" style={{ top: '140px' }}>
             Prompt
           </div>
         </div>
@@ -298,7 +298,7 @@ export const component = memo(({ data, id, selected, isConnectable }: NodeProps<
               position={Position.Left}
               id="system"
               style={{ 
-                top: 'calc(100% - 30px)', 
+                top: '190px', 
                 width: '12px', 
                 height: '12px', 
                 background: 'white',
@@ -307,7 +307,7 @@ export const component = memo(({ data, id, selected, isConnectable }: NodeProps<
               }}
               isConnectable={isConnectable}
             />
-            <div className="absolute pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity duration-200 bg-slate-800 text-white text-xs rounded px-2 py-1 left-0 -translate-x-1/2" style={{ top: 'calc(100% - 60px)' }}>
+            <div className="absolute pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity duration-200 bg-slate-800 text-white text-xs rounded px-2 py-1 left-0 -translate-x-1/2" style={{ top: '170px' }}>
               System
             </div>
           </div>
@@ -320,7 +320,7 @@ export const component = memo(({ data, id, selected, isConnectable }: NodeProps<
             position={Position.Right}
             id="response"
             style={{ 
-              top: 'calc(100% - 60px)', 
+              top: '160px', 
               width: '12px', 
               height: '12px', 
               background: 'white',
@@ -329,7 +329,7 @@ export const component = memo(({ data, id, selected, isConnectable }: NodeProps<
             }}
             isConnectable={isConnectable}
           />
-          <div className="absolute pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity duration-200 bg-slate-800 text-white text-xs rounded px-2 py-1 right-0 translate-x-1/2" style={{ top: 'calc(100% - 90px)' }}>
+          <div className="absolute pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity duration-200 bg-slate-800 text-white text-xs rounded px-2 py-1 right-0 translate-x-1/2" style={{ top: '140px' }}>
             Response
           </div>
         </div>
@@ -340,7 +340,7 @@ export const component = memo(({ data, id, selected, isConnectable }: NodeProps<
             position={Position.Right}
             id="metadata"
             style={{ 
-              top: 'calc(100% - 30px)', 
+              top: '190px', 
               width: '12px', 
               height: '12px', 
               background: 'white',
@@ -349,7 +349,7 @@ export const component = memo(({ data, id, selected, isConnectable }: NodeProps<
             }}
             isConnectable={isConnectable}
           />
-          <div className="absolute pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity duration-200 bg-slate-800 text-white text-xs rounded px-2 py-1 right-0 translate-x-1/2" style={{ top: 'calc(100% - 60px)' }}>
+          <div className="absolute pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity duration-200 bg-slate-800 text-white text-xs rounded px-2 py-1 right-0 translate-x-1/2" style={{ top: '170px' }}>
             Metadata
           </div>
         </div>
