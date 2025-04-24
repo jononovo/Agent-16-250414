@@ -40,8 +40,8 @@ const NodeHoverMenu: React.FC<NodeHoverMenuProps> = ({
 }) => {
   // Determine position-specific styles
   const positionStyles = {
-    right: 'right-0 top-0 translate-x-[calc(100%+4px)] flex-col',
-    left: 'left-0 top-0 -translate-x-[calc(100%+4px)] flex-col',
+    right: 'right-0 top-0 translate-x-[calc(100%+14px)] flex-col',
+    left: 'left-0 top-0 -translate-x-[calc(100%+14px)] flex-col',
     top: 'top-0 left-1/2 -translate-y-[calc(100%+4px)] -translate-x-1/2 flex-row',
     bottom: 'bottom-0 left-1/2 translate-y-[calc(100%+4px)] -translate-x-1/2 flex-row'
   };
