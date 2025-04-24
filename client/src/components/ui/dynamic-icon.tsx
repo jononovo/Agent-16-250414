@@ -1,6 +1,18 @@
 import React from 'react';
 import * as LucideIcons from 'lucide-react';
-import { Bot, Code, FileText, Database, Settings, Cpu, Workflow, Zap } from 'lucide-react';
+import { 
+  Bot, 
+  Code, 
+  FileText, 
+  Database, 
+  Settings, 
+  Cpu, 
+  Workflow, 
+  Zap, 
+  Globe, 
+  Send,
+  Webhook
+} from 'lucide-react';
 
 interface DynamicIconProps {
   icon: string | React.ComponentType<any> | object | null | undefined;
@@ -19,6 +31,9 @@ const iconMap: Record<string, React.ComponentType<any>> = {
   'Cpu': Cpu,
   'Workflow': Workflow,
   'Zap': Zap,
+  'Globe': Globe,
+  'Send': Send,
+  'Webhook': Webhook,
   'bot': Bot,
   'code': Code,
   'file-text': FileText,
@@ -26,7 +41,10 @@ const iconMap: Record<string, React.ComponentType<any>> = {
   'settings': Settings,
   'cpu': Cpu,
   'workflow': Workflow,
-  'zap': Zap
+  'zap': Zap,
+  'globe': Globe,
+  'send': Send,
+  'webhook': Webhook
 };
 
 /**
