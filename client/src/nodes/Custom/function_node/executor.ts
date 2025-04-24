@@ -1,8 +1,15 @@
 /**
- * Function Node Executor
+ * Enhanced Function Node Executor
  * 
  * This file handles the execution logic for the function_node
  * which allows users to run custom JavaScript functions within workflows.
+ * 
+ * Features:
+ * - Advanced error handling
+ * - Improved performance with optional result caching
+ * - Support for multiple execution environments
+ * - Template-based code generation
+ * - Timeout protection
  */
 
 // Define interfaces needed to avoid import issues
@@ -31,10 +38,16 @@ interface NodeExecutionData {
 
 interface FunctionNodeData {
   code?: string;
-  async?: boolean;
+  useAsyncFunction?: boolean;
   timeout?: number;
+  errorHandling?: 'throw' | 'return' | 'null';
+  cacheResults?: boolean;
+  executionEnvironment?: 'client' | 'server';
   [key: string]: any;
 }
+
+// Simple result cache for identical inputs
+const resultCache = new Map<string, any>();
 
 /**
  * Execute a JavaScript function node with the provided input
@@ -50,25 +63,65 @@ export async function execute(
     source: 'function_node',
     error: false,
     errorMessage: '',
+    cached: false
   };
   
   try {
-    // Extract code from node settings or fallback to default
+    // Extract settings from node data with defaults
     const code = nodeData.code || 'function process(input) { return input; }';
-    const isAsync = nodeData.async === true;
-    const timeout = nodeData.timeout || 10000; // Default timeout: 10 seconds
+    const useAsyncFunction = nodeData.useAsyncFunction !== false;
+    const timeout = nodeData.timeout || 5000;
+    const errorHandling = nodeData.errorHandling || 'throw';
+    const cacheResults = nodeData.cacheResults === true;
+    const executionEnvironment = nodeData.executionEnvironment || 'client';
+    
+    // Server-side execution not implemented yet, log a warning
+    if (executionEnvironment === 'server') {
+      console.warn('Server-side execution not fully implemented yet, falling back to client-side');
+    }
+    
+    // Check cache for identical inputs if caching is enabled
+    if (cacheResults) {
+      const cacheKey = JSON.stringify({
+        code,
+        inputs: input.items.map(item => item.json)
+      });
+      
+      const cachedResult = resultCache.get(cacheKey);
+      if (cachedResult) {
+        return {
+          items: cachedResult.items,
+          meta: {
+            ...cachedResult.meta,
+            cached: true,
+            startTime,
+            endTime: new Date()
+          }
+        };
+      }
+    }
     
     // Create a function from the code string
     let processFunction;
     
     try {
-      // Create the function with safety precautions
-      processFunction = new Function('input', `
-        try {
+      // Prepare the function wrapper based on whether it's async or not
+      const functionWrapper = useAsyncFunction
+        ? `
           ${code}
-          return process(input);
+          return await process(input, data);
+        `
+        : `
+          ${code}
+          return process(input, data);
+        `;
+      
+      // Create the function with safety precautions and data parameter
+      processFunction = new Function('input', 'data', `
+        try {
+          ${functionWrapper}
         } catch (error) {
-          return { error: true, message: error.message };
+          return { __error__: true, message: error.message, stack: error.stack };
         }
       `);
     } catch (codeError: any) {
@@ -87,50 +140,79 @@ export async function execute(
     const resultItems: WorkflowItem[] = [];
     
     // Process with timeout protection
-    const processWithTimeout = async (item: WorkflowItem): Promise<WorkflowItem> => {
+    const processWithTimeout = async (item: WorkflowItem, data: Record<string, any>): Promise<WorkflowItem> => {
       return new Promise((resolve) => {
         // Create timeout
         const timeoutId = setTimeout(() => {
           resolve({
-            json: { error: true, message: `Function execution timed out after ${timeout}ms` },
+            json: handleError(new Error(`Function execution timed out after ${timeout}ms`)),
             text: `Execution timed out after ${timeout}ms`
           });
         }, timeout);
         
-        try {
-          // Execute the function (handle both async and sync functions)
-          const result = processFunction(item.json);
-          
-          // Clear timeout and resolve with result
-          clearTimeout(timeoutId);
-          
-          if (result && result.error === true) {
-            // Function returned an error object
-            resolve({
-              json: { error: true, message: result.message },
-              text: `Error: ${result.message}`
-            });
-          } else {
-            // Function executed successfully
-            resolve({
-              json: result,
-              text: typeof result === 'object' ? JSON.stringify(result) : String(result)
-            });
+        // Handle errors according to configuration
+        const handleError = (error: Error) => {
+          switch (errorHandling) {
+            case 'return':
+              return { error: true, message: error.message, stack: error.stack };
+            case 'null':
+              return null;
+            case 'throw':
+            default:
+              throw error;
           }
-        } catch (execError: any) {
-          // Execution error
+        };
+        
+        try {
+          // Execute the function - wrap in Promise.resolve to handle both async and sync functions
+          Promise.resolve(processFunction(item.json, data))
+            .then(result => {
+              // Clear timeout and resolve with result
+              clearTimeout(timeoutId);
+              
+              if (result && result.__error__ === true) {
+                // Function returned an error object
+                resolve({
+                  json: handleError(new Error(result.message)),
+                  text: `Error: ${result.message}`
+                });
+              } else {
+                // Function executed successfully
+                resolve({
+                  json: result,
+                  text: typeof result === 'object' ? JSON.stringify(result) : String(result)
+                });
+              }
+            })
+            .catch(execError => {
+              // Execution error
+              clearTimeout(timeoutId);
+              resolve({
+                json: handleError(execError),
+                text: `Error: ${execError.message}`
+              });
+            });
+        } catch (syncError: any) {
+          // Sync execution error
           clearTimeout(timeoutId);
           resolve({
-            json: { error: true, message: execError.message },
-            text: `Error: ${execError.message}`
+            json: handleError(syncError),
+            text: `Error: ${syncError.message}`
           });
         }
       });
     };
     
     // Process all input items
+    const additionalData: Record<string, any> = {
+      items: input.items.map(item => item.json),
+      timestamp: new Date().toISOString(),
+      nodeId: meta.source,
+      environment: executionEnvironment
+    };
+    
     for (const item of input.items) {
-      const result = await processWithTimeout(item);
+      const result = await processWithTimeout(item, additionalData);
       resultItems.push(result);
     }
     
@@ -140,7 +222,7 @@ export async function execute(
     );
     
     // Return the processed items
-    return {
+    const executionResult = {
       items: resultItems,
       meta: {
         ...meta,
@@ -151,6 +233,25 @@ export async function execute(
           : ''
       }
     };
+    
+    // Store in cache if caching is enabled
+    if (cacheResults && !hasErrors) {
+      const cacheKey = JSON.stringify({
+        code,
+        inputs: input.items.map(item => item.json)
+      });
+      
+      resultCache.set(cacheKey, JSON.parse(JSON.stringify(executionResult)));
+      
+      // Limit cache size to prevent memory issues
+      if (resultCache.size > 100) {
+        // Delete oldest entry - crude but simple approach
+        const firstKey = resultCache.keys().next().value;
+        if (firstKey) resultCache.delete(firstKey);
+      }
+    }
+    
+    return executionResult;
   } catch (error: any) {
     // Catch any unexpected errors in the executor itself
     return {

@@ -7,7 +7,7 @@
 
 import React, { useState, memo, useCallback, useRef, useEffect } from 'react';
 import { Handle, Position, NodeProps } from 'reactflow';
-import { Settings, MoreHorizontal, AlertTriangle, Code } from 'lucide-react';
+import { Settings, MoreHorizontal, AlertTriangle, Code, Database, Zap, Clock } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 import { Badge } from '@/components/ui/badge';
@@ -28,6 +28,8 @@ import NodeHoverMenu, {
   createSettingsAction,
   createRunAction
 } from '@/components/nodes/common/NodeHoverMenu';
+
+import { nodeMetadata } from './definition';
 
 interface FunctionNodeData {
   label: string;
@@ -182,21 +184,36 @@ function FunctionNode({ data, id, selected }: NodeProps<FunctionNodeData>) {
     // Format based on common settings patterns
     const summaryItems = [];
     
-    if (settingsData.async) {
-      summaryItems.push('Async Function');
+    if (settingsData.useAsyncFunction) {
+      summaryItems.push('Async');
     }
     
     if (settingsData.timeout) {
-      summaryItems.push(`Timeout: ${settingsData.timeout}ms`);
+      summaryItems.push(`${settingsData.timeout}ms`);
     }
     
-    // Return formatted summary or just the first few settings
+    if (settingsData.cacheResults) {
+      summaryItems.push('Cached');
+    }
+    
+    if (settingsData.executionEnvironment === 'server') {
+      summaryItems.push('Server-side');
+    }
+    
+    if (settingsData.errorHandling && settingsData.errorHandling !== 'throw') {
+      summaryItems.push(`Errors: ${settingsData.errorHandling}`);
+    }
+    
+    if (settingsData.selectedTemplate && settingsData.selectedTemplate !== 'basic') {
+      summaryItems.push(`Template: ${settingsData.selectedTemplate}`);
+    }
+    
+    // Return formatted summary
     if (summaryItems.length > 0) {
       return summaryItems.join(' • ');
     } else {
-      // Just take first 2 settings if available
-      const keys = Object.keys(settingsData).slice(0, 2);
-      return keys.map(key => `${key}: ${String(settingsData[key])}`).join(' • ');
+      // Fallback to a simple summary if needed
+      return 'Basic function';
     }
   };
   
@@ -392,8 +409,31 @@ function FunctionNode({ data, id, selected }: NodeProps<FunctionNodeData>) {
               )}
             </div>
             
+            {/* Advanced Features Indicators */}
+            {(settingsData.cacheResults || settingsData.executionEnvironment === 'server') && (
+              <div className="mt-2 flex gap-2">
+                {settingsData.cacheResults && (
+                  <div className="flex items-center text-xs gap-1 text-blue-500 dark:text-blue-400">
+                    <Clock className="h-3 w-3" />
+                    <span>Caching</span>
+                  </div>
+                )}
+                {settingsData.executionEnvironment === 'server' && (
+                  <div className="flex items-center text-xs gap-1 text-purple-500 dark:text-purple-400">
+                    <Database className="h-3 w-3" />
+                    <span>Server-side</span>
+                  </div>
+                )}
+              </div>
+            )}
+
             {/* Code Preview */}
             <div className="mt-2 text-xs font-mono bg-slate-50 dark:bg-slate-900 text-slate-800 dark:text-slate-200 p-2 rounded border border-slate-200 dark:border-slate-800 overflow-hidden">
+              {settingsData.selectedTemplate && settingsData.selectedTemplate !== 'basic' && (
+                <div className="mb-1 text-xs text-blue-500 dark:text-blue-400 font-semibold">
+                  Template: {settingsData.selectedTemplate}
+                </div>
+              )}
               <div className="truncate">
                 {(settingsData.code || code).split('\n').slice(0, 2).join('\n')}
                 {(settingsData.code || code).split('\n').length > 2 && '...'}
