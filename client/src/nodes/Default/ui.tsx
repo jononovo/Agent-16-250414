@@ -724,62 +724,64 @@ function DefaultNode({
             />
             
             <NodeContent padding="normal">
-              {/* If custom content is provided, render it */}
-              {data.childrenContent ? (
-                data.childrenContent
-              ) : (
-                <>
-                  {/* Node Type Badge */}
-                  <div className="flex justify-between items-center">
-                    <Badge variant="outline" className="text-xs px-2 py-0.5 bg-slate-100/50 dark:bg-slate-800/50">
-                      {category}
-                    </Badge>
-                    
-                    {/* Settings Summary */}
-                    {settingsSummary && (
-                      <div className="flex items-center text-xs text-muted-foreground">
-                        <Settings className="h-3 w-3 mr-1 inline" />
-                        <span className="truncate">{settingsSummary}</span>
-                      </div>
-                    )}
-                  </div>
-                  
-                  {/* Node Note - only show if showNote is true and there's a note */}
-                  {data.showNote && data.note && (
-                    <div className="mt-2 p-2 text-xs bg-amber-50 dark:bg-amber-900/20 text-amber-800 dark:text-amber-300 rounded border border-amber-200 dark:border-amber-800/50">
-                      <div className="flex items-center justify-between gap-1 mb-1">
-                        <div className="flex items-center">
-                          <StickyNote className="h-3 w-3 mr-1" />
-                          <span className="font-medium">Note</span>
+              <div className="flex flex-col gap-2">
+                {/* If custom content is provided, render it */}
+                {data.childrenContent ? (
+                  <div>{data.childrenContent}</div>
+                ) : (
+                  <>
+                    {/* Node Type Badge */}
+                    <div className="flex justify-between items-center">
+                      <Badge variant="outline" className="text-xs px-2 py-0.5 bg-slate-100/50 dark:bg-slate-800/50">
+                        {category}
+                      </Badge>
+                      
+                      {/* Settings Summary */}
+                      {settingsSummary && (
+                        <div className="flex items-center text-xs text-muted-foreground">
+                          <Settings className="h-3 w-3 mr-1 inline" />
+                          <span className="truncate">{settingsSummary}</span>
                         </div>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="h-5 w-5 -mr-1 -mt-1"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleEditNote();
-                          }}
-                        >
-                          <PenLine className="h-3 w-3 text-amber-700 dark:text-amber-400" />
-                        </Button>
-                      </div>
-                      <div className="whitespace-pre-line">{data.note}</div>
+                      )}
                     </div>
-                  )}
-                  
-                  {/* Status messages and errors */}
-                  {hasError && errorMessage && (
-                    <div className="p-2 text-xs bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 rounded border border-red-200 dark:border-red-800">
-                      <div className="flex items-center gap-1 mb-1">
-                        <AlertTriangle className="h-3 w-3" />
-                        <span className="font-medium">Error</span>
-                      </div>
-                      {errorMessage}
+                  </>
+                )}
+                
+                {/* Status messages and errors - always show */}
+                {hasError && errorMessage && (
+                  <div className="p-2 text-xs bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 rounded border border-red-200 dark:border-red-800">
+                    <div className="flex items-center gap-1 mb-1">
+                      <AlertTriangle className="h-3 w-3" />
+                      <span className="font-medium">Error</span>
                     </div>
-                  )}
-                </>
-              )}
+                    <div className="whitespace-pre-line">{errorMessage}</div>
+                  </div>
+                )}
+                
+                {/* Node Note - always show if showNote is true and there's a note */}
+                {data.showNote && data.note && (
+                  <div className="mt-2 p-2 text-xs bg-amber-50 dark:bg-amber-900/20 text-amber-800 dark:text-amber-300 rounded border border-amber-200 dark:border-amber-800/50">
+                    <div className="flex items-center justify-between gap-1 mb-1">
+                      <div className="flex items-center">
+                        <StickyNote className="h-3 w-3 mr-1" />
+                        <span className="font-medium">Note</span>
+                      </div>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-5 w-5 -mr-1 -mt-1"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleEditNote();
+                        }}
+                      >
+                        <PenLine className="h-3 w-3 text-amber-700 dark:text-amber-400" />
+                      </Button>
+                    </div>
+                    <div className="whitespace-pre-line">{data.note}</div>
+                  </div>
+                )}
+              </div>
             </NodeContent>
             
             {/* Input and output handles - only render if not explicitly hidden */}

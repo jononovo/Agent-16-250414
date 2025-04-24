@@ -47,17 +47,7 @@ export default function WebhookTriggerNode({ id, data }: { id: string, data: any
   // Node content with webhook URL display
   const nodeContent = (
     <div className="p-4 flex flex-col gap-3">
-      <div className="flex items-center gap-2">
-        <Globe className="h-4 w-4" />
-        <span className="font-medium">Webhook Trigger</span>
-        <Badge variant="outline" className="bg-blue-500/10 text-blue-500 border-blue-500/20">Trigger</Badge>
-      </div>
-      
-      <Alert className="bg-muted/50 border-none p-2">
-        <AlertDescription className="text-xs">
-          This node creates a webhook endpoint that can trigger this workflow when called from external systems.
-        </AlertDescription>
-      </Alert>
+      {/* Badge moved to header in DefaultNode */}
       
       <div className="bg-muted/80 p-2 rounded-md flex flex-col gap-1">
         <div className="text-xs text-muted-foreground mb-1">Webhook URL:</div>

@@ -40,11 +40,7 @@ export default function WebhookResponseNode({ id, data }: { id: string, data: an
   // Node content
   const nodeContent = (
     <div className="p-4 flex flex-col gap-2">
-      <div className="flex items-center gap-2">
-        <Send className="h-4 w-4" />
-        <span className="font-medium">Webhook Response</span>
-        {getStatusBadge()}
-      </div>
+      {/* Title moved to the header in DefaultNode */}
       
       <div className="bg-muted/80 p-2 rounded-md flex flex-col">
         <div className="flex items-center justify-between">
