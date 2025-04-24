@@ -4,7 +4,7 @@
  * This file defines the metadata and schema for the Function node.
  */
 
-import { NodeDefinition } from '../types';
+import { NodeDefinition } from '../../types';
 
 // Define node definition
 const definition: NodeDefinition = {
@@ -36,8 +36,7 @@ const definition: NodeDefinition = {
   configOptions: [
     {
       key: 'functionBody',
-      type: 'code',
-      language: 'javascript',
+      type: 'string',
       description: 'JavaScript function body (will be wrapped in an async function)',
       default: 'return data;'
     },
@@ -49,7 +48,7 @@ const definition: NodeDefinition = {
     },
     {
       key: 'useAsyncFunction',
-      type: 'checkbox',
+      type: 'boolean',
       description: 'Whether to execute the function asynchronously',
       default: true
     },
@@ -79,7 +78,7 @@ const definition: NodeDefinition = {
     },
     {
       key: 'enableAdvancedOptions',
-      type: 'checkbox',
+      type: 'boolean',
       description: 'Show advanced configuration options',
       default: false
     },
@@ -95,7 +94,7 @@ const definition: NodeDefinition = {
     },
     {
       key: 'cacheResults',
-      type: 'checkbox',
+      type: 'boolean',
       description: 'Cache results for identical inputs',
       default: false
     }
