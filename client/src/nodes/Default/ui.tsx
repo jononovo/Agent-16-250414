@@ -82,7 +82,7 @@ export interface DefaultNodeData {
  * specific UI implementations, or for simple node types that don't
  * need custom rendering. It includes a settings drawer.
  */
-function DefaultNode({ data, id, selected }: NodeProps<DefaultNodeData>) {
+function DefaultNode({ data, id, selected, isConnectable, zIndex, xPos, yPos, dragHandle, ...rest }: NodeProps<DefaultNodeData>) {
   const [showSettings, setShowSettings] = useState(false);
   const [showContextActions, setShowContextActions] = useState(false);
   const [showHoverMenu, setShowHoverMenu] = useState(false);
@@ -157,7 +157,7 @@ function DefaultNode({ data, id, selected }: NodeProps<DefaultNodeData>) {
   const {
     label = 'Node',
     description = 'Generic node',
-    type = 'default',
+    type: nodeType = 'default',
     category = 'general',
     settings = { fields: [] },
     settingsData = {},
@@ -413,68 +413,80 @@ function DefaultNode({ data, id, selected }: NodeProps<DefaultNodeData>) {
           />
           
           <NodeContent padding="normal">
-            {/* Node Type Badge */}
-            <div className="flex justify-between items-center">
-              <Badge variant="outline" className="text-xs px-2 py-0.5 bg-slate-100/50 dark:bg-slate-800/50">
-                {category}
-              </Badge>
-              
-              {/* Settings Summary */}
-              {settingsSummary && (
-                <div className="flex items-center text-xs text-muted-foreground">
-                  <Settings className="h-3 w-3 mr-1 inline" />
-                  <span className="truncate">{settingsSummary}</span>
+            {/* If custom content is provided, render it */}
+            {data.childrenContent ? (
+              data.childrenContent
+            ) : (
+              <>
+                {/* Node Type Badge */}
+                <div className="flex justify-between items-center">
+                  <Badge variant="outline" className="text-xs px-2 py-0.5 bg-slate-100/50 dark:bg-slate-800/50">
+                    {category}
+                  </Badge>
+                  
+                  {/* Settings Summary */}
+                  {settingsSummary && (
+                    <div className="flex items-center text-xs text-muted-foreground">
+                      <Settings className="h-3 w-3 mr-1 inline" />
+                      <span className="truncate">{settingsSummary}</span>
+                    </div>
+                  )}
                 </div>
-              )}
-            </div>
-            
-            {/* Status messages and errors */}
-            {hasError && errorMessage && (
-              <div className="p-2 text-xs bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 rounded border border-red-200 dark:border-red-800">
-                <div className="flex items-center gap-1 mb-1">
-                  <AlertTriangle className="h-3 w-3" />
-                  <span className="font-medium">Error</span>
-                </div>
-                {errorMessage}
-              </div>
+                
+                {/* Status messages and errors */}
+                {hasError && errorMessage && (
+                  <div className="p-2 text-xs bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 rounded border border-red-200 dark:border-red-800">
+                    <div className="flex items-center gap-1 mb-1">
+                      <AlertTriangle className="h-3 w-3" />
+                      <span className="font-medium">Error</span>
+                    </div>
+                    {errorMessage}
+                  </div>
+                )}
+              </>
             )}
           </NodeContent>
           
-          {/* Input handle for triggering the node */}
-          <Handle
-            type="target"
-            position={Position.Left}
-            id="input"
-            style={{ 
-              top: 50, 
-              width: '12px', 
-              height: '12px', 
-              background: 'white',
-              border: '2px solid #3b82f6'
-            }}
-            isConnectable={true}
-          />
-          <div className="absolute left-2 top-[46px] text-xs text-muted-foreground">
-            In
-          </div>
+          {/* Input and output handles - only render if not explicitly hidden */}
+          {!data.hideDefaultHandles && (
+            <>
+              {/* Input handle for triggering the node */}
+              <Handle
+                type="target"
+                position={Position.Left}
+                id="input"
+                style={{ 
+                  top: 50, 
+                  width: '12px', 
+                  height: '12px', 
+                  background: 'white',
+                  border: '2px solid #3b82f6'
+                }}
+                isConnectable={true}
+              />
+              <div className="absolute left-2 top-[46px] text-xs text-muted-foreground">
+                In
+              </div>
 
-          {/* Output handle for continuing to the next node */}
-          <Handle
-            type="source"
-            position={Position.Right}
-            id="output"
-            style={{ 
-              top: 50, 
-              width: '12px', 
-              height: '12px', 
-              background: 'white',
-              border: '2px solid #10b981'
-            }}
-            isConnectable={true}
-          />
-          <div className="absolute right-2 top-[46px] text-xs text-muted-foreground text-right">
-            Out
-          </div>
+              {/* Output handle for continuing to the next node */}
+              <Handle
+                type="source"
+                position={Position.Right}
+                id="output"
+                style={{ 
+                  top: 50, 
+                  width: '12px', 
+                  height: '12px', 
+                  background: 'white',
+                  border: '2px solid #10b981'
+                }}
+                isConnectable={true}
+              />
+              <div className="absolute right-2 top-[46px] text-xs text-muted-foreground text-right">
+                Out
+              </div>
+            </>
+          )}
         </NodeContainer>
       </div>
     </div>
