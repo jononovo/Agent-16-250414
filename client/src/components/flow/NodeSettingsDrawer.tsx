@@ -636,6 +636,76 @@ const NodeSettingsDrawer: React.FC<NodeSettingsDrawerProps> = ({
             description: 'Maximum time in milliseconds to wait for workflow response. Default: 30000 (30 seconds)'
           }
         ];
+      case 'function_node':
+        return [
+          {
+            id: 'code',
+            label: 'Function Code',
+            type: 'textarea',
+            placeholder: 'function process(input) {\n  // Your code here\n  return input;\n}',
+            description: 'JavaScript function code that processes input data.'
+          },
+          {
+            id: 'selectedTemplate',
+            label: 'Function Template',
+            type: 'select',
+            placeholder: 'Select template',
+            description: 'Pre-defined template to use for this function.',
+            options: [
+              { value: 'basic', label: 'Basic (return input)' },
+              { value: 'transform', label: 'Data Transform' },
+              { value: 'api', label: 'API Request' },
+              { value: 'json', label: 'JSON Processing' },
+              { value: 'conditional', label: 'Conditional Logic' }
+            ]
+          },
+          {
+            id: 'useAsyncFunction',
+            label: 'Async Function',
+            type: 'select',
+            options: [
+              { value: 'true', label: 'Yes' },
+              { value: 'false', label: 'No' }
+            ],
+            description: 'Whether to execute the function asynchronously.'
+          },
+          {
+            id: 'timeout',
+            label: 'Timeout (ms)',
+            type: 'number',
+            placeholder: '5000',
+            description: 'Maximum execution time in milliseconds.',
+            min: 100,
+            max: 30000
+          },
+          {
+            id: 'errorHandling',
+            label: 'Error Handling',
+            type: 'select',
+            description: 'How to handle errors in the function.',
+            options: [
+              { value: 'throw', label: 'Throw error' },
+              { value: 'return', label: 'Return error object' },
+              { value: 'null', label: 'Return null on error' }
+            ]
+          },
+          {
+            id: 'cacheResults',
+            label: 'Cache Results',
+            type: 'checkbox',
+            description: 'Cache results for identical inputs to improve performance.'
+          },
+          {
+            id: 'executionEnvironment',
+            label: 'Execution Environment',
+            type: 'select',
+            description: 'Where to execute the function.',
+            options: [
+              { value: 'client', label: 'Client-side' },
+              { value: 'server', label: 'Server-side' }
+            ]
+          }
+        ];
       default:
         // For any other node that starts with "internal_"
         if (type && type.startsWith('internal_')) {
@@ -682,7 +752,32 @@ const NodeSettingsDrawer: React.FC<NodeSettingsDrawerProps> = ({
   if (!node) return null;
 
   const handleSettingChange = (fieldId: string, value: any) => {
-    const updatedSettings = { ...settings, [fieldId]: value };
+    let updatedSettings = { ...settings, [fieldId]: value };
+    
+    // Special handling for function node templates
+    if (node?.type === 'function_node' && fieldId === 'selectedTemplate' && value) {
+      try {
+        // Dynamically import the function node definition which contains our templates
+        import('@/nodes/Custom/function_node/definition').then((module) => {
+          const templateLibrary = module.nodeMetadata?.templateLibrary || {};
+          const templateCode = templateLibrary[value];
+          
+          if (templateCode) {
+            // Update the code field with the selected template
+            updatedSettings = { 
+              ...updatedSettings, 
+              code: templateCode 
+            };
+            setSettings(updatedSettings);
+          }
+        }).catch(err => {
+          console.error('Failed to load function_node templates:', err);
+        });
+      } catch (error) {
+        console.error('Error applying template:', error);
+      }
+    }
+    
     setSettings(updatedSettings);
   };
 
