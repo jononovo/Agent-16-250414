@@ -84,6 +84,7 @@ export default function WebhookResponseNode({ id, data }: { id: string, data: an
         ...data,
         hideOutputHandles: false, // Show output handles
         type: 'webhook_response',
+        childrenContent: nodeContent, // Use childrenContent instead of children
         settings: {
           title: 'Webhook Response Settings',
           description: 'Configure the external webhook endpoint that will receive data from this workflow.',
@@ -145,8 +146,6 @@ export default function WebhookResponseNode({ id, data }: { id: string, data: an
           ]
         }
       }}
-    >
-      {nodeContent}
-    </DefaultNode>
+    />
   );
 }
