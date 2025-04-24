@@ -29,7 +29,6 @@ export let CUSTOM_NODE_TYPES: string[] = [
   'toggle_switch',
   'perplexity_api',
   'function_node',
-  'webhook',
   'webhook_trigger',
   'webhook_response'
 ];

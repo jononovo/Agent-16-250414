@@ -127,13 +127,7 @@ const NODE_TYPES = [
     category: 'code',
     icon: Code
   },
-  { 
-    id: 'webhook', 
-    name: 'Webhook', 
-    description: 'Receive data from external services via webhooks',
-    category: 'triggers',
-    icon: Webhook
-  },
+  // Removed old webhook node in favor of more specific webhook_trigger and webhook_response nodes
   { 
     id: 'webhook_trigger', 
     name: 'Webhook Trigger', 
@@ -180,7 +174,7 @@ const NodesPanel = () => {
         // New custom nodes
         'text_formatter', 'number_input', 'toggle_switch',
         'json_schema_validator', 'csv_processor', 'markdown_renderer',
-        'function_node', 'webhook', 'webhook_trigger', 'webhook_response'
+        'function_node', 'webhook_trigger', 'webhook_response'
       ];
       return implementedNodeTypes.includes(nodeType.id);
     });

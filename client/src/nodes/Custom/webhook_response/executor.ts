@@ -126,13 +126,7 @@ export const execute = async (
     
     return createErrorOutput(
       error.message || 'Error sending webhook request',
-      'webhook_response',
-      startTime,
-      {
-        url: nodeData.url,
-        method: nodeData.method,
-        success: false
-      }
+      'webhook_response'
     );
   }
 };
