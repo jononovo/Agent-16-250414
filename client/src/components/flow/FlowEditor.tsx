@@ -778,11 +778,26 @@ const FlowEditor = ({
             y: sourceNode.position.y + offset.y
           };
           
-          // Create a modified copy of the node data
-          // Ensure we don't use references to original objects
+          // Create a deep copy of the node data without circular references
+          // Extract only the properties we need instead of using JSON.stringify
           const newNodeData = {
-            ...JSON.parse(JSON.stringify(nodeData)),
+            // Basic properties
             label: `${nodeData.label} (Copy)`,
+            description: nodeData.description,
+            category: nodeData.category,
+            icon: nodeData.icon,
+            type: nodeData.type,
+            // Settings-related properties - carefully clone only what's needed
+            settings: nodeData.settings ? { ...nodeData.settings } : {},
+            settingsData: nodeData.settingsData ? { ...nodeData.settingsData } : {},
+            // Any other specific data the node might have
+            defaultData: nodeData.defaultData ? { ...nodeData.defaultData } : {},
+            textContent: nodeData.textContent,
+            // State flags - reset these for the new node
+            isProcessing: false,
+            isComplete: false,
+            hasError: false,
+            errorMessage: '',
           };
           
           // Create the new node
