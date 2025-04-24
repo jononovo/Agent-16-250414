@@ -3,18 +3,21 @@
  * 
  * This node allows users to define custom JavaScript functions
  * that transform input data and produce output.
+ * It provides both DefaultNode-wrapped and standalone implementations.
  */
 
-import FunctionNode from './ui';
+import FunctionNode, { StandaloneFunctionNode, defaultData as uiDefaultData } from './ui';
 
 // Default data for the node
 export const defaultData = {
   label: 'Function',
-  description: 'Custom JavaScript function',
+  description: 'Custom JavaScript function that transforms data',
   icon: 'code',
-  category: 'code',  // Changed from 'functions' to 'code' to match category
+  category: 'code',
   code: 'function process(input) {\n  // Your code here\n  return input;\n}',
-  settingsData: {}
+  settingsData: {},
+  // By default, use the DefaultNode wrapper for consistent UI
+  useDefaultNodeWrapper: true
 };
 
 // Validator function to ensure the node is properly configured
@@ -31,6 +34,10 @@ export const validator = (data: any) => {
   };
 };
 
-// Export the component for use in the workflow editor
+// Export the hybrid component for use in the workflow editor
 export const component = FunctionNode;
+
+// Also export the standalone component for direct use if needed
+export const standaloneComponent = StandaloneFunctionNode;
+
 export default FunctionNode;
