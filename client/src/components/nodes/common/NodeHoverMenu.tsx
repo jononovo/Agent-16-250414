@@ -66,7 +66,8 @@ const NodeHoverMenu: React.FC<NodeHoverMenuProps> = ({
             size="icon"
             className={`h-8 w-8 hover:bg-slate-100 ${variantStyles[action.variant || 'default']}`}
             onClick={(e) => {
-              e.stopPropagation();
+              // Add safety check before calling stopPropagation
+              if (e) e.stopPropagation();
               action.onClick();
             }}
             title={action.label}
