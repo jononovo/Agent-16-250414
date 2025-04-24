@@ -270,6 +270,70 @@ export const component = memo(({ data, id, selected, isConnectable }: NodeProps<
       )}
       
       <NodeContainer selected={selected} className="overflow-visible">
+        {/* Input Handles */}
+        <Handle
+          type="target"
+          position={Position.Left}
+          id="prompt"
+          style={{ 
+            top: '40%', 
+            width: '12px', 
+            height: '12px', 
+            background: 'white',
+            border: '2px solid #6366f1',
+            left: -6, // Position it exactly at the edge
+          }}
+          isConnectable={isConnectable}
+        />
+        
+        {nodeData.useSystemPrompt && (
+          <Handle
+            type="target"
+            position={Position.Left}
+            id="system"
+            style={{ 
+              top: '60%', 
+              width: '12px', 
+              height: '12px', 
+              background: 'white',
+              border: '2px solid #6366f1',
+              left: -6, // Position it exactly at the edge
+            }}
+            isConnectable={isConnectable}
+          />
+        )}
+        
+        {/* Output Handles */}
+        <Handle
+          type="source"
+          position={Position.Right}
+          id="response"
+          style={{ 
+            top: '40%', 
+            width: '12px', 
+            height: '12px', 
+            background: 'white',
+            border: '2px solid #10b981',
+            right: -6, // Position it exactly at the edge
+          }}
+          isConnectable={isConnectable}
+        />
+        
+        <Handle
+          type="source"
+          position={Position.Right}
+          id="metadata"
+          style={{ 
+            top: '60%', 
+            width: '12px', 
+            height: '12px', 
+            background: 'white',
+            border: '2px solid #10b981',
+            right: -6, // Position it exactly at the edge
+          }}
+          isConnectable={isConnectable}
+        />
+        
         {/* Header */}
         <div className={cn(
           'flex items-center justify-between p-3 border-b border-border rounded-t-md',
@@ -343,84 +407,13 @@ export const component = memo(({ data, id, selected, isConnectable }: NodeProps<
             </div>
           )}
           
-          {/* Input & Output portals */}
-          <div className="relative pt-4 pb-2">
-            {/* Input Handles - These are positioned relative to the NodeContainer */}
-            <Handle
-              type="target"
-              position={Position.Left}
-              id="prompt"
-              className="!absolute"
-              style={{ 
-                top: 'calc(50% - 20px)', 
-                width: '12px', 
-                height: '12px', 
-                background: 'white',
-                border: '2px solid #6366f1'
-              }}
-              isConnectable={isConnectable}
-            />
-            <div className="absolute left-2 top-[calc(50%-24px)] text-xs text-slate-500 text-left">
-              Prompt
+          {/* Input/Output Labels */}
+          <div className="relative mt-4 flex justify-between">
+            <div className="pl-1 text-xs text-slate-500 text-left">
+              Prompt {nodeData.useSystemPrompt && <span className="block mt-4">System</span>}
             </div>
-            
-            {nodeData.useSystemPrompt && (
-              <>
-                <Handle
-                  type="target"
-                  position={Position.Left}
-                  id="system"
-                  className="!absolute"
-                  style={{ 
-                    top: 'calc(50% + 20px)', 
-                    width: '12px', 
-                    height: '12px', 
-                    background: 'white',
-                    border: '2px solid #6366f1'
-                  }}
-                  isConnectable={isConnectable}
-                />
-                <div className="absolute left-2 top-[calc(50%+16px)] text-xs text-slate-500 text-left">
-                  System
-                </div>
-              </>
-            )}
-            
-            {/* Output Handles */}
-            <Handle
-              type="source"
-              position={Position.Right}
-              id="response"
-              className="!absolute"
-              style={{ 
-                top: 'calc(50% - 20px)', 
-                width: '12px', 
-                height: '12px', 
-                background: 'white',
-                border: '2px solid #10b981'
-              }}
-              isConnectable={isConnectable}
-            />
-            <div className="absolute right-2 top-[calc(50%-24px)] text-xs text-slate-500 text-right">
-              Response
-            </div>
-            
-            <Handle
-              type="source"
-              position={Position.Right}
-              id="metadata"
-              className="!absolute"
-              style={{ 
-                top: 'calc(50% + 20px)', 
-                width: '12px', 
-                height: '12px', 
-                background: 'white',
-                border: '2px solid #10b981'
-              }}
-              isConnectable={isConnectable}
-            />
-            <div className="absolute right-2 top-[calc(50%+16px)] text-xs text-slate-500 text-right">
-              Metadata
+            <div className="pr-1 text-xs text-slate-500 text-right">
+              Response <span className="block mt-4">Metadata</span>
             </div>
           </div>
         </NodeContent>
