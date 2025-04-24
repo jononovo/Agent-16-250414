@@ -101,9 +101,6 @@ const NodeItem = ({ node, expanded = false }: NodeItemProps) => {
     }
   };
 
-  // Check if node has a note attached (for drag and drop, make this an empty string by default)
-  const hasNote = node.data?.note || false;
-
   return (
     <div 
       className="mb-3 cursor-grab transition-all duration-200 active:cursor-grabbing"
@@ -112,22 +109,15 @@ const NodeItem = ({ node, expanded = false }: NodeItemProps) => {
         label: node.name,
         description: node.description || '',
         icon: nodeIcon || undefined,
-        category: node.category,
-        note: '', // Initialize empty note for newly created nodes
-        showNote: false // Initially hide the note indicator
+        category: node.category
       })}
     >
       <div className="flex items-start gap-3">
         <div className={`mt-1 w-6 h-6 rounded-md flex items-center justify-center ${getCategoryColor()}`}>
           <DynamicIcon icon={nodeIcon} />
         </div>
-        <div className="flex-1 relative">
-          <div className="flex items-center">
-            <h4 className="font-medium text-sm text-foreground">{node.name}</h4>
-            {hasNote && (
-              <div className="ml-2 h-2 w-2 rounded-full bg-amber-400" title="This node has notes" />
-            )}
-          </div>
+        <div className="flex-1">
+          <h4 className="font-medium text-sm text-foreground">{node.name}</h4>
           <p className="text-xs text-muted-foreground">{node.description || 'No description provided'}</p>
         </div>
       </div>
