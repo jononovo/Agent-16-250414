@@ -45,37 +45,29 @@ export const execute = async (
       return createErrorOutput('Prompt is required');
     }
 
-    // Get API key from node settings or environment variable
-    // Using a dynamic check for different environment variable formats
-    const apiKey = data.apiKey || 
-                  (typeof window !== 'undefined' ? 
-                   // Client-side: Try to access through import.meta.env
-                   (import.meta.env.VITE_PERPLEXITY_API_KEY || import.meta.env.PERPLEXITY_API_KEY) : 
-                   // Server-side: Try to access through global process.env
-                   process.env.PERPLEXITY_API_KEY);
+    // Note: We're now using the server proxy which handles API key management
+    // No need to validate API keys on the client side
 
-    if (!apiKey) {
-      return createErrorOutput('Perplexity API key is required. Please configure it in the node settings or provide it as an environment variable.');
-    }
+    // Prepare messages array
+    const messages = [
+      ...(data.useSystemPrompt ? [{ role: 'system', content: systemPrompt }] : []),
+      { role: 'user', content: prompt }
+    ];
 
-    // Prepare API request
-    const apiUrl = 'https://api.perplexity.ai/chat/completions';
+    // Use our server-side proxy instead of calling Perplexity directly
+    const apiUrl = '/api/proxy/perplexity';
     const requestBody = {
       model: data.model,
-      messages: [
-        ...(data.useSystemPrompt ? [{ role: 'system', content: systemPrompt }] : []),
-        { role: 'user', content: prompt }
-      ],
+      messages: messages,
       temperature: data.temperature,
       max_tokens: data.maxTokens
     };
 
-    // Make API request
+    // Make API request via our proxy
     const response = await fetch(apiUrl, {
       method: 'POST',
       headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${apiKey}`
+        'Content-Type': 'application/json'
       },
       body: JSON.stringify(requestBody)
     });
