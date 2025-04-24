@@ -478,22 +478,21 @@ function DefaultNode({
     <div className="flex items-center gap-1.5">
       {getStatusBadge()}
       
-      {/* Note button - changes appearance based on whether a note exists */}
-      <Button 
-        variant="ghost" 
-        size="icon" 
-        className={cn(
-          "h-7 w-7",
-          data.note ? "text-amber-500 hover:text-amber-600" : "text-muted-foreground"
-        )}
-        onClick={(e) => {
-          e.stopPropagation();
-          handleEditNote();
-        }}
-        title={data.note ? "Edit note" : "Add note"}
-      >
-        <StickyNote className="h-3.5 w-3.5" />
-      </Button>
+      {/* Note button - only show if a note exists */}
+      {data.note && (
+        <Button 
+          variant="ghost" 
+          size="icon" 
+          className="h-7 w-7 text-amber-500 hover:text-amber-600"
+          onClick={(e) => {
+            e.stopPropagation();
+            handleEditNote();
+          }}
+          title="Edit note"
+        >
+          <StickyNote className="h-3.5 w-3.5" />
+        </Button>
+      )}
       
       <Popover open={showContextActions} onOpenChange={setShowContextActions}>
         <PopoverTrigger asChild>
