@@ -41,9 +41,10 @@ interface SettingsField {
   required?: boolean;
   description?: string;
   options?: { value: string; label: string }[];
-  defaultValue?: string | string[] | number;
+  defaultValue?: string | string[] | number | boolean;
   min?: number; // For number fields
   max?: number; // For number fields
+  step?: number; // For number fields
   showWhen?: (settings: Record<string, any>) => boolean;
 }
 
@@ -168,11 +169,50 @@ const NodeSettingsDrawer: React.FC<NodeSettingsDrawerProps> = ({
       }
     }
   }, [workflows, node]);
+    
+  // Helper function to map field types from node settings to drawer settings format
+  const mapFieldType = (type: string): SettingsField['type'] => {
+    const typeMap: Record<string, SettingsField['type']> = {
+      'text': 'text',
+      'textarea': 'textarea',
+      'number': 'number',
+      'select': 'select',
+      'checkbox': 'select', // Convert checkbox to select with yes/no options
+      'slider': 'number',   // Convert slider to number input
+      'password': 'password',
+      'json': 'json',
+      'radio': 'radio',
+      'multiselect': 'multiselect'
+    };
+    
+    return typeMap[type] || 'text'; // Default to text for unknown types
+  };
 
   // Get fields configuration based on node type
   const getFieldsForNodeType = (type: string | undefined): SettingsField[] => {
     if (!type) return [];
     
+    // First check if the node has its own settings in its data
+    if (node?.data?.settings?.fields) {
+      // Transform the node's settings to match our SettingsField format
+      const nodeSettings = node.data.settings.fields.map((field: any) => ({
+        id: field.key,
+        label: field.label,
+        type: mapFieldType(field.type),
+        description: field.description,
+        options: field.options,
+        min: field.min,
+        max: field.max,
+        step: field.step,
+        defaultValue: field.defaultValue,
+        placeholder: field.placeholder
+      }));
+      
+      // Return the node's own settings
+      return nodeSettings;
+    }
+    
+    // Fall back to type-specific settings for special cases
     switch (type) {
       case 'webhook_trigger':
         return [
