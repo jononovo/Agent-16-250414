@@ -301,8 +301,22 @@ function DefaultNode({
   };
   
   // Settings click handler for the menu 
-  const handleSettingsClickForMenu = () => {
-    setShowSettings(true);
+  const handleSettingsClickForMenu = (e?: React.MouseEvent) => {
+    if (e) e.stopPropagation();
+    
+    // If we have an onSettingsClick function from FlowEditor, use it
+    if (data.onSettingsClick) {
+      data.onSettingsClick();
+    } else {
+      // Otherwise, fall back to local settings drawer
+      setShowSettings(true);
+      
+      // Also emit the node-settings-open event for FlowEditor to catch
+      const event = new CustomEvent('node-settings-open', { 
+        detail: { nodeId: id }
+      });
+      window.dispatchEvent(event);
+    }
   };
   
   // State for the delete confirmation dialog
