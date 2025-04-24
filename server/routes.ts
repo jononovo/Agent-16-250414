@@ -360,6 +360,59 @@ export async function runWorkflow(
 }
 
 // Register API routes
+/**
+ * Helper function to handle incoming webhook requests
+ * This is used by both custom path webhooks and dynamic path webhooks
+ */
+async function handleWebhookRequest(
+  req: Request,
+  res: Response,
+  workflowId: number,
+  nodeId: string
+): Promise<void> {
+  try {
+    // Get the workflow
+    const workflow = await storage.getWorkflow(workflowId);
+    if (!workflow) {
+      return res.status(404).json({ 
+        success: false, 
+        message: "Webhook target workflow not found" 
+      });
+    }
+
+    // Prepare the input data for the workflow
+    const webhookInput = {
+      payload: req.body,
+      headers: req.headers,
+      method: req.method,
+      query: req.query,
+      params: req.params,
+      nodeId: nodeId
+    };
+
+    // Execute the workflow with the webhook data
+    console.log(`Executing workflow ${workflowId} via webhook trigger, node ${nodeId}`);
+    const result = await runWorkflow(workflowId, webhookInput, { 
+      includeDetail: false,
+      executionMode: "webhook"
+    });
+
+    // Return the workflow execution result
+    res.json({
+      success: true,
+      message: "Webhook received and workflow executed",
+      result: result.output
+    });
+  } catch (error) {
+    console.error("Webhook execution error:", error);
+    res.status(500).json({ 
+      success: false, 
+      message: "Error processing webhook", 
+      error: error instanceof Error ? error.message : String(error)
+    });
+  }
+}
+
 export async function registerRoutes(app: Express): Promise<Server> {
   const server = createServer(app);
   
