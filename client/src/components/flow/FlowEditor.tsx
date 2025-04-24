@@ -1243,6 +1243,7 @@ const FlowEditor = ({
         onWorkflowGenerated={handleWorkflowGenerated}
         workflow={workflow}
         isNew={isNew}
+        initiallyOpen={showAIChat} // Pass the showAIChat prop to control initial visibility
       />
     </div>
   );

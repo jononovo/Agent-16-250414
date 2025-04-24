@@ -7,7 +7,7 @@ import { ChatProvider, ChatToggle } from "@/components/chat";
 import Builder from "@/pages/builder";
 import WorkflowEditor from "@/pages/workflow-editor";
 import WorkflowTestBench from "@/pages/workflow-test";
-import WorkflowChatGenerator from "@/pages/workflow-chat-generator";
+// Removed workflow-chat-generator import as it's now integrated into the main editor
 import AgentPage from "@/pages/agent-page";
 import ApiRegistry from "@/pages/api-registry";
 import Settings from "@/pages/settings";
@@ -22,7 +22,7 @@ function Router() {
       <Route path="/workflow-editor/:id" component={WorkflowEditor} />
       <Route path="/workflow-test" component={WorkflowTestBench} />
       <Route path="/workflow-test/:id" component={WorkflowTestBench} />
-      <Route path="/workflow-chat-generator" component={WorkflowChatGenerator} />
+      {/* Removed workflow-chat-generator route as it's now integrated into the main editor */}
       <Route path="/agent/:id" component={AgentPage} />
       {/* Removed agent-test route */}
       <Route path="/api-registry" component={ApiRegistry} />

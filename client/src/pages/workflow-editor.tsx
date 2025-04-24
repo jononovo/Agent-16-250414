@@ -1,15 +1,23 @@
 import { useEffect, useState, useCallback } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { useRoute } from 'wouter';
+import { useRoute, useLocation } from 'wouter';
 import { Workflow } from '@shared/schema';
 import FlowEditor from '@/components/flow/FlowEditor';
 import { Skeleton } from '@/components/ui/skeleton';
-import MonkeyAgentChatOverlay from '@/components/workflows/MonkeyAgentChatOverlay';
 
 const WorkflowEditorPage = () => {
   const [match, params] = useRoute('/workflow-editor/:id');
+  const [location] = useLocation();
   const [isNew, setIsNew] = useState(false);
+  const [showAIChat, setShowAIChat] = useState(false);
   const queryClient = useQueryClient();
+  
+  // Check if the AI chat should be shown by detecting the 'ai' parameter in the URL
+  useEffect(() => {
+    const url = new URL(window.location.href);
+    const showAI = url.searchParams.get('ai');
+    setShowAIChat(showAI === 'true' || showAI === '');
+  }, [location]);
   
   useEffect(() => {
     if (params?.id === 'new') {
@@ -71,6 +79,7 @@ const WorkflowEditorPage = () => {
         workflow={workflow} 
         isNew={isNew} 
         onWorkflowUpdate={handleWorkflowUpdated}
+        showAIChat={showAIChat} // Pass the parameter to show/hide AI chat
       />
     </>
   );
