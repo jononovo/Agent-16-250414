@@ -862,8 +862,12 @@ const NodeSettingsDrawer: React.FC<NodeSettingsDrawerProps> = ({
             
             if (valueType === 'string' || valueType === 'number' || valueType === 'boolean') {
               defaultValue = value as string | number | boolean;
-            } else if (Array.isArray(value) && value.every(item => typeof item === 'string')) {
-              defaultValue = value as string[];
+            } else if (Array.isArray(value)) {
+              // Only use string arrays
+              const stringArray = value.filter(item => typeof item === 'string') as string[];
+              if (stringArray.length > 0) {
+                defaultValue = stringArray;
+              }
             }
             
             const field: SettingsField = {
@@ -875,7 +879,7 @@ const NodeSettingsDrawer: React.FC<NodeSettingsDrawerProps> = ({
             };
             
             // Add options for boolean fields
-            if (fieldType === 'select' && valueType === 'boolean') {
+            if (fieldType === 'select' && typeof value === 'boolean') {
               field.options = [
                 { value: 'true', label: 'Yes' },
                 { value: 'false', label: 'No' }
