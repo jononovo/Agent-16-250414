@@ -5,7 +5,7 @@
  * with settings drawer integration and hover menu support.
  */
 
-import React, { memo, useEffect, useState, useCallback, useRef } from 'react';
+import React, { memo, useEffect, useState, useCallback, useRef, useMemo } from 'react';
 import { Handle, Position, NodeProps } from 'reactflow';
 import { Brain, Settings, Lock } from 'lucide-react';
 import { NodeContainer } from '@/components/nodes/common/NodeContainer';
@@ -71,7 +71,7 @@ export { validator };
 
 // UI component for the Perplexity node (custom implementation with hover menu)
 export const component = memo(({ data, id, selected, isConnectable }: NodeProps<PerplexityApiNodeData>) => {
-  // Combine default data with passed data
+  // Combine default data with current node data to ensure all properties exist
   const nodeData = { ...defaultData, ...data };
   
   // Hover menu state
