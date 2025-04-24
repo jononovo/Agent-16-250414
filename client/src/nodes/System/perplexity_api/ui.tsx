@@ -16,6 +16,9 @@ import { Badge } from '@/components/ui/badge';
 import { NodeValidationResult } from '@/lib/types';
 import { cn } from '@/lib/utils';
 import { PerplexityApiNodeData, defaultData } from './executor';
+
+// Check if PERPLEXITY_API_KEY exists in environment variables
+const hasPerplexityApiKey = import.meta.env.VITE_PERPLEXITY_API_KEY ? true : false;
 import NodeHoverMenu, { 
   createDuplicateAction, 
   createDeleteAction, 
@@ -45,7 +48,7 @@ export const validator = (data: PerplexityApiNodeData): NodeValidationResult => 
   const errors: string[] = [];
   
   // Skip API key validation if using environment variable
-  if (!data.apiKey && !process.env.PERPLEXITY_API_KEY) {
+  if (!data.apiKey && !hasPerplexityApiKey) {
     errors.push('API key is required');
   }
   
@@ -276,12 +279,12 @@ export const component = memo(({ data, id, selected, isConnectable }: NodeProps<
             <h3 className="text-sm font-medium truncate text-indigo-700">Perplexity API</h3>
           </div>
           <div className="flex items-center gap-1">
-            {!nodeData.apiKey && !process.env.PERPLEXITY_API_KEY && (
+            {!nodeData.apiKey && !hasPerplexityApiKey && (
               <Badge variant="outline" className="px-1.5 py-0 h-5 text-amber-600 border-amber-200 bg-amber-50">
                 <Lock size={11} className="mr-1" /> Key Required
               </Badge>
             )}
-            {!nodeData.apiKey && process.env.PERPLEXITY_API_KEY && (
+            {!nodeData.apiKey && hasPerplexityApiKey && (
               <Badge variant="outline" className="px-1.5 py-0 h-5 text-emerald-600 border-emerald-200 bg-emerald-50">
                 <Lock size={11} className="mr-1" /> Env Key
               </Badge>
@@ -300,12 +303,12 @@ export const component = memo(({ data, id, selected, isConnectable }: NodeProps<
         {/* Content */}
         <NodeContent padding="normal">
           {/* API Status Warning or Info */}
-          {!nodeData.apiKey && !process.env.PERPLEXITY_API_KEY && (
+          {!nodeData.apiKey && !hasPerplexityApiKey && (
             <div className="mt-1 p-2 bg-amber-100/50 text-amber-800 text-xs rounded-md">
               Perplexity API key required in settings
             </div>
           )}
-          {!nodeData.apiKey && process.env.PERPLEXITY_API_KEY && (
+          {!nodeData.apiKey && hasPerplexityApiKey && (
             <div className="mt-1 p-2 bg-emerald-100/50 text-emerald-800 text-xs rounded-md">
               Using Perplexity API key from environment variable
             </div>
