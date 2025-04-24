@@ -19,7 +19,7 @@ export interface PerplexityApiNodeData {
 
 // Default configuration for the node
 export const defaultData: PerplexityApiNodeData = {
-  model: 'llama-3.1-sonar-small-128k-online',
+  model: 'sonar',
   temperature: 0.7,
   maxTokens: 1000,
   apiKey: '',
@@ -67,10 +67,7 @@ export const execute = async (
       max_tokens: data.maxTokens
     };
 
-    // If the user entered just "sonar" without the full model name, use the default model
-    if (requestBody.model === 'sonar') {
-      requestBody.model = 'llama-3.1-sonar-small-128k-online';
-    }
+    // Use the model as entered by the user without any modifications
     
     // Make API request directly to Perplexity
     const response = await fetch(apiUrl, {

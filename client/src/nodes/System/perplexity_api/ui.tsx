@@ -92,7 +92,7 @@ export const component = memo(({ data, id, selected, isConnectable }: NodeProps<
           key: 'model',
           label: 'Model',
           type: 'text',
-          description: 'Perplexity AI model to use. You can enter "sonar" as a shortcut for "llama-3.1-sonar-small-128k-online". Other options: llama-3.1-sonar-large-128k-online, llama-3.1-sonar-huge-128k-online'
+          description: 'Perplexity AI model to use'
         },
         {
           key: 'apiKey',
