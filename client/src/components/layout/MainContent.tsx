@@ -113,12 +113,12 @@ const MainContent = ({ children }: MainContentProps) => {
             <Dialog open={isApiDialogOpen} onOpenChange={setIsApiDialogOpen}>
               <DialogTrigger asChild>
                 <Button 
-                  variant={apiKeyStatus === 'missing' ? "destructive" : "outline"} 
+                  variant="secondary" 
                   size="sm"
                   className="flex items-center gap-1"
                 >
                   <Key size={16} />
-                  {apiKeyStatus === 'missing' ? 'Configure API Keys' : 'API Settings'}
+                  Configure API Keys
                 </Button>
               </DialogTrigger>
               <DialogContent>
