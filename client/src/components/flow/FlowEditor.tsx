@@ -34,25 +34,44 @@ import NodeSettingsDrawer from './NodeSettingsDrawer';
 import LoadingNode from '../flow/nodes/LoadingNode';
 // Import default node component as the fallback
 import DefaultNode from '../../nodes/Default';
+// Import the nodeRegistry for automatic node discovery
+import { getAllNodeTypes, getNodeUIPath, getNodeInfo, hasNodeType } from '@/lib/nodeRegistry';
 
-// Define a dynamic import function for node components
+// Define a dynamic import function for node components that uses the registry
 const loadNodeComponent = (nodeType: string) => {
   try {
+    // Check if the node type exists in the registry
+    if (hasNodeType(nodeType)) {
+      // Get the path from the registry
+      const uiPath = getNodeUIPath(nodeType);
+      
+      // Import the component from the appropriate path
+      return import(/* @vite-ignore */ uiPath)
+        .then(module => module.component || module.default)
+        .catch(error => {
+          console.warn(`Failed to load component for ${nodeType} from registry path:`, error);
+          return DefaultNode;
+        });
+    }
+    
+    // Fallback to legacy path resolution if not in registry
+    console.log(`Node ${nodeType} not found in registry, using legacy path resolution`);
+    
     // First try loading from the Custom directory
     return import(/* @vite-ignore */ `../../nodes/Custom/${nodeType}/ui`)
-      .then(module => module.component)
+      .then(module => module.component || module.default)
       .catch(customError => {
         console.log(`Node ${nodeType} not found in Custom directory, trying System directory`);
         
         // If not found in Custom directory, try the System directory
         return import(/* @vite-ignore */ `../../nodes/System/${nodeType}/ui`)
-          .then(module => module.component)
+          .then(module => module.component || module.default)
           .catch(systemError => {
             console.log(`Node ${nodeType} not found in System directory, trying root path`);
             
             // Finally try the root directory as a fallback
             return import(/* @vite-ignore */ `../../nodes/${nodeType}/ui`)
-              .then(module => module.component)
+              .then(module => module.component || module.default)
               .catch(rootError => {
                 console.warn(`Failed to load component for node type ${nodeType}:`, rootError);
                 return DefaultNode;
@@ -87,71 +106,38 @@ const getNodeComponent = async (nodeType: string) => {
   }
 };
 
-// Initially only load the DefaultNode for all types
+// Create initial nodeTypes with fallbacks - uses registry to discover all nodes
 const createNodeTypes = () => {
   const baseNodeTypes: NodeTypes = {
     // Special loading node type
     loading: LoadingNode,
-    
-    // Start with internal fallback for all types
-    internal_new_agent: DefaultNode,
-    internal_ai_chat_agent: DefaultNode,
-    internal: DefaultNode,
-    custom: DefaultNode,
-    trigger: DefaultNode,
-    processor: DefaultNode,
-    output: DefaultNode,
-    
-    // Fallback for common node types
-    text_input: DefaultNode,
-    claude: DefaultNode,
-    http_request: DefaultNode,
-    text_template: DefaultNode,
-    data_transform: DefaultNode, 
-    decision: DefaultNode,
-    function: DefaultNode,
-    json_path: DefaultNode,
-    
-    // New custom nodes
-    text_formatter: DefaultNode,
-    json_schema_validator: DefaultNode,
-    csv_processor: DefaultNode,
-    markdown_renderer: DefaultNode,
-    number_input: DefaultNode,
-    toggle_switch: DefaultNode,
-    function_node: DefaultNode,
-    
-    // Legacy mappings
-    textInput: DefaultNode,
-    
-    // Fallbacks for other legacy nodes
-    webhook: DefaultNode,
-    scheduler: DefaultNode,
-    email_trigger: DefaultNode,
-    email_send: DefaultNode,
-    database_query: DefaultNode,
-    filter: DefaultNode,
-    
-    // Other legacy types we need to handle
-    text_prompt: DefaultNode,
-    visualize_text: DefaultNode,
-    transform: DefaultNode,
-    chat_interface: DefaultNode,
-    generate_text: DefaultNode,
-    prompt_crafter: DefaultNode,
-    valid_response: DefaultNode,
-    perplexity: DefaultNode,
-    agent_trigger: DefaultNode,
-    workflow_trigger: DefaultNode,
-    response_message: DefaultNode,
-    api_response_message: DefaultNode,
-    generateText: DefaultNode,
-    visualizeText: DefaultNode,
-    routing: DefaultNode,
-    promptCrafter: DefaultNode,
-    validResponse: DefaultNode
   };
   
+  // Add all nodes from registry with DefaultNode as fallback
+  getAllNodeTypes().forEach(nodeInfo => {
+    baseNodeTypes[nodeInfo.id] = DefaultNode;
+  });
+  
+  // Add some additional legacy types for backward compatibility
+  const legacyTypes = [
+    'internal_new_agent', 'internal_ai_chat_agent', 'internal',
+    'custom', 'trigger', 'processor', 'output', 'textInput',
+    'webhook', 'scheduler', 'email_trigger', 'email_send',
+    'database_query', 'filter', 'text_prompt', 'visualize_text',
+    'transform', 'chat_interface', 'generate_text', 'prompt_crafter',
+    'valid_response', 'perplexity', 'agent_trigger', 'workflow_trigger',
+    'response_message', 'api_response_message', 'generateText',
+    'visualizeText', 'routing', 'promptCrafter', 'validResponse'
+  ];
+  
+  // Add any legacy types not already in the registry
+  legacyTypes.forEach(type => {
+    if (!baseNodeTypes[type]) {
+      baseNodeTypes[type] = DefaultNode;
+    }
+  });
+  
+  console.log(`Initialized node types with ${Object.keys(baseNodeTypes).length} entries`);
   return baseNodeTypes;
 };
 
@@ -264,6 +250,35 @@ const FlowEditor = ({
     setLoadedNodeTypes(prev => ({ ...prev, [type]: true }));
     
     try {
+      // Try to load the component using the registry first
+      if (hasNodeType(type)) {
+        const uiPath = getNodeUIPath(type);
+        console.log(`Loading node ${type} from registry path: ${uiPath}`);
+        
+        try {
+          // Try to load the component from the registry path
+          const module = await import(/* @vite-ignore */ uiPath);
+          
+          // Check for component or default export
+          if (module && (module.component || module.default)) {
+            const component = module.component || module.default;
+            
+            // Update the nodeTypes with the loaded component
+            setDynamicNodeTypes(prev => ({
+              ...prev,
+              [type]: component
+            }));
+            console.log(`Successfully loaded component for ${type} from registry`);
+            return;
+          }
+        } catch (registryError) {
+          console.warn(`Failed to load component for ${type} from registry:`, registryError);
+        }
+      }
+      
+      // Fallback to legacy loading approach if registry doesn't work
+      console.log(`Falling back to legacy loading for node type: ${type}`);
+      
       // First try loading from the Custom directory using index.ts
       try {
         const customIndexModule = await import(/* @vite-ignore */ `../../nodes/Custom/${type}/index`);
@@ -327,15 +342,19 @@ const FlowEditor = ({
       }
       
       // Try the standard directory as fallback
-      const module = await import(/* @vite-ignore */ `../../nodes/${type}/ui`);
-      
-      if (module && module.component) {
-        // Update the nodeTypes with the loaded component
-        setDynamicNodeTypes(prev => ({
-          ...prev,
-          [type]: module.component
-        }));
-        console.log(`Successfully loaded component for ${type} from root directory`);
+      try {
+        const module = await import(/* @vite-ignore */ `../../nodes/${type}/ui`);
+        
+        if (module && (module.component || module.default)) {
+          // Update the nodeTypes with the loaded component
+          setDynamicNodeTypes(prev => ({
+            ...prev,
+            [type]: module.component || module.default
+          }));
+          console.log(`Successfully loaded component for ${type} from root directory`);
+        }
+      } catch (rootError) {
+        console.warn(`Failed to load component from root directory for ${type}:`, rootError);
       }
     } catch (error) {
       console.warn(`Failed to load component for ${type}:`, error);

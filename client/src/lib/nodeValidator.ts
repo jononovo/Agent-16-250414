@@ -230,20 +230,23 @@ export function logValidationResults(results: Record<string, ValidationResult>):
  * Check if a node type is implemented
  */
 export function isNodeTypeImplemented(nodeType: string): boolean {
-  return FOLDER_BASED_NODE_TYPES.includes(nodeType) || CUSTOM_NODE_TYPES.includes(nodeType);
+  // Use the registry to check if the node type exists
+  return hasNodeType(nodeType);
 }
 
 /**
- * Register a custom node type
+ * Register a custom node type (legacy - maintained for backward compatibility)
  */
 export function registerCustomNodeType(nodeType: string): void {
   if (!CUSTOM_NODE_TYPES.includes(nodeType)) {
     CUSTOM_NODE_TYPES.push(nodeType);
   }
+  // Note: This doesn't actually register the node in the registry system
+  // The registry system automatically discovers nodes based on filesystem structure
 }
 
 /**
- * Register multiple custom node types
+ * Register multiple custom node types (legacy - maintained for backward compatibility)
  */
 export function registerCustomNodeTypes(nodeTypes: string[]): void {
   nodeTypes.forEach(nodeType => {
@@ -251,44 +254,34 @@ export function registerCustomNodeTypes(nodeTypes: string[]): void {
       CUSTOM_NODE_TYPES.push(nodeType);
     }
   });
+  // Note: This doesn't actually register the nodes in the registry system
+  // The registry system automatically discovers nodes based on filesystem structure
 }
 
 /**
- * Gets the path to a node's executor
- * Attempts to find the node in System, Custom, or root folders
+ * Gets the path to a node's executor using the registry
  */
 export function getNodeExecutorPath(nodeType: string): string {
-  // Check System folder first for system node types
-  if (SYSTEM_NODE_TYPES.includes(nodeType)) {
+  const info = getNodeInfo(nodeType);
+  
+  if (!info) {
+    console.warn(`Could not find node type "${nodeType}" in registry`);
     return `../nodes/System/${nodeType}/executor`;
   }
   
-  // Then check Custom folder for custom node types
-  if (CUSTOM_NODE_TYPES.includes(nodeType)) {
-    return `../nodes/Custom/${nodeType}/executor`;
-  }
-  
-  // Node is missing from both System and Custom folders
-  console.warn(`Could not find node type "${nodeType}" in System or Custom folders`);
-  return `../nodes/System/${nodeType}/executor`;
+  return `../nodes/${info.folderPath}/${nodeType}/executor`;
 }
 
 /**
- * Gets the path to a node's definition
- * Attempts to find the node in System, Custom, or root folders
+ * Gets the path to a node's definition using the registry
  */
 export function getNodeDefinitionPath(nodeType: string): string {
-  // Check System folder first for system node types
-  if (SYSTEM_NODE_TYPES.includes(nodeType)) {
+  const info = getNodeInfo(nodeType);
+  
+  if (!info) {
+    console.warn(`Could not find node type "${nodeType}" in registry`);
     return `../nodes/System/${nodeType}/definition`;
   }
   
-  // Then check Custom folder for custom node types
-  if (CUSTOM_NODE_TYPES.includes(nodeType)) {
-    return `../nodes/Custom/${nodeType}/definition`;
-  }
-  
-  // Node is missing from both System and Custom folders
-  console.warn(`Could not find node type "${nodeType}" in System or Custom folders`);
-  return `../nodes/System/${nodeType}/definition`;
+  return `../nodes/${info.folderPath}/${nodeType}/definition`;
 }

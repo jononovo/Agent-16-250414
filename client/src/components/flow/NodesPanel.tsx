@@ -30,10 +30,11 @@ import {
   CheckSquare,
   Table,
   FileText,
-  Code
+  Code,
+  Box
 } from 'lucide-react';
 import NodeItem from './NodeItem';
-import { FOLDER_BASED_NODE_TYPES, SYSTEM_NODE_TYPES, CUSTOM_NODE_TYPES } from '@/lib/nodeValidator';
+import { getAllNodeTypes } from '@/lib/nodeRegistry';
 
 // Node categories based on the documentation
 const NODE_CATEGORIES = [
@@ -47,103 +48,33 @@ const NODE_CATEGORIES = [
   { id: 'internal', name: 'Internal', description: 'Internal system nodes that trigger system operations' }
 ];
 
-// Node types from nodeValidator for a single source of truth
-const NODE_TYPES = [
-  // AI Nodes
-  { 
-    id: 'text_input', 
-    name: 'Text Input', 
-    description: 'Add text input to your workflow',
-    category: 'ai',
-    icon: Type
-  },
-  { 
-    id: 'claude', 
-    name: 'Claude API', 
-    description: 'Generate content with Claude AI',
-    category: 'ai',
-    icon: Sparkles
-  },
-  { 
-    id: 'http_request', 
-    name: 'HTTP Request', 
-    description: 'Makes API requests to external services',
-    category: 'actions',
-    icon: Globe
-  },
-  { 
-    id: 'data_transform', 
-    name: 'Data Transform', 
-    description: 'Transforms data structure',
-    category: 'data',
-    icon: Repeat
-  },
-  { 
-    id: 'text_formatter', 
-    name: 'Text Formatter', 
-    description: 'Formats text with various transformations',
-    category: 'data',
-    icon: Type
-  },
-  { 
-    id: 'json_schema_validator', 
-    name: 'JSON Schema Validator', 
-    description: 'Validates JSON data against a schema',
-    category: 'data',
-    icon: CheckSquare
-  },
-  { 
-    id: 'csv_processor', 
-    name: 'CSV Processor', 
-    description: 'Processes CSV data with column mapping and filtering',
-    category: 'data',
-    icon: Table
-  },
-  { 
-    id: 'number_input', 
-    name: 'Number Input', 
-    description: 'Provides numeric input with slider visualization',
-    category: 'input',
-    icon: Hash
-  },
-  { 
-    id: 'toggle_switch', 
-    name: 'Toggle Switch', 
-    description: 'A simple boolean toggle switch',
-    category: 'input',
-    icon: ToggleLeft
-  },
-  { 
-    id: 'markdown_renderer', 
-    name: 'Markdown Renderer', 
-    description: 'Renders markdown text with live preview',
-    category: 'content',
-    icon: FileText
-  },
-  { 
-    id: 'function_node', 
-    name: 'Function', 
-    description: 'Custom JavaScript function that transforms data',
-    category: 'code',
-    icon: Code
-  },
-  // Removed old webhook node in favor of more specific webhook_trigger and webhook_response nodes
-  { 
-    id: 'webhook_trigger', 
-    name: 'Webhook Trigger', 
-    description: 'Creates a webhook endpoint that can trigger workflows',
-    category: 'triggers',
-    icon: Webhook
-  },
-  { 
-    id: 'webhook_response', 
-    name: 'Webhook Response', 
-    description: 'Sends workflow data to external webhook endpoints',
-    category: 'actions',
-    icon: Send
-  }
-  // Additional nodes will be loaded dynamically from the System and Custom directories
-];
+// Map of icon names to Lucide components for dynamic node icons
+// This helps resolve node icons that come from the filesystem
+const ICON_MAP: Record<string, any> = {
+  'Type': Type,
+  'Sparkles': Sparkles,
+  'Globe': Globe,
+  'Repeat': Repeat,
+  'Hash': Hash,
+  'ToggleLeft': ToggleLeft,
+  'CheckSquare': CheckSquare,
+  'Table': Table,
+  'FileText': FileText,
+  'Code': Code,
+  'Webhook': Webhook,
+  'Send': Send,
+  'Database': Database,
+  'MessageSquare': MessageSquare,
+  'BarChart': BarChart,
+  'Clock': Clock,
+  'Mail': Mail,
+  'FileJson': FileJson,
+  'CheckCheck': CheckCheck,
+  'Filter': Filter,
+  'GitBranch': GitBranch,
+  'AlertCircle': AlertCircle,
+  'Box': Box
+};
 
 const NodesPanel = () => {
   const [searchQuery, setSearchQuery] = useState('');
@@ -159,42 +90,38 @@ const NodesPanel = () => {
     }
   });
   
-  // Use the static node type definitions for our folder-based system
+  // Use nodes from the central registry
   const [folderBasedNodes, setFolderBasedNodes] = useState<Node[]>([]);
   
   useEffect(() => {
-    // Create nodes from our static NODE_TYPES array
-    // These match the folder-based nodes we have implemented
-    const typesToUse = NODE_TYPES.filter(nodeType => {
-      // Only include node types that we know are implemented in the folder-based system
-      // First wave of implementations
-      const implementedNodeTypes = [
-        'text_input', 'claude', 'http_request', 'text_template', 
-        'data_transform', 'decision', 'function', 'json_path',
-        // New custom nodes
-        'text_formatter', 'number_input', 'toggle_switch',
-        'json_schema_validator', 'csv_processor', 'markdown_renderer',
-        'function_node', 'webhook_trigger', 'webhook_response'
-      ];
-      return implementedNodeTypes.includes(nodeType.id);
-    });
-    
-    const nodes = typesToUse.map((nodeType, index) => {
+    // Get all node types from the central registry
+    const registryNodes = getAllNodeTypes().map((nodeInfo, index) => {
+      // Resolve icon: either use the component directly if it's already a component,
+      // or try to find it in the icon map if it's a string
+      let resolvedIcon = nodeInfo.icon;
+      if (typeof nodeInfo.icon === 'string' && ICON_MAP[nodeInfo.icon]) {
+        resolvedIcon = ICON_MAP[nodeInfo.icon];
+      } else if (!nodeInfo.icon) {
+        // Default icon if none specified
+        resolvedIcon = Box;
+      }
+      
       return {
         id: 1000 + index, // Use a different ID range to avoid conflicts
-        name: nodeType.name,
-        type: nodeType.id,
-        description: nodeType.description,
-        icon: nodeType.icon,
+        name: nodeInfo.name,
+        type: nodeInfo.id,
+        description: nodeInfo.description,
+        icon: resolvedIcon,
         createdAt: new Date(),
         updatedAt: new Date(),
         userId: null,
-        category: nodeType.category,
+        category: nodeInfo.category,
         configuration: {}
       } as Node;
     });
     
-    setFolderBasedNodes(nodes);
+    setFolderBasedNodes(registryNodes);
+    console.log(`Loaded ${registryNodes.length} nodes from registry`);
   }, []);
   
   // Debug: Log folder-based nodes
