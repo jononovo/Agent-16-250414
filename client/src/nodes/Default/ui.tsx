@@ -14,7 +14,7 @@
 
 import React, { useState, memo, useCallback, useRef, useEffect } from 'react';
 import { Handle, Position, NodeProps } from 'reactflow';
-import { Settings, MoreHorizontal, AlertTriangle, Trash2, StickyNote } from 'lucide-react';
+import { Settings, MoreHorizontal, AlertTriangle, Trash2, StickyNote, PenLine } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 import { Badge } from '@/components/ui/badge';
@@ -26,6 +26,15 @@ import {
   SheetHeader, 
   SheetTitle 
 } from '@/components/ui/sheet';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle
+} from '@/components/ui/dialog';
+import { Textarea } from '@/components/ui/textarea';
 import { 
   Popover, 
   PopoverContent, 
@@ -116,7 +125,12 @@ function DefaultNode({
   const hideDelay = 400; // ms before hiding menu
   const hoverAreaRef = useRef<HTMLDivElement>(null);
   
-  // Register with FlowEditor for settings
+  // Note-related state variables
+  const [noteDialogOpen, setNoteDialogOpen] = useState(false);
+  const [noteText, setNoteText] = useState(data.note || '');
+  const [noteVisibility, setNoteVisibility] = useState(data.showNote || false);
+  
+  // Register with FlowEditor for settings and listen for node events
   useEffect(() => {
     // Add global event listener for node settings
     const handleNodeSettings = () => {
@@ -134,6 +148,21 @@ function DefaultNode({
         onSettingsClick: handleNodeSettings
       });
     }
+    
+    // Listen for note edit events that match this node
+    const handleNoteEditEvent = (event: CustomEvent) => {
+      if (event.detail.nodeId === id) {
+        setNoteText(data.note || '');
+        setNoteVisibility(data.showNote || false);
+        setNoteDialogOpen(true);
+      }
+    };
+    
+    window.addEventListener('node-note-edit', handleNoteEditEvent as EventListener);
+    
+    return () => {
+      window.removeEventListener('node-note-edit', handleNoteEditEvent as EventListener);
+    };
   }, [id, data]);
   
   // Function to handle hover start
@@ -290,10 +319,60 @@ function DefaultNode({
   // Handler for adding/editing a note
   const handleEditNote = () => {
     console.log('Edit note for node:', id);
-    // In a real implementation, this would open a dialog to edit the note
-    window.dispatchEvent(new CustomEvent('node-note-edit', { 
-      detail: { nodeId: id }
-    }));
+    // Open the note dialog directly
+    setNoteText(data.note || '');
+    setNoteVisibility(data.showNote || false);
+    setNoteDialogOpen(true);
+  };
+  
+  // Dispatch a custom event to let the FlowEditor know about note updates
+  const dispatchNoteUpdateEvent = (noteData: { note?: string, showNote?: boolean }) => {
+    const event = new CustomEvent('node-note-update', { 
+      detail: { 
+        nodeId: id,
+        ...noteData
+      }
+    });
+    window.dispatchEvent(event);
+    console.log('Dispatched node-note-update event:', id, noteData);
+  };
+  
+  // Handler for saving note
+  const handleSaveNote = () => {
+    // Update local component data through onChange if available
+    if (onChange) {
+      onChange({
+        ...data,
+        note: noteText,
+        showNote: noteVisibility
+      });
+    }
+
+    // Also dispatch a global event for the FlowEditor to catch and save
+    dispatchNoteUpdateEvent({ 
+      note: noteText,
+      showNote: noteVisibility 
+    });
+    setNoteDialogOpen(false);
+  };
+  
+  // Handler for deleting a note
+  const handleDeleteNote = () => {
+    // Update local component data through onChange if available
+    if (onChange) {
+      onChange({
+        ...data,
+        note: '',
+        showNote: false
+      });
+    }
+    
+    // Also dispatch a global event for the FlowEditor to catch and save
+    dispatchNoteUpdateEvent({ 
+      note: '',
+      showNote: false 
+    });
+    setNoteDialogOpen(false);
   };
   
   const handleDuplicateNode = () => {
@@ -399,6 +478,20 @@ function DefaultNode({
     <div className="flex items-center gap-1.5">
       {getStatusBadge()}
       
+      {/* Note button - changes appearance based on whether a note exists */}
+      <Button 
+        variant="ghost" 
+        size="icon" 
+        className={cn(
+          "h-7 w-7",
+          data.note ? "text-amber-500 hover:text-amber-600" : "text-muted-foreground"
+        )}
+        onClick={handleEditNote}
+        title={data.note ? "Edit note" : "Add note"}
+      >
+        <StickyNote className="h-3.5 w-3.5" />
+      </Button>
+      
       <Popover open={showContextActions} onOpenChange={setShowContextActions}>
         <PopoverTrigger asChild>
           <Button 
@@ -502,6 +595,79 @@ function DefaultNode({
           </div>
         </SheetContent>
       </Sheet>
+      
+      {/* Note editing dialog */}
+      <Dialog open={noteDialogOpen} onOpenChange={setNoteDialogOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Node Note</DialogTitle>
+            <DialogDescription>
+              Add notes or comments about this node's purpose or configuration.
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="py-4 space-y-4">
+            <Textarea
+              placeholder="Enter note text here..."
+              value={noteText}
+              onChange={(e) => setNoteText(e.target.value)}
+              className="min-h-[120px]"
+            />
+            
+            {/* Note visibility toggle */}
+            <div className="flex items-center space-x-2">
+              <div className="flex-1 text-sm">Show note on node</div>
+              <div 
+                className="cursor-pointer flex items-center" 
+                onClick={() => setNoteVisibility(!noteVisibility)}
+              >
+                <div className={cn(
+                  "w-10 h-5 rounded-full transition-colors flex items-center",
+                  noteVisibility ? "bg-amber-500" : "bg-gray-300"
+                )}>
+                  <div className={cn(
+                    "w-4 h-4 rounded-full bg-white transform transition-transform mx-0.5",
+                    noteVisibility ? "translate-x-5" : ""
+                  )} />
+                </div>
+                <div className="ml-2 text-sm">
+                  {noteVisibility ? 
+                    <span className="text-amber-500">Visible</span> : 
+                    <span className="text-gray-500">Hidden</span>}
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          <DialogFooter className="flex justify-between sm:justify-between">
+            <div className="flex gap-2">
+              <Button
+                type="button"
+                variant="destructive"
+                onClick={handleDeleteNote}
+                className="bg-red-600 hover:bg-red-700"
+                disabled={!data.note && noteText.trim() === ''}
+              >
+                Delete
+              </Button>
+              <Button
+                type="button"
+                variant="ghost"
+                onClick={() => setNoteDialogOpen(false)}
+              >
+                Cancel
+              </Button>
+            </div>
+            <Button
+              type="button"
+              onClick={handleSaveNote}
+              className={data.note ? '' : 'bg-amber-600 hover:bg-amber-700'}
+            >
+              Save Note
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       <div 
         ref={hoverAreaRef}
@@ -563,6 +729,27 @@ function DefaultNode({
                       </div>
                     )}
                   </div>
+                  
+                  {/* Node Note - only show if showNote is true and there's a note */}
+                  {data.showNote && data.note && (
+                    <div className="mt-2 p-2 text-xs bg-amber-50 dark:bg-amber-900/20 text-amber-800 dark:text-amber-300 rounded border border-amber-200 dark:border-amber-800/50">
+                      <div className="flex items-center justify-between gap-1 mb-1">
+                        <div className="flex items-center">
+                          <StickyNote className="h-3 w-3 mr-1" />
+                          <span className="font-medium">Note</span>
+                        </div>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-5 w-5 -mr-1 -mt-1"
+                          onClick={handleEditNote}
+                        >
+                          <PenLine className="h-3 w-3 text-amber-700 dark:text-amber-400" />
+                        </Button>
+                      </div>
+                      <div className="whitespace-pre-line">{data.note}</div>
+                    </div>
+                  )}
                   
                   {/* Status messages and errors */}
                   {hasError && errorMessage && (
