@@ -633,7 +633,7 @@ const NodeSettingsDrawer: React.FC<NodeSettingsDrawerProps> = ({
 return (
     <Sheet open={isOpen} onOpenChange={handleOpenChange}>
       <SheetContent side="right" className="w-[400px] sm:w-[540px] p-0">
-        <div className="flex justify-between items-start p-6 pb-1">
+        <div className="p-6 pb-1">
           <SheetHeader className="p-0">
             <SheetTitle>Node Configuration <span className="text-sm text-muted-foreground">({node.type})</span></SheetTitle>
             <SheetDescription>
@@ -641,13 +641,12 @@ return (
             </SheetDescription>
           </SheetHeader>
           <Button 
-            variant="ghost" 
-            size="icon" 
-            className="h-9 w-9 text-muted-foreground hover:text-primary"
+            variant="link" 
+            className="mt-2 p-0 h-auto text-sm text-muted-foreground hover:text-primary"
             onClick={openReadmeModal}
-            title="View Documentation"
           >
-            <BookOpen className="h-5 w-5" />
+            <BookOpen className="h-4 w-4 mr-1 inline" />
+            Technical Readme
           </Button>
         </div>
         
@@ -994,22 +993,14 @@ return (
         </ScrollArea>
         
         <SheetFooter className="px-6 py-4 border-t">
-          <div className="flex gap-2">
+          <div className="flex justify-between w-full">
             <Button variant="outline" onClick={onClose}>
               <X className="h-4 w-4 mr-2" /> Cancel
             </Button>
-            <Button 
-              variant="ghost" 
-              onClick={openReadmeModal}
-              className="gap-2"
-            >
-              <HelpCircle className="h-4 w-4" />
-              Documentation
+            <Button onClick={handleSave} className="bg-primary text-primary-foreground">
+              <Save className="h-4 w-4 mr-2" /> Save Changes
             </Button>
           </div>
-          <Button onClick={handleSave} className="bg-primary text-primary-foreground">
-            <Save className="h-4 w-4 mr-2" /> Save Changes
-          </Button>
         </SheetFooter>
       </SheetContent>
     </Sheet>
