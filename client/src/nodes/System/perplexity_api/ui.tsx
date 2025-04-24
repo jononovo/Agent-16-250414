@@ -282,7 +282,7 @@ export const component = memo(({ data, id, selected, isConnectable }: NodeProps<
             }}
             isConnectable={isConnectable}
           />
-          <div className="absolute pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity duration-200 bg-slate-800 text-white text-xs rounded px-2 py-1 left-0 -translate-x-1/2" style={{ top: '75px' }}>
+          <div className="absolute pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity duration-200 bg-slate-800 text-white text-xs rounded px-2 py-1 left-0 -translate-x-full" style={{ top: '75px', left: '-15px' }}>
             Prompt
           </div>
         </div>
@@ -303,7 +303,7 @@ export const component = memo(({ data, id, selected, isConnectable }: NodeProps<
               }}
               isConnectable={isConnectable}
             />
-            <div className="absolute pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity duration-200 bg-slate-800 text-white text-xs rounded px-2 py-1 left-0 -translate-x-1/2" style={{ top: '105px' }}>
+            <div className="absolute pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity duration-200 bg-slate-800 text-white text-xs rounded px-2 py-1 left-0 -translate-x-full" style={{ top: '105px', left: '-15px' }}>
               System
             </div>
           </div>
@@ -325,7 +325,7 @@ export const component = memo(({ data, id, selected, isConnectable }: NodeProps<
             }}
             isConnectable={isConnectable}
           />
-          <div className="absolute pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity duration-200 bg-slate-800 text-white text-xs rounded px-2 py-1 right-0 translate-x-1/2" style={{ top: '75px' }}>
+          <div className="absolute pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity duration-200 bg-slate-800 text-white text-xs rounded px-2 py-1 right-0 translate-x-full" style={{ top: '75px', right: '-15px' }}>
             Response
           </div>
         </div>
@@ -345,7 +345,7 @@ export const component = memo(({ data, id, selected, isConnectable }: NodeProps<
             }}
             isConnectable={isConnectable}
           />
-          <div className="absolute pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity duration-200 bg-slate-800 text-white text-xs rounded px-2 py-1 right-0 translate-x-1/2" style={{ top: '105px' }}>
+          <div className="absolute pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity duration-200 bg-slate-800 text-white text-xs rounded px-2 py-1 right-0 translate-x-full" style={{ top: '105px', right: '-15px' }}>
             Metadata
           </div>
         </div>
