@@ -276,9 +276,14 @@ export const component = memo(({ data, id, selected, isConnectable }: NodeProps<
             <h3 className="text-sm font-medium truncate text-indigo-700">Perplexity API</h3>
           </div>
           <div className="flex items-center gap-1">
-            {!nodeData.apiKey && (
+            {!nodeData.apiKey && !process.env.PERPLEXITY_API_KEY && (
               <Badge variant="outline" className="px-1.5 py-0 h-5 text-amber-600 border-amber-200 bg-amber-50">
                 <Lock size={11} className="mr-1" /> Key Required
+              </Badge>
+            )}
+            {!nodeData.apiKey && process.env.PERPLEXITY_API_KEY && (
+              <Badge variant="outline" className="px-1.5 py-0 h-5 text-emerald-600 border-emerald-200 bg-emerald-50">
+                <Lock size={11} className="mr-1" /> Env Key
               </Badge>
             )}
             <Button 
@@ -294,10 +299,15 @@ export const component = memo(({ data, id, selected, isConnectable }: NodeProps<
         
         {/* Content */}
         <NodeContent padding="normal">
-          {/* API Status Warning */}
+          {/* API Status Warning or Info */}
           {!nodeData.apiKey && !process.env.PERPLEXITY_API_KEY && (
             <div className="mt-1 p-2 bg-amber-100/50 text-amber-800 text-xs rounded-md">
               Perplexity API key required in settings
+            </div>
+          )}
+          {!nodeData.apiKey && process.env.PERPLEXITY_API_KEY && (
+            <div className="mt-1 p-2 bg-emerald-100/50 text-emerald-800 text-xs rounded-md">
+              Using Perplexity API key from environment variable
             </div>
           )}
           

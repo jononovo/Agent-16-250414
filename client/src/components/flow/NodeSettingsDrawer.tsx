@@ -836,7 +836,68 @@ const NodeSettingsDrawer: React.FC<NodeSettingsDrawerProps> = ({
             }
           ];
         }
-        return [];
+        
+        // Generate basic settings based on node data for any other node type
+        const basicSettings: SettingsField[] = [];
+        
+        // If node has a settingsData object, we'll create dynamic fields based on it
+        if (node?.data?.settingsData) {
+          // Generate fields from the settingsData object
+          Object.entries(node.data.settingsData).forEach(([key, value]) => {
+            const valueType = typeof value;
+            let fieldType: SettingsField['type'] = 'text';
+            
+            // Determine field type based on value type
+            if (valueType === 'number') {
+              fieldType = 'number';
+            } else if (valueType === 'boolean') {
+              fieldType = 'select';
+            } else if (valueType === 'object') {
+              fieldType = 'json';
+            }
+            
+            // Create field definition
+            // Ensure the value is of a type that can be assigned to defaultValue
+            let defaultValue: string | number | boolean | string[] | undefined = undefined;
+            
+            if (valueType === 'string' || valueType === 'number' || valueType === 'boolean') {
+              defaultValue = value as string | number | boolean;
+            } else if (Array.isArray(value) && value.every(item => typeof item === 'string')) {
+              defaultValue = value as string[];
+            }
+            
+            const field: SettingsField = {
+              id: key,
+              label: key.charAt(0).toUpperCase() + key.slice(1).replace(/([A-Z])/g, ' $1').trim(),
+              type: fieldType,
+              description: `Configure the ${key} setting for this node`,
+              defaultValue
+            };
+            
+            // Add options for boolean fields
+            if (fieldType === 'select' && valueType === 'boolean') {
+              field.options = [
+                { value: 'true', label: 'Yes' },
+                { value: 'false', label: 'No' }
+              ];
+            }
+            
+            basicSettings.push(field);
+          });
+        }
+        
+        // Add a label field for all nodes if one doesn't already exist
+        if (!basicSettings.some(f => f.id === 'label')) {
+          basicSettings.unshift({
+            id: 'label',
+            label: 'Node Label',
+            type: 'text',
+            description: 'The display name for this node',
+            defaultValue: node?.data?.label || ''
+          });
+        }
+        
+        return basicSettings;
     }
   };
 
