@@ -153,10 +153,6 @@ const MainContent = ({ children }: MainContentProps) => {
               <Settings size={16} />
               <span>Settings</span>
             </Button>
-            
-            <Button className="flex items-center gap-1">
-              <span>Deploy</span>
-            </Button>
           </div>
         </div>
       </header>
