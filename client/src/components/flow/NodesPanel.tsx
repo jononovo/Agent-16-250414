@@ -126,6 +126,13 @@ const NODE_TYPES = [
     description: 'Custom JavaScript function that transforms data',
     category: 'code',
     icon: Code
+  },
+  { 
+    id: 'webhook', 
+    name: 'Webhook', 
+    description: 'Receive data from external services via webhooks',
+    category: 'triggers',
+    icon: Webhook
   }
   // Additional nodes will be loaded dynamically from the System and Custom directories
 ];
@@ -159,7 +166,7 @@ const NodesPanel = () => {
         // New custom nodes
         'text_formatter', 'number_input', 'toggle_switch',
         'json_schema_validator', 'csv_processor', 'markdown_renderer',
-        'function_node'
+        'function_node', 'webhook'
       ];
       return implementedNodeTypes.includes(nodeType.id);
     });

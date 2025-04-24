@@ -28,7 +28,8 @@ export let CUSTOM_NODE_TYPES: string[] = [
   'number_input',
   'toggle_switch',
   'perplexity_api',
-  'function_node'
+  'function_node',
+  'webhook'
 ];
 
 // Combined list of all folder-based node types
