@@ -2,7 +2,7 @@
 
 This project implements a flexible, extensible node-based workflow system for creating, visualizing, and executing workflows. The architecture uses a folder-based approach for implementing nodes, making it easy to add new node types.
 
-> **Note**: For AI assistants helping with this codebase, see [Replit Dev Agent Context](./replit-dev-agent-context-20250423-1644.md) for a comprehensive overview with technical details, code patterns, and troubleshooting guidance.
+> **Note**: For AI assistants helping with this codebase, see [Replit Dev Agent Context](./replit-dev-agent-context-20250424-0706.md) for a comprehensive overview with technical details, code patterns, and troubleshooting guidance.
 
 ## Table of Contents
 
@@ -399,31 +399,38 @@ All nodes follow UI design inspired by simple-ai.dev to maintain consistency acr
 | `runWorkflow()` | Executes a workflow through the API | `routes.ts` |
 | `handleWebhookRequest()` | Processes incoming webhook requests | `routes.ts` |
 
-### External API Integration System
+### Webhook Integration System
 
-The platform provides a comprehensive system for external API integrations:
+The platform provides a robust webhook system for bidirectional communication with external applications:
 
-1. **Dynamic API Endpoints**:
-   - Generic paths support custom endpoint definitions
-   - Workflow-specific endpoints allow direct node triggering
-   - Multiple HTTP methods supported with appropriate payload handling
+1. **Webhook Endpoint Architecture**:
+   - Generic path: `/api/webhooks/:path` - Custom webhook endpoints for flexible integration  
+   - Direct node triggering: `/api/webhooks/workflow/:workflowId/node/:nodeId` - For targeted workflow execution
+   - Support for multiple HTTP methods (GET, POST, PUT, DELETE) with automatic content negotiation
 
-2. **Authentication Mechanisms**:
-   - Configurable authentication schemes for both inbound and outbound requests
-   - Header-based authentication options
-   - Token-based security mechanisms
+2. **Webhook Authentication Options**:
+   - API Key authentication via X-API-Key header
+   - Bearer token authentication via Authorization header
+   - Open webhooks for public endpoints and testing
+   - Secret key verification for enhanced security
 
-3. **Request Processing**:
-   - Standardized header and payload processing
-   - Content-Type awareness for proper data parsing
-   - Request metadata preservation
-   - Structured data flow between external systems and workflow nodes
+3. **Webhook Request Processing Pipeline**:
+   - Headers normalized and passed to workflow
+   - Request body parsed based on Content-Type (JSON, form data, etc.)
+   - Method and path parameters preserved
+   - Structured conversion to node-compatible data format
 
-4. **Response Handling**:
-   - Support for both synchronous and asynchronous processing modes
-   - Standardized response formatting
-   - Comprehensive error handling with appropriate status codes
-   - Retry mechanisms for resilient external communication
+4. **Webhook Response Handling Strategies**:
+   - Synchronous webhooks return complete workflow results
+   - Asynchronous processing with acknowledgment response
+   - Standardized status and data response format
+   - Configurable timeouts and error handling
+
+5. **Outbound Webhook Features**:
+   - Ability to dispatch data to external endpoints
+   - Customizable headers and payload formats
+   - Retry logic with configurable attempts and backoff
+   - Response status and data capture
 
 ### Data Structures
 
@@ -711,13 +718,42 @@ When adding a feature that should work across all nodes:
 2. Understand that all data is cached in memory for performance
 3. Data is periodically saved to Replit Database
 
-#### 4. Debugging Workflow Execution
+#### 4. Creating Webhook-Enabled Nodes
+
+When building nodes that interact with the webhook system:
+
+1. **Trigger Nodes (Receiving Data)**:
+   - Set appropriate category (typically "triggers")
+   - Define clear output ports for webhook payload, headers, and method
+   - Implement settings for customizing webhook behavior (path, authentication)
+   - Use the global settings drawer with useGlobalSettingsOnly=true flag 
+   - Display webhook URL to users for easy reference
+   - Provide clear validation through the executor
+
+2. **Response Nodes (Sending Data)**:
+   - Carefully validate destination URLs (use zod schema validation)  
+   - Implement robust error handling with retries
+   - Provide detailed status feedback
+   - Configure timeout and retry settings
+   - Normalize headers and process response data consistently
+   - Pass complete response metadata to outputs
+
+3. **Common Webhook Node Patterns**:
+   - Store configuration in node data properties
+   - Use icon components from lucide-react directly
+   - Implement clear content using childrenContent pattern
+   - Support note display for documentation
+   - Create comprehensive testing strategy for webhook integrations
+
+#### 5. Debugging Workflow Execution
 
 1. Check node execution results in the node state
 2. Review logs saved to the storage system
 3. Trace execution through the enhancedWorkflowEngine
 
 ## Troubleshooting
+
+### General Node Issues
 
 | Issue | Possible Solutions |
 |-------|-------------------|
@@ -731,3 +767,18 @@ When adding a feature that should work across all nodes:
 | Hover menu not appearing | Check z-index and positioning calculations |
 | Settings for new nodes don't work | Ensure nodes dispatch 'node-settings-open' events properly |
 | Node updates not affecting all nodes | Remember DefaultNode changes only affect nodes using it as a wrapper |
+
+### Webhook-Specific Issues
+
+| Issue | Possible Solutions |
+|-------|-------------------|
+| Webhook URLs not generating | Check server route registration in routes.ts |
+| Authentication failures | Verify header format matches expected pattern |
+| Webhook not triggering | Test endpoint with curl or Postman directly |
+| CORS errors on webhook calls | Add appropriate CORS headers in routes.ts |
+| Webhook response timing out | Check timeout settings and async processing flag |
+| Webhook response format issues | Ensure proper Content-Type header is set |
+| URL validation errors | Check zod schema validation rules |
+| Webhook retry not working | Verify retry count and delay settings |
+| Webhook payload not parsed | Check Content-Type header on incoming request |
+| Missing webhook data | Ensure all required fields are passed between nodes |
