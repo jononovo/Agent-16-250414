@@ -492,7 +492,10 @@ function FunctionNode({ data, id, selected }: NodeProps<FunctionNodeData>) {
                     </div>
                   )}
                   <div className="whitespace-pre-wrap overflow-x-auto" style={{ fontFamily: "'Fira Code', 'JetBrains Mono', monospace" }}>
-                    {(settingsData?.code || data?.settings?.code || code)
+                    {((settingsData?.code || 
+                      (data?.settings && 'code' in data.settings ? data.settings.code : undefined) || 
+                      data?.code || 
+                      code) as string)
                       .split('\n')
                       .map((line: string, i: number) => {
                         // Apply basic syntax highlighting

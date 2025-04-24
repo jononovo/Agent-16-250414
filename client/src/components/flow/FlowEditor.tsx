@@ -927,6 +927,11 @@ const FlowEditor = ({
             data: {
               ...node.data,
               settings: otherSettings,
+              // For function_node, add settings to settingsData for proper display in UI
+              settingsData: node.type === 'function_node' ? { 
+                ...node.data.settingsData,
+                ...otherSettings 
+              } : node.data.settingsData,
             },
           };
           
@@ -938,6 +943,12 @@ const FlowEditor = ({
             if (nodeProperties.description) {
               updatedNode.data.description = nodeProperties.description;
             }
+          }
+          
+          // Special handling for function_node code field to ensure it's visible in the UI
+          if (node.type === 'function_node' && otherSettings.code) {
+            // Add code directly to the data object as well for UI display
+            updatedNode.data.code = otherSettings.code;
           }
           
           return updatedNode;
