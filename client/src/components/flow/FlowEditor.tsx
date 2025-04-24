@@ -903,6 +903,43 @@ const FlowEditor = ({
       }
     };
 
+    // Handler for node data updates directly from nodes (e.g., workflow_trigger)
+    const handleNodeDataUpdate = (event: CustomEvent) => {
+      if (event.detail && event.detail.nodeId && event.detail.data) {
+        const { nodeId, data: nodeData } = event.detail;
+        
+        console.log('Handling node-data-update for node:', nodeId, 'Data:', nodeData);
+        
+        // Update the nodes state with the new data
+        setNodes((nds) => 
+          nds.map((node) => {
+            if (node.id === nodeId) {
+              return {
+                ...node,
+                data: {
+                  ...node.data,
+                  ...nodeData
+                }
+              };
+            }
+            return node;
+          })
+        );
+        
+        // Trigger a save after the node has been updated
+        // This ensures settings are immediately persisted to the backend
+        setTimeout(() => {
+          saveMutation.mutate({
+            name,
+            data: {
+              nodes,
+              edges
+            }
+          });
+        }, 500);
+      }
+    };
+
     // Add event listeners for custom events
     window.addEventListener('node-settings-open', handleNodeSettingsOpen as EventListener);
     window.addEventListener('agent-trigger-update', handleAgentTriggerUpdate as EventListener);
@@ -911,6 +948,7 @@ const FlowEditor = ({
     window.addEventListener('node-delete', handleNodeDelete as EventListener);
     window.addEventListener('node-duplicate', handleNodeDuplicate as EventListener);
     window.addEventListener('node-note-update', handleNodeNoteUpdate as EventListener);
+    window.addEventListener('node-data-update', handleNodeDataUpdate as EventListener);
     
     // Cleanup function to remove event listeners
     return () => {
@@ -921,6 +959,7 @@ const FlowEditor = ({
       window.removeEventListener('node-delete', handleNodeDelete as EventListener);
       window.removeEventListener('node-duplicate', handleNodeDuplicate as EventListener);
       window.removeEventListener('node-note-update', handleNodeNoteUpdate as EventListener);
+      window.removeEventListener('node-data-update', handleNodeDataUpdate as EventListener);
     };
   }, [nodes, setNodes, setSelectedNode, setSettingsDrawerOpen, name, edges, saveMutation, toast]);
   
@@ -988,6 +1027,18 @@ const FlowEditor = ({
       title: "Node Updated",
       description: "Node configuration has been updated successfully.",
     });
+    
+    // Trigger a save after the node has been updated
+    // This ensures settings are immediately persisted to the backend
+    setTimeout(() => {
+      saveMutation.mutate({
+        name,
+        data: {
+          nodes,
+          edges
+        }
+      });
+    }, 500);
   };
   
   const handleRunWorkflow = async () => {
