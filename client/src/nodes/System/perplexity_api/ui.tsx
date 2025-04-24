@@ -9,7 +9,7 @@ import { Handle, Position } from 'reactflow';
 import { Search, ExternalLink, AlertCircle } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Badge } from '@/components/ui/badge';
-import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
+import { Tooltip, TooltipContent, TooltipTrigger, TooltipProvider } from '@/components/ui/tooltip';
 
 interface PerplexityApiNodeProps {
   id: string;
@@ -132,18 +132,20 @@ const PerplexityApiNode: React.FC<PerplexityApiNodeProps> = ({
             )}
             
             {!isConfigured && (
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <div className="flex items-center">
-                    <AlertCircle size={14} className="text-amber-500" />
-                  </div>
-                </TooltipTrigger>
-                <TooltipContent>
-                  <p className="w-[200px] text-xs">
-                    This node requires a Perplexity API key to function properly. Configure the node settings to add your key.
-                  </p>
-                </TooltipContent>
-              </Tooltip>
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <div className="flex items-center">
+                      <AlertCircle size={14} className="text-amber-500" />
+                    </div>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p className="w-[200px] text-xs">
+                      This node requires a Perplexity API key to function properly. Configure the node settings to add your key.
+                    </p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
             )}
           </div>
         </div>
