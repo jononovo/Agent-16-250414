@@ -1351,8 +1351,9 @@ return (
                             placeholder={field.placeholder}
                             min={field.min}
                             max={field.max}
+                            step={field.step || 1}
                             value={settings[field.id] !== undefined ? settings[field.id] : field.defaultValue || ''}
-                            onChange={(e) => handleSettingChange(field.id, parseInt(e.target.value, 10) || 0)}
+                            onChange={(e) => handleSettingChange(field.id, field.step ? parseFloat(e.target.value) || 0 : parseInt(e.target.value, 10) || 0)}
                           />
                         ) : field.type === 'json' ? (
                           <Textarea
