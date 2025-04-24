@@ -692,7 +692,11 @@ const NodeSettingsDrawer: React.FC<NodeSettingsDrawerProps> = ({
           {
             id: 'cacheResults',
             label: 'Cache Results',
-            type: 'checkbox',
+            type: 'select',
+            options: [
+              { value: 'true', label: 'Yes' },
+              { value: 'false', label: 'No' }
+            ],
             description: 'Cache results for identical inputs to improve performance.'
           },
           {
@@ -759,10 +763,13 @@ const NodeSettingsDrawer: React.FC<NodeSettingsDrawerProps> = ({
       try {
         // Dynamically import the function node definition which contains our templates
         import('@/nodes/Custom/function_node/definition').then((module) => {
-          const templateLibrary = module.nodeMetadata?.templateLibrary || {};
-          const templateCode = templateLibrary[value];
+          // Access the template library and type it properly
+          const templateLibrary = module.nodeMetadata?.templateLibrary as Record<string, string> || {};
           
-          if (templateCode) {
+          // Get the template code for the selected value
+          if (typeof value === 'string' && value in templateLibrary) {
+            const templateCode = templateLibrary[value];
+            
             // Update the code field with the selected template
             updatedSettings = { 
               ...updatedSettings, 
@@ -1062,6 +1069,21 @@ return (
                     <AlertDescription>
                       This node creates a new agent in the system with the specified properties.
                       Configure default settings and notification preferences for agent creation.
+                    </AlertDescription>
+                  </Alert>
+                </div>
+              )}
+              
+              {node.type === 'function_node' && (
+                <div className="mb-4">
+                  <p className="text-sm text-muted-foreground">
+                    Configure settings for the Function Node.
+                  </p>
+                  
+                  <Alert className="mt-2">
+                    <AlertDescription>
+                      This node allows you to write custom JavaScript functions to transform, process, or enhance your workflow data.
+                      Select a template or write your own code. You can enable advanced features like caching, async execution, and custom error handling.
                     </AlertDescription>
                   </Alert>
                 </div>
