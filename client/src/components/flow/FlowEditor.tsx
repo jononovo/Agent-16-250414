@@ -1,4 +1,4 @@
-import { useState, useCallback, useRef, useEffect } from 'react';
+import { useState, useCallback, useRef, useEffect, useMemo } from 'react';
 import ReactFlow, { 
   ReactFlowProvider, 
   Background, 
@@ -236,8 +236,14 @@ const FlowEditor = ({
   const reactFlowWrapper = useRef<HTMLDivElement>(null);
   const [reactFlowInstance, setReactFlowInstance] = useState<any>(null);
   
-  // Dynamic nodeTypes state that will be updated when components are loaded
-  const [dynamicNodeTypes, setDynamicNodeTypes] = useState<NodeTypes>(nodeTypes);
+  // Store loaded components in state 
+  const [loadedComponents, setLoadedComponents] = useState<Record<string, any>>({});
+  
+  // Memoize the dynamic nodeTypes to prevent unnecessary re-renders
+  const dynamicNodeTypes = useMemo(() => {
+    // Merge the base nodeTypes with any dynamically loaded components
+    return { ...nodeTypes, ...loadedComponents };
+  }, [loadedComponents]); // Only recalculate when loadedComponents changes
   
   // Helper function to load node components for a specific type
   const loadNodeComponent = async (type: string): Promise<void> => {
@@ -263,8 +269,8 @@ const FlowEditor = ({
           if (module && (module.component || module.default)) {
             const component = module.component || module.default;
             
-            // Update the nodeTypes with the loaded component
-            setDynamicNodeTypes(prev => ({
+            // Update the loadedComponents with the loaded component
+            setLoadedComponents(prev => ({
               ...prev,
               [type]: component
             }));
@@ -283,8 +289,8 @@ const FlowEditor = ({
       try {
         const customIndexModule = await import(/* @vite-ignore */ `../../nodes/Custom/${type}/index`);
         if (customIndexModule && customIndexModule.component) {
-          // Update the nodeTypes with the loaded component
-          setDynamicNodeTypes(prev => ({
+          // Update the loadedComponents with the loaded component
+          setLoadedComponents(prev => ({
             ...prev,
             [type]: customIndexModule.component
           }));
@@ -296,8 +302,8 @@ const FlowEditor = ({
         try {
           const customModule = await import(/* @vite-ignore */ `../../nodes/Custom/${type}/ui`);
           if (customModule && customModule.default) {
-            // Update the nodeTypes with the loaded component
-            setDynamicNodeTypes(prev => ({
+            // Update the loadedComponents with the loaded component
+            setLoadedComponents(prev => ({
               ...prev,
               [type]: customModule.default
             }));
