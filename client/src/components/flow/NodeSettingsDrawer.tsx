@@ -1173,11 +1173,13 @@ return (
                               <SelectValue placeholder={field.placeholder || "Select an option"} />
                             </SelectTrigger>
                             <SelectContent>
-                              {field.options.map((option) => (
-                                <SelectItem key={option.value} value={option.value}>
-                                  {option.label}
-                                </SelectItem>
-                              ))}
+                              {field.options
+                                .filter((option) => option.value && option.value.toString().trim() !== '')
+                                .map((option) => (
+                                  <SelectItem key={option.value} value={option.value}>
+                                    {option.label}
+                                  </SelectItem>
+                                ))}
                             </SelectContent>
                           </Select>
                         ) : field.type === 'radio' && field.options ? (
