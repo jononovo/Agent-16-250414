@@ -145,6 +145,22 @@ All nodes are organized in one of three main folders:
 - `/client/src/nodes/Custom/` - For custom, domain-specific nodes
 - `/client/src/nodes/Default/` - For default node implementation patterns
 
+### Building Custom Nodes
+
+The platform provides a flexible architecture for creating custom nodes by extending the default node system:
+
+1. **Node Structure Pattern**:
+   - Each node consists of three core files (definition, executor, UI)
+   - The Default node architecture provides a base implementation to extend from
+   - Custom nodes can compose the DefaultNode wrapper or selectively use its components
+   - The event system enables decoupled integration with platform features
+
+2. **Content Patterns**:
+   - `childrenContent` pattern allows placing custom content inside a standardized container
+   - `useGlobalSettingsOnly` flag toggles between local and global settings management
+   - Icons can be provided as string identifiers or direct React components
+   - Notes system integrates with any node regardless of internal implementation
+
 ### Default Node Architecture
 
 The Default node implementation serves as both a template and extension point for the node system:
@@ -170,6 +186,58 @@ The Default node implementation serves as both a template and extension point fo
      detail: { nodeId }
    }));
    ```
+
+5. **Icon Management**:
+   - Icons can be provided as:
+     - Direct React components imported from lucide-react
+     - String names for common icons managed by DynamicIcon component
+     - Custom React elements 
+   - Icons are resolved in DefaultNode's iconElement handler:
+   ```typescript
+   const iconElement = (
+     <div className="bg-primary/10 p-1.5 rounded-md">
+       {typeof icon === 'string' ? (
+         <DynamicIcon icon={icon} className="h-4 w-4 text-primary" />
+       ) : React.isValidElement(icon) ? (
+         icon
+       ) : (
+         <DynamicIcon icon="box" className="h-4 w-4 text-primary" />
+       )}
+     </div>
+   );
+   ```
+
+6. **Node Wrapper Design**:
+   - NodeContainer provides consistent visual styling and hover behaviors
+   - NodeHeader displays title, description, icon, and action buttons
+   - NodeContent wraps custom content with consistent padding and styling
+   - Customizable action buttons via headerActions array
+   - Custom content via childrenContent property 
+
+7. **Node Settings Drawer**:
+   - Each node can define a settings schema with field definitions
+   - Settings are stored in a standard format in the node's data object
+   - The drawer can be opened in two ways:
+     - Local settings drawer (within the node component)
+     - Global settings drawer (using a global event system)
+   - Setting useGlobalSettingsOnly=true enforces use of the global drawer
+
+8. **Hover Menu Pattern**:
+   - Customizable hover menu appears after short delay (400ms)
+   - Standard actions include duplicate, delete, and settings
+   - Hover menu positioned relative to the node with adaptive placement
+   - Event-based menu dismissal on various user interactions
+
+9. **Node Note System**:
+   - Notes can be added to any node via the noteDialog
+   - Notes are stored in the node data (note and showNote properties)
+   - Notes displayed consistently at the bottom of the node regardless of node content
+   - Event-based note updates via node-note-update event
+
+10. **Global Keyboard Shortcuts**:
+    - Delete key to remove selected nodes
+    - Ctrl+D or Cmd+D to duplicate selected nodes
+    - Esc to cancel current operation or close dialogs
 
 ### Node Output Format
 
@@ -329,6 +397,33 @@ All nodes follow UI design inspired by simple-ai.dev to maintain consistency acr
 |----------|---------|------|
 | `registerRoutes()` | Sets up all Express routes | `routes.ts` |
 | `runWorkflow()` | Executes a workflow through the API | `routes.ts` |
+| `handleWebhookRequest()` | Processes incoming webhook requests | `routes.ts` |
+
+### External API Integration System
+
+The platform provides a comprehensive system for external API integrations:
+
+1. **Dynamic API Endpoints**:
+   - Generic paths support custom endpoint definitions
+   - Workflow-specific endpoints allow direct node triggering
+   - Multiple HTTP methods supported with appropriate payload handling
+
+2. **Authentication Mechanisms**:
+   - Configurable authentication schemes for both inbound and outbound requests
+   - Header-based authentication options
+   - Token-based security mechanisms
+
+3. **Request Processing**:
+   - Standardized header and payload processing
+   - Content-Type awareness for proper data parsing
+   - Request metadata preservation
+   - Structured data flow between external systems and workflow nodes
+
+4. **Response Handling**:
+   - Support for both synchronous and asynchronous processing modes
+   - Standardized response formatting
+   - Comprehensive error handling with appropriate status codes
+   - Retry mechanisms for resilient external communication
 
 ### Data Structures
 
