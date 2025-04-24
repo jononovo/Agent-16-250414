@@ -270,7 +270,7 @@ const NodesPanel = () => {
               );
             })}
             
-            {filteredNodes?.length === 0 && (
+            {filteredNodes?.length === 0 && searchQuery && (
               <div className="p-4 text-center text-sm text-muted-foreground">
                 No nodes found for "{searchQuery}"
               </div>

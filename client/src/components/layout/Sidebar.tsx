@@ -11,12 +11,10 @@ const Sidebar = ({ collapsed = false }: SidebarProps) => {
   // Define navigation items
   const workspaceItems = [
     { path: "/", icon: <Home className="h-4 w-4" />, label: "Builder" },
-    { path: "/playground", icon: <Settings className="h-4 w-4" />, label: "Playground" },
     { path: "/settings", icon: <Settings className="h-4 w-4" />, label: "Settings" }
   ];
 
   const libraryItems = [
-    { path: "/library", icon: <Library className="h-4 w-4" />, label: "All Resources" },
     { path: "/agents", icon: <Bot className="h-4 w-4" />, label: "Agents" },
     { path: "/workflows", icon: <GitBranch className="h-4 w-4" />, label: "Workflows" },
     { path: "/nodes", icon: <Puzzle className="h-4 w-4" />, label: "Nodes" }
@@ -24,7 +22,6 @@ const Sidebar = ({ collapsed = false }: SidebarProps) => {
   
   const advancedItems = [
     { path: "/workflow-chat-generator", icon: <Wand2 className="h-4 w-4" />, label: "AI Workflow Generator" },
-    { path: "/workflow-generator", icon: <Wand2 className="h-4 w-4" />, label: "Form Generator" },
     { path: "/workflow-test", icon: <TestTube className="h-4 w-4" />, label: "Test Bench" },
     { path: "/api-registry", icon: <Code className="h-4 w-4" />, label: "API Registry" }
   ];

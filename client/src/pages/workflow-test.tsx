@@ -24,12 +24,21 @@ import { NodeState, WorkflowExecutionState } from '@/lib/types/workflow';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { registerAllEnhancedNodeExecutors } from '@/lib/enhancedWorkflowEngine';
 import { ChevronLeft, Play, Download, Upload, Copy, Check, RefreshCw } from 'lucide-react';
-import MainContent from '@/components/layout/MainContent';
-import Sidebar from '@/components/layout/Sidebar';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { toast } from '@/hooks/use-toast';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { ChatSidebar, ChatToggle } from '@/components/chat';
+
+// Simplified content wrapper without header and sidebar for test page
+const TestContent = ({ children }: { children: React.ReactNode }) => {
+  return (
+    <div className="flex-grow overflow-y-auto">
+      <main className="container mx-auto px-4 py-6">
+        {children}
+      </main>
+    </div>
+  );
+};
 
 // Input templates by workflow type to help both users and agents
 const inputTemplates = {
@@ -337,9 +346,8 @@ export default function WorkflowTestBench() {
   };
 
   return (
-    <div className="flex h-screen w-full overflow-hidden">
-      <Sidebar collapsed={isMobile} />
-      <MainContent>
+    <div className="flex h-screen w-full overflow-hidden bg-gray-50">
+      <TestContent>
         <div className="container mx-auto max-w-6xl">
           <div className="flex items-center mb-6">
             <Button 
@@ -695,10 +703,9 @@ export default function WorkflowTestBench() {
             </Card>
           )}
         </div>
-      </MainContent>
+      </TestContent>
       
-      {/* Chat components */}
-      <ChatSidebar />
+      {/* This component internally handles the ChatSidebar */}
       <ChatToggle />
     </div>
   );

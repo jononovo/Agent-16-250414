@@ -44,7 +44,7 @@ export function MonkeyAgentChatOverlay({
       createdAt: new Date()
     }
   ]);
-  const [chatMinimized, setChatMinimized] = useState(false);
+  const [chatMinimized, setChatMinimized] = useState(true);
   
   // Store the currently selected node for editing
   const [selectedNodeForEdit, setSelectedNodeForEdit] = useState<NodeDetails | null>(null);
@@ -538,14 +538,26 @@ Please provide instructions for how you'd like to modify this node.
       {/* Chat Panel Toggle Button */}
       <button 
         onClick={toggleChatPanel}
-        className="absolute top-24 right-4 z-20 p-2 bg-primary text-white rounded-full shadow-md hover:bg-primary/90 transition-all"
+        className="fixed top-24 z-20 p-2 bg-primary text-white rounded-full shadow-md hover:bg-primary/90 transition-all"
+        style={{
+          right: chatMinimized ? '16px' : '360px' /* Position differently based on chat state */
+        }}
         aria-label={chatMinimized ? "Expand chat" : "Minimize chat"}
       >
         {chatMinimized ? <ChevronLeft className="h-4 w-4" /> : <MinusCircle className="h-4 w-4" />}
       </button>
 
       {/* Chat Panel - Fixed on the right side with toggle functionality */}
-      <div className={`absolute top-24 ${chatMinimized ? 'right-[-340px]' : 'right-4'} bottom-4 w-[350px] z-10 transition-all duration-300 ease-in-out`}>
+      {/* When minimized, the panel should be completely off-screen */}
+      <div 
+        className={`fixed top-24 bottom-4 w-[350px] z-10 transition-all duration-300 ease-in-out`} 
+        style={{ 
+          right: chatMinimized ? '-350px' : '4px',
+          transform: 'none', /* Don't use transform as it can affect layout */ 
+          boxShadow: chatMinimized ? 'none' : '0 4px 12px rgba(0,0,0,0.1)',
+          pointerEvents: chatMinimized ? 'none' : 'auto'
+        }}
+      >
         <Chat
           messages={messages}
           input={chatInput}
