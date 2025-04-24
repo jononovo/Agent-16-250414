@@ -23,6 +23,10 @@ import { Save, X, BookOpen, HelpCircle } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { Agent } from '@shared/schema';
 import NodeReadmeModal from '@/components/nodes/common/NodeReadmeModal';
+// Import workflow_trigger node definition directly
+import { definition as workflowTriggerDefinition } from '@/nodes/System/workflow_trigger';
+// Disable import from Custom folder since it might not exist
+// import { definition as functionNodeDefinition } from '@/nodes/Custom/function_node/definition';
 
 interface NodeSettingsDrawerProps {
   isOpen: boolean;
@@ -637,6 +641,7 @@ const NodeSettingsDrawer: React.FC<NodeSettingsDrawerProps> = ({
           }
         ];
       case 'function_node':
+        // Return basic fields for the function node
         return [
           {
             id: 'code',
@@ -761,25 +766,26 @@ const NodeSettingsDrawer: React.FC<NodeSettingsDrawerProps> = ({
     // Special handling for function node templates
     if (node?.type === 'function_node' && fieldId === 'selectedTemplate' && value) {
       try {
-        // Dynamically import the function node definition which contains our templates
-        import('@/nodes/Custom/function_node/definition').then((module) => {
-          // Access the template library and type it properly
-          const templateLibrary = module.nodeMetadata?.templateLibrary as Record<string, string> || {};
+        // Provide default templates - we're not importing from a module since it doesn't exist yet
+        const templateLibrary = {
+          'basic': 'function process(input) {\n  return input;\n}',
+          'transform': 'function process(input) {\n  const transformed = {};\n  // Add your transformation logic here\n  return transformed;\n}',
+          'api': 'async function process(input) {\n  try {\n    const response = await fetch("https://api.example.com");\n    return await response.json();\n  } catch (error) {\n    console.error("API Error:", error);\n    return { error: error.message };\n  }\n}',
+          'json': 'function process(input) {\n  try {\n    // Parse JSON if string\n    const data = typeof input === "string" ? JSON.parse(input) : input;\n    return data;\n  } catch (error) {\n    return { error: "Invalid JSON" };\n  }\n}',
+          'conditional': 'function process(input) {\n  if (!input) return { error: "No input provided" };\n  \n  if (input.condition === true) {\n    return { result: "Condition met", path: "true" };\n  } else {\n    return { result: "Condition not met", path: "false" };\n  }\n}'
+        };
+        
+        // Get the template code for the selected value
+        if (typeof value === 'string' && value in templateLibrary) {
+          const templateCode = templateLibrary[value];
           
-          // Get the template code for the selected value
-          if (typeof value === 'string' && value in templateLibrary) {
-            const templateCode = templateLibrary[value];
-            
-            // Update the code field with the selected template
-            updatedSettings = { 
-              ...updatedSettings, 
-              code: templateCode 
-            };
-            setSettings(updatedSettings);
-          }
-        }).catch(err => {
-          console.error('Failed to load function_node templates:', err);
-        });
+          // Update the code field with the selected template
+          updatedSettings = { 
+            ...updatedSettings, 
+            code: templateCode 
+          };
+          setSettings(updatedSettings);
+        }
       } catch (error) {
         console.error('Error applying template:', error);
       }
