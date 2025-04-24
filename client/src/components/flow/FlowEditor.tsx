@@ -1128,18 +1128,18 @@ const FlowEditor = ({
   return (
     <div className="flex h-screen relative">
       <div className="w-64 bg-gray-50 border-r flex flex-col h-full overflow-hidden">
-        <div className="p-4 flex flex-col h-full overflow-hidden">
+        <div className="flex flex-col h-full overflow-hidden">
           <Button 
             variant="ghost" 
             size="sm" 
-            className="mb-4 flex-shrink-0"
+            className="mx-4 my-3 flex-shrink-0"
             onClick={() => navigate('/')}
           >
             <ArrowLeft className="h-4 w-4 mr-2" />
             Back to Builder
           </Button>
 
-          <div className="flex-1 overflow-auto">
+          <div className="flex-1 overflow-auto px-4 pb-2">
             <NodesPanel />
           </div>
         </div>

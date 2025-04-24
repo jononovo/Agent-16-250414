@@ -174,21 +174,21 @@ const NodesPanel = () => {
   }, [groupedNodes]);
 
   return (
-    <div className="flex flex-col h-full max-h-full overflow-hidden">
-      <h2 className="text-lg font-semibold mb-4 flex-shrink-0">Nodes</h2>
+    <div className="flex flex-col h-full max-h-full overflow-hidden w-full">
+      <h2 className="text-lg font-semibold mb-3 flex-shrink-0">Nodes</h2>
       
-      <div className="relative mb-4 flex-shrink-0">
+      <div className="relative mb-3 flex-shrink-0 w-full">
         <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
         <Input
           placeholder="Search nodes..."
-          className="pl-8"
+          className="pl-8 w-full"
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
         />
       </div>
       
-      <Tabs defaultValue="all" className="mb-4 flex-shrink-0" onValueChange={setActiveTab}>
-        <div className="overflow-auto scrollbar-none">
+      <Tabs defaultValue="all" className="mb-3 flex-shrink-0" onValueChange={setActiveTab}>
+        <div className="overflow-auto scrollbar-none w-full">
           <TabsList className="w-auto inline-flex">
             <TabsTrigger value="all" className="px-4">All</TabsTrigger>
             <TabsTrigger value="ai" className="px-4">AI</TabsTrigger>
@@ -202,9 +202,9 @@ const NodesPanel = () => {
         </div>
       </Tabs>
 
-      <div className="flex-1 overflow-auto mb-2">
+      <div className="flex-1 overflow-auto w-full">
         {isLoadingDb ? (
-          <div className="p-4 text-center text-sm text-muted-foreground">
+          <div className="p-2 text-center text-sm text-muted-foreground">
             Loading nodes...
           </div>
         ) : (
@@ -229,14 +229,14 @@ const NodesPanel = () => {
                   type="single"
                   collapsible
                   defaultValue={category.id}
-                  className="mb-4"
+                  className="mb-3 w-full"
                 >
                   <AccordionItem value={category.id} className="border-0">
-                    <AccordionTrigger className="py-2 text-sm font-medium">
+                    <AccordionTrigger className="py-2 text-sm font-medium w-full">
                       {category.name} ({categoryNodes.length})
                     </AccordionTrigger>
                     <AccordionContent>
-                      <div className="space-y-2">
+                      <div className="space-y-2 w-full">
                         {categoryNodes.map((node) => (
                           <NodeItem 
                             key={node.id} 
