@@ -44,7 +44,7 @@ export function MonkeyAgentChatOverlay({
       createdAt: new Date()
     }
   ]);
-  const [chatMinimized, setChatMinimized] = useState(false);
+  const [chatMinimized, setChatMinimized] = useState(true);
   
   // Store the currently selected node for editing
   const [selectedNodeForEdit, setSelectedNodeForEdit] = useState<NodeDetails | null>(null);
