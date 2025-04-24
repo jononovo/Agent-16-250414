@@ -290,6 +290,18 @@ function DefaultNode({
     console.log('Duplicate node:', id);
     if (data.onDuplicate) {
       data.onDuplicate(id);
+    } else {
+      // If no onDuplicate handler is provided, dispatch a custom event
+      const event = new CustomEvent('node-duplicate', { 
+        detail: { 
+          nodeId: id,
+          nodeType: type,
+          nodeData: data,
+          position: { x: data.position?.x, y: data.position?.y }
+        }
+      });
+      window.dispatchEvent(event);
+      console.log('Dispatched node-duplicate event for node:', id);
     }
   };
   

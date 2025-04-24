@@ -756,6 +756,58 @@ const FlowEditor = ({
       }
     };
     
+    // Handler for node duplicate events with smart positioning
+    const handleNodeDuplicate = (event: CustomEvent) => {
+      if (event.detail && event.detail.nodeId) {
+        const { nodeId, nodeType, nodeData } = event.detail;
+        console.log('Duplicating node with ID:', nodeId);
+        
+        // Find the original node to get its position and data
+        const sourceNode = nodes.find(node => node.id === nodeId);
+        
+        if (sourceNode) {
+          // Generate a new unique ID for the cloned node
+          const timestamp = new Date().getTime();
+          const newNodeId = `${nodeType}-${timestamp}`;
+          
+          // Determine smart positioning - place the new node to the right of the original
+          // with a slight downward offset to make it visually distinct
+          const offset = { x: 250, y: 50 };
+          const newPosition = {
+            x: sourceNode.position.x + offset.x,
+            y: sourceNode.position.y + offset.y
+          };
+          
+          // Create a modified copy of the node data
+          // Ensure we don't use references to original objects
+          const newNodeData = {
+            ...JSON.parse(JSON.stringify(nodeData)),
+            label: `${nodeData.label} (Copy)`,
+          };
+          
+          // Create the new node
+          const newNode = {
+            id: newNodeId,
+            type: nodeType,
+            position: newPosition,
+            data: newNodeData
+          };
+          
+          // Add the new node to the flow
+          setNodes(currentNodes => [...currentNodes, newNode]);
+          
+          // Make this new node the selected node
+          setSelectedNode(newNode);
+          
+          // Show a success notification
+          toast({
+            title: "Node Duplicated",
+            description: "Node has been cloned successfully with all its settings.",
+          });
+        }
+      }
+    };
+    
     // Handler for node delete events triggered from nodes
     const handleNodeDelete = (event: CustomEvent) => {
       if (event.detail && event.detail.nodeId) {
@@ -778,6 +830,7 @@ const FlowEditor = ({
     window.addEventListener('workflow-trigger-update', handleWorkflowTriggerUpdate as EventListener);
     window.addEventListener('monkey-agent-update-node', handleMonkeyAgentNodeUpdate as EventListener);
     window.addEventListener('node-delete', handleNodeDelete as EventListener);
+    window.addEventListener('node-duplicate', handleNodeDuplicate as EventListener);
     
     // Cleanup function to remove event listeners
     return () => {
@@ -786,8 +839,9 @@ const FlowEditor = ({
       window.removeEventListener('workflow-trigger-update', handleWorkflowTriggerUpdate as EventListener);
       window.removeEventListener('monkey-agent-update-node', handleMonkeyAgentNodeUpdate as EventListener);
       window.removeEventListener('node-delete', handleNodeDelete as EventListener);
+      window.removeEventListener('node-duplicate', handleNodeDuplicate as EventListener);
     };
-  }, [nodes, setNodes, setSelectedNode, setSettingsDrawerOpen, name, edges, saveMutation]);
+  }, [nodes, setNodes, setSelectedNode, setSettingsDrawerOpen, name, edges, saveMutation, toast]);
   
   const handleNodeClick = (event: React.MouseEvent, node: Node) => {
     // Don't automatically open settings for most node types
