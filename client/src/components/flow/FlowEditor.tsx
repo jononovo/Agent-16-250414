@@ -27,7 +27,6 @@ import { queryClient } from '@/lib/queryClient';
 import { apiRequest } from '@/lib/queryClient';
 import { ArrowLeft, Save, Play, Settings, TestTube } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-import MonkeyAgentChatOverlay from '@/components/workflows/MonkeyAgentChatOverlay';
 import NodeSettingsDrawer from './NodeSettingsDrawer';
 
 // Import loading placeholder node
@@ -1234,13 +1233,6 @@ const FlowEditor = ({
         onClose={() => setSettingsDrawerOpen(false)}
         node={selectedNode}
         onSettingsChange={handleSettingsChange}
-      />
-      
-      {/* Monkey Agent Chat Overlay */}
-      <MonkeyAgentChatOverlay 
-        onWorkflowGenerated={handleWorkflowGenerated}
-        workflow={workflow}
-        isNew={isNew}
       />
     </div>
   );
