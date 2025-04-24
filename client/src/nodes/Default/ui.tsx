@@ -82,7 +82,18 @@ export interface DefaultNodeData {
  * specific UI implementations, or for simple node types that don't
  * need custom rendering. It includes a settings drawer.
  */
-function DefaultNode({ data, id, selected, isConnectable, zIndex, xPos, yPos, dragHandle, ...rest }: NodeProps<DefaultNodeData>) {
+function DefaultNode({ 
+  data, 
+  id, 
+  selected = false, 
+  isConnectable = true, 
+  type = "default", 
+  zIndex = undefined, 
+  xPos = undefined, 
+  yPos = undefined, 
+  dragHandle = undefined, 
+  ...rest 
+}: Partial<NodeProps<DefaultNodeData>> & { id: string; data: DefaultNodeData }) {
   const [showSettings, setShowSettings] = useState(false);
   const [showContextActions, setShowContextActions] = useState(false);
   const [showHoverMenu, setShowHoverMenu] = useState(false);

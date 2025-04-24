@@ -170,5 +170,6 @@ export const component = memo(({ data, id, isConnectable, selected }: NodeProps<
     id={id} 
     selected={selected}
     isConnectable={isConnectable}
+    type="text_input"
   />;
 });
