@@ -41,7 +41,9 @@ interface SettingsField {
   required?: boolean;
   description?: string;
   options?: { value: string; label: string }[];
-  defaultValue?: string;
+  defaultValue?: string | string[] | number;
+  min?: number; // For number fields
+  max?: number; // For number fields
   showWhen?: (settings: Record<string, any>) => boolean;
 }
 
@@ -834,6 +836,36 @@ return (
           {/* Settings Tab */}
           {activeTab === 'settings' && (
             <div className="space-y-4">
+              {node.type === 'webhook_trigger' && (
+                <div className="mb-4">
+                  <p className="text-sm text-muted-foreground">
+                    Configure settings for the Webhook Trigger node.
+                  </p>
+                  
+                  <Alert className="mt-2">
+                    <AlertDescription>
+                      This node creates a webhook endpoint that can trigger this workflow when called from external systems.
+                      Configure the endpoint path, authentication method, and acceptable HTTP methods.
+                    </AlertDescription>
+                  </Alert>
+                </div>
+              )}
+              
+              {node.type === 'webhook_response' && (
+                <div className="mb-4">
+                  <p className="text-sm text-muted-foreground">
+                    Configure settings for the Webhook Response node.
+                  </p>
+                  
+                  <Alert className="mt-2">
+                    <AlertDescription>
+                      This node sends data to an external webhook endpoint when the workflow reaches this point.
+                      Configure the destination URL, HTTP method, custom headers, and retry settings.
+                    </AlertDescription>
+                  </Alert>
+                </div>
+              )}
+              
               {node.type === 'perplexity' && (
                 <div className="mb-4">
                   <p className="text-sm text-muted-foreground">
@@ -1046,6 +1078,74 @@ return (
                             onChange={(e) => handleSettingChange(field.id, e.target.value)}
                             className="min-h-[100px]"
                           />
+                        ) : field.type === 'number' ? (
+                          <Input
+                            id={field.id}
+                            type="number"
+                            placeholder={field.placeholder}
+                            min={field.min}
+                            max={field.max}
+                            value={settings[field.id] !== undefined ? settings[field.id] : field.defaultValue || ''}
+                            onChange={(e) => handleSettingChange(field.id, parseInt(e.target.value, 10) || 0)}
+                          />
+                        ) : field.type === 'json' ? (
+                          <Textarea
+                            id={field.id}
+                            placeholder={field.placeholder}
+                            value={typeof settings[field.id] === 'object' 
+                              ? JSON.stringify(settings[field.id], null, 2) 
+                              : settings[field.id] || ''}
+                            onChange={(e) => {
+                              try {
+                                // Try to parse as JSON if possible
+                                const jsonValue = e.target.value.trim() ? JSON.parse(e.target.value) : null;
+                                handleSettingChange(field.id, jsonValue);
+                              } catch (err) {
+                                // Store as string if not valid JSON
+                                handleSettingChange(field.id, e.target.value);
+                              }
+                            }}
+                            className="min-h-[120px] font-mono text-sm"
+                          />
+                        ) : field.type === 'multiselect' && field.options ? (
+                          <div className="flex flex-wrap gap-2 p-2 border rounded-md bg-background">
+                            {field.options.map((option) => {
+                              const selectedValues = Array.isArray(settings[field.id]) 
+                                ? settings[field.id] 
+                                : field.defaultValue || [];
+                              const isSelected = selectedValues.includes(option.value);
+                              
+                              return (
+                                <button
+                                  key={option.value}
+                                  type="button"
+                                  className={`px-3 py-1 text-xs rounded-full ${
+                                    isSelected 
+                                      ? 'bg-primary text-primary-foreground' 
+                                      : 'bg-muted text-muted-foreground hover:bg-muted/80'
+                                  }`}
+                                  onClick={() => {
+                                    // Ensure we're working with an array
+                                    const currentValues = Array.isArray(settings[field.id]) 
+                                      ? [...settings[field.id]] 
+                                      : Array.isArray(field.defaultValue) 
+                                          ? [...field.defaultValue] 
+                                          : [];
+                                    
+                                    // Toggle the value in the array
+                                    if (isSelected) {
+                                      const newValues = currentValues.filter((v: string) => v !== option.value);
+                                      handleSettingChange(field.id, newValues);
+                                    } else {
+                                      handleSettingChange(field.id, [...currentValues, option.value]);
+                                    }
+                                  }}
+                                >
+                                  {option.label}
+                                </button>
+                              );
+                            })}
+                          </div>
                         ) : (
                           <div>
                             <Input
