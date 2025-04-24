@@ -1,49 +1,12 @@
 /**
- * Workflow Trigger Node UI Component
+ * Simple Workflow Trigger Node UI Component
  * 
- * A specialized UI component for the Workflow Trigger node that includes
- * a custom workflow selection interface and configuration options.
+ * A simplified version that uses basic UI elements to avoid SelectItem issues
  */
 
 import React, { useEffect, useState } from 'react';
 import { Handle, Position } from 'reactflow';
-import { GitBranch, Settings, AlertCircle, Check, Loader2 } from 'lucide-react';
-import { Badge } from '@/components/ui/badge';
-import { Label } from '@/components/ui/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Input } from '@/components/ui/input';
-import { Switch } from '@/components/ui/switch';
-// Helper function to make API requests
-async function apiRequest(endpoint: string, method: string = 'GET', data?: any): Promise<any> {
-  const url = endpoint.startsWith('http') ? endpoint : `/api${endpoint.startsWith('/') ? endpoint : `/${endpoint}`}`;
-  
-  const options: RequestInit = {
-    method,
-    headers: {
-      'Content-Type': 'application/json',
-      'Accept': 'application/json'
-    },
-    credentials: 'same-origin'
-  };
-  
-  if (data && (method === 'POST' || method === 'PUT' || method === 'PATCH')) {
-    options.body = JSON.stringify(data);
-  }
-  
-  const response = await fetch(url, options);
-  
-  if (!response.ok) {
-    const errorText = await response.text();
-    throw new Error(`API request failed: ${response.status} ${response.statusText}\n${errorText}`);
-  }
-  
-  try {
-    return await response.json();
-  } catch (error) {
-    // Return text if not valid JSON
-    return await response.text();
-  }
-}
+import { GitBranch, Settings, AlertCircle } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 // Simplified interface that focuses on node props
@@ -65,47 +28,37 @@ const component: React.FC<WorkflowTriggerProps> = ({
   const [isConfigured, setIsConfigured] = useState(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [availableWorkflows, setAvailableWorkflows] = useState<any[]>([]);
-  const [isLoading, setIsLoading] = useState(false);
   
   // Node settings - local state to manage changes before saving
-  const [workflowId, setWorkflowId] = useState<number | null>(
-    data.workflowId ? Number(data.workflowId) : null
+  const [workflowId, setWorkflowId] = useState<string>(
+    data.workflowId ? data.workflowId.toString() : ""
   );
   const [inputField, setInputField] = useState<string>(data.inputField || 'json');
-  const [timeout, setTimeout] = useState<number>(data.timeout || 30000);
+  const [timeout, setTimeout] = useState<string>(
+    (data.timeout || 30000).toString()
+  );
   const [waitForCompletion, setWaitForCompletion] = useState<boolean>(
     data.waitForCompletion !== undefined ? data.waitForCompletion : true
   );
   
-  // Load available workflows when settings panel opens
+  // Load available workflows
   useEffect(() => {
     const fetchWorkflows = async () => {
-      setIsLoading(true);
       try {
-        // Simulated data for testing if API call fails
-        const sampleWorkflows = [
-          { id: 1, name: "Company Search Workflow" },
-          { id: 2, name: "Contact Search Workflow" },
-          { id: 3, name: "Email Discovery Workflow" }
-        ];
-        
-        try {
-          // Make API call to get workflows
-          const response = await apiRequest('/workflows', 'GET');
-          setAvailableWorkflows(Array.isArray(response) ? response : sampleWorkflows);
-        } catch (error) {
-          console.error('Failed to fetch workflows, using sample data:', error);
-          setAvailableWorkflows(sampleWorkflows);
+        const response = await fetch('/api/workflows');
+        if (response.ok) {
+          const data = await response.json();
+          setAvailableWorkflows(Array.isArray(data) ? data : []);
+        } else {
+          console.error('Failed to fetch workflows');
         }
-      } finally {
-        setIsLoading(false);
+      } catch (error) {
+        console.error('Error fetching workflows:', error);
       }
     };
     
-    if (isSettingsOpen) {
-      fetchWorkflows();
-    }
-  }, [isSettingsOpen]);
+    fetchWorkflows();
+  }, []);
   
   // Update configuration status based on workflowId
   useEffect(() => {
@@ -117,28 +70,20 @@ const component: React.FC<WorkflowTriggerProps> = ({
     // Create updated data object
     const updatedData = {
       ...data,
-      workflowId,
+      workflowId: workflowId ? parseInt(workflowId, 10) : null,
       inputField,
-      timeout,
+      timeout: parseInt(timeout, 10),
       waitForCompletion
     };
     
-    // Find the best way to update node data based on available methods
-    if (typeof data.updateNodeData === 'function') {
-      data.updateNodeData(updatedData);
-    } else if (data.onDataChange) {
-      data.onDataChange(updatedData);
-    } else {
-      // Fallback - dispatch a custom event for the workflow editor to handle
-      const updateEvent = new CustomEvent('node-data-update', {
-        detail: {
-          nodeId: id,
-          data: updatedData
-        }
-      });
-      window.dispatchEvent(updateEvent);
-      console.log('Dispatched node-data-update event', id, updatedData);
-    }
+    // Dispatch custom event for the workflow editor to handle
+    const updateEvent = new CustomEvent('node-data-update', {
+      detail: {
+        nodeId: id,
+        data: updatedData
+      }
+    });
+    window.dispatchEvent(updateEvent);
     
     setIsSettingsOpen(false);
   };
@@ -147,23 +92,6 @@ const component: React.FC<WorkflowTriggerProps> = ({
   const handleSettingsClick = (event: React.MouseEvent) => {
     event.stopPropagation();
     setIsSettingsOpen(!isSettingsOpen);
-  };
-  
-  // Render appropriate status badge based on node state
-  const renderStatusBadge = () => {
-    if (data._isProcessing) {
-      return <Badge variant="outline" className="bg-yellow-100 text-yellow-800 border-yellow-300">Processing</Badge>;
-    }
-    if (data._hasError) {
-      return <Badge variant="outline" className="bg-red-100 text-red-800 border-red-300">Error</Badge>;
-    }
-    if (data._isComplete) {
-      return <Badge variant="outline" className="bg-green-100 text-green-800 border-green-300">Completed</Badge>;
-    }
-    if (!isConfigured) {
-      return <Badge variant="outline" className="bg-blue-100 text-blue-800 border-blue-300">Needs Config</Badge>;
-    }
-    return null;
   };
   
   // Get selected workflow name for display
@@ -201,7 +129,11 @@ const component: React.FC<WorkflowTriggerProps> = ({
             </span>
           </div>
           <div className="flex items-center gap-2">
-            {renderStatusBadge()}
+            {!isConfigured && (
+              <div className="bg-blue-100 text-blue-800 border-blue-300 text-xs px-2 py-0.5 rounded-full border">
+                Needs Config
+              </div>
+            )}
             <button
               onClick={handleSettingsClick}
               className="w-5 h-5 flex items-center justify-center rounded hover:bg-slate-100"
@@ -215,73 +147,55 @@ const component: React.FC<WorkflowTriggerProps> = ({
         {/* Node content - either settings form or status display */}
         {isSettingsOpen ? (
           <div className="p-3 text-sm">
-            <h3 className="font-medium mb-2">Workflow Settings</h3>
+            <h3 className="font-medium mb-3">Workflow Settings</h3>
             
             <div className="space-y-3">
               <div className="space-y-1">
-                <Label htmlFor="workflow-select">Select Workflow</Label>
-                {isLoading ? (
-                  <div className="flex items-center text-sm text-slate-500">
-                    <Loader2 size={14} className="mr-1 animate-spin" />
-                    Loading workflows...
-                  </div>
-                ) : (
-                  <Select 
-                    value={workflowId?.toString() || ''} 
-                    onValueChange={(value) => setWorkflowId(value ? parseInt(value, 10) : null)}
-                  >
-                    <SelectTrigger id="workflow-select" className="w-full">
-                      <SelectValue placeholder="Select a workflow" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {availableWorkflows.length === 0 ? (
-                        <SelectItem value="" disabled>No workflows available</SelectItem>
-                      ) : (
-                        availableWorkflows.map(workflow => (
-                          <SelectItem key={workflow.id} value={workflow.id.toString()}>
-                            {workflow.name}
-                          </SelectItem>
-                        ))
-                      )}
-                    </SelectContent>
-                  </Select>
-                )}
-              </div>
-              
-              <div className="space-y-1">
-                <Label htmlFor="input-field">Input Field</Label>
-                <Select 
-                  value={inputField} 
-                  onValueChange={setInputField}
+                <label className="block text-xs font-medium">Select Workflow</label>
+                <select
+                  value={workflowId}
+                  onChange={(e) => setWorkflowId(e.target.value)}
+                  className="w-full border rounded p-1.5 text-sm"
                 >
-                  <SelectTrigger id="input-field" className="w-full">
-                    <SelectValue placeholder="Select input field" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="json">JSON (entire object)</SelectItem>
-                    <SelectItem value="text">Text content</SelectItem>
-                    <SelectItem value="content">Content field</SelectItem>
-                  </SelectContent>
-                </Select>
+                  <option value="">-- Select a workflow --</option>
+                  {availableWorkflows.map(workflow => (
+                    <option key={workflow.id} value={workflow.id}>
+                      {workflow.name}
+                    </option>
+                  ))}
+                </select>
               </div>
               
               <div className="space-y-1">
-                <Label htmlFor="timeout">Timeout (ms)</Label>
-                <Input
-                  id="timeout"
+                <label className="block text-xs font-medium">Input Field</label>
+                <select
+                  value={inputField}
+                  onChange={(e) => setInputField(e.target.value)}
+                  className="w-full border rounded p-1.5 text-sm"
+                >
+                  <option value="json">JSON (entire object)</option>
+                  <option value="text">Text content</option>
+                  <option value="content">Content field</option>
+                </select>
+              </div>
+              
+              <div className="space-y-1">
+                <label className="block text-xs font-medium">Timeout (ms)</label>
+                <input
                   type="number"
                   value={timeout}
-                  onChange={(e) => setTimeout(parseInt(e.target.value, 10))}
-                  className="w-full"
+                  onChange={(e) => setTimeout(e.target.value)}
+                  className="w-full border rounded p-1.5 text-sm"
                 />
               </div>
               
               <div className="flex items-center justify-between">
-                <Label htmlFor="wait-for-completion">Wait for completion</Label>
-                <Switch
-                  id="wait-for-completion"
+                <label className="text-xs font-medium">Wait for completion</label>
+                <input
+                  type="checkbox"
                   checked={waitForCompletion}
-                  onCheckedChange={setWaitForCompletion}
+                  onChange={(e) => setWaitForCompletion(e.target.checked)}
+                  className="h-4 w-4"
                 />
               </div>
               
@@ -294,9 +208,8 @@ const component: React.FC<WorkflowTriggerProps> = ({
                 </button>
                 <button
                   onClick={saveSettings}
-                  className="px-3 py-1 text-xs rounded bg-blue-500 text-white hover:bg-blue-600 flex items-center"
+                  className="px-3 py-1 text-xs rounded bg-blue-500 text-white hover:bg-blue-600"
                 >
-                  <Check size={12} className="mr-1" />
                   Save
                 </button>
               </div>
