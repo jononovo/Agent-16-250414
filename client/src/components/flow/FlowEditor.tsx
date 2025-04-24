@@ -597,6 +597,43 @@ const FlowEditor = ({
   
   // Custom handler for node settings open via button clicks inside nodes
   useEffect(() => {
+    // Handler for note updates
+    const handleNodeNoteUpdate = (event: CustomEvent) => {
+      if (event.detail && event.detail.nodeId) {
+        const { nodeId, note, showNote } = event.detail;
+        
+        console.log('Handling note update for node:', nodeId, 'Setting note:', note, 'showNote:', showNote);
+        
+        // Update the nodes state
+        setNodes((nds) => 
+          nds.map((node) => {
+            if (node.id === nodeId) {
+              return {
+                ...node,
+                data: {
+                  ...node.data,
+                  ...(note !== undefined ? { note } : {}),
+                  ...(showNote !== undefined ? { showNote } : {})
+                }
+              };
+            }
+            return node;
+          })
+        );
+        
+        // Trigger a save after the node has been updated
+        setTimeout(() => {
+          saveMutation.mutate({
+            name,
+            data: {
+              nodes,
+              edges
+            }
+          });
+        }, 500);
+      }
+    };
+    
     const handleNodeSettingsOpen = (event: CustomEvent) => {
       if (event.detail && event.detail.nodeId) {
         const nodeId = event.detail.nodeId;
@@ -846,6 +883,7 @@ const FlowEditor = ({
     window.addEventListener('monkey-agent-update-node', handleMonkeyAgentNodeUpdate as EventListener);
     window.addEventListener('node-delete', handleNodeDelete as EventListener);
     window.addEventListener('node-duplicate', handleNodeDuplicate as EventListener);
+    window.addEventListener('node-note-update', handleNodeNoteUpdate as EventListener);
     
     // Cleanup function to remove event listeners
     return () => {
@@ -855,6 +893,7 @@ const FlowEditor = ({
       window.removeEventListener('monkey-agent-update-node', handleMonkeyAgentNodeUpdate as EventListener);
       window.removeEventListener('node-delete', handleNodeDelete as EventListener);
       window.removeEventListener('node-duplicate', handleNodeDuplicate as EventListener);
+      window.removeEventListener('node-note-update', handleNodeNoteUpdate as EventListener);
     };
   }, [nodes, setNodes, setSelectedNode, setSettingsDrawerOpen, name, edges, saveMutation, toast]);
   
