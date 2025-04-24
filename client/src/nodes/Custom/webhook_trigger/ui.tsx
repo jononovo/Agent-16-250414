@@ -92,6 +92,7 @@ export default function WebhookTriggerNode({ id, data }: { id: string, data: any
         ...data,
         hideInputHandles: true, // No inputs for trigger nodes
         type: 'webhook_trigger',
+        childrenContent: nodeContent, // Use childrenContent instead of children
         settings: {
           title: 'Webhook Trigger Settings',
           description: 'Configure the webhook endpoint that will trigger this workflow.',
@@ -137,8 +138,6 @@ export default function WebhookTriggerNode({ id, data }: { id: string, data: any
           ]
         }
       }}
-    >
-      {nodeContent}
-    </DefaultNode>
+    />
   );
 }

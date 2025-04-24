@@ -2292,5 +2292,98 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
+  // ===== Webhook Routes =====
+  
+  // 1. Generic webhook endpoint for custom paths
+  app.all('/api/webhooks/:path', async (req: Request, res: Response) => {
+    try {
+      // Get the custom path from the request
+      const customPath = req.params.path;
+      
+      console.log(`Webhook request received at custom path: ${customPath}`);
+      
+      // Look for a workflow with this custom webhook path
+      // We need to get all workflows and filter them
+      const allWorkflows = await storage.getWorkflows();
+      
+      // Find a workflow with a webhook_trigger node that has this path
+      let targetWorkflow: Workflow | undefined;
+      let targetNodeId: string | undefined;
+      
+      for (const workflow of allWorkflows) {
+        // Parse the flow data
+        let flowData: any;
+        try {
+          if (typeof workflow.flowData === 'string') {
+            flowData = JSON.parse(workflow.flowData);
+          } else {
+            flowData = workflow.flowData;
+          }
+          
+          // Look for webhook_trigger nodes with this custom path
+          const webhookNodes = flowData.nodes.filter((node: any) => 
+            node.type === 'webhook_trigger' && 
+            node.data?.settings?.path === customPath
+          );
+          
+          if (webhookNodes.length > 0) {
+            targetWorkflow = workflow;
+            targetNodeId = webhookNodes[0].id;
+            break;
+          }
+        } catch (e) {
+          console.error(`Error parsing flow data for workflow ${workflow.id}:`, e);
+        }
+      }
+      
+      if (!targetWorkflow || !targetNodeId) {
+        return res.status(404).json({
+          success: false,
+          message: `No workflow found with webhook path: ${customPath}`
+        });
+      }
+      
+      // Handle the webhook request with the found workflow and node
+      await handleWebhookRequest(req, res, targetWorkflow.id, targetNodeId);
+      
+    } catch (error) {
+      console.error('Webhook processing error:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Error processing webhook',
+        error: error instanceof Error ? error.message : String(error)
+      });
+    }
+  });
+  
+  // 2. Dynamic webhook endpoint for workflow/node specific webhooks
+  app.all('/api/webhooks/workflow/:workflowId/node/:nodeId', async (req: Request, res: Response) => {
+    try {
+      // Get workflow and node IDs from the request
+      const workflowId = parseInt(req.params.workflowId, 10);
+      const nodeId = req.params.nodeId;
+      
+      if (isNaN(workflowId)) {
+        return res.status(400).json({
+          success: false,
+          message: 'Invalid workflow ID'
+        });
+      }
+      
+      console.log(`Webhook request received for workflow ${workflowId}, node ${nodeId}`);
+      
+      // Handle the webhook request
+      await handleWebhookRequest(req, res, workflowId, nodeId);
+      
+    } catch (error) {
+      console.error('Webhook processing error:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Error processing webhook',
+        error: error instanceof Error ? error.message : String(error)
+      });
+    }
+  });
+  
   return server;
 }
