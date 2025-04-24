@@ -394,7 +394,7 @@ function DefaultNode({ data, id, selected }: NodeProps<DefaultNodeData>) {
             onMouseEnter={handleMenuHoverStart}
             onMouseLeave={handleHoverEnd}
             className="absolute z-50"
-            style={{ right: '0px', top: '0px' }}
+            style={{ right: '-12px', top: '0px' }}
           >
             <NodeHoverMenu 
               nodeId={id}
