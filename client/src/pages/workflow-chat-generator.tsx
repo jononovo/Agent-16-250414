@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import { Link, useLocation } from "wouter";
-import { ArrowLeft, ChevronRight, ChevronLeft, MinusCircle } from "lucide-react";
+import { ArrowLeft, ChevronRight, ChevronLeft, MinusCircle, Wand2 } from "lucide-react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { v4 as uuidv4 } from "uuid";
 import { ReactFlowProvider } from "reactflow";
@@ -9,7 +9,25 @@ import { Workflow } from '@shared/schema';
 import { Button } from "@/components/ui/button";
 import { queryClient } from "@/lib/queryClient";
 import { Chat, type ChatMessage } from "@/components/ui/chat";
+
+// Import the actual FlowEditor to use as our base component
 import FlowEditor from "@/components/flow/FlowEditor";
+
+// Create a wrapper component that uses the imported FlowEditor
+// but we'll add our own custom chat interface
+const CustomFlowEditor = ({ 
+  workflow, 
+  isNew 
+}: { 
+  workflow: Workflow | undefined; 
+  isNew: boolean 
+}) => {
+  return (
+    <div className="h-full">
+      <FlowEditor workflow={workflow} isNew={isNew} />
+    </div>
+  );
+};
 
 interface WorkflowResponse {
   workflow: {
@@ -110,51 +128,65 @@ export default function WorkflowChatGenerator() {
   };
 
   return (
-    <div className="flex flex-col h-screen bg-slate-50 dark:bg-slate-900">
-      <header className="border-b bg-white dark:bg-slate-950">
-        <div className="container flex h-14 items-center">
-          <Link href="/">
-            <Button variant="ghost" size="icon" className="mr-2">
-              <ArrowLeft className="h-4 w-4" />
-              <span className="sr-only">Back</span>
-            </Button>
-          </Link>
-          <h1 className="text-xl font-semibold">AI Workflow Generator</h1>
-        </div>
-      </header>
-
-      <main className="flex-1 flex overflow-hidden relative">
-        {/* Main Content Area - Contains the FlowEditor */}
-        <div className="flex-1 overflow-hidden">
-          {isLoading ? (
-            <div className="h-full flex items-center justify-center">
-              <div className="animate-pulse text-lg">Loading workflow...</div>
-            </div>
-          ) : (
-            <FlowEditor workflow={workflow} isNew={!currentWorkflowId} />
-          )}
-        </div>
-
-        {/* Chat Panel Toggle Button */}
+    <div className="flex h-screen w-full overflow-hidden bg-slate-50 dark:bg-slate-900">
+      {/* Main Content Area - Direct integration of Flow Editor with no header */}
+      <div className="flex-1 relative">
+        {isLoading ? (
+          <div className="h-full flex items-center justify-center">
+            <div className="animate-pulse text-lg">Loading workflow...</div>
+          </div>
+        ) : (
+          <CustomFlowEditor workflow={workflow} isNew={!currentWorkflowId} />
+        )}
+        
+        {/* Add a back button directly on the canvas for better UX */}
+        <Link href="/">
+          <Button 
+            variant="outline" 
+            size="sm" 
+            className="absolute top-4 left-4 z-20 bg-white/80 backdrop-blur-sm shadow-sm"
+          >
+            <ArrowLeft className="h-4 w-4 mr-2" />
+            Back to Builder
+          </Button>
+        </Link>
+        
+        {/* Improved Chat Panel Toggle - Uses a more distinct icon and position */}
         <button 
           onClick={toggleChatPanel}
-          className="absolute top-4 right-4 z-20 p-2 bg-primary text-white rounded-full shadow-md hover:bg-primary/90 transition-all"
-          aria-label={chatMinimized ? "Expand chat" : "Minimize chat"}
+          className="absolute top-4 right-4 z-50 p-2 bg-primary text-white rounded-full shadow-md hover:bg-primary/90 transition-all"
+          aria-label={chatMinimized ? "Expand AI Chat" : "Minimize AI Chat"}
+          title={chatMinimized ? "Expand AI Chat" : "Minimize AI Chat"}
         >
-          {chatMinimized ? <ChevronLeft className="h-4 w-4" /> : <MinusCircle className="h-4 w-4" />}
+          {chatMinimized ? (
+            <Wand2 className="h-5 w-5" />
+          ) : (
+            <MinusCircle className="h-5 w-5" />
+          )}
         </button>
+      </div>
 
-        {/* Chat Panel - Fixed on the right side with toggle functionality */}
-        <div className={`absolute top-4 ${chatMinimized ? 'right-[-340px]' : 'right-4'} bottom-4 w-[350px] z-10 transition-all duration-300 ease-in-out`}>
-          <Chat
-            messages={messages}
-            input={chatInput}
-            onInputChange={setChatInput}
-            onSubmit={handleSubmit}
-            isLoading={generateWorkflow.isPending}
-          />
+      {/* Chat Panel - Fixed on the right side with toggle functionality */}
+      <div 
+        className={`fixed top-16 ${chatMinimized ? 'right-[-370px]' : 'right-4'} bottom-4 w-[360px] z-40 
+          transition-all duration-300 ease-in-out bg-white dark:bg-slate-950 rounded-lg shadow-lg border`}
+      >
+        <div className="h-full flex flex-col overflow-hidden">
+          <div className="p-3 border-b flex items-center">
+            <Wand2 className="h-4 w-4 mr-2 text-primary" />
+            <h3 className="font-medium text-sm">AI Workflow Generator</h3>
+          </div>
+          <div className="flex-1 overflow-hidden">
+            <Chat
+              messages={messages}
+              input={chatInput}
+              onInputChange={setChatInput}
+              onSubmit={handleSubmit}
+              isLoading={generateWorkflow.isPending}
+            />
+          </div>
         </div>
-      </main>
+      </div>
     </div>
   );
 }
