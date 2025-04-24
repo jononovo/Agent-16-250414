@@ -44,7 +44,7 @@ const PERPLEXITY_MODELS = [
 ];
 
 // Validator function for node data
-export const validator = (data: PerplexityApiNodeData): NodeValidationResult => {
+const validator = (data: PerplexityApiNodeData): NodeValidationResult => {
   const errors: string[] = [];
   
   // Skip API key validation if using environment variable
@@ -65,6 +65,9 @@ export const validator = (data: PerplexityApiNodeData): NodeValidationResult => 
     errors
   };
 };
+
+// Export validator for use in other components
+export { validator };
 
 // UI component for the Perplexity node (custom implementation with hover menu)
 export const component = memo(({ data, id, selected, isConnectable }: NodeProps<PerplexityApiNodeData>) => {
@@ -342,13 +345,14 @@ export const component = memo(({ data, id, selected, isConnectable }: NodeProps<
           
           {/* Input & Output portals */}
           <div className="relative pt-4 pb-2">
-            {/* Input Handles */}
+            {/* Input Handles - These are positioned relative to the NodeContainer */}
             <Handle
               type="target"
               position={Position.Left}
               id="prompt"
+              className="!absolute"
               style={{ 
-                top: 50, 
+                top: 'calc(50% - 20px)', 
                 width: '12px', 
                 height: '12px', 
                 background: 'white',
@@ -356,7 +360,7 @@ export const component = memo(({ data, id, selected, isConnectable }: NodeProps<
               }}
               isConnectable={isConnectable}
             />
-            <div className="absolute left-2 top-[46px] text-xs text-slate-500 text-left">
+            <div className="absolute left-2 top-[calc(50%-24px)] text-xs text-slate-500 text-left">
               Prompt
             </div>
             
@@ -366,8 +370,9 @@ export const component = memo(({ data, id, selected, isConnectable }: NodeProps<
                   type="target"
                   position={Position.Left}
                   id="system"
+                  className="!absolute"
                   style={{ 
-                    top: 80, 
+                    top: 'calc(50% + 20px)', 
                     width: '12px', 
                     height: '12px', 
                     background: 'white',
@@ -375,7 +380,7 @@ export const component = memo(({ data, id, selected, isConnectable }: NodeProps<
                   }}
                   isConnectable={isConnectable}
                 />
-                <div className="absolute left-2 top-[76px] text-xs text-slate-500 text-left">
+                <div className="absolute left-2 top-[calc(50%+16px)] text-xs text-slate-500 text-left">
                   System
                 </div>
               </>
@@ -386,8 +391,9 @@ export const component = memo(({ data, id, selected, isConnectable }: NodeProps<
               type="source"
               position={Position.Right}
               id="response"
+              className="!absolute"
               style={{ 
-                top: 50, 
+                top: 'calc(50% - 20px)', 
                 width: '12px', 
                 height: '12px', 
                 background: 'white',
@@ -395,7 +401,7 @@ export const component = memo(({ data, id, selected, isConnectable }: NodeProps<
               }}
               isConnectable={isConnectable}
             />
-            <div className="absolute right-2 top-[46px] text-xs text-slate-500 text-right">
+            <div className="absolute right-2 top-[calc(50%-24px)] text-xs text-slate-500 text-right">
               Response
             </div>
             
@@ -403,8 +409,9 @@ export const component = memo(({ data, id, selected, isConnectable }: NodeProps<
               type="source"
               position={Position.Right}
               id="metadata"
+              className="!absolute"
               style={{ 
-                top: 80, 
+                top: 'calc(50% + 20px)', 
                 width: '12px', 
                 height: '12px', 
                 background: 'white',
@@ -412,7 +419,7 @@ export const component = memo(({ data, id, selected, isConnectable }: NodeProps<
               }}
               isConnectable={isConnectable}
             />
-            <div className="absolute right-2 top-[76px] text-xs text-slate-500 text-right">
+            <div className="absolute right-2 top-[calc(50%+16px)] text-xs text-slate-500 text-right">
               Metadata
             </div>
           </div>
