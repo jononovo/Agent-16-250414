@@ -485,14 +485,33 @@ function FunctionNode({ data, id, selected }: NodeProps<FunctionNodeData>) {
 
               {/* Code Preview */}
               <div className="mt-2 relative">
-                <div className="text-xs font-mono bg-slate-50 dark:bg-slate-900 text-slate-800 dark:text-slate-200 p-2 rounded border border-slate-200 dark:border-slate-800 overflow-y-auto max-h-[150px]">
+                <div className="text-xs font-mono bg-slate-100 dark:bg-slate-800 text-slate-800 dark:text-slate-200 p-2 rounded border border-slate-300 dark:border-slate-700 overflow-y-auto max-h-[150px] shadow-inner">
                   {settingsData.selectedTemplate && settingsData.selectedTemplate !== 'basic' && (
                     <div className="mb-1 text-xs text-blue-500 dark:text-blue-400 font-semibold">
                       Template: {settingsData.selectedTemplate}
                     </div>
                   )}
-                  <div>
-                    {(settingsData.code || code)}
+                  <div className="whitespace-pre-wrap overflow-x-auto" style={{ fontFamily: "'Fira Code', 'JetBrains Mono', monospace" }}>
+                    {(settingsData.code || code)
+                      .split('\n')
+                      .map((line: string, i: number) => {
+                        // Apply basic syntax highlighting
+                        const highlightedLine = line
+                          .replace(/(function|return|const|let|var|if|else|for|while|try|catch|async|await)/g, 
+                                  '<span class="text-purple-600 dark:text-purple-400">$1</span>')
+                          .replace(/(\(|\)|\{|\}|\[|\])/g, 
+                                  '<span class="text-orange-500 dark:text-orange-300">$1</span>')
+                          .replace(/(\/\/.*)/g, 
+                                  '<span class="text-slate-500 dark:text-slate-400">$1</span>');
+                        
+                        return (
+                          <div 
+                            key={i} 
+                            className="leading-tight" 
+                            dangerouslySetInnerHTML={{ __html: highlightedLine }}
+                          />
+                        );
+                      })}
                   </div>
                 </div>
               </div>
