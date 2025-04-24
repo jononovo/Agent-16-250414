@@ -450,13 +450,8 @@ function FunctionNode({ data, id, selected }: NodeProps<FunctionNodeData>) {
             />
             
             <NodeContent padding="normal">
-              {/* Node Type Badge */}
+              {/* Settings Summary - Removed category badge to save space */}
               <div className="flex justify-between items-center">
-                <Badge variant="outline" className="text-xs px-2 py-0.5 bg-slate-100/50 dark:bg-slate-800/50">
-                  {category}
-                </Badge>
-                
-                {/* Settings Summary */}
                 {settingsSummary && (
                   <div className="flex items-center text-xs text-muted-foreground">
                     <Settings className="h-3 w-3 mr-1 inline" />
