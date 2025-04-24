@@ -1,8 +1,8 @@
 # AI Agent Workflow Platform
 
-This project implements a flexible, extensible node-based workflow system for creating, visualizing, and executing workflows. The architecture uses a folder-based approach for implementing nodes, making it easy to add new node types.
+This project implements a flexible, extensible node-based workflow system for creating, visualizing, and executing workflows. The architecture uses a convention-over-configuration pattern with automatic node discovery based on folder structure, making it easy to add new node types.
 
-> **Note**: For AI assistants helping with this codebase, see [Replit Dev Agent Context](./replit-dev-agent-context-20250424-0706.md) for a comprehensive overview with technical details, code patterns, and troubleshooting guidance.
+> **Note**: For AI assistants helping with this codebase, see [Replit Dev Agent Context](./replit-dev-agent-context-20250424-1051.md) for a comprehensive overview with technical details, code patterns, and troubleshooting guidance.
 
 ## Table of Contents
 
@@ -144,6 +144,39 @@ All nodes are organized in one of three main folders:
 - `/client/src/nodes/System/` - For core system nodes
 - `/client/src/nodes/Custom/` - For custom, domain-specific nodes
 - `/client/src/nodes/Default/` - For default node implementation patterns
+
+### Node Discovery System
+
+The platform implements a convention-over-configuration pattern with automatic node discovery:
+
+```
+nodes/
+├── System/          # Core system nodes
+│   └── {node_type}/
+│       ├── definition.ts   # Metadata and interface
+│       ├── ui.tsx          # React component
+│       └── executor.ts     # Runtime logic
+└── Custom/          # User-defined nodes
+    └── {node_type}/
+        ├── definition.ts
+        ├── ui.tsx
+        └── executor.ts
+```
+
+**Implementation Highlights:**
+
+- **Central Registry (`nodeRegistry.ts`)**: Single source of truth for node types
+- **Dynamic Discovery**: Uses Vite's `import.meta.glob` for filesystem scanning
+- **Lazy Loading**: Components load on-demand for performance optimization
+- **React Memoization**: Prevents unnecessary re-renders in React Flow
+- **Fallback Mechanism**: Maintains backward compatibility with legacy nodes
+
+**Key Features:**
+
+1. **Automatic Registration**: New nodes in the correct folders are automatically discovered
+2. **Type Safety**: Strong TypeScript interfaces ensure consistent implementation
+3. **Performance**: Only loads UI components when they're actually used in a workflow
+4. **Event Safety**: Includes proper null-checking for events in NodeHoverMenu components
 
 ### Building Custom Nodes
 
@@ -329,58 +362,71 @@ All nodes follow UI design inspired by simple-ai.dev to maintain consistency acr
 
 #### 🔑 Top 10 Most Important Files
 
-1. **client/src/nodes/Default/ui.tsx**
+1. **client/src/lib/nodeRegistry.ts**
+   - Central registry for node discovery and registration
+   - Uses Vite's `import.meta.glob` for filesystem scanning
+   - Single source of truth for node type information
+   - Provides paths for dynamic component loading
+
+2. **client/src/nodes/Default/ui.tsx**
    - Base node UI component that provides enhanced functionality
    - Used by all node UI implementations
    - Provides settings drawer and standardized node structure
    - Acts as a composition wrapper rather than a base class
-   - Changes only affect nodes explicitly using DefaultNode as a wrapper
 
-2. **client/src/components/nodes/common/NodeHoverMenu.tsx**
-   - Provides a hover menu for node actions like duplicate, delete, settings
-   - Appears with a 400ms delay and positioned 20px from nodes
+3. **client/src/components/flow/FlowEditor.tsx**
+   - Main workflow editor component
+   - Implements dynamic node loading with React memoization
+   - Handles workflow state management and serialization
+   - Creates stable references to prevent unnecessary re-renders
 
-3. **client/src/components/nodes/common/NodeSettingsForm.tsx**
-   - Dynamic form generator for node settings
-   - Handles different field types (text, select, checkbox, etc.)
+4. **client/src/components/nodes/common/NodeHoverMenu.tsx**
+   - Provides a hover menu for node actions with null-safe event handling
+   - Uses optional event parameters to prevent runtime errors
+   - Creates type-safe action creators with consistent interfaces
+   - Implements defensive programming for event handling
 
-4. **client/src/lib/nodeSystem.ts**
-   - Core system for node registration and discovery
+5. **client/src/components/flow/NodesPanel.tsx**
+   - Displays available nodes organized by category
+   - Uses the central registry to populate the node panel
+   - Implements filtering and searching capabilities
+   - Groups nodes dynamically based on category metadata
+
+6. **client/src/lib/nodeSystem.ts**
+   - Legacy node registration system, now using nodeRegistry
+   - Maintains backward compatibility with existing nodes
    - Maps node types to implementations
 
-5. **client/src/lib/enhancedWorkflowEngine.ts**
-   - Executes workflows by processing nodes in order
-   - Handles data passing between nodes
-
-6. **server/storage.ts**
+7. **server/storage.ts**
    - Implements storage interface using Replit Key-Value Database
    - Provides CRUD operations for all data types
 
-7. **server/routes.ts**
+8. **server/routes.ts**
    - API routes for frontend-backend communication
    - Handles workflow execution requests
 
-8. **shared/schema.ts**
+9. **shared/schema.ts**
    - Type definitions for data models
    - Used by both frontend and backend
 
-9. **client/src/lib/nodeExecution.ts**
-   - Utilities for node execution
-   - Standardizes execution data format
-
-10. **client/src/App.tsx**
-    - Main application entry point
-    - Sets up routing for application pages
+10. **client/src/lib/nodeValidator.ts**
+    - Validates node definitions against the required schema
+    - Ensures nodes implement the correct interfaces
+    - Uses the node registry to verify node compatibility
 
 ### Core System Functions
 
 | Function | Purpose | File |
 |----------|---------|------|
-| `registerNodeExecutorsFromRegistry()` | Registers all nodes with the execution engine | `nodeSystem.ts` |
+| `initNodeRegistry()` | Initializes registry and discovers nodes | `nodeRegistry.ts` |
+| `getAllNodeTypes()` | Returns array of all discovered node types | `nodeRegistry.ts` |
+| `getNodeUIPath()` | Gets path to node UI component | `nodeRegistry.ts` |
+| `getNodeExecutorPath()` | Gets path to node executor | `nodeRegistry.ts` |
+| `hasNodeType()` | Checks if node type exists in registry | `nodeRegistry.ts` |
+| `getNodeInfo()` | Gets metadata for a specific node type | `nodeRegistry.ts` |
 | `executeEnhancedWorkflow()` | Runs a workflow with the enhanced node system | `enhancedWorkflowEngine.ts` |
-| `createNodeOutput()` | Creates standardized node output | `nodeOutputUtils.ts` |
 | `validateNodeDefinition()` | Validates a node definition | `nodeValidator.ts` |
-| `getNodesByCategory()` | Groups nodes by category for UI display | `nodes/index.ts` |
+| `isNodeTypeImplemented()` | Checks if node is available in the system | `nodeValidator.ts` |
 
 ### Storage Functions
 
@@ -757,11 +803,22 @@ When building nodes that interact with the webhook system:
 
 | Issue | Possible Solutions |
 |-------|-------------------|
-| Node not appearing in editor | Check registration in nodeSystem.ts |
+| Node not appearing in editor | Place node in correct folder (System/ or Custom/), ensure definition.ts is valid |
+| Node not discovered by registry | Check folder structure conforms to conventions, verify definition.ts exports |
+| Duplicate nodes in panel | Use only the node registry via `getAllNodeTypes()`, avoid hardcoded lists |
+| Dynamic component loading fails | Check if node is registered in nodeRegistry via `hasNodeType()` |
+| Unnecessary re-renders | Use `useMemo` for nodeTypes: `useMemo(() => ({ ...baseTypes, ...dynamicTypes }), [dynamicTypes])` |
+
+### Interactive Element Issues
+
+| Issue | Possible Solutions |
+|-------|-------------------|
+| Hover menu causes errors | Use null-safe event handling: `if (e) e.stopPropagation()` |
+| Action click errors | Make event parameters optional: `onClick: (e?: React.MouseEvent) => void` |
+| UI not rendering properly | Check component imports and props |
 | Inputs not receiving data | Verify input handle IDs match input names |
 | Outputs not connecting | Check output handle IDs match output names |
 | Execution errors | Add try/catch and verbose logging |
-| UI not rendering properly | Check component imports and props |
 | Type errors | Ensure type definitions match actual data |
 | Settings drawer closing unexpectedly | Verify event propagation is properly stopped |
 | Hover menu not appearing | Check z-index and positioning calculations |
