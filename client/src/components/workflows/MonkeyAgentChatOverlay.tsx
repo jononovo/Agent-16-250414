@@ -545,7 +545,7 @@ Please provide instructions for how you'd like to modify this node.
       </button>
 
       {/* Chat Panel - Fixed on the right side with toggle functionality */}
-      <div className={`absolute top-24 ${chatMinimized ? 'right-[-340px]' : 'right-4'} bottom-4 w-[350px] z-10 transition-all duration-300 ease-in-out`}>
+      <div className={`absolute top-24 ${chatMinimized ? 'right-[-350px]' : 'right-4'} bottom-4 w-[350px] z-10 transition-all duration-300 ease-in-out`} style={{ transform: 'translateX(0)', boxShadow: chatMinimized ? 'none' : '0 4px 12px rgba(0,0,0,0.1)' }}>
         <Chat
           messages={messages}
           input={chatInput}
