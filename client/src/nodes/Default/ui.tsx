@@ -486,7 +486,10 @@ function DefaultNode({
           "h-7 w-7",
           data.note ? "text-amber-500 hover:text-amber-600" : "text-muted-foreground"
         )}
-        onClick={handleEditNote}
+        onClick={(e) => {
+          e.stopPropagation();
+          handleEditNote();
+        }}
         title={data.note ? "Edit note" : "Add note"}
       >
         <StickyNote className="h-3.5 w-3.5" />
@@ -742,7 +745,10 @@ function DefaultNode({
                           variant="ghost"
                           size="icon"
                           className="h-5 w-5 -mr-1 -mt-1"
-                          onClick={handleEditNote}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleEditNote();
+                          }}
                         >
                           <PenLine className="h-3 w-3 text-amber-700 dark:text-amber-400" />
                         </Button>
