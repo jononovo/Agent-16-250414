@@ -316,9 +316,17 @@ function DefaultNode({
   const confirmDelete = () => {
     // Close the dialog
     setShowDeleteDialog(false);
+    
     // Execute the delete action
     if (data.onDelete) {
       data.onDelete(id);
+    } else {
+      // If no onDelete handler is provided, dispatch a custom event
+      const event = new CustomEvent('node-delete', { 
+        detail: { nodeId: id }
+      });
+      window.dispatchEvent(event);
+      console.log('Dispatched node-delete event for node:', id);
     }
   };
   
@@ -447,12 +455,11 @@ function DefaultNode({
               {settings.title || `${label} Settings`}
             </SheetTitle>
           </SheetHeader>
-          <div className="mt-4">
+          <div className="mt-4 pt-4">
             <NodeSettingsForm 
-              settings={settings} 
-              data={data} 
-              onSubmit={handleSubmitSettings} 
-              className="pt-4"
+              nodeData={data} 
+              settingsFields={settings.fields || []} 
+              onChange={handleSubmitSettings} 
             />
           </div>
         </SheetContent>

@@ -44,7 +44,9 @@ export const NodeSettingsForm = forwardRef<NodeSettingsFormRef, NodeSettingsForm
   const { nodeData, settingsFields, onChange } = props;
   
   // Extract settingsData if it exists, otherwise use just nodeData
-  const initialData = nodeData.settingsData || nodeData;
+  // Make sure nodeData exists and has properties before accessing settingsData
+  const initialData = nodeData && typeof nodeData === 'object' ? 
+    (nodeData.settingsData || nodeData) : {};
   const [formData, setFormData] = useState<Record<string, any>>({ ...initialData });
   
   // Method to submit the form data to the parent component
