@@ -5,12 +5,11 @@
  * with settings drawer integration and hover menu support.
  */
 
-import React, { memo, useEffect, useState, useCallback, useRef, useMemo } from 'react';
+import React, { useEffect, useState, useCallback, useRef } from 'react';
 import { Handle, Position, NodeProps } from 'reactflow';
 import { Brain, Settings, Lock } from 'lucide-react';
 import { NodeContainer } from '@/components/nodes/common/NodeContainer';
 import { NodeContent } from '@/components/nodes/common/NodeContent';
-import { NodeHeader } from '@/components/nodes/common/NodeHeader';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { NodeValidationResult } from '@/lib/types';
@@ -30,18 +29,6 @@ import NodeHoverMenu, {
 
 // Re-export defaultData from executor
 export { defaultData } from './executor';
-
-// List of available Perplexity models
-const PERPLEXITY_MODELS = [
-  { value: 'llama-3.1-sonar-small-128k-online', label: 'Llama 3.1 Sonar Small' },
-  { value: 'llama-3.1-sonar-large-128k-online', label: 'Llama 3.1 Sonar Large' },
-  { value: 'llama-3.1-sonar-huge-128k-online', label: 'Llama 3.1 Sonar Huge' },
-  { value: 'pplx-7b-online', label: 'PPLX 7B Online' },
-  { value: 'pplx-70b-online', label: 'PPLX 70B Online' },
-  { value: 'mistral-7b-instruct', label: 'Mistral 7B Instruct' },
-  { value: 'llama-2-70b-chat', label: 'Llama 2 70B Chat' },
-  { value: 'mixtral-8x7b-instruct', label: 'Mixtral 8x7B Instruct' }
-];
 
 // Validator function for node data
 const validator = (data: PerplexityApiNodeData): NodeValidationResult => {
@@ -70,9 +57,14 @@ const validator = (data: PerplexityApiNodeData): NodeValidationResult => {
 export { validator };
 
 // UI component for the Perplexity node (custom implementation with hover menu)
-export const component = memo(({ data, id, selected, isConnectable }: NodeProps<PerplexityApiNodeData>) => {
-  // Combine default data with current node data to ensure all properties exist
-  const nodeData = { ...defaultData, ...data };
+export const component = function PerplexityApiNode({ data, id, selected, isConnectable }: NodeProps<PerplexityApiNodeData>) {
+  // Store the merged data in state so we can update it when props change
+  const [nodeData, setNodeData] = useState(() => ({ ...defaultData, ...data }));
+  
+  // Update nodeData when props change
+  useEffect(() => {
+    setNodeData({ ...defaultData, ...data });
+  }, [data]);
   
   // Hover menu state
   const [showHoverMenu, setShowHoverMenu] = useState(false);
@@ -424,4 +416,4 @@ export const component = memo(({ data, id, selected, isConnectable }: NodeProps<
       </NodeContainer>
     </div>
   );
-});
+};
