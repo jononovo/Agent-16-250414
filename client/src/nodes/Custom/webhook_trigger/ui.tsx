@@ -82,6 +82,7 @@ export default function WebhookTriggerNode({ id, data }: { id: string, data: any
         ...data,
         hideInputHandles: true, // No inputs for trigger nodes
         type: 'webhook_trigger',
+        icon: 'webhook', // Explicitly set the icon
         childrenContent: nodeContent, // Use childrenContent instead of children
         // Pass through note properties
         note: data.note,
