@@ -270,51 +270,14 @@ export const component = memo(({ data, id, selected, isConnectable }: NodeProps<
       )}
       
       <NodeContainer selected={selected} className="overflow-visible">
-        {/* Left side labels (outside the node) */}
-        <div className="absolute left-0 -translate-x-[calc(100%+4px)] text-xs text-slate-500 text-right">
-          <div className="absolute whitespace-nowrap" style={{ top: 'calc(70% - 10px)' }}>
-            Prompt
-          </div>
-          {nodeData.useSystemPrompt && (
-            <div className="absolute whitespace-nowrap" style={{ top: 'calc(85% - 10px)' }}>
-              System
-            </div>
-          )}
-        </div>
-        
-        {/* Right side labels (outside the node) */}
-        <div className="absolute right-0 translate-x-[calc(100%+4px)] text-xs text-slate-500 text-left">
-          <div className="absolute whitespace-nowrap" style={{ top: 'calc(70% - 10px)' }}>
-            Response
-          </div>
-          <div className="absolute whitespace-nowrap" style={{ top: 'calc(85% - 10px)' }}>
-            Metadata
-          </div>
-        </div>
-      
-        {/* Input Handles */}
-        <Handle
-          type="target"
-          position={Position.Left}
-          id="prompt"
-          style={{ 
-            top: '70%', 
-            width: '12px', 
-            height: '12px', 
-            background: 'white',
-            border: '2px solid #6366f1',
-            left: -6, // Position it exactly at the edge
-          }}
-          isConnectable={isConnectable}
-        />
-        
-        {nodeData.useSystemPrompt && (
+        {/* Input Handles with Tooltips */}
+        <div className="group relative">
           <Handle
             type="target"
             position={Position.Left}
-            id="system"
+            id="prompt"
             style={{ 
-              top: '85%', 
+              top: '70%', 
               width: '12px', 
               height: '12px', 
               background: 'white',
@@ -323,38 +286,73 @@ export const component = memo(({ data, id, selected, isConnectable }: NodeProps<
             }}
             isConnectable={isConnectable}
           />
+          <div className="absolute pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity duration-200 bg-slate-800 text-white text-xs rounded px-2 py-1 left-0 -translate-x-1/2" style={{ top: 'calc(70% - 30px)' }}>
+            Prompt
+          </div>
+        </div>
+        
+        {nodeData.useSystemPrompt && (
+          <div className="group relative">
+            <Handle
+              type="target"
+              position={Position.Left}
+              id="system"
+              style={{ 
+                top: '85%', 
+                width: '12px', 
+                height: '12px', 
+                background: 'white',
+                border: '2px solid #6366f1',
+                left: -6, // Position it exactly at the edge
+              }}
+              isConnectable={isConnectable}
+            />
+            <div className="absolute pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity duration-200 bg-slate-800 text-white text-xs rounded px-2 py-1 left-0 -translate-x-1/2" style={{ top: 'calc(85% - 30px)' }}>
+              System
+            </div>
+          </div>
         )}
         
-        {/* Output Handles */}
-        <Handle
-          type="source"
-          position={Position.Right}
-          id="response"
-          style={{ 
-            top: '70%', 
-            width: '12px', 
-            height: '12px', 
-            background: 'white',
-            border: '2px solid #10b981',
-            right: -6, // Position it exactly at the edge
-          }}
-          isConnectable={isConnectable}
-        />
+        {/* Output Handles with Tooltips */}
+        <div className="group relative">
+          <Handle
+            type="source"
+            position={Position.Right}
+            id="response"
+            style={{ 
+              top: '70%', 
+              width: '12px', 
+              height: '12px', 
+              background: 'white',
+              border: '2px solid #10b981',
+              right: -6, // Position it exactly at the edge
+            }}
+            isConnectable={isConnectable}
+          />
+          <div className="absolute pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity duration-200 bg-slate-800 text-white text-xs rounded px-2 py-1 right-0 translate-x-1/2" style={{ top: 'calc(70% - 30px)' }}>
+            Response
+          </div>
+        </div>
         
-        <Handle
-          type="source"
-          position={Position.Right}
-          id="metadata"
-          style={{ 
-            top: '85%', 
-            width: '12px', 
-            height: '12px', 
-            background: 'white',
-            border: '2px solid #10b981',
-            right: -6, // Position it exactly at the edge
-          }}
-          isConnectable={isConnectable}
-        />
+        <div className="group relative">
+          <Handle
+            type="source"
+            position={Position.Right}
+            id="metadata"
+            style={{ 
+              top: '85%', 
+              width: '12px', 
+              height: '12px', 
+              background: 'white',
+              border: '2px solid #10b981',
+              right: -6, // Position it exactly at the edge
+            }}
+            isConnectable={isConnectable}
+          />
+          <div className="absolute pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity duration-200 bg-slate-800 text-white text-xs rounded px-2 py-1 right-0 translate-x-1/2" style={{ top: 'calc(85% - 30px)' }}>
+            Metadata
+          </div>
+        </div>
         
         {/* Header */}
         <div className={cn(
