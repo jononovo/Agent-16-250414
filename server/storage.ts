@@ -10,7 +10,8 @@ import {
   type Agent, type InsertAgent,
   type Workflow, type InsertWorkflow,
   type Node, type InsertNode,
-  type Log, type InsertLog
+  type Log, type InsertLog,
+  type Settings, type InsertSettings
 } from "@shared/schema";
 
 /**
@@ -53,6 +54,10 @@ export interface IStorage {
   getLog(id: number): Promise<Log | undefined>;
   createLog(log: InsertLog): Promise<Log>;
   updateLog(id: number, log: Partial<Log>): Promise<Log | undefined>;
+  
+  // Settings methods
+  getSetting(id: string): Promise<Settings | undefined>;
+  saveSetting(setting: InsertSettings): Promise<Settings>;
 }
 
 /**
