@@ -7,7 +7,7 @@
 
 import React, { useState, memo, useCallback, useRef, useEffect } from 'react';
 import { Handle, Position, NodeProps } from 'reactflow';
-import { Settings, MoreHorizontal, AlertTriangle, Code, Database, Zap, Clock, StickyNote } from 'lucide-react';
+import { Settings, MoreHorizontal, AlertTriangle, Code, Database, Zap, Clock, StickyNote, Maximize2, Minimize2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 import { Badge } from '@/components/ui/badge';
@@ -482,16 +482,40 @@ function FunctionNode({ data, id, selected }: NodeProps<FunctionNodeData>) {
               )}
 
               {/* Code Preview */}
-              <div className="mt-2 text-xs font-mono bg-slate-50 dark:bg-slate-900 text-slate-800 dark:text-slate-200 p-2 rounded border border-slate-200 dark:border-slate-800 overflow-hidden">
-                {settingsData.selectedTemplate && settingsData.selectedTemplate !== 'basic' && (
-                  <div className="mb-1 text-xs text-blue-500 dark:text-blue-400 font-semibold">
-                    Template: {settingsData.selectedTemplate}
+              <div className="mt-2 relative">
+                <div className={`text-xs font-mono bg-slate-50 dark:bg-slate-900 text-slate-800 dark:text-slate-200 p-2 rounded border border-slate-200 dark:border-slate-800 ${
+                  data.expandedCode ? "overflow-y-auto max-h-[200px]" : "overflow-hidden"
+                }`}>
+                  {settingsData.selectedTemplate && settingsData.selectedTemplate !== 'basic' && (
+                    <div className="mb-1 text-xs text-blue-500 dark:text-blue-400 font-semibold">
+                      Template: {settingsData.selectedTemplate}
+                    </div>
+                  )}
+                  <div className={data.expandedCode ? "" : "max-h-[40px] overflow-hidden"}>
+                    {data.expandedCode 
+                      ? (settingsData.code || code)
+                      : (settingsData.code || code).split('\n').slice(0, 2).join('\n') + 
+                        ((settingsData.code || code).split('\n').length > 2 ? '\n...' : '')}
                   </div>
-                )}
-                <div className="truncate">
-                  {(settingsData.code || code).split('\n').slice(0, 2).join('\n')}
-                  {(settingsData.code || code).split('\n').length > 2 && '...'}
                 </div>
+                
+                {/* Toggle button for expanding/collapsing code */}
+                <Button 
+                  variant="ghost" 
+                  size="sm" 
+                  className="text-xs absolute top-1 right-1 h-6 w-6 p-0" 
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    if (onChange) {
+                      onChange({
+                        ...data,
+                        expandedCode: !data.expandedCode
+                      });
+                    }
+                  }}
+                >
+                  {data.expandedCode ? <Minimize2 size={12} /> : <Maximize2 size={12} />}
+                </Button>
               </div>
               
               {/* Status messages and errors */}
