@@ -36,8 +36,9 @@ type TabType = 'properties' | 'variables' | 'settings';
 interface SettingsField {
   id: string;
   label: string;
-  type: 'text' | 'password' | 'select' | 'textarea' | 'radio';
+  type: 'text' | 'password' | 'select' | 'textarea' | 'radio' | 'multiselect' | 'json' | 'number';
   placeholder?: string;
+  required?: boolean;
   description?: string;
   options?: { value: string; label: string }[];
   defaultValue?: string;
@@ -171,6 +172,105 @@ const NodeSettingsDrawer: React.FC<NodeSettingsDrawerProps> = ({
     if (!type) return [];
     
     switch (type) {
+      case 'webhook_trigger':
+        return [
+          {
+            id: 'path',
+            label: 'Custom Path',
+            type: 'text',
+            placeholder: 'my-custom-endpoint',
+            description: 'Custom path segment for the webhook URL (optional)'
+          },
+          {
+            id: 'secret',
+            label: 'Secret Key',
+            type: 'password',
+            description: 'Secret key for validating webhook requests'
+          },
+          {
+            id: 'authType',
+            label: 'Authentication',
+            type: 'select',
+            description: 'Method of authentication for the webhook',
+            options: [
+              { value: 'none', label: 'None' },
+              { value: 'apiKey', label: 'API Key' },
+              { value: 'bearer', label: 'Bearer Token' }
+            ],
+            defaultValue: 'none'
+          },
+          {
+            id: 'methods',
+            label: 'HTTP Methods',
+            type: 'multiselect',
+            description: 'HTTP methods this webhook will accept',
+            options: [
+              { value: 'GET', label: 'GET' },
+              { value: 'POST', label: 'POST' },
+              { value: 'PUT', label: 'PUT' },
+              { value: 'DELETE', label: 'DELETE' }
+            ],
+            defaultValue: ['POST']
+          }
+        ];
+      
+      case 'webhook_response':
+        return [
+          {
+            id: 'url',
+            label: 'Webhook URL',
+            type: 'text',
+            placeholder: 'https://example.com/webhook',
+            description: 'URL of the external webhook endpoint',
+            required: true
+          },
+          {
+            id: 'method',
+            label: 'HTTP Method',
+            type: 'select',
+            description: 'HTTP method to use for the webhook request',
+            options: [
+              { value: 'POST', label: 'POST' },
+              { value: 'PUT', label: 'PUT' },
+              { value: 'PATCH', label: 'PATCH' }
+            ],
+            defaultValue: 'POST'
+          },
+          {
+            id: 'headers',
+            label: 'Custom Headers',
+            type: 'json',
+            placeholder: '{"Content-Type": "application/json", "Authorization": "Bearer your-token"}',
+            description: 'Custom HTTP headers to include in the request (JSON format)'
+          },
+          {
+            id: 'retryCount',
+            label: 'Retry Count',
+            type: 'number',
+            description: 'Number of times to retry if the request fails',
+            min: 0,
+            max: 10,
+            defaultValue: 3
+          },
+          {
+            id: 'retryDelay',
+            label: 'Retry Delay (ms)',
+            type: 'number',
+            description: 'Delay between retry attempts in milliseconds',
+            min: 100,
+            max: 10000,
+            defaultValue: 1000
+          },
+          {
+            id: 'timeout',
+            label: 'Timeout (ms)',
+            type: 'number',
+            description: 'Request timeout in milliseconds',
+            min: 100,
+            max: 30000,
+            defaultValue: 5000
+          }
+        ];
       case 'perplexity':
         return [
           {

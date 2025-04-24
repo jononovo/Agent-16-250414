@@ -87,67 +87,7 @@ export default function WebhookResponseNode({ id, data }: { id: string, data: an
         childrenContent: nodeContent, // Use childrenContent instead of children
         // Pass through note properties
         note: data.note,
-        showNote: data.showNote,
-        settings: {
-          title: 'Webhook Response Settings',
-          description: 'Configure the external webhook endpoint that will receive data from this workflow.',
-          fields: [
-            {
-              key: 'url',
-              type: 'text',
-              label: 'Webhook URL',
-              description: 'URL of the external webhook endpoint',
-              placeholder: 'https://example.com/webhook',
-              required: true
-            },
-            {
-              key: 'method',
-              type: 'select',
-              label: 'HTTP Method',
-              description: 'HTTP method to use for the webhook request',
-              options: [
-                { label: 'POST', value: 'POST' },
-                { label: 'PUT', value: 'PUT' },
-                { label: 'PATCH', value: 'PATCH' }
-              ],
-              defaultValue: 'POST'
-            },
-            {
-              key: 'headers',
-              type: 'json',
-              label: 'Custom Headers',
-              description: 'Custom HTTP headers to include in the request (JSON format)',
-              placeholder: '{"Content-Type": "application/json", "Authorization": "Bearer your-token"}'
-            },
-            {
-              key: 'retryCount',
-              type: 'number',
-              label: 'Retry Count',
-              description: 'Number of times to retry if the request fails',
-              min: 0,
-              max: 10,
-              defaultValue: 3
-            },
-            {
-              key: 'retryDelay',
-              type: 'number',
-              label: 'Retry Delay (ms)',
-              description: 'Delay between retry attempts in milliseconds',
-              min: 100,
-              max: 10000,
-              defaultValue: 1000
-            },
-            {
-              key: 'timeout',
-              type: 'number',
-              label: 'Timeout (ms)',
-              description: 'Request timeout in milliseconds',
-              min: 100,
-              max: 30000,
-              defaultValue: 5000
-            }
-          ]
-        }
+        showNote: data.showNote
       }}
     />
   );

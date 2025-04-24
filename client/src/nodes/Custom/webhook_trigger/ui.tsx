@@ -95,51 +95,7 @@ export default function WebhookTriggerNode({ id, data }: { id: string, data: any
         childrenContent: nodeContent, // Use childrenContent instead of children
         // Pass through note properties
         note: data.note,
-        showNote: data.showNote,
-        settings: {
-          title: 'Webhook Trigger Settings',
-          description: 'Configure the webhook endpoint that will trigger this workflow.',
-          fields: [
-            {
-              key: 'path',
-              type: 'text',
-              label: 'Custom Path',
-              description: 'Custom path segment for the webhook URL (optional)',
-              placeholder: 'my-custom-endpoint'
-            },
-            {
-              key: 'secret',
-              type: 'password',
-              label: 'Secret Key',
-              description: 'Secret key for validating webhook requests'
-            },
-            {
-              key: 'authType',
-              type: 'select',
-              label: 'Authentication',
-              description: 'Method of authentication for the webhook',
-              options: [
-                { label: 'None', value: 'none' },
-                { label: 'API Key', value: 'apiKey' },
-                { label: 'Bearer Token', value: 'bearer' }
-              ],
-              defaultValue: 'none'
-            },
-            {
-              key: 'methods',
-              type: 'multiselect',
-              label: 'HTTP Methods',
-              description: 'HTTP methods this webhook will accept',
-              options: [
-                { label: 'GET', value: 'GET' },
-                { label: 'POST', value: 'POST' },
-                { label: 'PUT', value: 'PUT' },
-                { label: 'DELETE', value: 'DELETE' }
-              ],
-              defaultValue: ['POST']
-            }
-          ]
-        }
+        showNote: data.showNote
       }}
     />
   );
