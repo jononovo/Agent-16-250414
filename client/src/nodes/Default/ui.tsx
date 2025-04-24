@@ -14,7 +14,7 @@
 
 import React, { useState, memo, useCallback, useRef, useEffect } from 'react';
 import { Handle, Position, NodeProps } from 'reactflow';
-import { Settings, MoreHorizontal, AlertTriangle, Trash2 } from 'lucide-react';
+import { Settings, MoreHorizontal, AlertTriangle, Trash2, StickyNote } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 import { Badge } from '@/components/ui/badge';
@@ -51,6 +51,7 @@ import NodeHoverMenu, {
   createDeleteAction, 
   createSettingsAction,
   createRunAction,
+  createAddNoteAction,
   NodeHoverMenuAction
 } from '@/components/nodes/common/NodeHoverMenu';
 
@@ -286,6 +287,15 @@ function DefaultNode({
     }
   };
   
+  // Handler for adding/editing a note
+  const handleEditNote = () => {
+    console.log('Edit note for node:', id);
+    // In a real implementation, this would open a dialog to edit the note
+    window.dispatchEvent(new CustomEvent('node-note-edit', { 
+      detail: { nodeId: id }
+    }));
+  };
+  
   const handleDuplicateNode = () => {
     console.log('Duplicate node:', id);
     if (data.onDuplicate) {
@@ -369,6 +379,7 @@ function DefaultNode({
   const hoverMenuActions: NodeHoverMenuAction[] = [
     createRunAction(handleRunNode),
     createDuplicateAction(handleDuplicateNode),
+    createAddNoteAction(handleEditNote),
     createSettingsAction(handleSettingsClickForMenu),
     deleteAction
   ];
@@ -376,6 +387,7 @@ function DefaultNode({
   // Create context actions for the node (dropdown menu)
   const contextActions = [
     { label: 'Run Node', action: handleRunNode },
+    { label: 'Add/Edit Note', action: handleEditNote },
     { label: 'Duplicate', action: handleDuplicateNode },
     { label: 'Delete', action: openDeleteConfirmation }
   ];

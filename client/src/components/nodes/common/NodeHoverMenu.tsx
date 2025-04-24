@@ -11,7 +11,7 @@
  */
 
 import React from 'react';
-import { Copy, Trash2, Settings, Edit, Bot, Play } from 'lucide-react';
+import { Copy, Trash2, Settings, Edit, Bot, Play, StickyNote } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
 export interface NodeHoverMenuAction {
@@ -126,6 +126,17 @@ export const createRunAction = (onClick: () => void): NodeHoverMenuAction => ({
   label: 'Run Node',
   onClick,
   variant: 'primary'
+});
+
+/**
+ * Create an action for adding/editing a note
+ */
+export const createAddNoteAction = (onClick: () => void): NodeHoverMenuAction => ({
+  id: 'add-note',
+  icon: <StickyNote className="h-4 w-4 text-amber-500" />,
+  label: 'Add/Edit Note',
+  onClick,
+  variant: 'default'
 });
 
 export default NodeHoverMenu;
