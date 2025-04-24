@@ -48,23 +48,29 @@ const NodeReadmeModal: React.FC<NodeReadmeModalProps> = ({
   // Function to fetch README content based on node type
   const fetchReadmeContent = async (type: string): Promise<string> => {
     try {
-      // First, try the System directory
-      const systemPath = `/src/nodes/System/${type}/README.md`;
-      let response = await fetch(systemPath);
+      // Create paths to try
+      const paths = [
+        `/client/src/nodes/System/${type}/README.md`,
+        `/client/src/nodes/Custom/${type}/README.md`,
+        `/src/nodes/System/${type}/README.md`,
+        `/src/nodes/Custom/${type}/README.md`
+      ];
       
-      // If not found in System, try the Custom directory
-      if (!response.ok) {
-        const customPath = `/src/nodes/Custom/${type}/README.md`;
-        response = await fetch(customPath);
+      // Try each path
+      for (const path of paths) {
+        try {
+          const response = await fetch(path);
+          if (response.ok) {
+            return await response.text();
+          }
+        } catch (err) {
+          // Continue to the next path
+          console.log(`Failed to load README from ${path}`);
+        }
       }
 
-      // If still not found, throw an error
-      if (!response.ok) {
-        throw new Error(`README not found for node type: ${type}`);
-      }
-
-      // Return the README content
-      return await response.text();
+      // If we get here, we couldn't find a README in any location
+      throw new Error(`README not found for node type: ${type}`);
     } catch (error) {
       console.error('Error fetching README:', error);
       throw error;

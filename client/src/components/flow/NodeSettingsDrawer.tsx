@@ -19,9 +19,10 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { cn } from '@/lib/utils';
-import { Save, X } from 'lucide-react';
+import { Save, X, BookOpen, HelpCircle } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { Agent } from '@shared/schema';
+import NodeReadmeModal from '@/components/nodes/common/NodeReadmeModal';
 
 interface NodeSettingsDrawerProps {
   isOpen: boolean;
@@ -54,6 +55,7 @@ const NodeSettingsDrawer: React.FC<NodeSettingsDrawerProps> = ({
   const [nodeName, setNodeName] = React.useState('');
   const [nodeDescription, setNodeDescription] = React.useState('');
   const [fieldOptions, setFieldOptions] = React.useState<SettingsField[]>([]);
+  const [readmeModalOpen, setReadmeModalOpen] = React.useState(false);
 
   // Reset settings when node changes
   React.useEffect(() => {
@@ -618,15 +620,43 @@ const NodeSettingsDrawer: React.FC<NodeSettingsDrawerProps> = ({
     }
   };
 
-  return (
+  // Handler for opening the README documentation modal
+  const openReadmeModal = () => {
+    setReadmeModalOpen(true);
+  };
+
+  // Handler for closing the README documentation modal
+  const closeReadmeModal = () => {
+    setReadmeModalOpen(false);
+  };
+
+return (
     <Sheet open={isOpen} onOpenChange={handleOpenChange}>
       <SheetContent side="right" className="w-[400px] sm:w-[540px] p-0">
-        <SheetHeader className="p-6 pb-2">
-          <SheetTitle>Node Configuration <span className="text-sm text-muted-foreground">({node.type})</span></SheetTitle>
-          <SheetDescription>
-            Configure the properties and variables for this node.
-          </SheetDescription>
-        </SheetHeader>
+        <div className="flex justify-between items-start p-6 pb-1">
+          <SheetHeader className="p-0">
+            <SheetTitle>Node Configuration <span className="text-sm text-muted-foreground">({node.type})</span></SheetTitle>
+            <SheetDescription>
+              Configure the properties and variables for this node.
+            </SheetDescription>
+          </SheetHeader>
+          <Button 
+            variant="ghost" 
+            size="icon" 
+            className="h-9 w-9 text-muted-foreground hover:text-primary"
+            onClick={openReadmeModal}
+            title="View Documentation"
+          >
+            <BookOpen className="h-5 w-5" />
+          </Button>
+        </div>
+        
+        {/* README Modal */}
+        <NodeReadmeModal 
+          isOpen={readmeModalOpen}
+          onClose={closeReadmeModal}
+          nodeType={node?.type || null}
+        />
         
         {/* Tabs */}
         <div className="bg-muted/50 p-1 mx-6 rounded-lg mb-4 flex">
@@ -964,9 +994,19 @@ const NodeSettingsDrawer: React.FC<NodeSettingsDrawerProps> = ({
         </ScrollArea>
         
         <SheetFooter className="px-6 py-4 border-t">
-          <Button variant="outline" onClick={onClose}>
-            <X className="h-4 w-4 mr-2" /> Cancel
-          </Button>
+          <div className="flex gap-2">
+            <Button variant="outline" onClick={onClose}>
+              <X className="h-4 w-4 mr-2" /> Cancel
+            </Button>
+            <Button 
+              variant="ghost" 
+              onClick={openReadmeModal}
+              className="gap-2"
+            >
+              <HelpCircle className="h-4 w-4" />
+              Documentation
+            </Button>
+          </div>
           <Button onClick={handleSave} className="bg-primary text-primary-foreground">
             <Save className="h-4 w-4 mr-2" /> Save Changes
           </Button>
