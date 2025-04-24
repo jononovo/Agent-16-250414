@@ -1,6 +1,6 @@
 import { ReactNode, useState, useEffect } from 'react';
 import { useBuilderContext } from '@/contexts/BuilderContext';
-import { Key, Settings, UserPlus } from 'lucide-react';
+import { Key, UserPlus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogTrigger } from '@/components/ui/dialog';
 import { ApiConfigForm } from '@/components/ApiConfigForm';
@@ -148,11 +148,6 @@ const MainContent = ({ children }: MainContentProps) => {
                 // We could add a refresh of the agents list here if needed
               }}
             />
-            
-            <Button variant="outline" size="sm" className="flex items-center gap-1">
-              <Settings size={16} />
-              <span>Settings</span>
-            </Button>
           </div>
         </div>
       </header>
