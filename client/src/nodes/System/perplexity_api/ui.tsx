@@ -389,20 +389,17 @@ export const component = function PerplexityApiNode({ data, id, selected, isConn
             </div>
           )}
           
-          {/* Settings Summary */}
-          <div className="mt-2 mb-3 flex flex-col gap-1.5 text-slate-700">
-            <div className="flex justify-between text-xs">
-              <span className="text-slate-500">Model:</span>
-              <span className="font-medium">{nodeData.model}</span>
-            </div>
-            <div className="flex justify-between text-xs">
-              <span className="text-slate-500">Temperature:</span>
-              <span className="font-medium">{nodeData.temperature.toFixed(1)}</span>
-            </div>
-            <div className="flex justify-between text-xs">
-              <span className="text-slate-500">Max Tokens:</span>
-              <span className="font-medium">{nodeData.maxTokens}</span>
-            </div>
+          {/* Settings access button instead of showing settings in the node UI */}
+          <div className="mt-2 mb-3 flex items-center justify-center">
+            <Button 
+              variant="outline" 
+              size="sm" 
+              className="w-full h-7 text-xs text-slate-600"
+              onClick={handleSettingsClick}
+            >
+              <Settings size={12} className="mr-1.5" />
+              Configure Settings
+            </Button>
           </div>
           
           {/* Node Note Display */}
