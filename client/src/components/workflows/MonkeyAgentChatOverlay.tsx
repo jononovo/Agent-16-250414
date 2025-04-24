@@ -27,12 +27,14 @@ interface MonkeyAgentChatOverlayProps {
   onWorkflowGenerated?: (workflowId: number) => void;
   workflow?: Workflow;
   isNew?: boolean;
+  initiallyOpen?: boolean; // Control whether the chat is initially open
 }
 
 export function MonkeyAgentChatOverlay({ 
   onWorkflowGenerated, 
   workflow, 
-  isNew = false 
+  isNew = false,
+  initiallyOpen = false // Default to minimized unless specified
 }: MonkeyAgentChatOverlayProps) {
   const [, params] = useLocation();
   const [chatInput, setChatInput] = useState("");
@@ -44,7 +46,8 @@ export function MonkeyAgentChatOverlay({
       createdAt: new Date()
     }
   ]);
-  const [chatMinimized, setChatMinimized] = useState(true);
+  // Use the initiallyOpen prop to set the initial state
+  const [chatMinimized, setChatMinimized] = useState(!initiallyOpen);
   
   // Store the currently selected node for editing
   const [selectedNodeForEdit, setSelectedNodeForEdit] = useState<NodeDetails | null>(null);

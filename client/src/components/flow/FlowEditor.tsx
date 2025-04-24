@@ -148,12 +148,14 @@ interface FlowEditorProps {
   workflow?: Workflow;
   isNew?: boolean;
   onWorkflowUpdate?: (workflowId: number) => void;
+  showAIChat?: boolean; // Control whether to show the AI chat interface initially
 }
 
 const FlowEditor = ({ 
   workflow, 
   isNew = false,
-  onWorkflowUpdate
+  onWorkflowUpdate,
+  showAIChat = false // Default to not showing the AI chat
 }: FlowEditorProps) => {
   const [, navigate] = useLocation();
   const [editingName, setEditingName] = useState(isNew);
