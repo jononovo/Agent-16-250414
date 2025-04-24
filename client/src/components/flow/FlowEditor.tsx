@@ -1181,7 +1181,7 @@ const FlowEditor = ({
               variant="outline"
             >
               <Play className="h-4 w-4 mr-2" />
-              Run Workflow
+              Run
             </Button>
             {workflow?.id && (
               <Button
@@ -1189,7 +1189,7 @@ const FlowEditor = ({
                 variant="outline"
               >
                 <TestTube className="h-4 w-4 mr-2" />
-                Test Workflow
+                Test
               </Button>
             )}
             <Button 
@@ -1197,7 +1197,7 @@ const FlowEditor = ({
               disabled={saveMutation.isPending}
             >
               <Save className="h-4 w-4 mr-2" />
-              Save Workflow
+              Save
             </Button>
           </div>
         </div>
