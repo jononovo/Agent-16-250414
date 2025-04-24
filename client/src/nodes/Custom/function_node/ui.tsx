@@ -406,143 +406,144 @@ function FunctionNode({ data, id, selected }: NodeProps<FunctionNodeData>) {
   );
   
   return (
-    <div 
-      ref={hoverAreaRef}
-      className="relative"
-      style={{ 
-        // Add padding when menu is shown to create a seamless interaction area
-        padding: showHoverMenu ? '8px 20px 8px 8px' : '0',
-        margin: showHoverMenu ? '-8px -20px -8px -8px' : '0',
-      }}
-    >
-      <div
-        ref={nodeRef}
-        onMouseEnter={handleHoverStart}
-        onMouseLeave={handleHoverEnd}
+    <>
+      <div 
+        ref={hoverAreaRef}
         className="relative"
+        style={{ 
+          // Add padding when menu is shown to create a seamless interaction area
+          padding: showHoverMenu ? '8px 20px 8px 8px' : '0',
+          margin: showHoverMenu ? '-8px -20px -8px -8px' : '0',
+        }}
       >
-        {/* Hover Menu */}
-        {showHoverMenu && (
-          <div 
-            ref={menuRef}
-            onMouseEnter={handleMenuHoverStart}
-            onMouseLeave={handleHoverEnd}
-            className="absolute z-50"
-            style={{ right: '-8px', top: '0px' }}
-          >
-            <NodeHoverMenu 
-              nodeId={id}
-              actions={hoverMenuActions}
-              position="right"
+        <div
+          ref={nodeRef}
+          onMouseEnter={handleHoverStart}
+          onMouseLeave={handleHoverEnd}
+          className="relative"
+        >
+          {/* Hover Menu */}
+          {showHoverMenu && (
+            <div 
+              ref={menuRef}
+              onMouseEnter={handleMenuHoverStart}
+              onMouseLeave={handleHoverEnd}
+              className="absolute z-50"
+              style={{ right: '-8px', top: '0px' }}
+            >
+              <NodeHoverMenu 
+                nodeId={id}
+                actions={hoverMenuActions}
+                position="right"
+              />
+            </div>
+          )}
+          
+          <NodeContainer selected={selected} className={containerClass}>
+            <NodeHeader 
+              title={label} 
+              description={description}
+              icon={iconElement}
+              actions={headerActions}
             />
-          </div>
-        )}
-        
-        <NodeContainer selected={selected} className={containerClass}>
-          <NodeHeader 
-            title={label} 
-            description={description}
-            icon={iconElement}
-            actions={headerActions}
-          />
-          
-          <NodeContent padding="normal">
-            {/* Node Type Badge */}
-            <div className="flex justify-between items-center">
-              <Badge variant="outline" className="text-xs px-2 py-0.5 bg-slate-100/50 dark:bg-slate-800/50">
-                {category}
-              </Badge>
+            
+            <NodeContent padding="normal">
+              {/* Node Type Badge */}
+              <div className="flex justify-between items-center">
+                <Badge variant="outline" className="text-xs px-2 py-0.5 bg-slate-100/50 dark:bg-slate-800/50">
+                  {category}
+                </Badge>
+                
+                {/* Settings Summary */}
+                {settingsSummary && (
+                  <div className="flex items-center text-xs text-muted-foreground">
+                    <Settings className="h-3 w-3 mr-1 inline" />
+                    <span className="truncate">{settingsSummary}</span>
+                  </div>
+                )}
+              </div>
               
-              {/* Settings Summary */}
-              {settingsSummary && (
-                <div className="flex items-center text-xs text-muted-foreground">
-                  <Settings className="h-3 w-3 mr-1 inline" />
-                  <span className="truncate">{settingsSummary}</span>
+              {/* Advanced Features Indicators */}
+              {(settingsData.cacheResults || settingsData.executionEnvironment === 'server') && (
+                <div className="mt-2 flex gap-2">
+                  {settingsData.cacheResults && (
+                    <div className="flex items-center text-xs gap-1 text-blue-500 dark:text-blue-400">
+                      <Clock className="h-3 w-3" />
+                      <span>Caching</span>
+                    </div>
+                  )}
+                  {settingsData.executionEnvironment === 'server' && (
+                    <div className="flex items-center text-xs gap-1 text-purple-500 dark:text-purple-400">
+                      <Database className="h-3 w-3" />
+                      <span>Server-side</span>
+                    </div>
+                  )}
                 </div>
               )}
-            </div>
-            
-            {/* Advanced Features Indicators */}
-            {(settingsData.cacheResults || settingsData.executionEnvironment === 'server') && (
-              <div className="mt-2 flex gap-2">
-                {settingsData.cacheResults && (
-                  <div className="flex items-center text-xs gap-1 text-blue-500 dark:text-blue-400">
-                    <Clock className="h-3 w-3" />
-                    <span>Caching</span>
-                  </div>
-                )}
-                {settingsData.executionEnvironment === 'server' && (
-                  <div className="flex items-center text-xs gap-1 text-purple-500 dark:text-purple-400">
-                    <Database className="h-3 w-3" />
-                    <span>Server-side</span>
-                  </div>
-                )}
-              </div>
-            )}
 
-            {/* Code Preview */}
-            <div className="mt-2 text-xs font-mono bg-slate-50 dark:bg-slate-900 text-slate-800 dark:text-slate-200 p-2 rounded border border-slate-200 dark:border-slate-800 overflow-hidden">
-              {settingsData.selectedTemplate && settingsData.selectedTemplate !== 'basic' && (
-                <div className="mb-1 text-xs text-blue-500 dark:text-blue-400 font-semibold">
-                  Template: {settingsData.selectedTemplate}
+              {/* Code Preview */}
+              <div className="mt-2 text-xs font-mono bg-slate-50 dark:bg-slate-900 text-slate-800 dark:text-slate-200 p-2 rounded border border-slate-200 dark:border-slate-800 overflow-hidden">
+                {settingsData.selectedTemplate && settingsData.selectedTemplate !== 'basic' && (
+                  <div className="mb-1 text-xs text-blue-500 dark:text-blue-400 font-semibold">
+                    Template: {settingsData.selectedTemplate}
+                  </div>
+                )}
+                <div className="truncate">
+                  {(settingsData.code || code).split('\n').slice(0, 2).join('\n')}
+                  {(settingsData.code || code).split('\n').length > 2 && '...'}
+                </div>
+              </div>
+              
+              {/* Status messages and errors */}
+              {hasError && errorMessage && (
+                <div className="mt-2 p-2 text-xs bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 rounded border border-red-200 dark:border-red-800">
+                  <div className="flex items-center gap-1 mb-1">
+                    <AlertTriangle className="h-3 w-3" />
+                    <span className="font-medium">Error</span>
+                  </div>
+                  {errorMessage}
                 </div>
               )}
-              <div className="truncate">
-                {(settingsData.code || code).split('\n').slice(0, 2).join('\n')}
-                {(settingsData.code || code).split('\n').length > 2 && '...'}
-              </div>
-            </div>
+            </NodeContent>
             
-            {/* Status messages and errors */}
-            {hasError && errorMessage && (
-              <div className="mt-2 p-2 text-xs bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 rounded border border-red-200 dark:border-red-800">
-                <div className="flex items-center gap-1 mb-1">
-                  <AlertTriangle className="h-3 w-3" />
-                  <span className="font-medium">Error</span>
-                </div>
-                {errorMessage}
-              </div>
-            )}
-          </NodeContent>
-          
-          {/* Input handle for triggering the node */}
-          <Handle
-            type="target"
-            position={Position.Left}
-            id="input"
-            style={{ 
-              top: 50, 
-              width: '12px', 
-              height: '12px', 
-              background: 'white',
-              border: '2px solid #3b82f6'
-            }}
-            isConnectable={true}
-          />
-          <div className="absolute left-2 top-[46px] text-xs text-muted-foreground">
-            In
-          </div>
+            {/* Input handle for triggering the node */}
+            <Handle
+              type="target"
+              position={Position.Left}
+              id="input"
+              style={{ 
+                top: 50, 
+                width: '12px', 
+                height: '12px', 
+                background: 'white',
+                border: '2px solid #3b82f6'
+              }}
+              isConnectable={true}
+            />
+            <div className="absolute left-2 top-[46px] text-xs text-muted-foreground">
+              In
+            </div>
 
-          {/* Output handle for continuing to the next node */}
-          <Handle
-            type="source"
-            position={Position.Right}
-            id="output"
-            style={{ 
-              top: 50, 
-              width: '12px', 
-              height: '12px', 
-              background: 'white',
-              border: '2px solid #10b981'
-            }}
-            isConnectable={true}
-          />
-          <div className="absolute right-2 top-[46px] text-xs text-muted-foreground text-right">
-            Out
-          </div>
-        </NodeContainer>
+            {/* Output handle for continuing to the next node */}
+            <Handle
+              type="source"
+              position={Position.Right}
+              id="output"
+              style={{ 
+                top: 50, 
+                width: '12px', 
+                height: '12px', 
+                background: 'white',
+                border: '2px solid #10b981'
+              }}
+              isConnectable={true}
+            />
+            <div className="absolute right-2 top-[46px] text-xs text-muted-foreground text-right">
+              Out
+            </div>
+          </NodeContainer>
+        </div>
       </div>
-    </div>
 
       {/* Note Dialog */}
       <Dialog open={noteDialogOpen} onOpenChange={setNoteDialogOpen}>
@@ -582,7 +583,7 @@ function FunctionNode({ data, id, selected }: NodeProps<FunctionNodeData>) {
           </DialogFooter>
         </DialogContent>
       </Dialog>
-    </div>
+    </>
   );
 }
 
