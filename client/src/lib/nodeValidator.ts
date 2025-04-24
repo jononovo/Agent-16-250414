@@ -4,37 +4,48 @@
  * A unified system for node definition validation, registration, and discovery.
  * This module replaces the separate nodeValidation.ts and validateAllNodes.ts files
  * with a more concise implementation.
+ * 
+ * This version uses the centralized nodeRegistry for node discovery.
  */
 
 import { NodeDefinition, PortDefinition } from '../nodes/types';
+import { getAllNodeTypes, hasNodeType, getNodeInfo } from './nodeRegistry';
 
-// List of built-in system node types
-export const SYSTEM_NODE_TYPES = [
-  'text_input',
-  'claude',
-  'http_request',
-  'text_template',
-  'data_transform',
-  'decision',
-  'function',
-  'json_path',
-  'text_prompt'
-];
+// NOTE: These arrays are maintained for backward compatibility
+// New code should use the nodeRegistry functions directly
 
-// List of custom user-created node types (default + dynamically populated at runtime)
-export let CUSTOM_NODE_TYPES: string[] = [
-  'json_parser',
-  'text_formatter',
-  'number_input',
-  'toggle_switch',
-  'perplexity_api',
-  'function_node',
-  'webhook_trigger',
-  'webhook_response'
-];
+// Legacy arrays - populated from the registry during initialization
+export const SYSTEM_NODE_TYPES: string[] = [];
+export let CUSTOM_NODE_TYPES: string[] = [];
+export const FOLDER_BASED_NODE_TYPES: string[] = [];
 
-// Combined list of all folder-based node types
-export const FOLDER_BASED_NODE_TYPES = [...SYSTEM_NODE_TYPES, ...CUSTOM_NODE_TYPES];
+// Populate the legacy arrays from registry on module load
+(async () => {
+  try {
+    const allNodes = getAllNodeTypes();
+    
+    // Reset the arrays
+    SYSTEM_NODE_TYPES.length = 0;
+    CUSTOM_NODE_TYPES.length = 0;
+    FOLDER_BASED_NODE_TYPES.length = 0;
+    
+    // Populate based on folderPath
+    allNodes.forEach(nodeInfo => {
+      if (nodeInfo.folderPath === 'System') {
+        SYSTEM_NODE_TYPES.push(nodeInfo.id);
+      } else if (nodeInfo.folderPath === 'Custom') {
+        CUSTOM_NODE_TYPES.push(nodeInfo.id);
+      }
+      
+      // Add to combined list
+      FOLDER_BASED_NODE_TYPES.push(nodeInfo.id);
+    });
+    
+    console.log(`Populated legacy node type arrays with ${FOLDER_BASED_NODE_TYPES.length} nodes`);
+  } catch (error) {
+    console.error('Error initializing legacy node type arrays:', error);
+  }
+})();
 
 // Required fields for node definitions
 const REQUIRED_NODE_FIELDS = [
