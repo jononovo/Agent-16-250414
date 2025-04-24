@@ -326,18 +326,9 @@ const NodeSettingsDrawer: React.FC<NodeSettingsDrawerProps> = ({
           {
             id: 'model',
             label: 'Model',
-            type: 'select',
-            description: 'The Perplexity model to use',
-            options: [
-              { value: 'llama-3.1-sonar-small-128k-online', label: 'Llama 3.1 Sonar Small' },
-              { value: 'llama-3.1-sonar-large-128k-online', label: 'Llama 3.1 Sonar Large' },
-              { value: 'llama-3.1-sonar-huge-128k-online', label: 'Llama 3.1 Sonar Huge' },
-              { value: 'pplx-7b-online', label: 'PPLX 7B Online' },
-              { value: 'pplx-70b-online', label: 'PPLX 70B Online' },
-              { value: 'mistral-7b-instruct', label: 'Mistral 7B Instruct' },
-              { value: 'llama-2-70b-chat', label: 'Llama 2 70B Chat' },
-              { value: 'mixtral-8x7b-instruct', label: 'Mixtral 8x7B Instruct' }
-            ]
+            type: 'text',
+            description: 'The Perplexity model to use (e.g., llama-3.1-sonar-small-128k-online)',
+            placeholder: 'llama-3.1-sonar-small-128k-online'
           },
           {
             id: 'temperature',
@@ -1430,9 +1421,9 @@ return (
                               value={settings[field.id] || ''}
                               onChange={(e) => handleSettingChange(field.id, e.target.value)}
                             />
-                            {field.id === 'model' && node.type === 'perplexity' && (
+                            {field.id === 'model' && (node.type === 'perplexity' || node.type === 'perplexity_api') && (
                               <p className="text-xs text-muted-foreground mt-1">
-                                Common models: sonar, sonar-small-online, sonar-medium-online, mistral-7b-instruct
+                                Recommended models: llama-3.1-sonar-small-128k-online, llama-3.1-sonar-large-128k-online, llama-3.1-sonar-huge-128k-online
                               </p>
                             )}
                             {field.id === 'model' && (node.type === 'claude') && (
