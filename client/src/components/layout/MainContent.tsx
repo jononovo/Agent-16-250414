@@ -111,17 +111,6 @@ const MainContent = ({ children }: MainContentProps) => {
         <div className="container mx-auto px-4 py-4 flex items-center justify-between">
           <h1 className="text-2xl font-bold text-slate-900">{getPageTitle()}</h1>
           <div className="flex items-center space-x-3">
-            <Link href="/settings">
-              <Button 
-                variant={apiKeyStatus === 'missing' ? "destructive" : "outline"} 
-                size="sm"
-                className="flex items-center gap-1"
-              >
-                <Key size={16} />
-                {apiKeyStatus === 'missing' ? 'Configure API Keys' : 'API Settings'}
-              </Button>
-            </Link>
-            
             <Button 
               variant="outline" 
               size="sm" 
