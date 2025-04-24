@@ -2,19 +2,28 @@
  * Perplexity API Node UI Component
  * 
  * This component renders a custom implementation of the Perplexity API node
- * with settings drawer integration but without using the full DefaultNode wrapper.
+ * with settings drawer integration and hover menu support.
  */
 
-import React, { memo, useEffect } from 'react';
+import React, { memo, useEffect, useState, useCallback, useRef } from 'react';
 import { Handle, Position, NodeProps } from 'reactflow';
 import { Brain, Settings, Lock } from 'lucide-react';
 import { NodeContainer } from '@/components/nodes/common/NodeContainer';
 import { NodeContent } from '@/components/nodes/common/NodeContent';
+import { NodeHeader } from '@/components/nodes/common/NodeHeader';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { NodeValidationResult } from '@/lib/types';
 import { cn } from '@/lib/utils';
 import { PerplexityApiNodeData, defaultData } from './executor';
+import NodeHoverMenu, { 
+  createDuplicateAction, 
+  createDeleteAction, 
+  createSettingsAction,
+  createRunAction,
+  createAddNoteAction, 
+  NodeHoverMenuAction
+} from '@/components/nodes/common/NodeHoverMenu';
 
 // Re-export defaultData from executor
 export { defaultData } from './executor';
@@ -35,7 +44,8 @@ const PERPLEXITY_MODELS = [
 export const validator = (data: PerplexityApiNodeData): NodeValidationResult => {
   const errors: string[] = [];
   
-  if (!data.apiKey) {
+  // Skip API key validation if using environment variable
+  if (!data.apiKey && !process.env.PERPLEXITY_API_KEY) {
     errors.push('API key is required');
   }
   
@@ -53,10 +63,18 @@ export const validator = (data: PerplexityApiNodeData): NodeValidationResult => 
   };
 };
 
-// UI component for the Perplexity node (custom implementation)
+// UI component for the Perplexity node (custom implementation with hover menu)
 export const component = memo(({ data, id, selected, isConnectable }: NodeProps<PerplexityApiNodeData>) => {
   // Combine default data with passed data
   const nodeData = { ...defaultData, ...data };
+  
+  // Hover menu state
+  const [showHoverMenu, setShowHoverMenu] = useState(false);
+  const [hoverTimer, setHoverTimer] = useState<NodeJS.Timeout | null>(null);
+  const nodeRef = useRef<HTMLDivElement>(null);
+  const menuRef = useRef<HTMLDivElement>(null);
+  const hoverDelay = 300; // ms before showing menu
+  const hideDelay = 400; // ms before hiding menu
   
   // Register with settings drawer
   useEffect(() => {
@@ -77,8 +95,8 @@ export const component = memo(({ data, id, selected, isConnectable }: NodeProps<
         {
           key: 'apiKey',
           label: 'API Key',
-          type: 'text',
-          description: 'Your Perplexity API key'
+          type: 'password',
+          description: 'Your Perplexity API key (optional if using environment variable)'
         },
         {
           key: 'temperature',
@@ -110,163 +128,283 @@ export const component = memo(({ data, id, selected, isConnectable }: NodeProps<
       ]
     };
     
-    // Add the settings to the node data
-    const onChangeHandler = (data as any).onChange;
-    if (typeof onChangeHandler === 'function') {
-      onChangeHandler({
+    // Add the settings to the node data using onChange
+    if (typeof (data as any).onChange === 'function') {
+      (data as any).onChange({
         ...data,
         settings,
         label: "Perplexity API",
-        description: "Generate text using Perplexity's AI models"
+        description: "Generate text using Perplexity's AI models",
+        useGlobalSettingsOnly: true  // Use the global settings drawer only
       });
     }
   }, [id, data]);
   
-  // Settings button click handler to open global settings drawer
-  const handleSettingsClick = () => {
-    const event = new CustomEvent('node-settings-open', {
+  // Handle node action from hover menu
+  const handleSettingsClick = useCallback(() => {
+    const event = new CustomEvent('node-settings-open', { 
       detail: { nodeId: id }
     });
     window.dispatchEvent(event);
-  };
+  }, [id]);
   
-  // Format temperature value for display
-  const formatTemperature = (temp: number) => temp.toFixed(1);
+  const handleRunNode = useCallback(() => {
+    if ((data as any).onRun) {
+      (data as any).onRun(id);
+    } else {
+      const event = new CustomEvent('node-run', { 
+        detail: { nodeId: id }
+      });
+      window.dispatchEvent(event);
+    }
+  }, [id, data]);
+  
+  const handleDuplicateNode = useCallback(() => {
+    if ((data as any).onDuplicate) {
+      (data as any).onDuplicate(id);
+    } else {
+      const event = new CustomEvent('node-duplicate', { 
+        detail: { 
+          nodeId: id,
+          nodeType: 'perplexity_api',
+          nodeData: data 
+        }
+      });
+      window.dispatchEvent(event);
+    }
+  }, [id, data]);
+  
+  const handleDeleteNode = useCallback(() => {
+    if ((data as any).onDelete) {
+      (data as any).onDelete(id);
+    } else {
+      const event = new CustomEvent('node-delete', { 
+        detail: { nodeId: id }
+      });
+      window.dispatchEvent(event);
+    }
+  }, [id, data]);
+  
+  const handleEditNote = useCallback(() => {
+    const event = new CustomEvent('node-note-edit', { 
+      detail: { nodeId: id }
+    });
+    window.dispatchEvent(event);
+  }, [id]);
+  
+  // Function to handle hover start
+  const handleHoverStart = useCallback(() => {
+    // Set a timeout to show the menu after hovering for specified delay
+    const timer = setTimeout(() => {
+      setShowHoverMenu(true);
+    }, hoverDelay);
+    
+    setHoverTimer(timer);
+  }, [hoverDelay]);
+  
+  // Function to handle hover end
+  const handleHoverEnd = useCallback(() => {
+    // Clear the timeout if the user stops hovering before the menu appears
+    if (hoverTimer) {
+      clearTimeout(hoverTimer);
+      setHoverTimer(null);
+    }
+    
+    // Add a delay before hiding the menu to give users time to move to it
+    const timer = setTimeout(() => {
+      setShowHoverMenu(false);
+    }, hideDelay);
+    
+    setHoverTimer(timer);
+  }, [hoverTimer, hideDelay]);
+  
+  // Handle menu hovering to keep it visible when cursor moves from node to menu
+  const handleMenuHoverStart = useCallback(() => {
+    setShowHoverMenu(true);
+  }, []);
+  
+  // Cleanup timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (hoverTimer) {
+        clearTimeout(hoverTimer);
+      }
+    };
+  }, [hoverTimer]);
+  
+  // Create hover menu actions
+  const hoverMenuActions: NodeHoverMenuAction[] = [
+    createRunAction(handleRunNode),
+    createDuplicateAction(handleDuplicateNode),
+    createAddNoteAction(handleEditNote),
+    createSettingsAction(handleSettingsClick),
+    createDeleteAction(handleDeleteNode)
+  ];
   
   return (
-    <NodeContainer selected={selected} className="overflow-visible">
-      {/* Header */}
-      <div className={cn(
-        'flex items-center justify-between p-3 border-b border-border rounded-t-md',
-        'bg-gradient-to-r from-purple-500/10 to-blue-500/10'
-      )}>
-        <div className="flex items-center gap-2">
-          <div className="flex-shrink-0 p-1.5 rounded-md bg-indigo-100 text-indigo-600">
-            <Brain className="h-4 w-4" />
-          </div>
-          <h3 className="text-sm font-medium truncate text-indigo-700">Perplexity API</h3>
+    <div
+      ref={nodeRef}
+      onMouseEnter={handleHoverStart}
+      onMouseLeave={handleHoverEnd}
+      className="relative"
+    >
+      {/* Hover Menu */}
+      {showHoverMenu && (
+        <div
+          ref={menuRef}
+          onMouseEnter={handleMenuHoverStart}
+          onMouseLeave={handleHoverEnd}
+        >
+          <NodeHoverMenu
+            nodeId={id}
+            actions={hoverMenuActions}
+            position="right"
+          />
         </div>
-        <div className="flex items-center gap-1">
-          {!nodeData.apiKey && (
-            <Badge variant="outline" className="px-1.5 py-0 h-5 text-amber-600 border-amber-200 bg-amber-50">
-              <Lock size={11} className="mr-1" /> Key Required
-            </Badge>
-          )}
-          <Button 
-            variant="ghost" 
-            size="icon" 
-            className="h-6 w-6 text-indigo-600"
-            onClick={handleSettingsClick}
-          >
-            <Settings size={14} />
-          </Button>
-        </div>
-      </div>
+      )}
       
-      {/* Content */}
-      <NodeContent padding="normal">
-        {/* API Status Warning */}
-        {!nodeData.apiKey && (
-          <div className="mt-1 p-2 bg-amber-100/50 text-amber-800 text-xs rounded-md">
-            Perplexity API key required in settings
+      <NodeContainer selected={selected} className="overflow-visible">
+        {/* Header */}
+        <div className={cn(
+          'flex items-center justify-between p-3 border-b border-border rounded-t-md',
+          'bg-gradient-to-r from-purple-500/10 to-blue-500/10'
+        )}>
+          <div className="flex items-center gap-2">
+            <div className="flex-shrink-0 p-1.5 rounded-md bg-indigo-100 text-indigo-600">
+              <Brain className="h-4 w-4" />
+            </div>
+            <h3 className="text-sm font-medium truncate text-indigo-700">Perplexity API</h3>
           </div>
-        )}
-        
-        {/* Settings Summary */}
-        <div className="mt-2 mb-3 flex flex-col gap-1.5 text-slate-700">
-          <div className="flex justify-between text-xs">
-            <span className="text-slate-500">Model:</span>
-            <span className="font-medium">{
-              PERPLEXITY_MODELS.find(m => m.value === nodeData.model)?.label || nodeData.model
-            }</span>
-          </div>
-          <div className="flex justify-between text-xs">
-            <span className="text-slate-500">Temperature:</span>
-            <span className="font-medium">{nodeData.temperature.toFixed(1)}</span>
-          </div>
-          <div className="flex justify-between text-xs">
-            <span className="text-slate-500">Max Tokens:</span>
-            <span className="font-medium">{nodeData.maxTokens}</span>
+          <div className="flex items-center gap-1">
+            {!nodeData.apiKey && (
+              <Badge variant="outline" className="px-1.5 py-0 h-5 text-amber-600 border-amber-200 bg-amber-50">
+                <Lock size={11} className="mr-1" /> Key Required
+              </Badge>
+            )}
+            <Button 
+              variant="ghost" 
+              size="icon" 
+              className="h-6 w-6 text-indigo-600"
+              onClick={handleSettingsClick}
+            >
+              <Settings size={14} />
+            </Button>
           </div>
         </div>
         
-        {/* Input & Output portals */}
-        <div className="relative pt-4 pb-2">
-          {/* Input Handles */}
-          <Handle
-            type="target"
-            position={Position.Left}
-            id="prompt"
-            style={{ 
-              top: 50, 
-              width: '12px', 
-              height: '12px', 
-              background: 'white',
-              border: '2px solid #6366f1'
-            }}
-            isConnectable={isConnectable}
-          />
-          <div className="absolute left-2 top-[46px] text-xs text-slate-500 text-left">
-            Prompt
-          </div>
-          
-          {nodeData.useSystemPrompt && (
-            <>
-              <Handle
-                type="target"
-                position={Position.Left}
-                id="system"
-                style={{ 
-                  top: 80, 
-                  width: '12px', 
-                  height: '12px', 
-                  background: 'white',
-                  border: '2px solid #6366f1'
-                }}
-                isConnectable={isConnectable}
-              />
-              <div className="absolute left-2 top-[76px] text-xs text-slate-500 text-left">
-                System
-              </div>
-            </>
+        {/* Content */}
+        <NodeContent padding="normal">
+          {/* API Status Warning */}
+          {!nodeData.apiKey && !process.env.PERPLEXITY_API_KEY && (
+            <div className="mt-1 p-2 bg-amber-100/50 text-amber-800 text-xs rounded-md">
+              Perplexity API key required in settings
+            </div>
           )}
           
-          {/* Output Handles */}
-          <Handle
-            type="source"
-            position={Position.Right}
-            id="response"
-            style={{ 
-              top: 50, 
-              width: '12px', 
-              height: '12px', 
-              background: 'white',
-              border: '2px solid #10b981'
-            }}
-            isConnectable={isConnectable}
-          />
-          <div className="absolute right-2 top-[46px] text-xs text-slate-500 text-right">
-            Response
+          {/* Settings Summary */}
+          <div className="mt-2 mb-3 flex flex-col gap-1.5 text-slate-700">
+            <div className="flex justify-between text-xs">
+              <span className="text-slate-500">Model:</span>
+              <span className="font-medium">{
+                PERPLEXITY_MODELS.find(m => m.value === nodeData.model)?.label || nodeData.model
+              }</span>
+            </div>
+            <div className="flex justify-between text-xs">
+              <span className="text-slate-500">Temperature:</span>
+              <span className="font-medium">{nodeData.temperature.toFixed(1)}</span>
+            </div>
+            <div className="flex justify-between text-xs">
+              <span className="text-slate-500">Max Tokens:</span>
+              <span className="font-medium">{nodeData.maxTokens}</span>
+            </div>
           </div>
           
-          <Handle
-            type="source"
-            position={Position.Right}
-            id="metadata"
-            style={{ 
-              top: 80, 
-              width: '12px', 
-              height: '12px', 
-              background: 'white',
-              border: '2px solid #10b981'
-            }}
-            isConnectable={isConnectable}
-          />
-          <div className="absolute right-2 top-[76px] text-xs text-slate-500 text-right">
-            Metadata
+          {/* Node Note Display */}
+          {(data as any).note && (data as any).showNote && (
+            <div className="mt-2 p-2 bg-amber-50 border border-amber-100 text-amber-700 text-xs rounded-md">
+              <div className="font-medium mb-1">Note:</div>
+              <div>{(data as any).note}</div>
+            </div>
+          )}
+          
+          {/* Input & Output portals */}
+          <div className="relative pt-4 pb-2">
+            {/* Input Handles */}
+            <Handle
+              type="target"
+              position={Position.Left}
+              id="prompt"
+              style={{ 
+                top: 50, 
+                width: '12px', 
+                height: '12px', 
+                background: 'white',
+                border: '2px solid #6366f1'
+              }}
+              isConnectable={isConnectable}
+            />
+            <div className="absolute left-2 top-[46px] text-xs text-slate-500 text-left">
+              Prompt
+            </div>
+            
+            {nodeData.useSystemPrompt && (
+              <>
+                <Handle
+                  type="target"
+                  position={Position.Left}
+                  id="system"
+                  style={{ 
+                    top: 80, 
+                    width: '12px', 
+                    height: '12px', 
+                    background: 'white',
+                    border: '2px solid #6366f1'
+                  }}
+                  isConnectable={isConnectable}
+                />
+                <div className="absolute left-2 top-[76px] text-xs text-slate-500 text-left">
+                  System
+                </div>
+              </>
+            )}
+            
+            {/* Output Handles */}
+            <Handle
+              type="source"
+              position={Position.Right}
+              id="response"
+              style={{ 
+                top: 50, 
+                width: '12px', 
+                height: '12px', 
+                background: 'white',
+                border: '2px solid #10b981'
+              }}
+              isConnectable={isConnectable}
+            />
+            <div className="absolute right-2 top-[46px] text-xs text-slate-500 text-right">
+              Response
+            </div>
+            
+            <Handle
+              type="source"
+              position={Position.Right}
+              id="metadata"
+              style={{ 
+                top: 80, 
+                width: '12px', 
+                height: '12px', 
+                background: 'white',
+                border: '2px solid #10b981'
+              }}
+              isConnectable={isConnectable}
+            />
+            <div className="absolute right-2 top-[76px] text-xs text-slate-500 text-right">
+              Metadata
+            </div>
           </div>
-        </div>
-      </NodeContent>
-    </NodeContainer>
+        </NodeContent>
+      </NodeContainer>
+    </div>
   );
 });

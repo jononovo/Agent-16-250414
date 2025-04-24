@@ -274,6 +274,7 @@ const NodeSettingsDrawer: React.FC<NodeSettingsDrawerProps> = ({
           }
         ];
       case 'perplexity':
+      case 'perplexity_api':
         return [
           {
             id: 'apiKey',
@@ -285,9 +286,55 @@ const NodeSettingsDrawer: React.FC<NodeSettingsDrawerProps> = ({
           {
             id: 'model',
             label: 'Model',
-            type: 'text',
-            placeholder: 'e.g., sonar',
-            description: 'The Perplexity model to use for search queries.'
+            type: 'select',
+            description: 'The Perplexity model to use',
+            options: [
+              { value: 'llama-3.1-sonar-small-128k-online', label: 'Llama 3.1 Sonar Small' },
+              { value: 'llama-3.1-sonar-large-128k-online', label: 'Llama 3.1 Sonar Large' },
+              { value: 'llama-3.1-sonar-huge-128k-online', label: 'Llama 3.1 Sonar Huge' },
+              { value: 'pplx-7b-online', label: 'PPLX 7B Online' },
+              { value: 'pplx-70b-online', label: 'PPLX 70B Online' },
+              { value: 'mistral-7b-instruct', label: 'Mistral 7B Instruct' },
+              { value: 'llama-2-70b-chat', label: 'Llama 2 70B Chat' },
+              { value: 'mixtral-8x7b-instruct', label: 'Mixtral 8x7B Instruct' }
+            ]
+          },
+          {
+            id: 'temperature',
+            label: 'Temperature',
+            type: 'number',
+            min: 0,
+            max: 1,
+            step: 0.1,
+            defaultValue: 0.7,
+            description: 'Controls randomness. Lower values (0.1) are more deterministic, higher values (1.0) more creative.'
+          },
+          {
+            id: 'maxTokens',
+            label: 'Max Tokens',
+            type: 'number',
+            min: 1,
+            max: 4000,
+            defaultValue: 1000,
+            description: 'Maximum number of tokens to generate.'
+          },
+          {
+            id: 'useSystemPrompt',
+            label: 'Use System Prompt',
+            type: 'select',
+            description: 'Enable system prompt input',
+            options: [
+              { value: 'true', label: 'Yes' },
+              { value: 'false', label: 'No' }
+            ],
+            defaultValue: 'false'
+          },
+          {
+            id: 'systemPrompt',
+            label: 'System Prompt',
+            type: 'textarea',
+            description: 'Instructions for the AI assistant',
+            showWhen: (settings) => settings.useSystemPrompt === 'true'
           },
         ];
       case 'claude':
