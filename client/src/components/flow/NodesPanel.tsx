@@ -133,6 +133,20 @@ const NODE_TYPES = [
     description: 'Receive data from external services via webhooks',
     category: 'triggers',
     icon: Webhook
+  },
+  { 
+    id: 'webhook_trigger', 
+    name: 'Webhook Trigger', 
+    description: 'Creates a webhook endpoint that can trigger workflows',
+    category: 'triggers',
+    icon: Webhook
+  },
+  { 
+    id: 'webhook_response', 
+    name: 'Webhook Response', 
+    description: 'Sends workflow data to external webhook endpoints',
+    category: 'actions',
+    icon: Send
   }
   // Additional nodes will be loaded dynamically from the System and Custom directories
 ];
@@ -166,7 +180,7 @@ const NodesPanel = () => {
         // New custom nodes
         'text_formatter', 'number_input', 'toggle_switch',
         'json_schema_validator', 'csv_processor', 'markdown_renderer',
-        'function_node', 'webhook'
+        'function_node', 'webhook', 'webhook_trigger', 'webhook_response'
       ];
       return implementedNodeTypes.includes(nodeType.id);
     });
