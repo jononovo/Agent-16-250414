@@ -16,6 +16,7 @@ const definition: NodeDefinition = {
   description: 'Searches the web using Perplexity\'s AI to find answers and information',
   category: 'ai',
   icon: 'search',
+  version: '1.0.0',
   inputs: {
     query: {
       type: 'string',
