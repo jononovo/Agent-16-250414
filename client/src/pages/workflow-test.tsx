@@ -27,7 +27,6 @@ import { ChevronLeft, Play, Download, Upload, Copy, Check, RefreshCw } from 'luc
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { toast } from '@/hooks/use-toast';
 import { useIsMobile } from '@/hooks/use-mobile';
-import { ChatSidebar, ChatToggle } from '@/components/chat';
 
 // Simplified content wrapper without header and sidebar for test page
 const TestContent = ({ children }: { children: React.ReactNode }) => {
@@ -704,9 +703,6 @@ export default function WorkflowTestBench() {
           )}
         </div>
       </TestContent>
-      
-      {/* This component internally handles the ChatSidebar */}
-      <ChatToggle />
     </div>
   );
 }
