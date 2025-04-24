@@ -270,7 +270,7 @@ const FlowEditor = ({
             const component = module.component || module.default;
             
             // Update the loadedComponents with the loaded component
-            setLoadedComponents(prev => ({
+            setLoadedComponents((prev: Record<string, any>) => ({
               ...prev,
               [type]: component
             }));
@@ -290,7 +290,7 @@ const FlowEditor = ({
         const customIndexModule = await import(/* @vite-ignore */ `../../nodes/Custom/${type}/index`);
         if (customIndexModule && customIndexModule.component) {
           // Update the loadedComponents with the loaded component
-          setLoadedComponents(prev => ({
+          setLoadedComponents((prev: Record<string, any>) => ({
             ...prev,
             [type]: customIndexModule.component
           }));
@@ -303,7 +303,7 @@ const FlowEditor = ({
           const customModule = await import(/* @vite-ignore */ `../../nodes/Custom/${type}/ui`);
           if (customModule && customModule.default) {
             // Update the loadedComponents with the loaded component
-            setLoadedComponents(prev => ({
+            setLoadedComponents((prev: Record<string, any>) => ({
               ...prev,
               [type]: customModule.default
             }));
@@ -320,8 +320,8 @@ const FlowEditor = ({
       try {
         const systemIndexModule = await import(/* @vite-ignore */ `../../nodes/System/${type}/index`);
         if (systemIndexModule && systemIndexModule.component) {
-          // Update the nodeTypes with the loaded component
-          setDynamicNodeTypes(prev => ({
+          // Update the loadedComponents with the loaded component
+          setLoadedComponents((prev: Record<string, any>) => ({
             ...prev,
             [type]: systemIndexModule.component
           }));
@@ -333,8 +333,8 @@ const FlowEditor = ({
         try {
           const systemModule = await import(/* @vite-ignore */ `../../nodes/System/${type}/ui`);
           if (systemModule && systemModule.default) {
-            // Update the nodeTypes with the loaded component
-            setDynamicNodeTypes(prev => ({
+            // Update the loadedComponents with the loaded component
+            setLoadedComponents((prev: Record<string, any>) => ({
               ...prev,
               [type]: systemModule.default
             }));
@@ -352,8 +352,8 @@ const FlowEditor = ({
         const module = await import(/* @vite-ignore */ `../../nodes/${type}/ui`);
         
         if (module && (module.component || module.default)) {
-          // Update the nodeTypes with the loaded component
-          setDynamicNodeTypes(prev => ({
+          // Update the loadedComponents with the loaded component
+          setLoadedComponents((prev: Record<string, any>) => ({
             ...prev,
             [type]: module.component || module.default
           }));
