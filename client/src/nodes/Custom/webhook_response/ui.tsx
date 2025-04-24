@@ -87,7 +87,9 @@ export default function WebhookResponseNode({ id, data }: { id: string, data: an
         childrenContent: nodeContent, // Use childrenContent instead of children
         // Pass through note properties
         note: data.note,
-        showNote: data.showNote
+        showNote: data.showNote,
+        // Use global settings drawer only
+        useGlobalSettingsOnly: true
       }}
     />
   );

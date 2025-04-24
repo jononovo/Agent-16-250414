@@ -95,7 +95,9 @@ export default function WebhookTriggerNode({ id, data }: { id: string, data: any
         childrenContent: nodeContent, // Use childrenContent instead of children
         // Pass through note properties
         note: data.note,
-        showNote: data.showNote
+        showNote: data.showNote,
+        // Use global settings drawer only
+        useGlobalSettingsOnly: true
       }}
     />
   );

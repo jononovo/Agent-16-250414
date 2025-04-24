@@ -228,6 +228,12 @@ function DefaultNode({
     // If we have an onSettingsClick function from FlowEditor, use it
     if (data.onSettingsClick) {
       data.onSettingsClick();
+    } else if (data.useGlobalSettingsOnly) {
+      // Only emit the event for nodes that should use the global settings drawer
+      const event = new CustomEvent('node-settings-open', { 
+        detail: { nodeId: id }
+      });
+      window.dispatchEvent(event);
     } else {
       // Otherwise, fall back to local settings drawer
       setShowSettings(true);
@@ -408,6 +414,12 @@ function DefaultNode({
     // If we have an onSettingsClick function from FlowEditor, use it
     if (data.onSettingsClick) {
       data.onSettingsClick();
+    } else if (data.useGlobalSettingsOnly) {
+      // Only emit the event for nodes that should use the global settings drawer
+      const event = new CustomEvent('node-settings-open', { 
+        detail: { nodeId: id }
+      });
+      window.dispatchEvent(event);
     } else {
       // Otherwise, fall back to local settings drawer
       setShowSettings(true);
