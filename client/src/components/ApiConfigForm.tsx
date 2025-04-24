@@ -112,22 +112,12 @@ export function ApiConfigForm({ onApiKeysSaved, onClose }: ApiConfigFormProps) {
   };
 
   return (
-    <Card className="w-full max-w-md">
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <Key size={20} />
-          API Configuration
-        </CardTitle>
-        <CardDescription>
-          Provide your API keys to enable AI features in the workflow editor
-        </CardDescription>
-      </CardHeader>
-      
+    <div className="w-full">
       <form onSubmit={handleSubmit}>
-        <CardContent className="space-y-4">
+        <div className="space-y-6">
           <div className="space-y-2">
-            <Label htmlFor="claude-api-key" className="flex items-center gap-1">
-              <Lock size={14} />
+            <Label htmlFor="claude-api-key" className="flex items-center gap-1 text-base">
+              <Lock size={16} />
               Claude API Key
             </Label>
             <Input
@@ -147,8 +137,8 @@ export function ApiConfigForm({ onApiKeysSaved, onClose }: ApiConfigFormProps) {
           </div>
           
           <div className="space-y-2">
-            <Label htmlFor="perplexity-api-key" className="flex items-center gap-1">
-              <Lock size={14} />
+            <Label htmlFor="perplexity-api-key" className="flex items-center gap-1 text-base">
+              <Lock size={16} />
               Perplexity API Key
             </Label>
             <Input
@@ -166,34 +156,34 @@ export function ApiConfigForm({ onApiKeysSaved, onClose }: ApiConfigFormProps) {
               </a>
             </p>
           </div>
-        </CardContent>
-        
-        <CardFooter className="justify-between">
-          {onClose && (
-            <Button type="button" variant="outline" onClick={onClose}>
-              Cancel
-            </Button>
-          )}
-          <Button type="submit" disabled={loading || success}>
-            {loading ? (
-              <span className="flex items-center gap-1">
-                <Key className="animate-pulse" size={16} />
-                Saving...
-              </span>
-            ) : success ? (
-              <span className="flex items-center gap-1">
-                <Check size={16} className="text-green-500" />
-                Saved
-              </span>
-            ) : (
-              <span className="flex items-center gap-1">
-                <Save size={16} />
-                Save API Keys
-              </span>
+          
+          <div className="flex justify-end">
+            {onClose && (
+              <Button type="button" variant="outline" onClick={onClose} className="mr-2">
+                Cancel
+              </Button>
             )}
-          </Button>
-        </CardFooter>
+            <Button type="submit" disabled={loading || success}>
+              {loading ? (
+                <span className="flex items-center gap-1">
+                  <Key className="animate-pulse" size={16} />
+                  Saving...
+                </span>
+              ) : success ? (
+                <span className="flex items-center gap-1">
+                  <Check size={16} className="text-green-500" />
+                  Saved
+                </span>
+              ) : (
+                <span className="flex items-center gap-1">
+                  <Save size={16} />
+                  Save API Keys
+                </span>
+              )}
+            </Button>
+          </div>
+        </div>
       </form>
-    </Card>
+    </div>
   );
 }

@@ -142,10 +142,12 @@ const MainContent = ({ children }: MainContentProps) => {
               }}
             />
             
-            <Button variant="outline" size="sm" className="flex items-center gap-1">
-              <Settings size={16} />
-              <span>Settings</span>
-            </Button>
+            <Link href="/settings">
+              <Button variant="outline" size="sm" className="flex items-center gap-1">
+                <Settings size={16} />
+                <span>Settings</span>
+              </Button>
+            </Link>
             
             <Button className="flex items-center gap-1">
               <span>Deploy</span>
