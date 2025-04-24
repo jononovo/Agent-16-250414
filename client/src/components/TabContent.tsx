@@ -265,10 +265,16 @@ const TabContent = () => {
         <div className="mb-8">
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-lg font-medium text-slate-900">My Custom Workflows</h2>
-            <a href="/workflow-editor/new" className="text-sm px-3 py-1.5 bg-primary text-white rounded-md hover:bg-indigo-700 flex items-center space-x-1">
-              <i className="fas fa-plus text-xs"></i>
-              <span>New Workflow</span>
-            </a>
+            <div className="flex space-x-2">
+              <a href="/workflow-chat-generator" className="text-sm px-3 py-1.5 bg-white border border-slate-200 text-slate-700 rounded-md hover:bg-slate-50 flex items-center space-x-1">
+                <span className="mr-1">✨</span>
+                <span>AI Generator</span>
+              </a>
+              <a href="/workflow-editor/new" className="text-sm px-3 py-1.5 bg-primary text-white rounded-md hover:bg-indigo-700 flex items-center space-x-1">
+                <i className="fas fa-plus text-xs"></i>
+                <span>New Workflow</span>
+              </a>
+            </div>
           </div>
           
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
