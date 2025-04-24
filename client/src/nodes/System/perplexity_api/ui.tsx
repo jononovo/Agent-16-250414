@@ -276,7 +276,7 @@ export const component = memo(({ data, id, selected, isConnectable }: NodeProps<
           position={Position.Left}
           id="prompt"
           style={{ 
-            top: '40%', 
+            top: '70%', 
             width: '12px', 
             height: '12px', 
             background: 'white',
@@ -292,7 +292,7 @@ export const component = memo(({ data, id, selected, isConnectable }: NodeProps<
             position={Position.Left}
             id="system"
             style={{ 
-              top: '60%', 
+              top: '85%', 
               width: '12px', 
               height: '12px', 
               background: 'white',
@@ -309,7 +309,7 @@ export const component = memo(({ data, id, selected, isConnectable }: NodeProps<
           position={Position.Right}
           id="response"
           style={{ 
-            top: '40%', 
+            top: '70%', 
             width: '12px', 
             height: '12px', 
             background: 'white',
@@ -324,7 +324,7 @@ export const component = memo(({ data, id, selected, isConnectable }: NodeProps<
           position={Position.Right}
           id="metadata"
           style={{ 
-            top: '60%', 
+            top: '85%', 
             width: '12px', 
             height: '12px', 
             background: 'white',
@@ -408,12 +408,16 @@ export const component = memo(({ data, id, selected, isConnectable }: NodeProps<
           )}
           
           {/* Input/Output Labels */}
-          <div className="relative mt-4 flex justify-between">
-            <div className="pl-1 text-xs text-slate-500 text-left">
-              Prompt {nodeData.useSystemPrompt && <span className="block mt-4">System</span>}
-            </div>
-            <div className="pr-1 text-xs text-slate-500 text-right">
-              Response <span className="block mt-4">Metadata</span>
+          <div className="absolute bottom-0 inset-x-0 pb-2">
+            <div className="flex justify-between">
+              <div className="pl-2 text-xs text-slate-500 text-left">
+                <div className="mb-2.5">Prompt</div>
+                {nodeData.useSystemPrompt && <div>System</div>}
+              </div>
+              <div className="pr-2 text-xs text-slate-500 text-right">
+                <div className="mb-2.5">Response</div>
+                <div>Metadata</div>
+              </div>
             </div>
           </div>
         </NodeContent>
