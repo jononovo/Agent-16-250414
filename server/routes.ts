@@ -587,6 +587,58 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
+  // Perplexity API proxy endpoint
+  app.post('/api/proxy/perplexity', async (req: Request, res: Response) => {
+    try {
+      const { model, messages, temperature, max_tokens } = req.body;
+      
+      // Validate request
+      if (!messages || !Array.isArray(messages)) {
+        return res.status(400).json({ error: 'Invalid messages format' });
+      }
+      
+      // Get API key from environment
+      const apiKey = process.env.PERPLEXITY_API_KEY;
+      if (!apiKey) {
+        return res.status(400).json({ error: 'Perplexity API key not configured' });
+      }
+      
+      // Prepare API request
+      const perplexityUrl = 'https://api.perplexity.ai/chat/completions';
+      const response = await fetch(perplexityUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${apiKey}`
+        },
+        body: JSON.stringify({
+          model: model || 'llama-3.1-sonar-small-128k-online',
+          messages,
+          temperature: temperature || 0.7,
+          max_tokens: max_tokens || 1000
+        })
+      });
+      
+      // Handle response
+      if (!response.ok) {
+        const errorText = await response.text();
+        return res.status(response.status).json({ 
+          error: `Perplexity API error: ${response.status} ${response.statusText}`,
+          details: errorText
+        });
+      }
+      
+      const responseData = await response.json();
+      return res.json(responseData);
+    } catch (error) {
+      console.error('Perplexity proxy error:', error);
+      return res.status(500).json({
+        error: 'Error processing Perplexity API request',
+        details: error instanceof Error ? error.message : String(error)
+      });
+    }
+  });
+  
   // ===== Agent Tools and Coordination =====
 
   // Register all tools during server startup
