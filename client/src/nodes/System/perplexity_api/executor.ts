@@ -19,7 +19,7 @@ export interface PerplexityApiNodeData {
 
 // Default configuration for the node
 export const defaultData: PerplexityApiNodeData = {
-  model: 'llama-3.1-sonar-small-128k-online',
+  model: 'sonar',
   temperature: 0.7,
   maxTokens: 1000,
   apiKey: '',
