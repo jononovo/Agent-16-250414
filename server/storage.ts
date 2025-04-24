@@ -145,6 +145,51 @@ export class MemStorage implements IStorage {
     }
   }
   
+  // Settings methods
+  async getSetting(id: string): Promise<Settings | undefined> {
+    try {
+      // Settings are stored directly in the Replit Database with their ID as the key
+      // using the format: "setting:{id}"
+      const settingKey = `setting:${id}`;
+      const settingData = await this.db.get(settingKey) as unknown;
+      
+      if (!settingData) {
+        return undefined;
+      }
+      
+      const setting = this.parseDbResult(settingData);
+      if (!setting) {
+        return undefined;
+      }
+      
+      return setting;
+    } catch (error) {
+      console.error(`Error getting setting ${id}:`, error);
+      return undefined;
+    }
+  }
+  
+  async saveSetting(setting: InsertSettings): Promise<Settings> {
+    try {
+      const now = new Date();
+      const newSetting: Settings = {
+        ...setting,
+        updatedAt: now
+      };
+      
+      // Settings are stored directly with their ID as the key
+      // using the format: "setting:{id}"
+      const settingKey = `setting:${setting.id}`;
+      await this.db.set(settingKey, JSON.stringify(newSetting));
+      
+      console.log(`Setting ${setting.id} saved successfully`);
+      return newSetting;
+    } catch (error) {
+      console.error(`Error saving setting ${setting.id}:`, error);
+      throw error;
+    }
+  }
+  
   /**
    * Helper to convert database result to usable data
    */

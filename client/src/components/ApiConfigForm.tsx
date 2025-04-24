@@ -1,10 +1,10 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
-import { Key, Save, Check, Lock } from "lucide-react";
+import { Key, Save, Check, Lock, RefreshCw } from "lucide-react";
 
 interface ApiConfigFormProps {
   onApiKeysSaved?: () => void;
@@ -15,8 +15,35 @@ export function ApiConfigForm({ onApiKeysSaved, onClose }: ApiConfigFormProps) {
   const [claudeApiKey, setClaudeApiKey] = useState('');
   const [perplexityApiKey, setPerplexityApiKey] = useState('');
   const [loading, setLoading] = useState(false);
+  const [checkingStatus, setCheckingStatus] = useState(true); // Flag to indicate we're checking for existing keys
   const [success, setSuccess] = useState(false);
   const { toast } = useToast();
+  
+  // Check for existing config on component mount
+  useEffect(() => {
+    const fetchApiConfig = async () => {
+      try {
+        setCheckingStatus(true);
+        const response = await fetch('/api/config');
+        const data = await response.json();
+        
+        // If we have masks of the keys, show placeholders
+        if (data.claudeApiKey) {
+          setClaudeApiKey('[API key already configured]');
+        }
+        
+        if (data.perplexityApiKey) {
+          setPerplexityApiKey('[API key already configured]');
+        }
+      } catch (error) {
+        console.error('Error checking API config:', error);
+      } finally {
+        setCheckingStatus(false);
+      }
+    };
+    
+    fetchApiConfig();
+  }, []);
 
   // Validate the Claude API key format
   const validateClaudeApiKey = (key: string): boolean => {
@@ -125,57 +152,97 @@ export function ApiConfigForm({ onApiKeysSaved, onClose }: ApiConfigFormProps) {
       
       <form onSubmit={handleSubmit}>
         <CardContent className="space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="claude-api-key" className="flex items-center gap-1">
-              <Lock size={14} />
-              Claude API Key
-            </Label>
-            <Input
-              id="claude-api-key"
-              type="password"
-              placeholder="sk-ant-api..."
-              value={claudeApiKey}
-              onChange={(e) => setClaudeApiKey(e.target.value)}
-              className="font-mono"
-            />
-            <p className="text-xs text-muted-foreground">
-              Used for Claude AI text generation. Get a key from{" "}
-              <a href="https://console.anthropic.com/" target="_blank" rel="noreferrer" className="text-primary hover:underline">
-                Anthropic Console
-              </a>
-            </p>
-          </div>
-          
-          <div className="space-y-2">
-            <Label htmlFor="perplexity-api-key" className="flex items-center gap-1">
-              <Lock size={14} />
-              Perplexity API Key
-            </Label>
-            <Input
-              id="perplexity-api-key"
-              type="password"
-              placeholder="pplx-..."
-              value={perplexityApiKey}
-              onChange={(e) => setPerplexityApiKey(e.target.value)}
-              className="font-mono"
-            />
-            <p className="text-xs text-muted-foreground">
-              Used for Perplexity AI nodes. Get a key from{" "}
-              <a href="https://www.perplexity.ai/settings/api" target="_blank" rel="noreferrer" className="text-primary hover:underline">
-                Perplexity API Settings
-              </a>
-            </p>
-          </div>
+          {checkingStatus ? (
+            <div className="py-4 flex flex-col items-center justify-center space-y-2">
+              <RefreshCw className="animate-spin h-6 w-6 text-primary" />
+              <p className="text-sm text-muted-foreground">Checking for existing API keys...</p>
+            </div>
+          ) : (
+            <>
+              <div className="space-y-2">
+                <Label htmlFor="claude-api-key" className="flex items-center gap-1">
+                  <Lock size={14} />
+                  Claude API Key
+                </Label>
+                <Input
+                  id="claude-api-key"
+                  type="password"
+                  placeholder="sk-ant-api..."
+                  value={claudeApiKey}
+                  onChange={(e) => {
+                    // If the input previously showed the placeholder text for existing key, clear it on edit
+                    if (claudeApiKey === '[API key already configured]') {
+                      setClaudeApiKey('');
+                    } else {
+                      setClaudeApiKey(e.target.value);
+                    }
+                  }}
+                  onClick={() => {
+                    // Clear placeholder text when clicked
+                    if (claudeApiKey === '[API key already configured]') {
+                      setClaudeApiKey('');
+                    }
+                  }}
+                  className="font-mono"
+                />
+                <p className="text-xs text-muted-foreground">
+                  Used for Claude AI text generation. Get a key from{" "}
+                  <a href="https://console.anthropic.com/" target="_blank" rel="noreferrer" className="text-primary hover:underline">
+                    Anthropic Console
+                  </a>
+                </p>
+              </div>
+              
+              <div className="space-y-2">
+                <Label htmlFor="perplexity-api-key" className="flex items-center gap-1">
+                  <Lock size={14} />
+                  Perplexity API Key
+                </Label>
+                <Input
+                  id="perplexity-api-key"
+                  type="password"
+                  placeholder="pplx-..."
+                  value={perplexityApiKey}
+                  onChange={(e) => {
+                    // If the input previously showed the placeholder text for existing key, clear it on edit
+                    if (perplexityApiKey === '[API key already configured]') {
+                      setPerplexityApiKey('');
+                    } else {
+                      setPerplexityApiKey(e.target.value);
+                    }
+                  }}
+                  onClick={() => {
+                    // Clear placeholder text when clicked
+                    if (perplexityApiKey === '[API key already configured]') {
+                      setPerplexityApiKey('');
+                    }
+                  }}
+                  className="font-mono"
+                />
+                <p className="text-xs text-muted-foreground">
+                  Used for Perplexity AI nodes. Get a key from{" "}
+                  <a href="https://www.perplexity.ai/settings/api" target="_blank" rel="noreferrer" className="text-primary hover:underline">
+                    Perplexity API Settings
+                  </a>
+                </p>
+              </div>
+            </>
+          )}
         </CardContent>
         
         <CardFooter className="justify-between">
           {onClose && (
-            <Button type="button" variant="outline" onClick={onClose}>
+            <Button type="button" variant="outline" onClick={onClose} disabled={checkingStatus}>
               Cancel
             </Button>
           )}
-          <Button type="submit" disabled={loading || success}>
-            {loading ? (
+          <Button type="submit" disabled={loading || success || checkingStatus}>
+            {checkingStatus ? (
+              <span className="flex items-center gap-1">
+                <RefreshCw className="animate-spin" size={16} />
+                Checking...
+              </span>
+            ) : loading ? (
               <span className="flex items-center gap-1">
                 <Key className="animate-pulse" size={16} />
                 Saving...
