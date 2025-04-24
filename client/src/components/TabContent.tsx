@@ -351,47 +351,6 @@ const TabContent = () => {
             ))}
           </div>
         </div>
-        
-        {/* Workflow Editor */}
-        <div className="mb-8">
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-lg font-medium text-slate-900">Workflow Editor</h2>
-            <div className="flex items-center space-x-2">
-              <button className="text-sm px-3 py-1.5 bg-white text-slate-600 border border-slate-200 rounded-md hover:bg-slate-50">
-                <i className="fas fa-undo"></i>
-              </button>
-              <button className="text-sm px-3 py-1.5 bg-white text-slate-600 border border-slate-200 rounded-md hover:bg-slate-50">
-                <i className="fas fa-redo"></i>
-              </button>
-              <button className="text-sm px-3 py-1.5 bg-white text-slate-600 border border-slate-200 rounded-md hover:bg-slate-50">
-                <i className="fas fa-save"></i>
-              </button>
-            </div>
-          </div>
-          
-          <div className="bg-white rounded-lg border border-slate-200 shadow-sm p-4">
-            <Flow placeholder={true} />
-            
-            <div className="flex justify-between mt-4">
-              <div className="flex space-x-2">
-                <button className="text-xs px-2 py-1 bg-white text-slate-600 border border-slate-200 rounded-md hover:bg-slate-50">
-                  <i className="fas fa-search-minus mr-1"></i> Zoom Out
-                </button>
-                <button className="text-xs px-2 py-1 bg-white text-slate-600 border border-slate-200 rounded-md hover:bg-slate-50">
-                  <i className="fas fa-search-plus mr-1"></i> Zoom In
-                </button>
-                <button className="text-xs px-2 py-1 bg-white text-slate-600 border border-slate-200 rounded-md hover:bg-slate-50">
-                  <i className="fas fa-expand mr-1"></i> Fit View
-                </button>
-              </div>
-              <div>
-                <button className="text-xs px-2 py-1 bg-primary text-white rounded-md hover:bg-indigo-700">
-                  <i className="fas fa-play mr-1"></i> Test Workflow
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
       </div>
     );
   }
