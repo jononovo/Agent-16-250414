@@ -3,10 +3,10 @@
  * 
  * This node allows users to define custom JavaScript functions
  * that transform input data and produce output.
- * It provides both DefaultNode-wrapped and standalone implementations.
+ * It uses DefaultNode as a wrapper to ensure consistent hover menu behavior.
  */
 
-import FunctionNode, { StandaloneFunctionNode, defaultData as uiDefaultData } from './ui';
+import FunctionNode from './ui';
 
 // Default data for the node
 export const defaultData = {
@@ -15,9 +15,7 @@ export const defaultData = {
   icon: 'code',
   category: 'code',
   code: 'function process(input) {\n  // Your code here\n  return input;\n}',
-  settingsData: {},
-  // By default, use the DefaultNode wrapper for consistent UI
-  useDefaultNodeWrapper: true
+  settingsData: {}
 };
 
 // Validator function to ensure the node is properly configured
@@ -34,10 +32,6 @@ export const validator = (data: any) => {
   };
 };
 
-// Export the hybrid component for use in the workflow editor
+// Export the component for use in the workflow editor
 export const component = FunctionNode;
-
-// Also export the standalone component for direct use if needed
-export const standaloneComponent = StandaloneFunctionNode;
-
 export default FunctionNode;
