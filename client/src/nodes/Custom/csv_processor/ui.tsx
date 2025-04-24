@@ -424,7 +424,7 @@ export const component = ({ data, id, isConnectable, selected }: NodeProps<any>)
               onMouseEnter={handleMenuHoverStart}
               onMouseLeave={handleHoverEnd}
               className="absolute z-50"
-              style={{ right: '0px', top: '0px' }}
+              style={{ right: '-8px', top: '0px' }}
             >
               <NodeHoverMenu 
                 nodeId={id}
